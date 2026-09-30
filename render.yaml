@@ -38,6 +38,6 @@ services:
       - key: TIME_ZONE
         value: America/Maceio
       - key: DATABASE_URL
-        sync:false
+        sync: false
 
 
