@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% block title %}Unidade{% endblock %}
+{% block content %}
+<h3 class="mb-3">{% if object %}Editar unidade{% else %}Nova unidade{% endif %}</h3>
+<form method="post">
+  {% csrf_token %}
+  <div class="card shadow-sm">
+    <div class="card-body row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Cliente</label>
+        {{ form.cliente|add_class:"form-select" }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Nome da unidade</label>
+        {{ form.nome|add_class:"form-control" }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Setor</label>
+        {{ form.setor|add_class:"form-control" }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Responsável local</label>
+        {{ form.responsavel_local|add_class:"form-control" }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Telefone</label>
+        {{ form.telefone|add_class:"form-control" }}
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Endereço</label>
+        {{ form.endereco|add_class:"form-control" }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Número</label>
+        {{ form.numero|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Bairro</label>
+        {{ form.bairro|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Cidade</label>
+        {{ form.cidade|add_class:"form-control" }}
+      </div>
+      <div class="col-md-1">
+        <label class="form-label">UF</label>
+        {{ form.uf|add_class:"form-control" }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">CEP</label>
+        {{ form.cep|add_class:"form-control" }}
+      </div>
+      <div class="col-12 form-check">
+        {{ form.ativo|add_class:"form-check-input" }}
+        <label class="form-check-label">Ativa</label>
+      </div>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary mt-3">Salvar</button>
+  <a href="javascript:history.back()" class="btn btn-outline-secondary mt-3">Cancelar</a>
+</form>
+{% endblock %}

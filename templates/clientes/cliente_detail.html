@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ cliente.nome_razao_social }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>{{ cliente.nome_razao_social }}</h3>
+  {% if user.is_administrador or user.is_gestor %}<a href="{% url 'clientes:cliente_update' cliente.pk %}" class="btn btn-outline-primary">Editar</a>{% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header">Dados gerais</div>
+      <div class="card-body">
+        <p><strong>CPF/CNPJ:</strong> {{ cliente.cpf_cnpj }}</p>
+        <p><strong>Telefone:</strong> {{ cliente.telefone|default:"-" }} &nbsp; <strong>WhatsApp:</strong> {{ cliente.whatsapp|default:"-" }}</p>
+        <p><strong>E-mail:</strong> {{ cliente.email|default:"-" }}</p>
+        <p><strong>Endereço:</strong> {{ cliente.endereco }} {{ cliente.numero }} - {{ cliente.bairro }}, {{ cliente.cidade }}/{{ cliente.uf }}</p>
+        {% if cliente.observacoes %}<p><strong>Observações:</strong> {{ cliente.observacoes }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header">Contatos responsáveis</div>
+      <ul class="list-group list-group-flush">
+        {% for contato in contatos %}
+          <li class="list-group-item">
+            {{ contato.nome }} {% if contato.principal %}<span class="badge bg-primary">Principal</span>{% endif %}<br>
+            <small class="text-muted">{{ contato.cargo }} — {{ contato.telefone }} {{ contato.email }}</small>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">Nenhum contato cadastrado.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        Unidades
+        {% if user.is_administrador or user.is_gestor %}<a href="{% url 'clientes:unidade_create' %}?cliente={{ cliente.pk }}" class="btn btn-sm btn-outline-primary">+ Unidade</a>{% endif %}
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for unidade in unidades %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>{{ unidade.nome }} {% if unidade.setor %}({{ unidade.setor }}){% endif %}</span>
+            {% if user.is_administrador or user.is_gestor %}<a href="{% url 'clientes:unidade_update' unidade.pk %}" class="small">Editar</a>{% endif %}
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">Nenhuma unidade cadastrada.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        Equipamentos
+        {% if user.is_administrador or user.is_gestor %}<a href="{% url 'equipamentos:equipamento_create' %}" class="btn btn-sm btn-outline-primary">+ Equipamento</a>{% endif %}
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for equipamento in equipamentos %}
+          <li class="list-group-item">
+            <a href="{% url 'equipamentos:equipamento_detail' equipamento.pk %}">{{ equipamento.nome }}</a>
+            <span class="text-muted small">— {{ equipamento.get_situacao_operacional_display }}</span>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">Nenhum equipamento cadastrado para este cliente.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

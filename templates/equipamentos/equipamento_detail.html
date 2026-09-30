@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ equipamento.nome }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>{{ equipamento.nome }}</h3>
+  {% if user.is_administrador or user.is_gestor %}<a href="{% url 'equipamentos:equipamento_update' equipamento.pk %}" class="btn btn-outline-primary">Editar</a>{% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-md-8">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header">Dados do equipamento</div>
+      <div class="card-body">
+        <p><strong>Cliente:</strong> <a href="{% url 'clientes:cliente_detail' equipamento.cliente.pk %}">{{ equipamento.cliente.nome_razao_social }}</a>
+           {% if equipamento.unidade %} — {{ equipamento.unidade.nome }}{% endif %}</p>
+        <p><strong>Categoria:</strong> {{ equipamento.categoria.nome }} {% if user.is_administrador or user.is_gestor %}<a href="{% url 'equipamentos:categoria_update' equipamento.categoria.pk %}" class="small">Editar categoria</a>{% endif %}</p>
+        <p><strong>Fabricante/Modelo:</strong> {{ equipamento.fabricante|default:"-" }} / {{ equipamento.modelo|default:"-" }}</p>
+        <p><strong>Código interno:</strong> {{ equipamento.codigo_interno|default:"-" }} &nbsp; <strong>Nº série:</strong> {{ equipamento.numero_serie|default:"-" }}</p>
+        <p><strong>Instalação:</strong> {{ equipamento.data_instalacao|date:"d/m/Y"|default:"-" }} &nbsp; <strong>Fim garantia:</strong> {{ equipamento.data_fim_garantia|date:"d/m/Y"|default:"-" }}</p>
+        <p><strong>Última preventiva:</strong> {{ equipamento.data_ultima_preventiva|date:"d/m/Y"|default:"-" }}
+           {% if equipamento.proxima_preventiva %} (próxima: {{ equipamento.proxima_preventiva|date:"d/m/Y" }}){% endif %}</p>
+        <p><strong>Última calibração:</strong> {{ equipamento.data_ultima_calibracao|date:"d/m/Y"|default:"-" }}
+           {% if equipamento.proxima_calibracao %} (próxima: {{ equipamento.proxima_calibracao|date:"d/m/Y" }}){% endif %}</p>
+        <p><strong>Situação operacional:</strong> {{ equipamento.get_situacao_operacional_display }}</p>
+        {% if equipamento.observacoes %}<p><strong>Observações:</strong> {{ equipamento.observacoes }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm text-center">
+      <div class="card-header">Etiqueta QR Code</div>
+      <div class="card-body">
+        {% if equipamento.qr_code %}
+          <img src="{{ equipamento.qr_code.url }}" alt="QR Code" style="width:180px">
+          <p class="small text-muted mt-2">Escaneie para abrir a ficha deste equipamento (é necessário estar logado no sistema).</p>
+        {% else %}
+          <p class="text-muted">QR Code ainda não gerado.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

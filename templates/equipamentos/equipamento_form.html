@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% block title %}Equipamento{% endblock %}
+{% block content %}
+<h3 class="mb-3">{% if object %}Editar equipamento{% else %}Novo equipamento{% endif %}</h3>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="card shadow-sm">
+    <div class="card-body row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Nome</label>
+        {{ form.nome|add_class:"form-control" }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Categoria</label>
+        {{ form.categoria|add_class:"form-select" }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Código interno</label>
+        {{ form.codigo_interno|add_class:"form-control" }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Nº de série</label>
+        {{ form.numero_serie|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Fabricante</label>
+        {{ form.fabricante|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Modelo</label>
+        {{ form.modelo|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Cliente</label>
+        {{ form.cliente|add_class:"form-select" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Unidade</label>
+        {{ form.unidade|add_class:"form-select" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Setor</label>
+        {{ form.setor|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Situação operacional</label>
+        {{ form.situacao_operacional|add_class:"form-select" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Data de instalação</label>
+        {{ form.data_instalacao|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Fim da garantia</label>
+        {{ form.data_fim_garantia|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Periodicidade preventiva (meses)</label>
+        {{ form.periodicidade_preventiva_meses|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Última preventiva</label>
+        {{ form.data_ultima_preventiva|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Periodicidade calibração (meses)</label>
+        {{ form.periodicidade_calibracao_meses|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Última calibração</label>
+        {{ form.data_ultima_calibracao|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Foto</label>
+        {{ form.foto|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Manual (arquivo)</label>
+        {{ form.manual|add_class:"form-control" }}
+      </div>
+      <div class="col-12">
+        <label class="form-label">Observações</label>
+        {{ form.observacoes|add_class:"form-control" }}
+      </div>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary mt-3">Salvar</button>
+  <a href="{% url 'equipamentos:equipamento_list' %}" class="btn btn-outline-secondary mt-3">Cancelar</a>
+</form>
+
+<script>
+// Atualiza a lista de unidades via HTMX/fetch simples quando o cliente muda
+document.addEventListener("DOMContentLoaded", function () {
+  const clienteSelect = document.getElementById("id_cliente");
+  const unidadeSelect = document.getElementById("id_unidade");
+  if (!clienteSelect || !unidadeSelect) return;
+  clienteSelect.addEventListener("change", function () {
+    fetch("{% url 'equipamentos:unidades_por_cliente' %}?cliente=" + this.value)
+      .then((r) => r.json())
+      .then((data) => {
+        unidadeSelect.innerHTML = '<option value="">---------</option>';
+        data.unidades.forEach((u) => {
+          const opt = document.createElement("option");
+          opt.value = u.id;
+          opt.textContent = u.nome;
+          unidadeSelect.appendChild(opt);
+        });
+      });
+  });
+});
+</script>
+{% endblock %}

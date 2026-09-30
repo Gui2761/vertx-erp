@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% block title %}Cliente{% endblock %}
+{% block content %}
+<h3 class="mb-3">{% if object %}Editar cliente{% else %}Novo cliente{% endif %}</h3>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="card shadow-sm mb-3">
+    <div class="card-header">Dados gerais</div>
+    <div class="card-body row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Tipo</label>
+        {{ form.tipo_pessoa|add_class:"form-select" }}
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Nome / Razão social</label>
+        {{ form.nome_razao_social|add_class:"form-control" }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Nome fantasia</label>
+        {{ form.nome_fantasia|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">CPF/CNPJ</label>
+        {{ form.cpf_cnpj|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Telefone</label>
+        {{ form.telefone|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">WhatsApp</label>
+        {{ form.whatsapp|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">E-mail</label>
+        {{ form.email|add_class:"form-control" }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Endereço</label>
+        {{ form.endereco|add_class:"form-control" }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Número</label>
+        {{ form.numero|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Complemento</label>
+        {{ form.complemento|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Bairro</label>
+        {{ form.bairro|add_class:"form-control" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Cidade</label>
+        {{ form.cidade|add_class:"form-control" }}
+      </div>
+      <div class="col-md-1">
+        <label class="form-label">UF</label>
+        {{ form.uf|add_class:"form-control" }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">CEP</label>
+        {{ form.cep|add_class:"form-control" }}
+      </div>
+      <div class="col-12">
+        <label class="form-label">Observações</label>
+        {{ form.observacoes|add_class:"form-control" }}
+      </div>
+      <div class="col-12 form-check">
+        {{ form.ativo|add_class:"form-check-input" }}
+        <label class="form-check-label">Ativo</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-header">Contatos responsáveis</div>
+    <div class="card-body">
+      {{ contato_formset.management_form }}
+      {% for contato_form in contato_formset %}
+        <div class="row g-2 mb-2 border-bottom pb-2">
+          <div class="col-md-3">{{ contato_form.nome|add_class:"form-control" }}<small class="text-muted">Nome</small></div>
+          <div class="col-md-2">{{ contato_form.cargo|add_class:"form-control" }}<small class="text-muted">Cargo</small></div>
+          <div class="col-md-2">{{ contato_form.telefone|add_class:"form-control" }}<small class="text-muted">Telefone</small></div>
+          <div class="col-md-2">{{ contato_form.email|add_class:"form-control" }}<small class="text-muted">E-mail</small></div>
+          <div class="col-md-1 form-check pt-4">{{ contato_form.principal }} <label class="form-check-label small">Principal</label></div>
+          {% if contato_form.instance.pk %}
+          <div class="col-md-1 pt-4 form-check">{{ contato_form.DELETE }} <label class="small">Excluir</label></div>
+          {% endif %}
+          {{ contato_form.id }}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Salvar</button>
+  <a href="{% url 'clientes:cliente_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+</form>
+{% endblock %}

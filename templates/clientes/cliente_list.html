@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Clientes e Unidades</h3>
+  {% if user.is_administrador or user.is_gestor %}<a href="{% url 'clientes:cliente_create' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Novo cliente</a>{% endif %}
+</div>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-4">
+    <input type="text" name="q" class="form-control" placeholder="Buscar por nome ou CPF/CNPJ" value="{{ request.GET.q }}">
+  </div>
+  <div class="col-md-3">
+    <select name="situacao" class="form-select">
+      <option value="">Todos</option>
+      <option value="ativos" {% if request.GET.situacao == "ativos" %}selected{% endif %}>Ativos</option>
+      <option value="inativos" {% if request.GET.situacao == "inativos" %}selected{% endif %}>Inativos</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-outline-secondary w-100">Filtrar</button>
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <table class="table table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Nome / Razão social</th>
+        <th>CPF/CNPJ</th>
+        <th>Telefone</th>
+        <th>Situação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cliente in clientes %}
+      <tr onclick="window.location='{% url 'clientes:cliente_detail' cliente.pk %}'" style="cursor:pointer">
+        <td>{{ cliente.nome_razao_social }}</td>
+        <td>{{ cliente.cpf_cnpj }}</td>
+        <td>{{ cliente.telefone|default:"-" }}</td>
+        <td>{% if cliente.ativo %}<span class="badge bg-success">Ativo</span>{% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center text-muted py-4">Nenhum cliente cadastrado ainda. Clique em "Novo cliente" para começar.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "paginacao.html" %}
+{% endblock %}

@@ -1,0 +1,17 @@
+{% load ordens_format %}<section class="card card-body mb-3"><h2 class="h4">{{ dados.numero }} · versão {{ dados.ciclo }}</h2><dl class="os-summary">
+<dt>Cliente</dt><dd>{{ dados.cliente }} · {{ dados.documento }}<br>{{ dados.cliente_endereco }}<br>{{ dados.cliente_telefone }} {{ dados.cliente_email }}</dd>
+<dt>Unidade / local</dt><dd>{{ dados.unidade }}<br>{{ dados.local }}</dd>
+<dt>Equipamento</dt><dd>{{ dados.equipamento }} · {{ dados.fabricante }} {{ dados.modelo }}</dd>
+<dt>Patrimônio / série</dt><dd>{{ dados.patrimonio|default:'-' }} / {{ dados.serie|default:'-' }}</dd>
+<dt>Tipo de atendimento</dt><dd>{{ dados.tipo }}</dd>
+<dt>Defeito / reclamação</dt><dd>{{ dados.defeito|linebreaksbr }}</dd>
+<dt>Diagnóstico</dt><dd>{{ dados.diagnostico|default:'Não registrado'|linebreaksbr }}</dd>
+<dt>Serviço executado</dt><dd>{{ dados.servico_executado|default:'Não registrado'|linebreaksbr }}</dd>
+<dt>Peças utilizadas</dt><dd>{{ dados.pecas|default:'Nenhuma informada'|linebreaksbr }}</dd>
+<dt>Observações</dt><dd>{{ dados.observacoes|default:'-'|linebreaksbr }}</dd>
+<dt>Técnico</dt><dd>{{ dados.tecnico }} · {{ dados.registro_profissional|default:'Registro profissional não cadastrado' }}</dd>
+<dt>Abertura</dt><dd>{{ dados.abertura|data_os }}</dd><dt>Início</dt><dd>{{ dados.inicio|data_os|default:'Não iniciado' }}</dd><dt>Conclusão do serviço</dt><dd>{{ dados.conclusao|data_os|default:'Ainda não registrada' }}</dd></dl>
+{% include 'ordens/localizacao.html' with geo=dados.localizacao_inicio titulo='Localização inicial' %}
+{% include 'ordens/localizacao.html' with geo=dados.localizacao_final titulo='Localização final' %}
+</section>
+<section class="card card-body mb-3"><h2 class="h4">Fotos</h2><div class="row g-3">{% for foto in dados.fotos %}<figure class="col-sm-6 col-lg-4"><a href="{% url 'ordens:foto' ordem.pk foto.id %}" target="_blank" rel="noopener noreferrer"><img class="img-fluid rounded os-photo" src="{% url 'ordens:foto' ordem.pk foto.id %}" alt="{{ foto.descricao|default:'Foto do atendimento' }}"></a><figcaption>{{ foto.descricao }}<br><small>{{ foto.data|data_os }} · {{ foto.usuario }}</small></figcaption></figure>{% empty %}<p>Sem fotos anexadas.</p>{% endfor %}</div></section>

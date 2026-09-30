@@ -1,0 +1,49 @@
+# Blueprint do Render: cria o serviço web (Django/Gunicorn via Docker) e o
+# banco PostgreSQL, já conectados entre si pela variável DATABASE_URL.
+#
+# Nenhuma senha ou chave secreta fica neste arquivo: a SECRET_KEY é gerada
+# automaticamente pelo Render ("generateValue: true") e o DATABASE_URL é
+# fornecido pelo próprio banco criado abaixo ("fromDatabase").
+#
+# collectstatic é executado no build do Dockerfile. O CMD chama scripts/start.sh:
+# migrate_locked (migrations versionadas com lock PostgreSQL) e Gunicorn.
+# Web Service e PostgreSQL mantêm plan: free, conforme escolha do usuário.
+# Validado na documentação Render em 30/09/2026 para homologação temporária.
+# Consulte o guia sobre expiração do banco. Nenhum recurso é criado por este arquivo.
+
+services:
+  - type: web
+    name: tecnolmed-erp
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health/
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: UPLOAD_STORAGE
+        value: s3
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: S3_REGION_NAME
+        sync: false
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: TIME_ZONE
+        value: America/Maceio
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tecnolmed-db
+          property: connectionString
+
+databases:
+  - name: tecnolmed-db
+    plan: free
+    databaseName: tecnolmed
+    user: tecnolmed

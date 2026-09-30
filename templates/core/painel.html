@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Painel{% endblock %}
+{% block content %}
+<h3 class="mb-4">Painel</h3>
+
+<div class="alert alert-info">
+  O módulo de Ordens de Serviço está disponível.
+  <a href="{% url 'ordens:lista' %}">Abrir meus atendimentos</a>.
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-sm-6">
+    <div class="card card-indicador shadow-sm">
+      <div class="card-body">
+        <div class="text-muted">Clientes ativos</div>
+        <div class="valor">{{ total_clientes }}</div>
+        <a href="{% url 'clientes:cliente_list' %}?situacao=ativos" class="small">Ver clientes</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="card card-indicador shadow-sm">
+      <div class="card-body">
+        <div class="text-muted">Equipamentos cadastrados</div>
+        <div class="valor">{{ total_equipamentos }}</div>
+        <a href="{% url 'equipamentos:equipamento_list' %}" class="small">Ver equipamentos</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="card card-indicador shadow-sm border-start border-warning border-4">
+      <div class="card-body">
+        <div class="text-muted">Com restrição de uso</div>
+        <div class="valor">{{ equipamentos_restricao }}</div>
+        <a href="{% url 'equipamentos:equipamento_list' %}?situacao=RESTRICAO" class="small">Ver</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="card card-indicador shadow-sm border-start border-danger border-4">
+      <div class="card-body">
+        <div class="text-muted">Inoperantes</div>
+        <div class="valor">{{ equipamentos_inoperantes }}</div>
+        <a href="{% url 'equipamentos:equipamento_list' %}?situacao=INOPERANTE" class="small">Ver</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header">Preventivas mais próximas do vencimento</div>
+  <div class="list-group list-group-flush">
+    {% for equipamento in proximas_preventivas %}
+      <a href="{% url 'equipamentos:equipamento_detail' equipamento.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between">
+        <span>{{ equipamento.nome }} — {{ equipamento.cliente.nome_razao_social }}</span>
+        <span class="text-muted">{{ equipamento.proxima_preventiva|date:"d/m/Y" }}</span>
+      </a>
+    {% empty %}
+      <div class="list-group-item text-muted">Nenhum equipamento com periodicidade de preventiva cadastrada ainda.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Ordens de Serviço{% endblock %}
+{% block content %}
+<main class="os-page">
+<div class="os-actions"><h1>{% if gestor %}Ordens de Serviço{% else %}Minhas OS{% endif %}</h1>{% if gestor %}<a class="btn btn-primary" href="{% url 'ordens:criar' %}">Nova OS</a>{% endif %}</div>
+<form method="get" class="os-actions mb-3"><label for="status">Situação</label><select id="status" name="status" class="form-select"><option value="">Todas</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="btn btn-outline-primary">Filtrar</button></form>
+<div class="row g-3">{% for ordem in ordens %}<div class="col-md-6 col-xl-4"><article class="card h-100"><div class="card-body"><h2 class="h5">{{ ordem.numero }}</h2><p class="badge bg-primary">{{ ordem.get_status_display }}</p><p>{{ ordem.cliente }}<br>{{ ordem.unidade|default:'Sem unidade' }}</p><p><strong>{{ ordem.equipamento.nome }}</strong><br>Técnico: {{ ordem.tecnico }}</p><a class="btn btn-outline-primary w-100" href="{% url 'ordens:detalhe' ordem.pk %}">Abrir OS</a></div></article></div>{% empty %}<p>Nenhuma OS disponível para você.</p>{% endfor %}</div>
+{% include 'paginacao.html' %}
+</main>
+{% endblock %}

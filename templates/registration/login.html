@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% block title %}Entrar{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h4 class="card-title mb-3 text-center">VERTYX</h4>
+        <form method="post">
+          {% csrf_token %}
+          {% if form.errors %}
+            <div class="alert alert-danger">Usuário ou senha inválidos.</div>
+          {% endif %}
+          <div class="mb-3">
+            <label class="form-label">Usuário</label>
+            {{ form.username|add_class:"form-control" }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Senha</label>
+            {{ form.password|add_class:"form-control" }}
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Entrar</button>
+          <input type="hidden" name="next" value="{{ next }}">
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
