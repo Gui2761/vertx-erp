@@ -23,4 +23,4 @@ EXPOSE 8000
 # Usado quando o container roda sozinho (ex.: Render), sem docker-compose.
 # As migrations já vêm versionadas no repositório — não geramos migrations
 # em produção, só aplicamos (migrate) as que já existem.
-CMD ["/bin/sh", "/app/scripts/start.sh"]
+CMD ["sh", "-c", "python manage.py migrate && gunicorn tecnolmed.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
