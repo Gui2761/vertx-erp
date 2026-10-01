@@ -5,10 +5,10 @@
 <h3 class="mb-3">{% if object %}Editar cliente{% else %}Novo cliente{% endif %}</h3>
 
 <form method="post">
-  {% csrf_token %}
+  {% csrf_token %}{{ form.errors }}
   <div class="card shadow-sm mb-3">
     <div class="card-header">Dados gerais</div>
-    <div class="card-body row g-3">
+    <div class="card-body row g-3"><div class="col-md-4"><label class="form-label" for="{{ form.inscricao_estadual.id_for_label }}">{{ form.inscricao_estadual.label }}</label>{{ form.inscricao_estadual|add_class:"form-control" }}{{ form.inscricao_estadual.errors }}</div><div class="col-md-4"><label class="form-label" for="{{ form.inscricao_municipal.id_for_label }}">{{ form.inscricao_municipal.label }}</label>{{ form.inscricao_municipal|add_class:"form-control" }}{{ form.inscricao_municipal.errors }}</div><div class="col-md-4"><label class="form-label" for="{{ form.responsavel.id_for_label }}">{{ form.responsavel.label }}</label>{{ form.responsavel|add_class:"form-control" }}{{ form.responsavel.errors }}</div>
       <div class="col-md-3">
         <label class="form-label">Tipo</label>
         {{ form.tipo_pessoa|add_class:"form-select" }}

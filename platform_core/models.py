@@ -83,7 +83,7 @@ class OrganizationMembership(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name='memberships')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='memberships')
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
-    role = models.CharField(max_length=20, choices=[('ADMIN', 'Administrador da organização'), ('GESTOR', 'Gestor'), ('TECNICO', 'Técnico'), ('ESTOQUE', 'Estoquista'), ('FINANCEIRO', 'Financeiro'), ('CONTABILIDADE', 'Contabilidade')], default='TECNICO')
+    role = models.CharField(max_length=20, choices=[('ADMIN', 'Administrador da organização'), ('GESTOR', 'Gestor'), ('TECNICO', 'Técnico'), ('PLANEJADOR', 'Planejador'), ('ATENDIMENTO', 'Atendimento'), ('PAINEL', 'Somente painel operacional'), ('ESTOQUE', 'Estoquista'), ('FINANCEIRO', 'Financeiro'), ('CONTABILIDADE', 'Contabilidade'), ('CLIENTE', 'Cliente do portal')], default='TECNICO')
     joined_at = models.DateTimeField(default=timezone.now)
     left_at = models.DateTimeField(null=True, blank=True)
 
@@ -95,6 +95,7 @@ class OrganizationMembership(models.Model):
 
 
 class MembershipERP(models.Model):
+    visualizar_painel_operacional = models.BooleanField('Visualizar painel operacional', default=False)
     membership = models.ForeignKey(OrganizationMembership, on_delete=models.PROTECT, related_name='erp_accesses')
     erp = models.ForeignKey(ERPCatalog, on_delete=models.PROTECT)
     enabled = models.BooleanField(default=True)

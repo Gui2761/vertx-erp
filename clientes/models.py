@@ -18,6 +18,9 @@ class Cliente(OrganizationOwned):
     nome_razao_social = models.CharField("Nome / Razão social", max_length=255)
     nome_fantasia = models.CharField("Nome fantasia", max_length=255, blank=True)
     cpf_cnpj = models.CharField("CPF/CNPJ", max_length=20)
+    inscricao_estadual = models.CharField(max_length=30, blank=True)
+    inscricao_municipal = models.CharField(max_length=30, blank=True)
+    responsavel = models.CharField(max_length=150, blank=True)
     telefone = models.CharField(max_length=20, blank=True)
     whatsapp = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
@@ -80,6 +83,8 @@ class Unidade(TenantOwned):
     uf = models.CharField(max_length=2, blank=True)
     cep = models.CharField(max_length=10, blank=True)
     responsavel_local = models.CharField(max_length=150, blank=True)
+    email = models.EmailField(blank=True)
+    observacoes = models.TextField(blank=True)
     telefone = models.CharField(max_length=20, blank=True)
     ativo = models.BooleanField(default=True)
 

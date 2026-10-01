@@ -82,6 +82,10 @@ class Equipamento(OrganizationOwned):
         blank=True,
     )
     setor = models.CharField(max_length=100, blank=True)
+    localizacao = models.CharField('Localização', max_length=255, blank=True)
+    patrimonio = models.CharField('Patrimônio', max_length=80, blank=True)
+    data_aquisicao = models.DateField(null=True, blank=True)
+    criticidade = models.CharField(max_length=10, choices=[('BAIXA', 'Baixa'), ('MEDIA', 'Média'), ('ALTA', 'Alta'), ('CRITICA', 'Crítica')], default='MEDIA', blank=True)
 
     data_instalacao = models.DateField(null=True, blank=True)
     data_fim_garantia = models.DateField(null=True, blank=True)

@@ -18,6 +18,7 @@ class EquipamentoForm(TenantModelForm):
             "cliente",
             "unidade",
             "setor",
+            "localizacao", "patrimonio", "data_aquisicao", "criticidade",
             "data_instalacao",
             "data_fim_garantia",
             "periodicidade_preventiva_meses",
@@ -30,6 +31,7 @@ class EquipamentoForm(TenantModelForm):
             "observacoes",
         ]
         widgets = {
+            "data_aquisicao": forms.DateInput(attrs={"type": "date"}, format='%Y-%m-%d'),
             "data_instalacao": forms.DateInput(attrs={"type": "date"}),
             "data_fim_garantia": forms.DateInput(attrs={"type": "date"}),
             "data_ultima_preventiva": forms.DateInput(attrs={"type": "date"}),

@@ -28,7 +28,7 @@ class TenantModelForm(forms.ModelForm):
                 if self.instance.pk:
                     existing = existing.exclude(pk=self.instance.pk)
                 if existing.exists():
-                    name = next(name for name in constraint.fields if name != 'organization')
+                    name = next((name for name in constraint.fields if name != 'organization'), None)
                     self.add_error(name, 'Este valor já está cadastrado nesta organização.')
         return data
 

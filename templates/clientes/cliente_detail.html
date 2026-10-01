@@ -11,7 +11,7 @@
     <div class="card shadow-sm mb-3">
       <div class="card-header">Dados gerais</div>
       <div class="card-body">
-        <p><strong>CPF/CNPJ:</strong> {{ cliente.cpf_cnpj }}</p>
+        <p><strong>Responsável:</strong> {{ cliente.responsavel|default:"—" }} · <strong>IE / IM:</strong> {{ cliente.inscricao_estadual|default:"—" }} / {{ cliente.inscricao_municipal|default:"—" }}</p><p><strong>CPF/CNPJ:</strong> {{ cliente.cpf_cnpj }}</p>
         <p><strong>Telefone:</strong> {{ cliente.telefone|default:"-" }} &nbsp; <strong>WhatsApp:</strong> {{ cliente.whatsapp|default:"-" }}</p>
         <p><strong>E-mail:</strong> {{ cliente.email|default:"-" }}</p>
         <p><strong>Endereço:</strong> {{ cliente.endereco }} {{ cliente.numero }} - {{ cliente.bairro }}, {{ cliente.cidade }}/{{ cliente.uf }}</p>
@@ -70,4 +70,4 @@
     </div>
   </div>
 </div>
-{% endblock %}
+{% include 'operacao/historico.html' %}{% endblock %}

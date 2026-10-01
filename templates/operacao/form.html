@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<header class="vx-page-header"><div><p class="vx-eyebrow">{{ request.organization.display_name }}</p><h1>{{ titulo }}</h1></div><a class="btn btn-outline-secondary" href="{{ back_url }}">Voltar</a></header>
+<form method="post" enctype="multipart/form-data" class="card p-4" novalidate>{% csrf_token %}
+{{ form.non_field_errors }}<div class="row g-3">{% for field in form %}{% if field.is_hidden %}{{ field }}{% else %}<div class="col-12 {% if field.field.widget.input_type != 'file' %}col-lg-6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}<div class="text-danger">{{ field.errors }}</div></div>{% endif %}{% endfor %}</div>
+<div class="mt-4"><button class="btn btn-primary">Salvar</button> <a class="btn btn-outline-secondary" href="{{ back_url }}">Cancelar</a></div></form>
+{% endblock %}

@@ -13,6 +13,7 @@ class ClienteForm(TenantModelForm):
             "nome_razao_social",
             "nome_fantasia",
             "cpf_cnpj",
+            "inscricao_estadual", "inscricao_municipal", "responsavel",
             "telefone",
             "whatsapp",
             "email",
@@ -51,6 +52,7 @@ class UnidadeForm(TenantModelForm):
             "uf",
             "cep",
             "responsavel_local",
+            "email", "observacoes",
             "telefone",
             "ativo",
         ]

@@ -1,6 +1,8 @@
 import uuid
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from decimal import Decimal
 from django.db import models
 from .storage import private_storage
 from platform_core.tenancy import OrganizationOwned, TenantOwned, TenantQuerySet, TenantManager
@@ -21,6 +23,12 @@ class Status(models.TextChoices):
     ABERTA = 'ABERTA', 'Aberta'
     EXECUCAO = 'EXECUCAO', 'Em atendimento'
     FINALIZADA = 'FINALIZADA', 'Finalizada'
+    AGENDADA = 'AGENDADA', 'Agendada'
+    AG_PECA = 'AG_PECA', 'Aguardando peça'
+    AG_CLIENTE = 'AG_CLIENTE', 'Aguardando cliente'
+    APROVADA = 'APROVADA', 'Aprovada'
+    FATURADA = 'FATURADA', 'Faturada'
+    CANCELADA = 'CANCELADA', 'Cancelada'
 
 
 class OrdemServico(OrganizationOwned):
@@ -29,13 +37,24 @@ class OrdemServico(OrganizationOwned):
     cliente = models.ForeignKey('clientes.Cliente', on_delete=models.PROTECT)
     unidade = models.ForeignKey('clientes.Unidade', on_delete=models.PROTECT, null=True, blank=True)
     equipamento = models.ForeignKey('equipamentos.Equipamento', on_delete=models.PROTECT, related_name='ordens')
-    tecnico = models.ForeignKey('contas.Tecnico', on_delete=models.PROTECT, related_name='ordens')
-    tipo_atendimento = models.CharField(max_length=30, choices=[('CORRETIVA', 'Corretiva'), ('PREVENTIVA', 'Preventiva'), ('CALIBRACAO', 'Calibração'), ('OUTRO', 'Outro')], default='CORRETIVA')
+    tecnico = models.ForeignKey('contas.Tecnico', on_delete=models.PROTECT, related_name='ordens', null=True, blank=True)
+    tipo_atendimento = models.CharField(max_length=30, choices=[('CORRETIVA', 'Corretiva'), ('PREVENTIVA', 'Preventiva'), ('CALIBRACAO', 'Calibração'), ('INSTALACAO', 'Instalação'), ('INSPECAO', 'Inspeção'), ('VISITA', 'Visita técnica'), ('RETIRADA', 'Retirada'), ('ENTREGA', 'Entrega'), ('TREINAMENTO', 'Treinamento'), ('OUTRO', 'Outro')], default='CORRETIVA')
+    contrato = models.ForeignKey('gestao.Contrato', on_delete=models.PROTECT, null=True, blank=True)
+    prioridade = models.CharField(max_length=10, choices=[('BAIXA', 'Baixa'), ('NORMAL', 'Normal'), ('ALTA', 'Alta'), ('URGENTE', 'Urgente')], default='NORMAL', blank=True)
+    agendada_para = models.DateTimeField(null=True, blank=True)
+    agendada_ate = models.DateTimeField('Término previsto', null=True, blank=True)
+    prazo = models.DateTimeField('Prazo de atendimento', null=True, blank=True)
+    horas = models.DecimalField('Horas trabalhadas', max_digits=8, decimal_places=2, default=Decimal('0'), blank=True, validators=[MinValueValidator(Decimal('0'))])
+    deslocamento_km = models.DecimalField('Deslocamento (km)', max_digits=9, decimal_places=2, default=Decimal('0'), blank=True, validators=[MinValueValidator(Decimal('0'))])
+    checklist = models.JSONField(default=list, blank=True)
+    numero_personalizado = models.CharField(max_length=40, blank=True, editable=False)
     defeito = models.TextField('Defeito / reclamação')
     diagnostico = models.TextField('Diagnóstico', blank=True)
     servico_executado = models.TextField('Serviço executado', blank=True)
     pecas = models.TextField('Peças utilizadas', blank=True, help_text='Descrição e quantidades; não movimenta estoque.')
     observacoes = models.TextField('Observações', blank=True)
+    valor_cobranca = models.DecimalField('Valor a cobrar (R$)', max_digits=14, decimal_places=2, default=Decimal('0'), blank=True, validators=[MinValueValidator(Decimal('0'))], help_text='0: sem cobrança automática. Conta a receber gerada na finalização.')
+    vencimento_cobranca = models.DateField('Vencimento da cobrança', null=True, blank=True)
     status = models.CharField(max_length=15, choices=Status.choices, default=Status.ABERTA)
     abertura = models.DateTimeField(auto_now_add=True)
     inicio = models.DateTimeField(null=True, blank=True)
@@ -51,7 +70,7 @@ class OrdemServico(OrganizationOwned):
 
     @property
     def numero(self):
-        return f'OS-{self.pk:06d}' if self.pk else 'Nova OS'
+        return self.numero_personalizado or (f'OS-{self.pk:06d}' if self.pk else 'Nova OS')
 
     def __str__(self):
         return self.numero
@@ -59,6 +78,10 @@ class OrdemServico(OrganizationOwned):
     def clean(self):
         super().clean()
         errors = {}
+        if self.status == 'EXECUCAO' and not self.tecnico_id:
+            errors['tecnico'] = 'Atendimento em execução exige técnico responsável.'
+        if self.agendada_ate and (not self.agendada_para or self.agendada_ate <= self.agendada_para):
+            errors['agendada_ate'] = 'Informe início e término previsto posterior ao início.'
         if self.equipamento_id:
             if self.equipamento.cliente_id != self.cliente_id:
                 errors['equipamento'] = 'O equipamento deve pertencer ao cliente.'
@@ -68,18 +91,34 @@ class OrdemServico(OrganizationOwned):
             errors['unidade'] = 'A unidade deve pertencer ao cliente.'
         if errors:
             raise ValidationError(errors)
+        from operacao.models import checklist_valido
+        checklist_valido(self.checklist)
+        if self.contrato_id and (self.contrato.cliente_id != self.cliente_id or not self.contrato.equipamentos.filter(pk=self.equipamento_id).exists()):
+            raise ValidationError({'contrato': 'Equipamento deve estar coberto pelo contrato deste cliente.'})
+        if self.pk and self.lancamentos.filter(tipo='RECEBER').exists():
+            old = type(self).objects.get(pk=self.pk)
+            if self.cliente_id != old.cliente_id or self.valor_cobranca != old.valor_cobranca:
+                raise ValidationError('Cliente e valor da cobrança já lançada devem ser preservados.')
 
     def save(self, *args, **kwargs):
         self.validate_tenant()
         if self.pk and not getattr(self, '_transicao_autorizada', False):
             anterior = type(self).objects.get(pk=self.pk)
-            if anterior.status == Status.FINALIZADA:
+            if anterior.status in [Status.FINALIZADA, Status.APROVADA, Status.FATURADA, Status.CANCELADA]:
                 raise ValidationError('OS finalizada é imutável. Use a reabertura auditada.')
             for campo in ('status', 'inicio', 'conclusao', 'ciclo'):
                 if getattr(anterior, campo) != getattr(self, campo):
                     raise ValidationError('Use o fluxo de atendimento para alterar datas e status.')
         self.full_clean()
-        return super().save(*args, **kwargs)
+        new = self._state.adding
+        result = super().save(*args, **kwargs)
+        if new:
+            from operacao.models import Configuracao
+            config = Configuracao.objects.first()
+            if config:
+                self.numero_personalizado = f'{config.prefixo_os}-{self.pk:0{config.digitos_numero}d}'
+                super().save(update_fields=['numero_personalizado'])
+        return result
 
     def delete(self, *args, **kwargs):
         raise ValidationError('Ordens de Serviço não podem ser excluídas.')

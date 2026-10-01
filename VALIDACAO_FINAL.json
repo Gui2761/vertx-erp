@@ -1,0 +1,439 @@
+{
+  "data": "2026-10-01",
+  "fase": "CENTRAL_OPERACOES",
+  "referencia": "vertyx_estoque_gestao.zip",
+  "ambiente": "Local isolado; dados sintéticos; PostgreSQL 16.15; HTTPS; Moto S3 TLS; Chromium",
+  "producao_acessada": false,
+  "deploy_commit_push": false,
+  "credenciais_alteradas": false,
+  "postgresql": {
+    "resultado": "PASS",
+    "testes": 258,
+    "aprovados": 258,
+    "ignorados": 0,
+    "segundos": 223.922
+  },
+  "sqlite": {
+    "resultado": "PASS",
+    "testes": 258,
+    "aprovados": 246,
+    "ignorados": 12,
+    "segundos": 156.379
+  },
+  "testes_anteriores": 208,
+  "testes_novos": 50,
+  "upgrade": {
+    "postgresql_upgrade": "PASS",
+    "previous_tables_verified": 71,
+    "previous_rows_preserved": 1098,
+    "old_columns_identical": true
+  },
+  "migrations_novas": [
+    "contas.0006",
+    "platform_core.0004",
+    "ordens.0009",
+    "operacao.0005"
+  ],
+  "migrations_anteriores": "Preservadas byte a byte; hashes em AUDITORIA_OPERACOES_ARQUIVOS.json",
+  "schema": "Sem novas tabelas/modelos de atividade; término previsto e preferências adicionais; FK técnico existente passa a aceitar NULL",
+  "inventario": {
+    "modelos_concretos": 68,
+    "rotas": 393,
+    "relatorios_globais_preservados": 31,
+    "relatorio_compras_por_snapshot_preservado": true
+  },
+  "central_browser": {
+    "passed": true,
+    "screens": 11,
+    "viewports": [
+      320,
+      390,
+      768,
+      1365
+    ],
+    "fullHD": [
+      1920,
+      1080
+    ],
+    "quickUnplanned": true,
+    "scheduleConflictAndAuditedOverride": true,
+    "sidePanel": true,
+    "stockIntegration": true,
+    "existingGPSStartAndSignedFinish": true,
+    "realtimePoll": true,
+    "refreshFailureBanner": true,
+    "fullscreen": true,
+    "lightDark": true,
+    "privacy": true,
+    "roles": true,
+    "noJavascriptErrors": true,
+    "noHttp500": true
+  },
+  "responsividade_final": {
+    "passed": true,
+    "screens": 5,
+    "viewports": [
+      320,
+      390,
+      768,
+      1365
+    ],
+    "fullHD": [
+      1920,
+      1080
+    ],
+    "themes": [
+      "ESCURO",
+      "CLARO"
+    ],
+    "noClippedNote": true,
+    "unknownDurationLabelBounds": true,
+    "noJavascriptErrors": true
+  },
+  "regressoes_browser": {
+    "modulos_anteriores": {
+      "resultado": "PASS",
+      "telas": 27,
+      "larguras": [
+        320,
+        390,
+        768,
+        1365
+      ]
+    },
+    "estoque_compras_gestao": {
+      "resultado": "PASS",
+      "telas": 17,
+      "larguras": [
+        320,
+        390,
+        768,
+        1365
+      ]
+    },
+    "atendimento_original": {
+      "resultado": "PASS",
+      "empresas": 2,
+      "gps_simulado_e_negado_foto_conferencia_assinatura_pdf": true
+    },
+    "integridade_s3": {
+      "foto_assinatura_snapshot_pdf": "PASS"
+    },
+    "isolamento_http": {
+      "resultado": "PASS",
+      "tentativas": 8,
+      "status": 404,
+      "recursos": [
+        "OS",
+        "foto",
+        "assinatura",
+        "PDF"
+      ]
+    }
+  },
+  "permissoes": {
+    "planejamento": "ADMIN/GESTOR/PLANEJADOR/ATENDIMENTO; TÉCNICO somente próprias atividades",
+    "tv": "Grant explícito por membership/ERP/organização, default False",
+    "conta_tv": "PAINEL, sem acesso aos demais módulos",
+    "financeiro_estoque_ampliados": false,
+    "isolamento_entre_organizacoes": "PASS",
+    "revogacao_por_consulta": "PASS"
+  },
+  "tv": {
+    "polling_autenticado": true,
+    "intervalos_segundos": [
+      15,
+      30,
+      60
+    ],
+    "padrao_segundos": 30,
+    "sem_recarga_completa": true,
+    "sem_servico_adicional": true,
+    "temas": [
+      "CLARO",
+      "ESCURO"
+    ],
+    "fullscreen_e_rotacao_paginas": true,
+    "dto_privacidade": "Campos operacionais explícitos, sem textos livres/documentos/CPF/contatos/endereço/custos/valores"
+  },
+  "checks": {
+    "django": "PASS",
+    "makemigrations_check_dry_run": "No changes detected",
+    "migrate_plan": "No planned migration operations",
+    "collectstatic": "PASS",
+    "deploy_debug_false": {
+      "erros": 0,
+      "avisos": [
+        "security.W005",
+        "security.W021"
+      ],
+      "motivo": "Configuração HSTS subdomínios/preload preservada; depende do domínio real"
+    }
+  },
+  "render_yaml": "Preservado byte a byte; Web plan free; nenhuma ativação ou credencial modificada",
+  "automacao_estoque": "Mecanismo anterior preservado; AUTOMACAO_ESTOQUE.md",
+  "revisao_visual": "Central, painel lateral, TV escura/clara Full HD e agenda técnica móvel inspecionados",
+  "limites": [
+    "Validação local; aparelhos/infraestrutura reais não homologados nesta fase",
+    "Sem duração informada não se presume ocupação futura",
+    "Geradores legados de preventivas preservam regras; central destaca seus conflitos",
+    "Sem drag-and-drop, GPS contínuo ou ponto/RH",
+    "Ativação externa do runner de estoque permanece pendente"
+  ],
+  "documentacao": "CENTRAL_OPERACOES.md",
+  "historico_previo": {
+    "data": "2026-10-01",
+    "ambiente": "Local isolado; dados sintéticos; PostgreSQL 16.15; HTTPS; Moto S3 com TLS; Chromium",
+    "producao_acessada": false,
+    "deploy_commit_push": false,
+    "postgresql": {
+      "resultado": "PASS",
+      "testes": 208,
+      "aprovados": 208,
+      "ignorados": 0,
+      "segundos": 228.184
+    },
+    "sqlite": {
+      "resultado": "PASS",
+      "testes": 208,
+      "aprovados": 197,
+      "ignorados": 11,
+      "segundos": 166.64
+    },
+    "testes_anteriores": 165,
+    "testes_novos": 43,
+    "upgrade": {
+      "postgresql_upgrade": "PASS",
+      "previous_tables_verified": 71,
+      "previous_rows_preserved": 756,
+      "old_columns_identical": true
+    },
+    "upgrade_detalhamento_lotes": {
+      "postgresql_upgrade": "PASS",
+      "previous_tables_verified": 65,
+      "previous_rows_preserved": 718,
+      "old_columns_identical": true
+    },
+    "inventario": {
+      "modelos_concretos": 68,
+      "rotas": 387,
+      "relatorios_globais_preservados": 31,
+      "relatorio_compras_por_snapshot": true
+    },
+    "estoque_browser": {
+      "passed": true,
+      "screens": 17,
+      "viewports": [
+        320,
+        390,
+        768,
+        1365
+      ],
+      "multipleLots": true,
+      "fefo": true,
+      "reservations": true,
+      "pendingPurchase": true,
+      "weeklyReport": true,
+      "pdfExcel": true,
+      "existingPurchaseQuotationReceipt": true,
+      "immutableHistory": true,
+      "permissions": true,
+      "sidebarCollapse": true,
+      "noJavascriptErrors": true
+    },
+    "responsividade_final": {
+      "passed": true,
+      "screens": 17,
+      "viewports": [
+        320,
+        390,
+        768,
+        1365
+      ],
+      "localSvgIcons": true,
+      "sidebarCollapsed": true,
+      "noJavascriptErrors": true
+    },
+    "artefatos_estoque": {
+      "pdf_pages": 3,
+      "pdf_15_fields": "PASS",
+      "xlsx_15_columns": "PASS",
+      "xlsx_rows": 4,
+      "xlsx_numeric_columns": "PASS",
+      "xlsx_untrusted_formulas_absent": "PASS"
+    },
+    "automacao": {
+      "implementacao": "processar_estoque / stock_scheduler / Compose estoque_runner",
+      "intervalo_padrao_minutos": 30,
+      "relatorio_semanal_configuravel": true,
+      "estado_e_locks_postgresql": true,
+      "runner_independente_local": {
+        "resultado": "PASS",
+        "rodadas_sem_erro": 4
+      },
+      "compose_yaml": "PASS",
+      "compose_docker_executado": false,
+      "cron_render_ativado": false,
+      "documentacao": "AUTOMACAO_ESTOQUE.md"
+    },
+    "browser": {
+      "passed": true,
+      "screens": 27,
+      "viewports": [
+        320,
+        390,
+        768,
+        1365
+      ],
+      "privateS3UploadDownload": true,
+      "portalCustomerIsolation": true,
+      "noJavascriptErrors": true
+    },
+    "browser_anterior": {
+      "telas": 15,
+      "larguras": [
+        390,
+        1365
+      ],
+      "resultado": "PASS"
+    },
+    "atendimento_original": {
+      "gps_foto_conferencia_assinatura_pdf": "PASS",
+      "permissao_gps_negada_sem_coordenadas_falsas": "PASS"
+    },
+    "isolamento_http": {
+      "tentativas_cruzadas": 8,
+      "status_esperado_e_obtido": 404,
+      "recursos": [
+        "OS",
+        "foto",
+        "assinatura",
+        "PDF"
+      ]
+    },
+    "integridade": {
+      "foto_assinatura_snapshot_pdf": "PASS",
+      "migrations_anteriores": "byte a byte; hashes no manifest"
+    },
+    "checks": {
+      "django": "PASS",
+      "makemigrations_check_dry_run": "No changes detected",
+      "migrate_plan": "No planned migration operations",
+      "collectstatic": "PASS",
+      "deploy_debug_false": {
+        "erros": 0,
+        "avisos": [
+          "security.W005",
+          "security.W021"
+        ],
+        "motivo": "HSTS subdomínios/preload requerem decisão sobre domínio real; configuração preservada"
+      }
+    },
+    "revisao_visual": {
+      "dashboard_gestao_menu_mobile": "PASS",
+      "dashboard_calendario_portal_mobile": "PASS",
+      "pdf_os_orcamento_relatorio_semanal": "PASS"
+    },
+    "pendencias": [
+      "Ativação autorizada de executor externo/Cron para o Render Free",
+      "Provedor fiscal real e adaptador validado",
+      "Envio externo de mensagens",
+      "Integrações bancárias e checkout",
+      "Homologação em aparelho físico e infraestrutura publicada"
+    ],
+    "observacao": "Validação local; não certifica produção. Detalhes em ENTREGA_ESTOQUE_GESTAO.md. Web Free e credenciais preservados.",
+    "historico_previo": {
+      "data": "2026-10-01",
+      "ambiente": "Local isolado; dados sintéticos; PostgreSQL 16.15; HTTPS; Moto S3 com TLS; Chromium",
+      "producao_acessada": false,
+      "deploy_commit_push": false,
+      "postgresql": {
+        "resultado": "PASS",
+        "testes": 165,
+        "aprovados": 165,
+        "ignorados": 0,
+        "segundos": 168.264
+      },
+      "sqlite": {
+        "resultado": "PASS",
+        "testes": 165,
+        "aprovados": 157,
+        "ignorados": 8,
+        "segundos": 122.733
+      },
+      "testes_anteriores": 136,
+      "testes_novos": 29,
+      "upgrade": {
+        "postgresql_upgrade": "PASS",
+        "previous_tables_verified": 41,
+        "previous_rows_preserved": 357,
+        "old_columns_identical": true
+      },
+      "browser": {
+        "passed": true,
+        "screens": 27,
+        "viewports": [
+          320,
+          390,
+          768,
+          1365
+        ],
+        "privateS3UploadDownload": true,
+        "portalCustomerIsolation": true,
+        "noJavascriptErrors": true
+      },
+      "browser_anterior": {
+        "telas": 15,
+        "larguras": [
+          390,
+          1365
+        ],
+        "resultado": "PASS"
+      },
+      "atendimento_original": {
+        "gps_foto_conferencia_assinatura_pdf": "PASS",
+        "permissao_gps_negada_sem_coordenadas_falsas": "PASS"
+      },
+      "isolamento_http": {
+        "tentativas_cruzadas": 8,
+        "status_esperado_e_obtido": 404,
+        "recursos": [
+          "OS",
+          "foto",
+          "assinatura",
+          "PDF"
+        ]
+      },
+      "integridade": {
+        "foto_assinatura_snapshot_pdf": "PASS",
+        "migrations_anteriores": "byte a byte; hashes no manifest"
+      },
+      "checks": {
+        "django": "PASS",
+        "makemigrations_check_dry_run": "No changes detected",
+        "migrate_plan": "No planned migration operations",
+        "collectstatic": "PASS",
+        "deploy_debug_false": {
+          "erros": 0,
+          "avisos": [
+            "security.W005",
+            "security.W021"
+          ],
+          "motivo": "HSTS subdomínios/preload requerem decisão sobre domínio real; configuração preservada"
+        }
+      },
+      "revisao_visual": {
+        "dashboard_calendario_portal_mobile": "PASS",
+        "pdf_os_duas_paginas_orcamento_relatorio": "PASS"
+      },
+      "pendencias": [
+        "Provedor fiscal real e adaptador validado",
+        "Envio externo de mensagens",
+        "Integrações bancárias e checkout",
+        "Rotina agendada de alertas",
+        "Homologação em aparelho físico e infraestrutura publicada"
+      ],
+      "observacao": "Este resumo não substitui logs completos da bancada e não certifica produção; detalhes e limites em ENTREGA_FINAL.md."
+    }
+  }
+}

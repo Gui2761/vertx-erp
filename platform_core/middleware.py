@@ -30,7 +30,7 @@ class OrganizationMiddleware:
                 request.organization = membership.organization
                 request.membership = membership
         # Todo endpoint fora de plataforma/login/admin/static é Assistência e exige ERP.
-        public = request.path.startswith(('/vertyx/', '/contas/login/', '/contas/logout/', '/admin/', '/static/')) or request.path in ['/', '/health/']
+        public = request.path.startswith(('/vertyx/', '/contas/login/', '/contas/logout/', '/admin/', '/static/')) or request.path in ['/', '/health/', '/manifest.webmanifest', '/sw.js']
         if request.path.startswith('/admin/') and request.user.is_authenticated and not request.user.is_superuser:
             return HttpResponseForbidden('O Django Admin pertence à operação VERTYX. Use a administração da organização no ERP.')
         if not public:
@@ -38,6 +38,10 @@ class OrganizationMiddleware:
                 return redirect_to_login(request.get_full_path(), reverse('contas:login'))
             if request.organization is None:
                 return redirect('platform_core:home')
+            if request.membership.role == 'PAINEL' and not request.path.startswith('/painel-operacional/'):
+                return HttpResponseForbidden('Acesso restrito ao painel operacional.')
+            if request.membership.role == 'CLIENTE' and not request.path.startswith('/portal/'):
+                return HttpResponseForbidden('Acesso restrito ao portal do cliente.')
             try:
                 require_erp(request.user, request.organization)
             except PermissionDenied:

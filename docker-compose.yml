@@ -34,6 +34,19 @@ services:
       db:
         condition: service_healthy
 
+  estoque_runner:
+    build: .
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate_locked --noinput && python manage.py processar_estoque --loop"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   media_data:

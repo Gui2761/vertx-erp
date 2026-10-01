@@ -1,12 +1,27 @@
 # VERTYX | ASSISTÊNCIA
 
 Fundação SaaS multiempresa sobre o projeto Django TECNOLMED existente.
-Preparação de homologação de 30/09/2026: 89 testes aprovados em PostgreSQL 16.15,
-incluindo os 71 anteriores (34 de OS). SQLite explícito: 89 executados, 87
-aprovados e dois exclusivos de PostgreSQL ignorados. Storage S3 privado e deploy
-Docker/Render preparados. Nenhum recurso externo ou deploy Render foi criado.
+Versão local preparada em 01/10/2026 para homologação final: módulos existentes
+ampliados, compras, vendas, bancos, preventivas/checklists, portal, documentos,
+notificações, PWA, camada fiscal substituível e 31 relatórios integrados.
+Validação atual: 258 testes aprovados em PostgreSQL 16.15 (208 anteriores + 50 novos);
+SQLite: 246 aprovados e 12 exclusivos de PostgreSQL ignorados.
+Central de operações com calendário/lista/timeline, fila, conflitos auditados,
+OS rápida sem técnico/data e painel de TV com atualização e permissão específicas.
+Consulte [CENTRAL_OPERACOES.md](CENTRAL_OPERACOES.md) para uso, segurança e migrations.
+Estoque ampliado com lotes/FEFO, reservas, ocorrências duráveis, relatórios semanais
+e geração pelo fluxo de compras atual; painel VERTYX Gestão com dados reais.
+Infraestrutura/credenciais preservadas; nenhum deploy externo foi executado.
 
-Consulte [ENTREGA_HOMOLOGACAO.md](ENTREGA_HOMOLOGACAO.md) para a entrega atual,
+Consulte [ENTREGA_ESTOQUE_GESTAO.md](ENTREGA_ESTOQUE_GESTAO.md) para esta ampliação e
+[AUTOMACAO_ESTOQUE.md](AUTOMACAO_ESTOQUE.md) para ativar o runner local/futuro Render.
+[ENTREGA_FINAL.md](ENTREGA_FINAL.md) para funcionalidades, limites e
+homologação, [INVENTARIO_FINAL.md](INVENTARIO_FINAL.md) para modelos e URLs,
+[VALIDACAO_FINAL.json](VALIDACAO_FINAL.json) para resultados e
+[AUDITORIA_FINAL.md](AUDITORIA_FINAL.md) para a análise desta fase.
+[ENTREGA_MODULOS.md](ENTREGA_MODULOS.md) registra a fase anterior,
+[AUDITORIA_MODULOS.md](AUDITORIA_MODULOS.md) para a auditoria inicial,
+[ENTREGA_HOMOLOGACAO.md](ENTREGA_HOMOLOGACAO.md) para a homologação anterior,
 [ENTREGA_VERTYX.md](ENTREGA_VERTYX.md) para a fundação,
 [ENTREGA_OS.md](ENTREGA_OS.md) para a entrega anterior e
 [DEPLOY_RENDER.md](DEPLOY_RENDER.md) para operação/homologação.
@@ -22,14 +37,29 @@ Consulte [ENTREGA_HOMOLOGACAO.md](ENTREGA_HOMOLOGACAO.md) para a entrega atual,
 - Consultas empresariais filtradas por organização no banco; proteção de IDs,
   relacionamentos e arquivos. PDF com identificação da empresa emissora.
 - Administração da organização no ERP e operação VERTYX no Django Admin.
+- Peças, fornecedores e movimentações auditadas; utilização/devolução em OS,
+  saldo protegido contra valor negativo e alertas de mínimo.
+- Orçamentos com itens, descontos, estados, PDF e conversão idempotente em OS.
+- Contratos, cobertura, preventivas recorrentes e cobranças por competência.
+- Planejamento de contratos e consulta às datas preventivas dos equipamentos.
+- Compras com cotação, aprovação, pedido, recebimento, estoque e conta a pagar;
+  vendas com pedido, baixa do estoque e conta a receber.
+- Financeiro: pagamentos parciais, parcelas, contas bancárias, caixa,
+  transferências, conciliação manual, centros de custo e fluxo mensal.
+- Preventivas/checklists e calendário dia/semana/mês; PWA do técnico.
+- Documentos privados, portal do cliente, configurações e avisos internos.
+- Fiscal preparado para provedor real, sem emissão simulada ou credenciais.
+- 31 relatórios com filtros da organização, CSV, PDF, Excel e impressão.
 
 TECNOLMED é criada automaticamente pela migration de dados. Registros antigos
 e usuários comuns são vinculados a ela; superusers não recebem vínculo de
 funcionário automaticamente. CNPJ e dados legais devem ser preenchidos com
 informação real pelo operador; nenhum CNPJ fictício foi criado.
 
-Loja Hospitalar, cobrança, IA, financeiro avançado, NFS-e e Open Finance
-permanecem futuros. Não há quotas comerciais nem assinatura de serviços.
+Emissão fiscal real, integrações bancárias, envio de e-mail/WhatsApp, checkout
+público, cobrança da assinatura SaaS e IA dependem de etapas posteriores.
+Não há quotas comerciais nem assinatura de serviços. A operação comercial
+interna está disponível; limites explícitos constam em ENTREGA_FINAL.md.
 
 ## Execução local com PostgreSQL
 
@@ -79,10 +109,13 @@ de ERP, além da permissão da operação.
 
 | Papel da organização | Acesso nesta fase |
 |---|---|
-| ADMIN | Cadastros, técnicos, usuários/vínculos locais, todas as OS, reabertura |
-| GESTOR | Cadastros e técnicos, todas as OS, reabertura; sem gestão de usuários |
-| TECNICO | Consulta de clientes/equipamentos; atendimento e arquivos das OS atribuídas |
-| ESTOQUE / FINANCEIRO / CONTABILIDADE | Sem funções desses módulos; nenhuma concessão administrativa |
+| ADMIN | Todos os módulos da própria organização e gestão de usuários/vínculos locais |
+| GESTOR | Cadastros, técnicos, OS e módulos de gestão; sem gestão de usuários |
+| TECNICO | Atendimento das OS atribuídas, consulta de peças e uso/devolução em suas OS; planejamento e relatórios operacionais |
+| ESTOQUE | Peças, fornecedores, depósitos, movimentações, compras e relatórios de estoque |
+| FINANCEIRO | Financeiro, cadastros auxiliares e relatórios financeiros |
+| CONTABILIDADE | Consulta financeira e relatórios/exportações; sem lançamentos ou liquidações |
+| CLIENTE | Portal com vínculos explícitos a clientes; sem acesso ao ERP interno |
 | Superuser VERTYX | Administração central; ERP exige vínculo e liberações explícitos |
 
 ## Validação
@@ -122,8 +155,10 @@ Fotos/manuais/QR legados de equipamentos em `MEDIA_ROOT` também são entregues
 pela rota autenticada. Nunca configure o proxy para servir `/media/` ou arquivos
 privados diretamente. Faça backup conjunto do banco e dos dois storages.
 
-O Render depende da criação do banco/bucket e preenchimento das variáveis
-reais: veja o guia com a ordem exata e o checklist de celular físico.
+O ambiente Render informado já existe. O Blueprint mantém o Web Service
+`plan: free`, usa DATABASE_URL existente e não provisiona outro PostgreSQL.
+Para uma atualização futura autorizada, consulte DEPLOY_RENDER.md e mantenha
+o banco, bucket e variáveis atuais. Nenhuma atualização remota foi executada.
 Credenciais, `.env`, bases SQLite e mídias de teste ficam fora do ZIP.
 O pacote entrega código completo, não um backup de dados reais.
 
@@ -135,6 +170,9 @@ O pacote entrega código completo, não um backup de dados reais.
 | `contas` | Identidade Django e fichas de técnicos; administração local de vínculos |
 | `clientes` / `equipamentos` | Cadastros empresariais existentes |
 | `ordens` | Atendimento, evidências, assinatura, histórico e PDF |
+| `gestao` | Estoque, orçamentos, contratos/planejamento, financeiro e relatórios |
+| `operacao` | Compras, vendas, depósitos, bancos, planos/checklists, documentos, portal, PWA, calendário, avisos e configurações |
+| `fiscal/providers` | Contrato de integração fiscal substituível; sem provedor real configurado |
 | `core` | Painel existente em `/assistencia/` e seed de demonstração |
 | `tecnolmed` | Configuração e URLs; nome técnico preservado |
 

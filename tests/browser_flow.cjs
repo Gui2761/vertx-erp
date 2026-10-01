@@ -41,6 +41,7 @@ if (process.env.TEST_LOCAL_TLS === 'True') assert.ok(['127.0.0.1', 'localhost'].
   await page.locator('input[type=file]').setInputFiles(path.join(root, 'tests', 'photo_sample.png'));
   await page.locator('#id_descricao').fill('Fotografia de teste do equipamento');
   await page.getByRole('button', {name: 'Adicionar foto', exact: true}).click();
+  await page.locator('.os-photo').waitFor({state:'visible'});
   assert.equal(await page.locator('.os-photo').count(), 1);
   // Exercise denied permission path on finalization, without fake coordinates.
   await page.evaluate(() => { navigator.geolocation.getCurrentPosition = (_success, error) => error({code: 1}); });

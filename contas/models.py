@@ -11,6 +11,11 @@ class Perfil(models.TextChoices):
     TECNICO = "TECNICO", "Técnico"
     ESTOQUISTA = "ESTOQUE", "Estoquista"
     FINANCEIRO = "FINANCEIRO", "Financeiro"
+    CONTABILIDADE = "CONTABILIDADE", "Contabilidade"
+    CLIENTE = "CLIENTE", "Cliente do portal"
+    PLANEJADOR = "PLANEJADOR", "Planejador"
+    ATENDIMENTO = "ATENDIMENTO", "Atendimento"
+    PAINEL = "PAINEL", "Somente painel operacional"
 
 
 class Usuario(AbstractUser):

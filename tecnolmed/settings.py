@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     "core",
     "ordens",
     "platform_core",
+    "gestao",
+    "operacao",
 ]
 
 MIDDLEWARE = [
@@ -66,6 +68,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "operacao.navigation.menu",
             ],
         },
     },

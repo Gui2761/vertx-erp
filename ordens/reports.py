@@ -60,6 +60,11 @@ def gerar_pdf(assinatura):
     story.extend([table, Spacer(1, 5 * mm)])
     for label, key in [('Tipo de atendimento', 'tipo'), ('Abertura', 'abertura'), ('Início do atendimento', 'inicio'), ('Conclusão do serviço (conferência)', 'conclusao'), ('Defeito / reclamação', 'defeito'), ('Diagnóstico', 'diagnostico'), ('Serviço executado', 'servico_executado'), ('Peças utilizadas', 'pecas'), ('Observações', 'observacoes')]:
         campo(label, data_os(dados[key]) if key in ['abertura', 'inicio', 'conclusao'] else dados[key])
+    for label, key in [('Contrato', 'contrato'), ('Prioridade', 'prioridade'), ('Horas trabalhadas', 'horas'), ('Deslocamento (km)', 'deslocamento_km')]:
+        if key in dados:
+            campo(label, dados[key])
+    if dados.get('checklist'):
+        campo('Checklist', '\n'.join(('Concluído: ' if item.get('concluido') else 'Pendente: ') + item['item'] + (' · ' + item.get('observacao','') if item.get('observacao') else '') for item in dados['checklist']))
     for label, key in [('Localização inicial', 'localizacao_inicio'), ('Localização final', 'localizacao_final')]:
         geo = dados[key]
         block = [Paragraph(f'<b>{escape(label)}</b><br/>{escape(geo["resultado"])} | {escape(str(data_os(geo["data"])))}<br/>Latitude: {escape(geo["latitude"] or "-")}; longitude: {escape(geo["longitude"] or "-")}; precisão: {escape(geo["precisao"] or "-")} m<br/>Registrado por: {escape(geo["usuario"] or "-")}', styles['TextoOS'])]

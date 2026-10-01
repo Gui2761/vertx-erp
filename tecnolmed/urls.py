@@ -14,5 +14,7 @@ urlpatterns = [
     path("clientes/", include("clientes.urls")),
     path("equipamentos/", include("equipamentos.urls")),
     path("ordens/", include("ordens.urls")),
+    path("", include("gestao.urls")),
+    path("", include("operacao.urls")),
     path('media/<path:name>', media_views.legacy_media, name='legacy_media'),
 ]

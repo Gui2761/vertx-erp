@@ -14,17 +14,29 @@ class OrdemForm(TenantModelForm):
 
     class Meta:
         model = OrdemServico
-        fields = ['cliente', 'unidade', 'equipamento', 'tecnico', 'tipo_atendimento', 'defeito', 'diagnostico', 'servico_executado', 'pecas', 'observacoes']
+        fields = ['cliente', 'unidade', 'equipamento', 'contrato', 'tecnico', 'tipo_atendimento', 'prioridade', 'agendada_para', 'agendada_ate', 'prazo', 'defeito', 'diagnostico', 'servico_executado', 'pecas', 'horas', 'deslocamento_km', 'observacoes', 'valor_cobranca', 'vencimento_cobranca']
         widgets = {name: forms.Textarea(attrs={'rows': 3}) for name in ['defeito', 'diagnostico', 'servico_executado', 'pecas', 'observacoes']}
 
     def __init__(self, *args, operacional=False, **kwargs):
         super().__init__(*args, **kwargs)
         if operacional:
-            for name in ['cliente', 'unidade', 'equipamento', 'tecnico', 'tipo_atendimento', 'defeito']:
+            for name in ['cliente', 'unidade', 'equipamento', 'contrato', 'tecnico', 'tipo_atendimento', 'prioridade', 'agendada_para', 'agendada_ate', 'prazo', 'defeito', 'valor_cobranca', 'vencimento_cobranca']:
                 self.fields.pop(name)
         self.fields['revisao'].initial = self.instance.revisao
+        for name in ['agendada_para', 'agendada_ate', 'prazo']:
+            if name in self.fields:
+                self.fields[name].widget = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean_valor_cobranca(self):
+        return self.cleaned_data.get('valor_cobranca') or Decimal('0')
+
+    def clean_horas(self):
+        return self.cleaned_data.get('horas') or Decimal('0')
+
+    def clean_deslocamento_km(self):
+        return self.cleaned_data.get('deslocamento_km') or Decimal('0')
 
 
 class GeoForm(forms.Form):

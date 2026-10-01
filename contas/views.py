@@ -51,8 +51,8 @@ class UsuarioCreateView(LoginRequiredMixin, PerfilRequeridoMixin, generic.Create
         self.object = form.save()
         membership = OrganizationMembership.objects.create(organization=self.request.organization, user=self.object, role=form.cleaned_data['perfil'])
         erp = ERPCatalog.objects.get(code='assistencia')
-        MembershipERP.objects.create(membership=membership, erp=erp, enabled=form.cleaned_data['acesso_assistencia'])
-        PlatformAudit.objects.create(organization=self.request.organization, erp=erp, user=self.request.user, action='MEMBERSHIP_CRIADO', record=f'membership:{membership.pk}', changes={'usuario': self.object.pk, 'role': membership.role, 'acesso_assistencia': form.cleaned_data['acesso_assistencia']})
+        MembershipERP.objects.create(membership=membership, erp=erp, enabled=form.cleaned_data['acesso_assistencia'], visualizar_painel_operacional=form.cleaned_data['visualizar_painel_operacional'])
+        PlatformAudit.objects.create(organization=self.request.organization, erp=erp, user=self.request.user, action='MEMBERSHIP_CRIADO', record=f'membership:{membership.pk}', changes={'usuario': self.object.pk, 'role': membership.role, 'acesso_assistencia': form.cleaned_data['acesso_assistencia'], 'visualizar_painel_operacional': form.cleaned_data['visualizar_painel_operacional']})
         messages.success(self.request, "Usuário e vínculo com a organização criados com sucesso.")
         return redirect(self.success_url)
 
@@ -82,12 +82,12 @@ class UsuarioUpdateView(LoginRequiredMixin, PerfilRequeridoMixin, generic.FormVi
             form.add_error(None, 'Seu próprio vínculo administrativo não pode ser desativado nesta tela.')
             return self.form_invalid(form)
         erp = ERPCatalog.objects.get(code='assistencia')
-        before = {'role': membership.role, 'status': membership.status, 'acesso_assistencia': membership.erp_accesses.filter(erp=erp, enabled=True).exists()}
+        before = {'visualizar_painel_operacional': membership.erp_accesses.filter(erp=erp, visualizar_painel_operacional=True).exists(), 'role': membership.role, 'status': membership.status, 'acesso_assistencia': membership.erp_accesses.filter(erp=erp, enabled=True).exists()}
         membership.role, membership.status = data['perfil'], data['status']
         membership.left_at = timezone.now() if membership.status != 'ATIVO' else None
         membership.save()
-        MembershipERP.objects.update_or_create(membership=membership, erp=erp, defaults={'enabled': data['acesso_assistencia']})
-        after = {'role': membership.role, 'status': membership.status, 'acesso_assistencia': data['acesso_assistencia']}
+        MembershipERP.objects.update_or_create(membership=membership, erp=erp, defaults={'enabled': data['acesso_assistencia'], 'visualizar_painel_operacional': data['visualizar_painel_operacional']})
+        after = {'visualizar_painel_operacional': data['visualizar_painel_operacional'], 'role': membership.role, 'status': membership.status, 'acesso_assistencia': data['acesso_assistencia']}
         PlatformAudit.objects.create(organization=self.request.organization, erp=erp, user=self.request.user, action='MEMBERSHIP_ALTERADO', record=f'membership:{membership.pk}', changes={key: {'anterior': before[key], 'posterior': after[key]} for key in before if before[key] != after[key]})
         messages.success(self.request, 'Vínculo atualizado somente nesta organização.')
         return redirect(self.success_url)

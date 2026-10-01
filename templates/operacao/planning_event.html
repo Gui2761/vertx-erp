@@ -1,0 +1,6 @@
+<button type="button" class="vx-plan-event s-{{ event.status_code }} {% if event.late %}is-late{% endif %}" {% if event.kind == 'OS' %}data-order-url="{{ event.url }}"{% else %}data-preventive="{{ event.kind }}-{{ event.id }}"{% endif %}>
+<span class="vx-event-top"><time>{{ event.time|default:'Sem horário' }}{% if event.time_origin %} · {{ event.time_origin }}{% endif %}</time><span>{{ event.numero }}</span></span>
+<strong>{{ event.cliente }}</strong><small>{{ event.unidade }} · {{ event.tecnico }}</small>
+<span class="vx-event-tags"><span>● {{ event.status }}</span>{% if event.unplanned %}<span>◇ Não planejada</span>{% endif %}{% if event.late %}<span>⚠ Atrasada</span>{% endif %}{% if event.conflicts %}<span>⚠ Conflito</span>{% endif %}{% if event.prioridade_code == 'URGENTE' %}<span>⚠ Urgente</span>{% endif %}</span>
+<small>{{ event.tipo }}{% if event.contrato %} · {{ event.contrato }}{% endif %}</small>
+</button>

@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.http import FileResponse, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST, require_http_methods
+from django.utils import timezone
 from . import services
 from .forms import OrdemForm, GeoForm, FotoForm, AssinaturaForm, ReabrirForm
 from .models import OrdemServico, Foto, Conferencia, Assinatura, Status
@@ -38,6 +39,12 @@ def lista(request):
     qs = services.visiveis(request.user)
     if request.GET.get('status') in Status.values:
         qs = qs.filter(status=request.GET['status'])
+    if request.GET.get('grupo') == 'abertas':
+        qs = qs.filter(status__in=['ABERTA','AGENDADA'])
+    if request.GET.get('grupo') == 'andamento':
+        qs = qs.filter(status__in=['EXECUCAO','AG_PECA','AG_CLIENTE'])
+    if request.GET.get('atrasadas') == '1':
+        qs = qs.filter(prazo__lt=timezone.now()).exclude(status__in=['FINALIZADA','APROVADA','FATURADA','CANCELADA'])
     page = Paginator(qs, 20).get_page(request.GET.get('page'))
     return render(request, 'ordens/lista.html', {'ordens': page, 'page_obj': page, 'gestor': services.gestor(request.user), 'status_choices': Status.choices})
 
@@ -48,8 +55,12 @@ def criar(request):
     services.autorizar(request.user, administrativo=True)
     form = OrdemForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        ordem = services.criar(request.user, form)
-        return redirect('ordens:detalhe', pk=ordem.pk)
+        try:
+            ordem = services.criar(request.user, form)
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            return redirect('ordens:detalhe', pk=ordem.pk)
     return render(request, 'ordens/form.html', {'form': form, 'titulo': 'Nova Ordem de Serviço'})
 
 
@@ -66,7 +77,7 @@ def detalhe(request, pk):
 @require_http_methods(['GET', 'POST'])
 def editar(request, pk):
     ordem = ordem_permitida(request, pk)
-    if ordem.status == Status.FINALIZADA:
+    if ordem.status in ['FINALIZADA', 'APROVADA', 'FATURADA', 'CANCELADA']:
         return HttpResponseBadRequest('Reabra a OS antes de editar.')
     form = OrdemForm(instance=ordem, operacional=not services.gestor(request.user))
     if request.method == 'POST':

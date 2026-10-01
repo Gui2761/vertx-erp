@@ -40,6 +40,8 @@ class ClienteDetailView(LoginRequiredMixin, generic.DetailView):
         ctx["unidades"] = self.object.unidades.all()
         ctx["contatos"] = self.object.contatos.all()
         ctx["equipamentos"] = self.object.equipamentos.all() if hasattr(self.object, "equipamentos") else []
+        from operacao.history import related
+        ctx.update(related(self.request.user, self.object))
         return ctx
 
 

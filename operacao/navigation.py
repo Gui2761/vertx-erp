@@ -1,0 +1,29 @@
+ICON_ALIASES = {'calendar3':'calendar','calendar-check':'calendar','clipboard2-pulse':'document','telephone':'health','file-earmark-text':'document','file-earmark-ruled':'document','bag':'cart','people':'users','box-seam':'stock','arrow-left-right':'arrows','hourglass-split':'calendar','buildings':'stock','list-check':'document','bookmark-check':'document','cart-check':'cart','chat-square-text':'document','truck':'cart','box-arrow-in-down':'stock','person-vcard':'users','cash-stack':'bank','arrow-down-circle':'arrows','arrow-up-circle':'arrows','graph-up':'chart','file-earmark-check':'document','heart-pulse':'health','person-gear':'users','folder':'document','person-lock':'users','bar-chart':'chart','gear':'settings','sliders':'settings','person-check':'users'}
+
+def menu(request):
+    membership=getattr(request,'membership',None)
+    match=getattr(request,'resolver_match',None)
+    from .planning_services import can_tv
+    panel_access=bool(membership and can_tv(request.user))
+    if membership and membership.role in ['PLANEJADOR','ATENDIMENTO'] and not (match and match.app_name=='platform_core'):
+        links=[{'label':'Planejamento','url':'/planejamento/','icon':'calendar'}]
+        if panel_access:
+            links.append({'label':'Painel operacional','url':'/painel-operacional/','icon':'grid'})
+        return {'can_operational_panel':panel_access,'executive_navigation':[{'title':'ASSISTÊNCIA','links':links}]}
+    if not membership or membership.role not in ['ADMIN','GESTOR'] or match and match.app_name=='platform_core':
+        return {'can_operational_panel':panel_access}
+    groups=[
+        ('INÍCIO',[('Painel','/assistencia/','grid')]),
+        ('ASSISTÊNCIA',[('Planejamento','/planejamento/','calendar3'),('Ordens de Serviço','/ordens/','clipboard2-pulse'),('Chamados','/chamados/','telephone'),('Preventivas','/preventivas/','calendar-check'),('Contratos','/contratos/','file-earmark-text')]),
+        ('COMERCIAL',[('Orçamentos','/orcamentos/','file-earmark-ruled'),('Vendas e loja','/vendas/','bag'),('Clientes','/clientes/','people')]),
+        ('ESTOQUE',[('Peças e Estoque','/estoque/','box-seam'),('Movimentações','/estoque/movimentar/','arrow-left-right'),('Lotes / Validades','/estoque/lotes/','hourglass-split'),('Depósitos','/depositos/','buildings'),('Inventário','/relatorios/estoque_atual/','list-check'),('Reservas','/estoque/reservas/','bookmark-check')]),
+        ('COMPRAS',[('Necessidade de Compra','/estoque/relatorios/','cart-check'),('Compras','/compras/','cart'),('Cotações','/compras/?cotacoes=1','chat-square-text'),('Pedidos','/compras/?status=PEDIDO','truck'),('Recebimentos','/compras/?status=PEDIDO','box-arrow-in-down'),('Fornecedores','/estoque/fornecedores/','person-vcard')]),
+        ('FINANCEIRO',[('Financeiro','/financeiro/','cash-stack'),('Contas a receber','/financeiro/lancamentos/?tipo=RECEBER','arrow-down-circle'),('Contas a Pagar','/financeiro/lancamentos/?tipo=PAGAR','arrow-up-circle'),('Caixa / Bancos','/bancos/','bank'),('Fluxo de Caixa','/relatorios/fluxo_caixa/','graph-up'),('Fiscal','/fiscal/','file-earmark-check')]),
+        ('CADASTROS',[('Clientes e Unidades','/clientes/','people'),('Equipamentos','/equipamentos/','heart-pulse'),('Técnicos','/contas/tecnicos/','person-gear'),('Documentos','/documentos/','folder'),('Acessos ao portal','/portal-acessos/','person-lock')]),
+        ('RELATÓRIOS',[('Relatórios','/relatorios/','bar-chart')]),
+        ('CONFIGURAÇÕES',[('Notificações','/notificacoes/','bell')])]
+    if panel_access:
+        groups[1][1].insert(1,('Painel operacional','/painel-operacional/','grid'))
+    if membership.role=='ADMIN':
+        groups[-1][1].extend([('Configurações','/configuracoes/','gear'),('Estoque e Compras','/configuracoes/estoque-compras/','sliders'),('Painel operacional · Configuração','/configuracoes/painel-operacional/','sliders'),('Usuários','/contas/usuarios/','person-check')])
+    return {'can_operational_panel':panel_access,'executive_navigation':[{'title':title,'links':[{'label':label,'url':url,'icon':ICON_ALIASES.get(icon,icon)} for label,url,icon in links]} for title,links in groups]}

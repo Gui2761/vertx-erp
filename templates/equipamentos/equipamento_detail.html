@@ -15,7 +15,7 @@
            {% if equipamento.unidade %} — {{ equipamento.unidade.nome }}{% endif %}</p>
         <p><strong>Categoria:</strong> {{ equipamento.categoria.nome }} {% if user.is_administrador or user.is_gestor %}<a href="{% url 'equipamentos:categoria_update' equipamento.categoria.pk %}" class="small">Editar categoria</a>{% endif %}</p>
         <p><strong>Fabricante/Modelo:</strong> {{ equipamento.fabricante|default:"-" }} / {{ equipamento.modelo|default:"-" }}</p>
-        <p><strong>Código interno:</strong> {{ equipamento.codigo_interno|default:"-" }} &nbsp; <strong>Nº série:</strong> {{ equipamento.numero_serie|default:"-" }}</p>
+        <p><strong>Patrimônio:</strong> {{ equipamento.patrimonio|default:"—" }} · <strong>Criticidade:</strong> {{ equipamento.get_criticidade_display }}</p><p><strong>Localização:</strong> {{ equipamento.localizacao|default:"—" }} · <strong>Aquisição:</strong> {{ equipamento.data_aquisicao|date:"d/m/Y"|default:"—" }}</p><a class="btn btn-outline-primary mb-3" href="{% url 'operacao:documento_novo' %}?equipamento={{ equipamento.pk }}&cliente={{ equipamento.cliente_id }}">Adicionar documento / certificado</a><p><strong>Código interno:</strong> {{ equipamento.codigo_interno|default:"-" }} &nbsp; <strong>Nº série:</strong> {{ equipamento.numero_serie|default:"-" }}</p>
         <p><strong>Instalação:</strong> {{ equipamento.data_instalacao|date:"d/m/Y"|default:"-" }} &nbsp; <strong>Fim garantia:</strong> {{ equipamento.data_fim_garantia|date:"d/m/Y"|default:"-" }}</p>
         <p><strong>Última preventiva:</strong> {{ equipamento.data_ultima_preventiva|date:"d/m/Y"|default:"-" }}
            {% if equipamento.proxima_preventiva %} (próxima: {{ equipamento.proxima_preventiva|date:"d/m/Y" }}){% endif %}</p>
@@ -40,4 +40,4 @@
     </div>
   </div>
 </div>
-{% endblock %}
+{% include 'operacao/historico.html' %}{% endblock %}

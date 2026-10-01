@@ -49,6 +49,12 @@ class EquipamentoDetailView(LoginRequiredMixin, generic.DetailView):
     template_name = "equipamentos/equipamento_detail.html"
     context_object_name = "equipamento"
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from operacao.history import related
+        ctx.update(related(self.request.user, self.object.cliente, self.object))
+        return ctx
+
 
 class EquipamentoCreateView(LoginRequiredMixin, PerfilRequeridoMixin, generic.CreateView):
     perfis_permitidos = ('ADMIN', 'GESTOR')
@@ -85,7 +91,7 @@ class EquipamentoUpdateView(LoginRequiredMixin, PerfilRequeridoMixin, generic.Up
         return reverse_lazy("equipamentos:equipamento_detail", kwargs={"pk": self.object.pk})
 
 
-class EquipamentoQrRedirectView(LoginRequiredMixin, generic.DetailView):
+class EquipamentoQrRedirectView(EquipamentoDetailView):
     """
     Destino do QR Code impresso na etiqueta. Exige login: quem escanear
     sem ter conta/permissão no sistema não acessa a ficha.

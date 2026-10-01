@@ -1,7 +1,8 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load modulos_erp %}
 {% block title %}Painel{% endblock %}
 {% block content %}
-<h3 class="mb-4">Painel</h3>
+{% if executive_period_invalid %}<h1>VERTYX Gestão</h1><form method="get" class="card p-4">{{ period_form.as_p }}<button class="btn btn-primary">Aplicar período</button></form>{% elif executive %}{% include 'operacao/executive.html' %}{% else %}
+<header class="vx-page-header"><div><p class="vx-eyebrow">Operação da assistência</p><h1>Painel</h1></div><a class="btn btn-primary" href="{% url 'operacao:calendario' %}">Abrir agenda</a></header>
 
 <div class="alert alert-info">
   O módulo de Ordens de Serviço está disponível.
@@ -47,6 +48,16 @@
   </div>
 </div>
 
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3"><div class="card card-body"><span>OS abertas</span><strong>{{ os_abertas }}</strong></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card card-body"><span>OS em andamento</span><strong>{{ os_andamento }}</strong></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card card-body"><span>OS concluídas no mês</span><strong>{{ os_concluidas_mes }}</strong></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card card-body"><span>Preventivas próximas</span><strong>{{ preventivas_proximas_total }}</strong></div></div>
+  {% modulo_permitido 'contratos' as contratos_permitido %}{% if contratos_permitido %}<div class="col-sm-6 col-lg-3"><div class="card card-body"><a href="{% url 'gestao:contrato_lista' %}?status=PROXIMO">Contratos próximos do vencimento</a><strong>{{ contratos_proximos }}</strong></div></div>{% endif %}
+  {% modulo_permitido 'estoque' as estoque_permitido %}{% if estoque_permitido %}<div class="col-sm-6 col-lg-3"><div class="card card-body"><a href="{% url 'gestao:peca_lista' %}?minimo=1">Estoque no mínimo ou abaixo</a><strong>{{ estoque_minimo_total }}</strong></div></div>{% endif %}
+  {% modulo_permitido 'financeiro' as financeiro_permitido %}{% if financeiro_permitido %}<div class="col-sm-6 col-lg-3"><div class="card card-body"><span>Contas a receber</span><strong>R$ {{ financeiro_receber|floatformat:2 }}</strong></div></div><div class="col-sm-6 col-lg-3"><div class="card card-body"><a href="{% url 'gestao:lancamento_lista' %}?status=VENCIDO">Contas vencidas</a><strong>{{ financeiro_vencidas }}</strong></div></div>{% endif %}
+</div>
+{% include 'operacao/dashboard.html' %}{% if agenda_proxima %}<section class="card card-body mb-4"><h2 class="h4">Preventivas dos contratos</h2><ul>{% for x in agenda_proxima %}<li>{{ x.data_prevista }} · {{ x.equipamento.nome }} · {{ x.contrato.numero }}</li>{% endfor %}</ul><a href="{% url 'gestao:planejamento' %}">Abrir planejamento dos contratos</a></section>{% endif %}
 <div class="card shadow-sm">
   <div class="card-header">Preventivas mais próximas do vencimento</div>
   <div class="list-group list-group-flush">
@@ -60,4 +71,4 @@
     {% endfor %}
   </div>
 </div>
-{% endblock %}
+{% endif %}{% endblock %}

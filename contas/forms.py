@@ -8,6 +8,7 @@ from platform_core.models import OrganizationMembership
 
 
 class UsuarioCreationForm(UserCreationForm):
+    visualizar_painel_operacional = forms.BooleanField(label='Visualizar painel operacional (dados operacionais de toda a organização)', required=False)
     acesso_assistencia = forms.BooleanField(label='Acesso ao ERP Assistência', required=False, initial=True)
     class Meta(UserCreationForm.Meta):
         model = Usuario
@@ -15,12 +16,13 @@ class UsuarioCreationForm(UserCreationForm):
 
 
 class UsuarioEdicaoForm(forms.Form):
+    visualizar_painel_operacional = forms.BooleanField(label='Visualizar painel operacional (dados operacionais de toda a organização)', required=False)
     perfil = forms.ChoiceField(label='Papel nesta organização', choices=OrganizationMembership._meta.get_field('role').choices)
     status = forms.ChoiceField(label='Status do vínculo', choices=OrganizationMembership.Status.choices)
     acesso_assistencia = forms.BooleanField(label='Acesso ao ERP Assistência', required=False)
 
     def __init__(self, *args, membership, **kwargs):
-        kwargs.setdefault('initial', {}).update(perfil=membership.role, status=membership.status, acesso_assistencia=membership.erp_accesses.filter(erp__code='assistencia', enabled=True).exists())
+        kwargs.setdefault('initial', {}).update(perfil=membership.role, status=membership.status, visualizar_painel_operacional=membership.erp_accesses.filter(erp__code='assistencia', visualizar_painel_operacional=True).exists(), acesso_assistencia=membership.erp_accesses.filter(erp__code='assistencia', enabled=True).exists())
         super().__init__(*args, **kwargs)
 
 

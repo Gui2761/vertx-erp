@@ -4,9 +4,9 @@
 {% block content %}
 <h3 class="mb-3">{% if object %}Editar unidade{% else %}Nova unidade{% endif %}</h3>
 <form method="post">
-  {% csrf_token %}
+  {% csrf_token %}{{ form.errors }}
   <div class="card shadow-sm">
-    <div class="card-body row g-3">
+    <div class="card-body row g-3"><div class="col-md-4"><label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>{{ form.email|add_class:"form-control" }}{{ form.email.errors }}</div><div class="col-md-4"><label class="form-label" for="{{ form.observacoes.id_for_label }}">{{ form.observacoes.label }}</label>{{ form.observacoes|add_class:"form-control" }}{{ form.observacoes.errors }}</div>
       <div class="col-md-6">
         <label class="form-label">Cliente</label>
         {{ form.cliente|add_class:"form-select" }}

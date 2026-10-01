@@ -4,9 +4,9 @@
 {% block content %}
 <h3 class="mb-3">{% if object %}Editar equipamento{% else %}Novo equipamento{% endif %}</h3>
 <form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
+  {% csrf_token %}{{ form.errors }}
   <div class="card shadow-sm">
-    <div class="card-body row g-3">
+    <div class="card-body row g-3"><div class="col-md-4"><label class="form-label" for="{{ form.patrimonio.id_for_label }}">{{ form.patrimonio.label }}</label>{{ form.patrimonio|add_class:"form-control" }}{{ form.patrimonio.errors }}</div><div class="col-md-4"><label class="form-label" for="{{ form.localizacao.id_for_label }}">{{ form.localizacao.label }}</label>{{ form.localizacao|add_class:"form-control" }}{{ form.localizacao.errors }}</div><div class="col-md-4"><label class="form-label" for="{{ form.data_aquisicao.id_for_label }}">{{ form.data_aquisicao.label }}</label>{{ form.data_aquisicao|add_class:"form-control" }}{{ form.data_aquisicao.errors }}</div><div class="col-md-4"><label class="form-label" for="{{ form.criticidade.id_for_label }}">{{ form.criticidade.label }}</label>{{ form.criticidade|add_class:"form-control" }}{{ form.criticidade.errors }}</div>
       <div class="col-md-4">
         <label class="form-label">Nome</label>
         {{ form.nome|add_class:"form-control" }}

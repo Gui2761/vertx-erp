@@ -1,0 +1,2 @@
+{% extends 'operacao/form.html' %}{% load static %}
+{% block content %}{% if quick %}<p class="alert alert-info">Selecione cliente → unidade → equipamento. Técnico e data são opcionais: a OS ficará na fila Não planejadas. O término previsto deve ser informado para medir a ocupação.</p>{% endif %}{{ block.super }}{% if quick %}{{ quick_choices|json_script:'planning-quick-choices' }}<script src="{% static 'js/planning_quick.js' %}" defer></script>{% endif %}{% endblock %}
