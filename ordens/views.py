@@ -42,7 +42,7 @@ def lista(request):
     if request.GET.get('grupo') == 'abertas':
         qs = qs.filter(status__in=['ABERTA','AGENDADA'])
     if request.GET.get('grupo') == 'andamento':
-        qs = qs.filter(status__in=['EXECUCAO','AG_PECA','AG_CLIENTE'])
+        qs = qs.filter(status__in=['EXECUCAO','DESLOCAMENTO','AG_PECA','AG_CLIENTE','AG_APROVACAO'])
     if request.GET.get('atrasadas') == '1':
         qs = qs.filter(prazo__lt=timezone.now()).exclude(status__in=['FINALIZADA','APROVADA','FATURADA','CANCELADA'])
     page = Paginator(qs, 20).get_page(request.GET.get('page'))

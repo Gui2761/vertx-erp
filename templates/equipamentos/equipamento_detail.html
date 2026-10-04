@@ -40,4 +40,4 @@
     </div>
   </div>
 </div>
-{% include 'operacao/historico.html' %}{% endblock %}
+{% include 'operacao/historico.html' %}<section class="card p-3 my-3"><h2 class="h5">Identificação técnica</h2><p>Tipo: {{ equipamento.tipo|default:'Não informado' }} · Marca: {{ equipamento.marca|default:'Não informada' }} · ANVISA: {{ equipamento.registro_anvisa|default:'Não informado' }}</p><p>Tensão: {{ equipamento.tensao|default:'Não informada' }} · Potência: {{ equipamento.potencia|default:'Não informada' }} · Cadastro: {{ equipamento.get_situacao_cadastro_display|default:'Histórico sem classificação' }}</p><a class="btn btn-outline-secondary" href="{% url 'equipamentos:etiqueta' equipamento.pk %}">Imprimir etiqueta</a></section>{% include 'operacao/timeline.html' %}{% endblock %}

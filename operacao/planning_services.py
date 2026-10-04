@@ -11,7 +11,7 @@ from platform_core.models import MembershipERP, Organization
 from contas.models import Tecnico
 from ordens.models import OrdemServico
 from ordens.services import auditar, salvar_transicao, gestor
-from .models import ENCERRADAS, PreventivaProgramada
+from .models import ENCERRADAS, PreventivaProgramada, Chamado
 from gestao.models import AgendaPreventiva
 
 PLANNERS = ('ADMIN', 'GESTOR', 'PLANEJADOR', 'ATENDIMENTO')
@@ -32,7 +32,8 @@ def television_rows(user):
     return _orders(), Tecnico.objects.filter(ativo=True).order_by('nome','pk')
 
 def _orders():
-    return OrdemServico.objects.select_related('cliente','unidade__cliente','equipamento','tecnico','contrato','agenda_contrato__contrato','preventivaprogramada__plano__contrato')
+    from django.db.models import Prefetch
+    return OrdemServico.objects.select_related('cliente','unidade__cliente','equipamento','tecnico','contrato','agenda_contrato__contrato','preventivaprogramada__plano__contrato').prefetch_related(Prefetch('auxiliares', queryset=Tecnico.objects.filter(ativo=True)))
 
 def orders_for(user, television=False):
     if television:
@@ -40,7 +41,10 @@ def orders_for(user, television=False):
     else:
         require_planning(user)
     rows = _orders()
-    return rows if television or effective_role(user) in PLANNERS else rows.filter(tecnico__usuario=user)
+    if television or effective_role(user) in PLANNERS:
+        return rows
+    from ordens.services import visiveis
+    return rows.filter(pk__in=visiveis(user).values('pk'))
 
 def technicians_for(user, television=False):
     if television:
@@ -66,15 +70,28 @@ def overlap(start, end, other_start, other_end):
         return start <= other_start < end
     return start < other_end and other_start < end
 
-def conflicts(row):
-    if not row.tecnico_id or not row.agendada_para or row.status in ENCERRADAS:
+def conflicts(row, auxiliary_ids=None, exclude_call_id=None):
+    team = set(auxiliary_ids or [])
+    if isinstance(row, OrdemServico) and row.pk and auxiliary_ids is None:
+        team.update(tech.pk for tech in row.auxiliares.all())
+    if row.tecnico_id:
+        team.add(row.tecnico_id)
+    if not team or not row.agendada_para or row.status in ENCERRADAS or row.status == 'CANCELADO':
         return []
-    rows = OrdemServico.objects.filter(tecnico_id=row.tecnico_id, agendada_para__isnull=False).exclude(status__in=ENCERRADAS).exclude(pk=row.pk)
+    rows = OrdemServico.objects.filter(Q(tecnico_id__in=team) | Q(auxiliares__pk__in=team), agendada_para__isnull=False).exclude(status__in=ENCERRADAS).distinct()
+    if isinstance(row, OrdemServico):
+        rows = rows.exclude(pk=row.pk)
     # Limite superior evita leitura do histórico futuro inteiro. Intervalos longos
     # iniciados anteriormente são mantidos, inclusive os que atravessam meia-noite.
     upper = row.agendada_ate or row.agendada_para
     rows = rows.filter(agendada_para__lte=upper).filter(Q(agendada_ate__gt=row.agendada_para) | Q(agendada_ate__isnull=True, agendada_para__gte=row.agendada_para))
-    return [other for other in rows.order_by('agendada_para', 'pk') if overlap(row.agendada_para, row.agendada_ate, other.agendada_para, other.agendada_ate)]
+    calls = Chamado.objects.filter(tecnico_id__in=team, ordem__isnull=True, agendada_para__isnull=False).exclude(status__in=['CANCELADO', 'CONCLUIDO'])
+    if isinstance(row, Chamado):
+        calls = calls.exclude(pk=row.pk)
+    elif exclude_call_id:
+        calls = calls.exclude(pk=exclude_call_id)
+    calls = calls.filter(agendada_para__lte=upper).filter(Q(agendada_ate__gt=row.agendada_para) | Q(agendada_ate__isnull=True, agendada_para__gte=row.agendada_para))
+    return [other for other in list(rows.order_by('agendada_para', 'pk')) + list(calls.order_by('agendada_para', 'pk')) if overlap(row.agendada_para, row.agendada_ate, other.agendada_para, other.agendada_ate)]
 
 def conflict_map(rows):
     result = {}
@@ -82,6 +99,9 @@ def conflict_map(rows):
     for row in rows:
         if row.tecnico_id and row.agendada_para and row.status not in ENCERRADAS:
             grouped.setdefault(row.tecnico_id, []).append(row)
+            for tech_id in (tech.pk for tech in row.auxiliares.all()):
+                if tech_id != row.tecnico_id:
+                    grouped.setdefault(tech_id, []).append(row)
     for group in grouped.values():
         group.sort(key=lambda row: row.agendada_para)
         for index, row in enumerate(group):
@@ -108,6 +128,7 @@ def order_event(row, conflict=None):
             'cliente': str(row.cliente), 'cliente_id': row.cliente_id, 'unidade': str(row.unidade or 'Sem unidade'), 'unidade_id': row.unidade_id,
             'equipamento': row.equipamento.nome, 'equipamento_id': row.equipamento_id,
             'tecnico': row.tecnico.nome if row.tecnico_id else 'Não atribuído', 'tecnico_id': row.tecnico_id,
+            'tecnico_ids': ([row.tecnico_id] if row.tecnico_id else []) + [tech.pk for tech in row.auxiliares.all()],
             'tipo': row.get_tipo_atendimento_display(), 'tipo_code': row.tipo_atendimento,
             'prioridade': row.get_prioridade_display(), 'prioridade_code': row.prioridade,
             'status': row.get_status_display(), 'status_code': row.status, 'source': source,
@@ -121,10 +142,10 @@ def order_event(row, conflict=None):
             'prazo': row.prazo.isoformat() if row.prazo else None, 'abertura': row.abertura.isoformat(), 'revisao': row.revisao}
 
 def preventive_events(user, television=False):
-    first = PreventivaProgramada.objects.filter(plano__ativo=True, cancelada=False, ordem__isnull=True).select_related('plano__cliente', 'plano__tecnico', 'plano__contrato', 'equipamento__unidade__cliente')
+    first = PreventivaProgramada.objects.filter(plano__ativo=True, cancelada=False, ordem__isnull=True).select_related('plano__cliente', 'plano__tecnico', 'plano__contrato', 'equipamento__unidade__cliente').prefetch_related('plano__equipe')
     second = AgendaPreventiva.objects.filter(cancelada=False, ordem__isnull=True).exclude(contrato__status__in=['SUSPENSO', 'ENCERRADO']).select_related('contrato__cliente', 'tecnico', 'equipamento__unidade__cliente')
     if not television and effective_role(user) == 'TECNICO':
-        first = first.filter(plano__tecnico__usuario=user)
+        first = first.filter(Q(plano__tecnico__usuario=user) | Q(plano__equipe__usuario=user, plano__equipe__ativo=True)).distinct()
         second = second.filter(tecnico__usuario=user)
     items = []
     today = timezone.localdate()
@@ -139,22 +160,46 @@ def preventive_events(user, television=False):
             items.append({'id': row.pk, 'kind': kind, 'numero': f'PREV-{row.pk}' if plan else f'VISITA-{row.pk}', 'title': plan.nome if plan else contract.numero,
                           'cliente': str(customer), 'cliente_id': customer.pk, 'unidade': str(row.equipamento.unidade or 'Sem unidade'), 'unidade_id': row.equipamento.unidade_id,
                           'equipamento': row.equipamento.nome, 'equipamento_id': row.equipamento_id, 'tecnico': tech.nome if tech else 'Não atribuído', 'tecnico_id': tech.pk if tech else None,
-                          'tipo': 'Preventiva' if plan else 'Visita contratual', 'tipo_code': 'PREVENTIVA', 'prioridade': 'Normal', 'prioridade_code': 'NORMAL',
+                          'tecnico_ids': ([tech.pk] if tech else []) + ([aux.pk for aux in plan.equipe.all() if aux.ativo] if plan else []),
+                          'tipo': 'Preventiva' if plan else 'Visita contratual', 'tipo_code': plan.tipo_manutencao or 'PREVENTIVA' if plan else 'PREVENTIVA', 'prioridade': 'Normal', 'prioridade_code': 'NORMAL',
                           'status': 'Preventiva pendente', 'status_code': 'PREVENTIVA', 'source': 'Plano preventivo' if plan else 'Visita contratual',
                           'contrato': contract.numero if contract else '', 'contrato_id': contract.pk if contract else None, 'date': day, 'time': '',
                           'start': None, 'end': None, 'late': day < today, 'unplanned': not tech, 'conflicts': [], 'url': url})
     return items
+
+def call_events(user, television=False):
+    if television:
+        require_tv(user)
+    else:
+        require_planning(user)
+    qs = Chamado.objects.filter(ordem__isnull=True).exclude(status__in=['CANCELADO', 'CONCLUIDO']).select_related('cliente', 'unidade', 'equipamento', 'tecnico', 'contrato')
+    if not television and effective_role(user) == 'TECNICO':
+        qs = qs.filter(tecnico__usuario=user)
+    events = []
+    for row in qs:
+        scheduled = row.agendada_para
+        events.append({'id': row.pk, 'kind': 'CHAMADO', 'numero': row.numero, 'title': row.titulo, 'cliente': str(row.cliente), 'cliente_id': row.cliente_id,
+            'unidade': str(row.unidade or 'Sem unidade'), 'unidade_id': row.unidade_id, 'equipamento': row.equipamento.nome if row.equipamento_id else 'Não informado', 'equipamento_id': row.equipamento_id,
+            'tecnico': row.tecnico.nome if row.tecnico_id else 'Não atribuído', 'tecnico_id': row.tecnico_id, 'tipo': row.get_tipo_display() or 'Chamado', 'tipo_code': row.tipo,
+            'prioridade': row.get_prioridade_display(), 'prioridade_code': row.prioridade, 'status': row.get_status_display(), 'status_code': row.status, 'source': 'Chamado',
+            'contrato': row.contrato.numero if row.contrato_id else '', 'contrato_id': row.contrato_id, 'date': timezone.localdate(scheduled) if scheduled else None, 'time': timezone.localtime(scheduled).strftime('%H:%M') if scheduled else '',
+            'start': scheduled.isoformat() if scheduled else None, 'end': row.agendada_ate.isoformat() if row.agendada_ate else None, 'late': bool(row.prazo and row.prazo < timezone.now()), 'unplanned': not scheduled or not row.tecnico_id,
+            'conflicts': [other.numero for other in conflicts(row)], 'url': reverse('operacao:chamado_detalhe', args=[row.pk]), 'inicio': None, 'conclusao': None, 'abertura': row.criado_em.isoformat()})
+    return events
 
 def lock_planning():
     # Uma alteração de agenda por organização; protege conflitos inclusive quando
     # duas sessões criam a primeira OS simultaneamente, sem tabela paralela.
     Organization.objects.select_for_update().get(pk=current_organization().pk)
 
-def validate_conflicts(user, row, override=False, reason=''):
-    found = conflicts(row)
+def validate_conflicts(user, row, override=False, reason='', auxiliary_ids=None, exclude_call_id=None):
+    found = conflicts(row, auxiliary_ids=auxiliary_ids, exclude_call_id=exclude_call_id)
     if found and (not override or not gestor(user) or not reason.strip()):
         raise ValidationError('Conflito com ' + ', '.join(other.numero for other in found) + '. ADMIN/GESTOR pode autorizar no planejamento com justificativa.')
     return [{'id': other.pk, 'numero': other.numero, 'duracao_informada': bool(other.agendada_ate)} for other in found]
+
+def validate_call_conflicts(user, call):
+    return validate_conflicts(user, call)
 
 @transaction.atomic
 def save_plan(user, form, pk=None):
@@ -191,7 +236,7 @@ def timeline_rows(technicians, events, day):
     lower = timezone.make_aware(datetime.combine(day, time(7)), zone)
     upper = timezone.make_aware(datetime.combine(day, time(17)), zone)
     for tech in technicians:
-        own = [event for event in events if event['tecnico_id'] == tech.pk and event['date'] == day]
+        own = [event for event in events if tech.pk in event.get('tecnico_ids', [event['tecnico_id']]) and event['date'] == day]
         bars = []
         hours = 0
         for event in own:

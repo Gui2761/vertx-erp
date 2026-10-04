@@ -34,6 +34,7 @@ class Cliente(OrganizationOwned):
     cep = models.CharField(max_length=10, blank=True)
 
     observacoes = models.TextField(blank=True)
+    limite_credito = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
 
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)

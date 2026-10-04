@@ -11,6 +11,8 @@ from django.utils import timezone
 from gestao.models import Validado, RegistroImutavel, ZERO
 
 PRIORIDADES = [('BAIXA', 'Baixa'), ('NORMAL', 'Normal'), ('ALTA', 'Alta'), ('URGENTE', 'Urgente')]
+TIPOS_SERVICO = [('CORRETIVA', 'Corretiva'), ('PREVENTIVA', 'Preventiva'), ('INSTALACAO', 'Instalação'), ('CALIBRACAO', 'Calibração'), ('INSPECAO', 'Inspeção'), ('VISITA', 'Visita técnica'), ('RETIRADA', 'Retirada'), ('ENTREGA', 'Entrega'), ('TREINAMENTO', 'Treinamento'), ('AVALIACAO', 'Avaliação/orçamento')]
+TIPOS_RESPOSTA = [('BOOLEANO', 'Sim/não'), ('CONFORMIDADE', 'Conforme/não conforme'), ('TEXTO', 'Texto'), ('NUMERO', 'Número'), ('MEDICAO', 'Medição'), ('DATA', 'Data'), ('SELECAO', 'Seleção'), ('FOTO', 'Foto'), ('OBSERVACAO', 'Observação')]
 ENCERRADAS = ['FINALIZADA', 'APROVADA', 'FATURADA', 'CANCELADA']
 
 def dias_alerta_padrao():
@@ -29,10 +31,43 @@ def checklist_valido(value):
     if not isinstance(value, list) or len(value) > 100:
         raise ValidationError('Checklist deve ser lista de até 100 itens.')
     for row in value:
-        if not isinstance(row, dict) or set(row) - {'item', 'obrigatorio', 'concluido', 'observacao'} or not isinstance(row.get('item'), str) or not row['item'].strip() or len(row['item']) > 255:
-            raise ValidationError('Cada item precisa de descrição; use item, obrigatorio, concluido e observacao.')
+        if not isinstance(row, dict) or set(row) - {'item', 'obrigatorio', 'concluido', 'observacao', 'tipo', 'resposta', 'opcoes', 'unidade'} or not isinstance(row.get('item'), str) or not row['item'].strip() or len(row['item']) > 255:
+            raise ValidationError('Cada item precisa de descrição e campos de resposta válidos.')
         if any(key in row and not isinstance(row[key], bool) for key in ['obrigatorio', 'concluido']) or len(str(row.get('observacao', ''))) > 1000:
             raise ValidationError('Resposta de checklist inválida.')
+        kind = row.get('tipo')
+        if kind is not None and kind not in dict(TIPOS_RESPOSTA):
+            raise ValidationError('Tipo de resposta inválido.')
+        if not isinstance(row.get('unidade', ''), str) or len(row.get('unidade', '')) > 40:
+            raise ValidationError('Unidade de medição inválida.')
+        options = row.get('opcoes', [])
+        if not isinstance(options, list) or len(options) > 50 or any(not isinstance(option, str) or not option or len(option) > 150 for option in options) or len(set(options)) != len(options):
+            raise ValidationError('Opções devem ser textos distintos, até 150 caracteres.')
+        if kind == 'SELECAO' and not options:
+            raise ValidationError('Seleção exige opções.')
+        answer = row.get('resposta')
+        if answer is None or answer == '':
+            continue
+        if kind in ['BOOLEANO', 'CONFORMIDADE'] and type(answer) is not bool:
+            raise ValidationError('Informe sim/não ou conforme/não conforme.')
+        if kind in ['TEXTO', 'OBSERVACAO'] and (not isinstance(answer, str) or len(answer) > 4000):
+            raise ValidationError('Resposta textual inválida.')
+        if kind in ['NUMERO', 'MEDICAO']:
+            try:
+                if isinstance(answer, bool) or not Decimal(str(answer)).is_finite():
+                    raise ValueError
+            except (ValueError, ArithmeticError):
+                raise ValidationError('Informe um número finito.')
+        if kind == 'DATA':
+            from datetime import date
+            try:
+                date.fromisoformat(answer)
+            except (ValueError, TypeError):
+                raise ValidationError('Informe data no formato AAAA-MM-DD.')
+        if kind == 'SELECAO' and answer not in options:
+            raise ValidationError('Resposta fora das opções do checklist.')
+        if kind == 'FOTO' and (type(answer) is not int or answer < 1):
+            raise ValidationError('Informe uma foto deste atendimento.')
 
 class Nomeado(Validado):
     nome = models.CharField(max_length=150)
@@ -115,12 +150,29 @@ class Chamado(Validado):
     titulo = models.CharField('Título', max_length=180)
     descricao = models.TextField('Descrição')
     prioridade = models.CharField(max_length=10, choices=PRIORIDADES, default='NORMAL')
-    status = models.CharField(max_length=12, choices=[('ABERTO', 'Aberto'), ('CONVERTIDO', 'Convertido em OS'), ('CANCELADO', 'Cancelado')], default='ABERTO', editable=False)
+    prioridade_solicitada = models.CharField(max_length=10, choices=PRIORIDADES, blank=True)
+    solicitante = models.CharField(max_length=150, blank=True)
+    telefone = models.CharField(max_length=30, blank=True)
+    email = models.EmailField(blank=True)
+    origem = models.CharField(max_length=15, blank=True, choices=[('INTERNO', 'Interno'), ('PORTAL', 'Portal do cliente'), ('TELEFONE', 'Telefone'), ('EMAIL', 'E-mail'), ('PRESENCIAL', 'Presencial'), ('OUTRO', 'Outro')])
+    tipo = models.CharField(max_length=30, choices=TIPOS_SERVICO, blank=True)
+    tecnico = models.ForeignKey('contas.Tecnico', on_delete=models.PROTECT, null=True, blank=True)
+    agendada_para = models.DateTimeField(null=True, blank=True)
+    agendada_ate = models.DateTimeField(null=True, blank=True)
+    prazo = models.DateTimeField(null=True, blank=True)
+    sla_horas = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    observacoes_internas = models.TextField(blank=True)
+    request_id = models.UUIDField(null=True, blank=True, editable=False)
+    status = models.CharField(max_length=20, choices=[('ABERTO', 'Aberto'), ('TRIAGEM', 'Triagem'), ('AG_AGENDAMENTO', 'Aguardando agendamento'), ('AGENDADO', 'Agendado'), ('CONVERTIDO', 'Convertido em OS'), ('EM_ATENDIMENTO', 'Em atendimento'), ('AG_PECA', 'Aguardando peça'), ('AG_APROVACAO', 'Aguardando aprovação'), ('AG_CLIENTE', 'Aguardando cliente'), ('CONCLUIDO', 'Concluído'), ('CANCELADO', 'Cancelado')], default='ABERTO', editable=False)
     ordem = models.OneToOneField('ordens.OrdemServico', on_delete=models.PROTECT, null=True, blank=True, editable=False)
     criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, editable=False)
     criado_em = models.DateTimeField(auto_now_add=True)
     class Meta:
         ordering = ['-criado_em']
+        constraints = [models.UniqueConstraint(fields=['organization', 'request_id'], name='chamado_org_request_unico')]
+    @property
+    def numero(self):
+        return f'CH-{self.pk:06d}' if self.pk else 'Novo chamado'
     def __str__(self):
         return f'CH-{self.pk:06d} · {self.titulo}' if self.pk else 'Novo chamado'
     def clean(self):
@@ -129,17 +181,35 @@ class Chamado(Validado):
         validar_cliente(self)
         if self.contrato_id and self.contrato.cliente_id != self.cliente_id:
             raise ValidationError({'contrato': 'Contrato pertence a outro cliente.'})
+        if self.agendada_ate and (not self.agendada_para or self.agendada_ate <= self.agendada_para):
+            raise ValidationError({'agendada_ate': 'Término deve ser posterior ao início.'})
+        if self.tecnico_id and not self.tecnico.ativo:
+            raise ValidationError({'tecnico': 'Técnico inativo.'})
+    def save(self, *args, **kwargs):
+        if self.pk and not getattr(self, '_service_write', False):
+            old = type(self).objects.get(pk=self.pk)
+            if self.status != old.status or self.ordem_id != old.ordem_id:
+                raise ValidationError('Use o fluxo auditado do chamado para alterar situação/OS.')
+        return super().save(*args, **kwargs)
 
 class ModeloChecklist(Nomeado):
     itens = models.JSONField(default=list, validators=[checklist_valido], help_text='Lista JSON: [{"item":"Inspeção","obrigatorio":true}].')
+    categoria = models.ForeignKey('equipamentos.CategoriaEquipamento', on_delete=models.PROTECT, null=True, blank=True)
+    tipo_equipamento = models.CharField(max_length=100, blank=True)
+    fabricante = models.CharField(max_length=150, blank=True)
+    modelo = models.CharField(max_length=150, blank=True)
+    tipo_servico = models.CharField(max_length=30, choices=TIPOS_SERVICO, blank=True)
 
 class PlanoPreventivo(Nomeado):
     cliente = models.ForeignKey('clientes.Cliente', on_delete=models.PROTECT)
+    unidade = models.ForeignKey('clientes.Unidade', on_delete=models.PROTECT, null=True, blank=True)
+    tipo_manutencao = models.CharField(max_length=30, choices=TIPOS_SERVICO, blank=True)
+    equipe = models.ManyToManyField('contas.Tecnico', through='PlanoTecnico', blank=True, related_name='planos_auxiliares')
     contrato = models.ForeignKey('gestao.Contrato', on_delete=models.PROTECT, null=True, blank=True)
     equipamentos = models.ManyToManyField('equipamentos.Equipamento', through='PlanoEquipamento')
     checklist = models.ForeignKey(ModeloChecklist, on_delete=models.PROTECT, null=True, blank=True)
     tecnico = models.ForeignKey('contas.Tecnico', on_delete=models.PROTECT, null=True, blank=True)
-    periodicidade = models.CharField(max_length=15, choices=[('DIARIO', 'Diário'), ('SEMANAL', 'Semanal'), ('QUINZENAL', 'Quinzenal'), ('MENSAL', 'Mensal'), ('BIMESTRAL', 'Bimestral'), ('TRIMESTRAL', 'Trimestral'), ('SEMESTRAL', 'Semestral'), ('ANUAL', 'Anual'), ('PERSONALIZADA', 'Personalizada')], default='MENSAL')
+    periodicidade = models.CharField(max_length=15, choices=[('DIARIO', 'Diário'), ('SEMANAL', 'Semanal'), ('QUINZENAL', 'Quinzenal'), ('MENSAL', 'Mensal'), ('BIMESTRAL', 'Bimestral'), ('TRIMESTRAL', 'Trimestral'), ('QUADRIMESTRAL', 'Quadrimestral'), ('SEMESTRAL', 'Semestral'), ('ANUAL', 'Anual'), ('PERSONALIZADA', 'Personalizada')], default='MENSAL')
     intervalo_dias = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
     inicio = models.DateField(default=timezone.localdate)
     fim = models.DateField()
@@ -147,6 +217,8 @@ class PlanoPreventivo(Nomeado):
     observacoes = models.TextField(blank=True)
     def clean(self):
         super().clean()
+        if self.unidade_id and self.unidade.cliente_id != self.cliente_id:
+            raise ValidationError({'unidade': 'Unidade pertence a outro cliente.'})
         if self.inicio and self.fim and self.fim < self.inicio:
             raise ValidationError({'fim': 'Fim anterior ao início.'})
         if self.periodicidade == 'PERSONALIZADA' and not self.intervalo_dias:
@@ -173,6 +245,18 @@ class PlanoEquipamento(Validado):
         super().clean()
         if self.equipamento.cliente_id != self.plano.cliente_id or self.plano.contrato_id and not self.plano.contrato.equipamentos.filter(pk=self.equipamento_id).exists():
             raise ValidationError('Equipamento fora da cobertura do plano/contrato.')
+        if self.plano.unidade_id and self.equipamento.unidade_id != self.plano.unidade_id:
+            raise ValidationError('Equipamento fora da unidade do plano.')
+
+class PlanoTecnico(Validado):
+    plano = models.ForeignKey(PlanoPreventivo, on_delete=models.PROTECT)
+    tecnico = models.ForeignKey('contas.Tecnico', on_delete=models.PROTECT)
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['plano', 'tecnico'], name='plano_tecnico_unico')]
+    def clean(self):
+        super().clean()
+        if not self.tecnico.ativo:
+            raise ValidationError('Técnico inativo.')
 
 class PreventivaProgramada(Validado):
     plano = models.ForeignKey(PlanoPreventivo, on_delete=models.PROTECT, related_name='ocorrencias')
@@ -218,6 +302,7 @@ class Fluxo(Validado):
         return {'RASCUNHO':'Rascunho','APROVADA':'Aprovada','PEDIDO':'Pedido','RECEBIDA':'Recebida','CONFIRMADA':'Confirmada','CANCELADA':'Cancelada'}.get(self.status,self.status)
 
 class Compra(Fluxo):
+    previsao_recebimento = models.DateField(null=True, blank=True)
     relatorio_estoque = models.ForeignKey('RelatorioEstoque', on_delete=models.PROTECT, null=True, blank=True, editable=False)
     pedido_relatorio_id = models.UUIDField(null=True, blank=True, editable=False)
     selecao_relatorio = models.JSONField(default=dict, blank=True, editable=False)
@@ -232,6 +317,7 @@ class Compra(Fluxo):
         constraints = [models.UniqueConstraint(fields=['organization','pedido_relatorio_id'],condition=Q(pedido_relatorio_id__isnull=False),name='compra_relatorio_request_unico')]
 
 class ItemCompra(Validado):
+    conversao=models.JSONField(default=dict,blank=True,editable=False)
     lote = models.CharField(max_length=100, blank=True)
     fabricacao = models.DateField(null=True, blank=True)
     validade = models.DateField(null=True, blank=True)
@@ -242,6 +328,15 @@ class ItemCompra(Validado):
     quantidade = models.DecimalField(max_digits=14, decimal_places=3, validators=[MinValueValidator(Decimal('.001'))])
     custo_unitario = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(ZERO)])
     @property
+    def quantidade_recebida(self):
+        if not self.pk:
+            return ZERO
+        value = self.recebimentos.aggregate(total=Sum('quantidade'))['total']
+        return self.quantidade if value is None and self.compra.status == 'RECEBIDA' else value or ZERO
+    @property
+    def quantidade_pendente(self):
+        return max(ZERO, self.quantidade - self.quantidade_recebida)
+    @property
     def total(self):
         return (self.quantidade * self.custo_unitario).quantize(Decimal('.01'))
     def clean(self):
@@ -250,7 +345,7 @@ class ItemCompra(Validado):
             raise ValidationError('Itens somente em solicitação rascunho.')
         if getattr(self, '_receiving_write', False):
             old = type(self).objects.get(pk=self.pk)
-            if any(getattr(old, field) != getattr(self, field) for field in ['compra_id','peca_id','quantidade','custo_unitario','relatorio_item_id']):
+            if any(getattr(old, field) != getattr(self, field) for field in ['compra_id','peca_id','quantidade','custo_unitario','relatorio_item_id','conversao']):
                 raise ValidationError('Recebimento preserva produto, quantidade e custo aprovados.')
         if self.fabricacao and self.validade and self.fabricacao > self.validade:
             raise ValidationError('Fabricação posterior à validade.')
@@ -270,7 +365,21 @@ class CotacaoCompra(Validado):
             raise ValidationError('Cotação exige compra em rascunho.')
 
 class Venda(Fluxo):
-    cliente = models.ForeignKey('clientes.Cliente', on_delete=models.PROTECT)
+    public_id = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    status = models.CharField(max_length=30, default='RASCUNHO', editable=False)
+    cliente = models.ForeignKey('clientes.Cliente', on_delete=models.PROTECT, null=True, blank=True)
+    sessao_caixa = models.ForeignKey('SessaoCaixa', on_delete=models.PROTECT, null=True, blank=True, editable=False)
+    filial = models.ForeignKey('platform_core.FilialEmpresa', on_delete=models.PROTECT, null=True, blank=True)
+    centro_custo = models.ForeignKey('gestao.CentroCusto', on_delete=models.PROTECT, null=True, blank=True)
+    orcamento_origem = models.OneToOneField('gestao.Orcamento', on_delete=models.PROTECT, null=True, blank=True, editable=False)
+    desconto_global = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)])
+    acrescimo = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)])
+    snapshot = models.JSONField(default=dict, blank=True, editable=False)
+    finalizacao_id = models.UUIDField(null=True, blank=True, editable=False)
+    finalizada_em = models.DateTimeField(null=True,blank=True,editable=False)
+    criacao_id = models.UUIDField(null=True,blank=True,editable=False)
+    dados_criacao = models.JSONField(default=dict,blank=True,editable=False)
+    finalizacao_dados = models.JSONField(default=dict, blank=True, editable=False)
     vendedor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name='vendas')
     deposito = models.ForeignKey(Deposito, on_delete=models.PROTECT)
     vencimento = models.DateField()
@@ -282,7 +391,25 @@ class Venda(Fluxo):
         if self.vendedor_id and not self.vendedor.memberships.filter(organization=self.organization, status='ATIVO').exists():
             raise ValidationError({'vendedor': 'Vendedor precisa de vínculo ativo na organização.'})
 
+    @property
+    def total(self):
+        return super().total - self.desconto_global + self.acrescimo
+
+    def save(self,*args,**kwargs):
+        if self._state.adding and self.public_id is None:
+            self.public_id=uuid.uuid4()
+        return super().save(*args,**kwargs)
+
+    def get_status_display(self):
+        return {'AG_PAGAMENTO':'Aguardando pagamento','ORCAMENTO':'Orçamento comercial','FINALIZADA':'Finalizada','PARCIALMENTE_DEVOLVIDA':'Parcialmente devolvida','DEVOLVIDA':'Devolvida'}.get(self.status,super().get_status_display())
+
+    class Meta(Fluxo.Meta):
+        constraints=[models.UniqueConstraint(fields=['organization','criacao_id'],condition=Q(criacao_id__isnull=False),name='venda_criacao_request_org'),models.UniqueConstraint(fields=['organization','finalizacao_id'],condition=Q(finalizacao_id__isnull=False),name='venda_finalizacao_request_org')]
+
 class ItemVenda(Validado):
+    conversao = models.JSONField(default=dict, blank=True, editable=False)
+    movimento = models.OneToOneField('gestao.Movimentacao', on_delete=models.PROTECT, null=True, blank=True, editable=False)
+    custo_total = models.DecimalField(max_digits=30, decimal_places=5, null=True, blank=True, editable=False)
     venda = models.ForeignKey(Venda, on_delete=models.PROTECT, related_name='itens')
     peca = models.ForeignKey('gestao.Peca', on_delete=models.PROTECT)
     quantidade = models.DecimalField(max_digits=14, decimal_places=3, validators=[MinValueValidator(Decimal('.001'))])
@@ -294,13 +421,19 @@ class ItemVenda(Validado):
         return (self.quantidade * self.valor_unitario).quantize(Decimal('.01')) - self.desconto
     @property
     def margem(self):
-        return self.total - (self.quantidade * self.custo_unitario).quantize(Decimal('.01'))
+        from decimal import ROUND_HALF_UP
+        cost = self.custo_total if self.custo_total is not None else self.quantidade * self.custo_unitario
+        return self.total - cost.quantize(Decimal('.01'), rounding=ROUND_HALF_UP)
     def clean(self):
         super().clean()
-        if Venda.objects.get(pk=self.venda_id).status != 'RASCUNHO':
+        if Venda.objects.get(pk=self.venda_id).status != 'RASCUNHO' and not getattr(self, '_service_write', False):
             raise ValidationError('Itens somente em venda rascunho.')
         if self.quantidade is not None and self.valor_unitario is not None and self.desconto is not None and self.total < 0:
             raise ValidationError({'desconto': 'Desconto excede o valor do item.'})
+
+    def delete(self,*args,**kwargs):
+        self.clean()
+        return super().delete(*args,**kwargs)
 
 class ContaBancaria(Nomeado):
     banco = models.CharField(max_length=100, blank=True)
@@ -331,6 +464,13 @@ class MovimentoCaixa(RegistroImutavel):
         constraints = [models.UniqueConstraint(fields=['conta', 'referencia'], name='movimento_caixa_referencia')]
 
 class Pagamento(RegistroImutavel):
+    @property
+    def controle_caixa(self):
+        return str(self.conta) if self.conta_id else 'Não bancarizado — sem conta informada'
+
+    @property
+    def origem_financeira(self):
+        return self.lancamento.origem_financeira
     lancamento = models.ForeignKey('gestao.Lancamento', on_delete=models.PROTECT, related_name='pagamentos')
     valor = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('.01'))])
     data = models.DateField()
@@ -398,11 +538,23 @@ class DocumentoFiscal(Validado):
         return super().save(*args, **kwargs)
 
 class Documento(Validado):
+    peca=models.ForeignKey('gestao.Peca',on_delete=models.PROTECT,null=True,blank=True,related_name='documentos')
+    funcionario=models.ForeignKey('operacao.Funcionario',on_delete=models.PROTECT,null=True,blank=True,related_name='documentos')
+    compra=models.ForeignKey('operacao.Compra',on_delete=models.PROTECT,null=True,blank=True,related_name='documentos')
+    venda=models.ForeignKey('operacao.Venda',on_delete=models.PROTECT,null=True,blank=True,related_name='documentos')
     from ordens.storage import private_storage
     titulo = models.CharField('Título', max_length=180)
     tipo = models.CharField(max_length=15, choices=[('PDF', 'PDF'), ('IMAGEM', 'Imagem'), ('CONTRATO', 'Contrato'), ('LAUDO', 'Laudo'), ('CERTIFICADO', 'Certificado'), ('MANUAL', 'Manual'), ('FISCAL_XML', 'XML fiscal'), ('FISCAL_PDF', 'PDF fiscal'), ('VIDEO', 'Vídeo')], default='PDF')
     arquivo = models.FileField(upload_to=privado, storage=private_storage, max_length=500)
     cliente = models.ForeignKey('clientes.Cliente', on_delete=models.PROTECT, null=True, blank=True)
+    unidade = models.ForeignKey('clientes.Unidade', on_delete=models.PROTECT, null=True, blank=True)
+    tecnico = models.ForeignKey('contas.Tecnico', on_delete=models.PROTECT, null=True, blank=True)
+    fornecedor = models.ForeignKey('gestao.Fornecedor', on_delete=models.PROTECT, null=True, blank=True, related_name='documentos_tecnicos')
+    chamado = models.ForeignKey(Chamado, on_delete=models.PROTECT, null=True, blank=True)
+    categoria = models.CharField(max_length=20, blank=True, choices=[('CONTRATO', 'Contrato'), ('CERTIFICADO', 'Certificado'), ('LAUDO', 'Laudo'), ('MANUAL', 'Manual'), ('NOTA_FISCAL', 'Nota fiscal'), ('GARANTIA', 'Garantia'), ('ART_TRT', 'ART/TRT'), ('CALIBRACAO', 'Calibração'), ('LICENCA', 'Licença'), ('TECNICO', 'Documento técnico'), ('OUTRO', 'Outros')])
+    emissao = models.DateField(null=True, blank=True)
+    validade = models.DateField(null=True, blank=True)
+    observacoes = models.TextField(blank=True)
     equipamento = models.ForeignKey('equipamentos.Equipamento', on_delete=models.PROTECT, null=True, blank=True)
     ordem = models.ForeignKey('ordens.OrdemServico', on_delete=models.PROTECT, null=True, blank=True)
     contrato = models.ForeignKey('gestao.Contrato', on_delete=models.PROTECT, null=True, blank=True)
@@ -418,16 +570,26 @@ class Documento(Validado):
         return self.titulo
     def clean(self):
         super().clean()
-        for name in ['equipamento', 'ordem', 'contrato', 'orcamento', 'fiscal']:
+        for name in ['unidade', 'equipamento', 'ordem', 'contrato', 'orcamento', 'fiscal', 'chamado']:
             origin = getattr(self, name) if getattr(self, name + '_id') else None
             if origin:
                 if self.cliente_id and self.cliente_id != origin.cliente_id:
                     raise ValidationError({'cliente': 'Vínculos do documento pertencem a clientes diferentes.'})
                 self.cliente = origin.cliente
+        if self.funcionario_id and (self.disponivel_portal or any([self.cliente_id,self.unidade_id,self.equipamento_id,self.ordem_id,self.contrato_id,self.orcamento_id,self.fiscal_id,self.chamado_id,self.compra_id,self.venda_id,self.peca_id,self.fornecedor_id])):
+            raise ValidationError('Documento de funcionário é privado do RH e não pode ser misturado com vínculos comerciais/portal.')
+        if self.venda_id and self.cliente_id and self.venda.cliente_id!=self.cliente_id:
+            raise ValidationError('Cliente do documento deve coincidir com a venda.')
+        if self.venda_id and self.venda.cliente_id:
+            self.cliente=self.venda.cliente
         if self.ordem_id and self.equipamento_id and self.ordem.equipamento_id != self.equipamento_id:
             raise ValidationError('Documento vinculado a equipamentos diferentes.')
         if self.disponivel_portal and not self.cliente_id:
             raise ValidationError('Compartilhamento exige cliente identificado.')
+        if self.unidade_id and self.equipamento_id and self.equipamento.unidade_id != self.unidade_id:
+            raise ValidationError('Documento vinculado a unidades diferentes.')
+        if self.emissao and self.validade and self.validade < self.emissao:
+            raise ValidationError({'validade': 'Validade anterior à emissão.'})
 
 class PortalCliente(Validado):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
@@ -462,4 +624,77 @@ class SaidaNotificacao(Validado):
     status = models.CharField(max_length=15, default='NAO_CONFIGURADO', editable=False)
     criado_em = models.DateTimeField(auto_now_add=True)
 
-from .stock_models import LoteEstoque, MovimentacaoLote, ReservaEstoque, OcorrenciaEstoque, RelatorioEstoque, ItemRelatorioEstoque  # noqa: E402,F401
+class ArtigoConhecimento(Validado):
+    titulo = models.CharField('Título', max_length=180)
+    fabricante = models.CharField(max_length=150, blank=True)
+    modelo = models.CharField(max_length=150, blank=True)
+    equipamento = models.ForeignKey('equipamentos.Equipamento', on_delete=models.PROTECT, null=True, blank=True)
+    ordem = models.ForeignKey('ordens.OrdemServico', on_delete=models.PROTECT, null=True, blank=True)
+    manual = models.ForeignKey(Documento, on_delete=models.PROTECT, null=True, blank=True)
+    sintoma = models.TextField(blank=True)
+    defeito = models.TextField(blank=True)
+    solucao = models.TextField('Solução', blank=True)
+    procedimento = models.TextField(blank=True)
+    observacoes = models.TextField(blank=True)
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering = ['titulo']
+    def __str__(self):
+        return self.titulo
+    def clean(self):
+        super().clean()
+        if self.equipamento_id and self.ordem_id and self.ordem.equipamento_id != self.equipamento_id:
+            raise ValidationError('Equipamento diferente da OS de referência.')
+
+class RecebimentoCompra(RegistroImutavel):
+    compra = models.ForeignKey(Compra, on_delete=models.PROTECT, related_name='recebimentos')
+    request_id = models.UUIDField()
+    deposito = models.ForeignKey(Deposito, on_delete=models.PROTECT)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    recebido_em = models.DateTimeField(default=timezone.now)
+    documento = models.CharField('Documento/NF de referência', max_length=180, blank=True)
+    parametros = models.JSONField(default=dict)
+    class Meta:
+        ordering = ['recebido_em', 'pk']
+        constraints = [models.UniqueConstraint(fields=['organization', 'request_id'], name='recebimento_org_request_unico')]
+
+class ItemRecebimentoCompra(RegistroImutavel):
+    recebimento = models.ForeignKey(RecebimentoCompra, on_delete=models.PROTECT, related_name='itens')
+    item = models.ForeignKey(ItemCompra, on_delete=models.PROTECT, related_name='recebimentos')
+    movimentacao = models.OneToOneField('gestao.Movimentacao', on_delete=models.PROTECT)
+    quantidade = models.DecimalField(max_digits=14, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    custo_unitario = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(ZERO)])
+    lote = models.CharField(max_length=100, blank=True)
+    fabricacao = models.DateField(null=True, blank=True)
+    validade = models.DateField(null=True, blank=True)
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['recebimento', 'item'], name='recebimento_item_unico')]
+    def clean(self):
+        super().clean()
+        if self.item.compra_id != self.recebimento.compra_id or self.movimentacao.peca_id != self.item.peca_id:
+            raise ValidationError('Item/movimentação fora da compra recebida.')
+
+class NecessidadePecaOS(Validado):
+    ordem = models.ForeignKey('ordens.OrdemServico', on_delete=models.PROTECT, related_name='necessidades_pecas')
+    peca = models.ForeignKey('gestao.Peca', on_delete=models.PROTECT)
+    deposito = models.ForeignKey(Deposito, on_delete=models.PROTECT)
+    quantidade = models.DecimalField(max_digits=14, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    urgencia = models.CharField(max_length=10, choices=PRIORIDADES, default='NORMAL')
+    observacoes = models.TextField(blank=True)
+    resolvida_em = models.DateTimeField(null=True, blank=True, editable=False)
+    compra = models.ForeignKey(Compra, on_delete=models.PROTECT, null=True, blank=True, editable=False)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['ordem', 'peca', 'deposito'], condition=Q(resolvida_em__isnull=True), name='necessidade_os_peca_aberta')]
+    def save(self, *args, **kwargs):
+        if not getattr(self, '_service_write', False):
+            raise ValidationError('Necessidade exige fluxo auditado da OS.')
+        return super().save(*args, **kwargs)
+
+from .stock_models import LoteEstoque, MovimentacaoLote, ReservaEstoque, AlocacaoReservaEstoque, OcorrenciaEstoque, RelatorioEstoque, ItemRelatorioEstoque  # noqa: E402,F401
+from .commercial_models import ConfiguracaoPDV, SessaoCaixa, EventoCaixa, PagamentoVenda, DevolucaoVenda, ItemDevolucaoVenda  # noqa: E402,F401
+from .workforce_models import Departamento, JornadaTrabalho, Funcionario, EscalaFuncionario, MarcacaoPonto, SolicitacaoAjustePonto, DecisaoAjustePonto, FechamentoPonto  # noqa: E402,F401
+from .inventory_models import Inventario, ItemInventario, ContagemInventario, AjusteInventario, TransferenciaEstoque, EtapaTransferencia  # noqa: E402,F401
+from .contract_workday_models import ConfiguracaoJornadaContrato, JornadaContrato, EventoJornadaContrato, OrdemJornadaContrato, CorrecaoJornadaContrato, DecisaoJornadaContrato  # noqa: E402,F401

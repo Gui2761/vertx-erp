@@ -24,21 +24,30 @@ class Estilizado(TenantModelForm):
 class PecaForm(Estilizado):
     class Meta:
         model = m.Peca
-        fields = ['sku', 'descricao', 'fabricante', 'marca', 'referencia', 'categoria', 'unidade_medida', 'estoque_minimo', 'estoque_maximo', 'controla_validade', 'localizacao', 'custo_aquisicao', 'preco_venda', 'fornecedor', 'ncm', 'cfop', 'cst_csosn', 'ativo']
+        fields = ['sku', 'descricao', 'descricao_curta', 'imagem', 'fabricante', 'marca', 'referencia', 'categoria', 'subcategoria', 'gtin', 'codigo_barras', 'unidade_medida', 'unidade_compra', 'fator_compra', 'unidade_venda', 'fator_venda', 'fracionavel', 'exige_lote', 'estoque_minimo', 'estoque_maximo', 'controla_validade', 'localizacao', 'custo_aquisicao', 'preco_venda', 'fornecedor', 'registro_anvisa', 'ncm', 'cest', 'origem_fiscal', 'cfop', 'cst', 'csosn', 'cst_csosn', 'observacoes', 'ativo']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['imagem'].queryset = m.Peca._meta.get_field('imagem').remote_field.model.objects.filter(tipo='IMAGEM',peca=self.instance) if self.instance.pk else m.Peca._meta.get_field('imagem').remote_field.model.objects.none()
+        for key in ['fator_compra','fator_venda']:
+            self.fields[key].required = False
         if not self.instance.pk and not self.is_bound:
             from operacao.models import Configuracao
             config = Configuracao.objects.first()
             if config:
                 self.initial.update(estoque_minimo=config.estoque_minimo_padrao,estoque_maximo=config.estoque_ideal_padrao)
 
+    def clean_fator_compra(self):
+        return self.cleaned_data['fator_compra'] if self.cleaned_data.get('fator_compra') is not None else self.instance.fator_compra
+
+    def clean_fator_venda(self):
+        return self.cleaned_data['fator_venda'] if self.cleaned_data.get('fator_venda') is not None else self.instance.fator_venda
+
 
 class FornecedorForm(Estilizado):
     class Meta:
         model = m.Fornecedor
-        fields = ['nome', 'documento', 'contato', 'telefone', 'email', 'ativo']
+        fields = ['nome', 'nome_fantasia', 'documento', 'contato', 'representante', 'telefone', 'email', 'endereco', 'produtos_categorias', 'observacoes', 'ativo']
 
 
 class OrcamentoForm(Estilizado):
@@ -90,7 +99,7 @@ class ContratoForm(Estilizado):
 class LancamentoForm(Estilizado):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance.pk and (self.instance.ordem_id or self.instance.orcamento_id or self.instance.contrato_id or self.instance.pagamentos.exists() or hasattr(self.instance, 'compra_origem') or hasattr(self.instance, 'venda_origem')):
+        if self.instance.pk and (self.instance.origem_raiz_id or self.instance.ordem_id or self.instance.orcamento_id or self.instance.contrato_id or self.instance.pagamentos.exists() or hasattr(self.instance, 'compra_origem') or hasattr(self.instance, 'venda_origem') or hasattr(self.instance,'devolucao_origem')):
             for name in list(self.fields):
                 if name not in ['categoria', 'centro_custo', 'forma_pagamento', 'observacoes']:
                     self.fields.pop(name)
@@ -107,15 +116,22 @@ class CategoriaFinanceiraForm(Estilizado):
 
 
 class CentroCustoForm(Estilizado):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tipo'].required = False
+
+    def clean_tipo(self):
+        return self.cleaned_data.get('tipo') or self.instance.tipo
+
     class Meta:
         model = m.CentroCusto
-        fields = ['nome', 'ativo']
+        fields = ['nome', 'tipo', 'ativo']
 
 
 class FormaPagamentoForm(Estilizado):
     class Meta:
         model = m.FormaPagamento
-        fields = ['nome', 'ativo']
+        fields = ['nome', 'tipo_pdv', 'conta_pdv', 'ativo']
 
 
 class MovimentoForm(forms.Form):
@@ -136,6 +152,7 @@ class MovimentoForm(forms.Form):
         self.fields['lote'].queryset = LoteEstoque.objects.filter(quantidade__gt=0).select_related('peca','deposito')
         self.fields['origem'].queryset = self.fields['destino'].queryset = Deposito.objects.filter(ativo=True)
         self.fields['peca'].queryset = m.Peca.objects.filter(ativo=True)
+        self.fields['tipo'].choices = [(key,label) for key,label in self.fields['tipo'].choices if key!='INVENTARIO']
         self.fields['ordem'].queryset = (OrdemServico.objects.all() if allowed(user, 'estoque_escrever') else os_services.visiveis(user)).exclude(status__in=['FINALIZADA', 'APROVADA', 'FATURADA', 'CANCELADA'])
         if not allowed(user, 'estoque_escrever'):
             self.fields['tipo'].choices = [('OS', 'Utilização em OS'), ('DEVOLUCAO', 'Devolução da OS')]
@@ -163,11 +180,13 @@ class FiltrosForm(forms.Form):
     unidade = forms.ModelChoiceField(queryset=Unidade.objects.none(), required=False)
     tecnico = forms.ModelChoiceField(label='Técnico', queryset=Tecnico.objects.none(), required=False)
     equipamento = forms.ModelChoiceField(queryset=Equipamento.objects.none(), required=False)
+    contrato = forms.ModelChoiceField(queryset=m.Contrato.objects.none(), required=False)
+    tipo_atendimento = forms.ChoiceField(label='Tipo de atendimento', required=False, choices=[('', 'Todos')] + list(os_services.OrdemServico._meta.get_field('tipo_atendimento').choices))
     status = forms.ChoiceField(required=False)
 
     def __init__(self, *args, statuses=(), **kwargs):
         super().__init__(*args, **kwargs)
-        for name in ['cliente', 'unidade', 'tecnico', 'equipamento']:
+        for name in ['cliente', 'unidade', 'tecnico', 'equipamento', 'contrato']:
             self.fields[name].queryset = self.fields[name].queryset.model.objects.all()
         self.fields['status'].choices = [('', 'Todos')] + list(statuses)
         for field in self.fields.values():
@@ -181,4 +200,21 @@ class FiltrosForm(forms.Form):
             self.add_error('unidade', 'Unidade não pertence ao cliente selecionado.')
         if data.get('cliente') and data.get('equipamento') and data['equipamento'].cliente_id != data['cliente'].pk:
             self.add_error('equipamento', 'Equipamento não pertence ao cliente selecionado.')
+        return data
+
+
+class FinanceiroFiltrosForm(FiltrosForm):
+    origem = forms.ChoiceField(required=False, choices=[('', 'Todas as origens'), ('OS', 'OS'), ('CONTRATO', 'Contrato'), ('ORCAMENTO', 'Orçamento'), ('VENDA', 'Venda'), ('COMPRA', 'Compra'), ('DEVOLUCAO', 'Devolução de venda'), ('MANUAL', 'Manual')])
+    conta = forms.ModelChoiceField(label='Conta bancária / caixa', queryset=m.Lancamento.objects.none(), required=False)
+    controle = forms.ChoiceField(required=False, choices=[('', 'Todos os pagamentos'), ('BANCARIZADO', 'Com conta bancária / caixa'), ('NAO_BANCARIZADO', 'Não bancarizados')])
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from operacao.models import ContaBancaria
+        for name in ['cliente', 'unidade', 'tecnico', 'equipamento', 'status', 'contrato', 'tipo_atendimento']:
+            self.fields.pop(name)
+        self.fields['conta'].queryset = ContaBancaria.objects.all()
+    def clean(self):
+        data = super().clean()
+        if data.get('conta') and data.get('controle') == 'NAO_BANCARIZADO':
+            self.add_error('controle', 'Pagamentos sem banco não pertencem a uma conta bancária.')
         return data

@@ -83,7 +83,7 @@ class OrganizationMembership(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name='memberships')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='memberships')
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
-    role = models.CharField(max_length=20, choices=[('ADMIN', 'Administrador da organização'), ('GESTOR', 'Gestor'), ('TECNICO', 'Técnico'), ('PLANEJADOR', 'Planejador'), ('ATENDIMENTO', 'Atendimento'), ('PAINEL', 'Somente painel operacional'), ('ESTOQUE', 'Estoquista'), ('FINANCEIRO', 'Financeiro'), ('CONTABILIDADE', 'Contabilidade'), ('CLIENTE', 'Cliente do portal')], default='TECNICO')
+    role = models.CharField(max_length=20, choices=[('ADMIN', 'Administrador da organização'), ('GESTOR', 'Gestor'), ('TECNICO', 'Técnico'), ('PLANEJADOR', 'Planejador'), ('ATENDIMENTO', 'Atendimento'), ('PAINEL', 'Somente painel operacional'), ('ESTOQUE', 'Estoquista'), ('FINANCEIRO', 'Financeiro'), ('CONTABILIDADE', 'Contabilidade'), ('CLIENTE', 'Cliente do portal'), ('PDV', 'Operador de PDV'), ('VENDEDOR', 'Vendedor'), ('COMPRAS', 'Compras'), ('RH', 'Recursos humanos'), ('PAINEL_TV', 'Painel TV somente leitura')], default='TECNICO')
     joined_at = models.DateTimeField(default=timezone.now)
     left_at = models.DateTimeField(null=True, blank=True)
 
@@ -120,3 +120,88 @@ class PlatformAudit(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError('Auditoria não pode ser excluída.')
+
+
+from .tenancy import OrganizationOwned
+
+
+class ConfiguracaoTenant(OrganizationOwned):
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        self.validate_tenant()
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class FilialEmpresa(ConfiguracaoTenant):
+    """Unidade da empresa operadora; nunca uma Unidade de cliente."""
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    codigo = models.CharField(max_length=30)
+    nome = models.CharField(max_length=150)
+    cnpj = models.CharField(max_length=14, blank=True, validators=[validate_cnpj])
+    endereco = models.TextField(blank=True)
+    inscricao_estadual = models.CharField(max_length=30, blank=True)
+    inscricao_municipal = models.CharField(max_length=30, blank=True)
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['nome']
+        constraints = [models.UniqueConstraint(fields=['organization', 'codigo'], name='filial_codigo_org')]
+
+    def __str__(self):
+        return self.nome
+
+    def clean(self):
+        super().clean()
+        self.cnpj = normalize_cnpj(self.cnpj)
+
+
+class ConfiguracaoEmpresa(ConfiguracaoTenant):
+    """Metadados da PJ principal identificada pela Organization existente."""
+    inscricao_estadual = models.CharField(max_length=30, blank=True)
+    inscricao_municipal = models.CharField(max_length=30, blank=True)
+    regime_tributario = models.CharField(max_length=60, blank=True)
+    crt = models.CharField(max_length=2, blank=True)
+    natureza_operacao = models.CharField(max_length=150, blank=True)
+    codigo_servico = models.CharField(max_length=60, blank=True)
+    iss_informativo = models.DecimalField(max_digits=7, decimal_places=4, null=True, blank=True)
+    retencoes_informativas = models.JSONField(default=dict, blank=True)
+    plano = models.CharField(max_length=20, choices=[('', 'Não definido'), ('START', 'Start'), ('PROFESSIONAL', 'Professional'), ('ENTERPRISE', 'Enterprise'), ('GOVERNO', 'Governo')], blank=True)
+    limites = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['organization'], name='config_empresa_org_unica')]
+
+    def clean(self):
+        super().clean()
+        if not isinstance(self.limites, dict) or any(key not in ['usuarios', 'filiais', 'armazenamento_mb'] or isinstance(value, bool) or not isinstance(value, int) or value < 0 for key, value in self.limites.items()):
+            raise ValidationError({'limites': 'Informe limites inteiros não negativos para usuários, filiais ou armazenamento_mb.'})
+        if self.iss_informativo is not None and not 0 <= self.iss_informativo <= 100:
+            raise ValidationError({'iss_informativo': 'Percentual deve estar entre 0 e 100; não implica apuração fiscal.'})
+
+
+class ModuloOrganizacao(ConfiguracaoTenant):
+    codigo = models.CharField(max_length=20, choices=[(x, x.title()) for x in ['pdv', 'assistencia', 'estoque', 'compras', 'financeiro', 'ponto', 'rh', 'portal', 'contratos', 'fiscal', 'documentos']])
+    habilitado = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['organization', 'codigo'], name='modulo_organizacao_unico')]
+
+
+class PermissaoMembership(ConfiguracaoTenant):
+    membership = models.ForeignKey(OrganizationMembership, on_delete=models.PROTECT, related_name='capabilities')
+    capacidade = models.CharField(max_length=60)
+    permitido = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['membership', 'capacidade'], name='membership_capacidade_unica')]
+
+    def clean(self):
+        super().clean()
+        from .modules import CAPABILITIES
+        if self.membership.organization_id != self.organization_id:
+            raise ValidationError({'membership': 'Vínculo deve pertencer à mesma organização.'})
+        if self.capacidade not in CAPABILITIES:
+            raise ValidationError({'capacidade': 'Capacidade desconhecida.'})

@@ -41,6 +41,11 @@ class RegistroImutavel(Validado):
 
 
 class Fornecedor(Validado):
+    nome_fantasia = models.CharField(max_length=150, blank=True)
+    endereco = models.TextField('Endereço', blank=True)
+    representante = models.CharField(max_length=150, blank=True)
+    produtos_categorias = models.TextField('Produtos/categorias fornecidos', blank=True)
+    observacoes = models.TextField(blank=True)
     nome = models.CharField(max_length=150)
     documento = models.CharField(max_length=20, blank=True)
     contato = models.CharField(max_length=150, blank=True)
@@ -56,6 +61,23 @@ class Fornecedor(Validado):
 
 
 class Peca(Validado):
+    imagem=models.ForeignKey('operacao.Documento',on_delete=models.PROTECT,null=True,blank=True,related_name='imagens_produtos')
+    descricao_curta = models.CharField(max_length=100, blank=True)
+    subcategoria = models.CharField(max_length=100, blank=True)
+    gtin = models.CharField(max_length=14, blank=True, db_index=True)
+    codigo_barras = models.CharField(max_length=80, blank=True, db_index=True)
+    unidade_compra = models.CharField(max_length=20, blank=True)
+    unidade_venda = models.CharField(max_length=20, blank=True)
+    fator_compra = models.DecimalField(max_digits=14, decimal_places=6, default=Decimal('1'), validators=[MinValueValidator(Decimal('.000001'))])
+    fator_venda = models.DecimalField(max_digits=14, decimal_places=6, default=Decimal('1'), validators=[MinValueValidator(Decimal('.000001'))])
+    fracionavel = models.BooleanField(default=True)
+    exige_lote = models.BooleanField(default=False)
+    registro_anvisa = models.CharField(max_length=80, blank=True)
+    cest = models.CharField(max_length=7, blank=True)
+    origem_fiscal = models.CharField(max_length=2, blank=True)
+    cst = models.CharField(max_length=3, blank=True)
+    csosn = models.CharField(max_length=3, blank=True)
+    observacoes = models.TextField(blank=True)
     sku = models.CharField('Código interno / SKU', max_length=60)
     descricao = models.CharField('Descrição', max_length=255)
     fabricante = models.CharField(max_length=150, blank=True)
@@ -97,6 +119,36 @@ class Peca(Validado):
         return super().save(*args, **kwargs)
 
 
+    def clean(self):
+        super().clean()
+        if self.gtin and (not self.gtin.isdigit() or len(self.gtin) not in (8, 12, 13, 14)):
+            raise ValidationError({'gtin': 'GTIN deve ter 8, 12, 13 ou 14 dígitos.'})
+        for field, size in [('ncm', 8), ('cest', 7), ('cfop', 4)]:
+            value = getattr(self, field)
+            if value and (not value.isdigit() or len(value) != size):
+                raise ValidationError({field: f'Informe {size} dígitos, conforme orientação fiscal.'})
+        if self.imagem_id and (self.imagem.tipo!='IMAGEM' or self.imagem.peca_id!=self.pk or self.imagem.funcionario_id):
+            raise ValidationError({'imagem':'Use imagem privada da central de documentos vinculada a este produto.'})
+
+
+class CodigoProduto(Validado):
+    peca = models.ForeignKey(Peca, on_delete=models.PROTECT, related_name='codigos_alternativos')
+    codigo = models.CharField(max_length=80)
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['organization', 'codigo'], name='produto_codigo_alternativo_org')]
+    def __str__(self):
+        return self.codigo
+
+
+class FornecedorProduto(Validado):
+    peca = models.ForeignKey(Peca, on_delete=models.PROTECT, related_name='fornecedores_comerciais')
+    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.PROTECT)
+    referencia = models.CharField(max_length=100, blank=True)
+    ultimo_custo = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(ZERO)])
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['organization','peca','fornecedor'], name='produto_fornecedor_org')]
+
+
 class Movimentacao(RegistroImutavel):
     detalhamento = models.JSONField(default=dict, blank=True, editable=False)
     class Tipo(models.TextChoices):
@@ -106,6 +158,7 @@ class Movimentacao(RegistroImutavel):
         DEVOLUCAO = 'DEVOLUCAO', 'Devolução'
         OS = 'OS', 'Utilização em OS'
         TRANSFERENCIA = 'TRANSFER', 'Transferência entre depósitos'
+        INVENTARIO = 'INVENTARIO', 'Ajuste aprovado de inventário'
 
     peca = models.ForeignKey(Peca, on_delete=models.PROTECT, related_name='movimentacoes')
     origem = models.ForeignKey('operacao.Deposito', on_delete=models.PROTECT, null=True, blank=True, related_name='movimentos_saida')
@@ -115,6 +168,7 @@ class Movimentacao(RegistroImutavel):
     variacao = models.DecimalField(max_digits=14, decimal_places=3)
     saldo_apos = models.DecimalField(max_digits=14, decimal_places=3)
     custo_unitario = models.DecimalField(max_digits=14, decimal_places=2)
+    custo_total = models.DecimalField(max_digits=30, decimal_places=5, null=True, blank=True, editable=False)
     preco_unitario = models.DecimalField(max_digits=14, decimal_places=2)
     ordem = models.ForeignKey('ordens.OrdemServico', on_delete=models.PROTECT, null=True, blank=True, related_name='movimentacoes_estoque')
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
@@ -128,6 +182,11 @@ class Movimentacao(RegistroImutavel):
 
     def __str__(self):
         return f'{self.get_tipo_display()} · {self.peca.sku} · {self.quantidade}'
+
+    @property
+    def valor_custo(self):
+        quantity = self.quantidade if self.tipo == 'TRANSFER' else abs(self.variacao)
+        return self.custo_total if self.custo_total is not None else quantity * self.custo_unitario
 
 
 class Orcamento(Validado):
@@ -368,14 +427,16 @@ class CategoriaFinanceira(CadastroFinanceiro):
 
 
 class CentroCusto(CadastroFinanceiro):
-    pass
+    tipo=models.CharField(max_length=20,default='OUTRO',choices=[('ADMINISTRATIVO','Administrativo'),('COMERCIAL','Comercial'),('ASSISTENCIA','Assistência'),('OPERACIONAL','Operacional'),('OUTRO','Outro')])
 
 
 class FormaPagamento(CadastroFinanceiro):
-    pass
+    tipo_pdv = models.CharField(max_length=12, blank=True, choices=[('DINHEIRO','Dinheiro'),('PIX','PIX informado'),('DEBITO','Débito'),('CREDITO','Crédito'),('BOLETO','Boleto'),('CREDIARIO','Crediário'),('OUTRO','Outro')])
+    conta_pdv = models.ForeignKey('operacao.ContaBancaria', on_delete=models.PROTECT, null=True, blank=True)
 
 
 class Lancamento(Validado):
+    origem_raiz = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True, editable=False, related_name='parcelamentos_derivados')
     tipo = models.CharField(max_length=8, choices=[('RECEBER', 'Conta a receber / receita'), ('PAGAR', 'Conta a pagar / despesa')])
     descricao = models.CharField('Descrição', max_length=255)
     cliente = models.ForeignKey('clientes.Cliente', on_delete=models.PROTECT, null=True, blank=True)
@@ -418,10 +479,26 @@ class Lancamento(Validado):
     def saldo(self):
         if self.status in ['LIQUIDADO', 'CANCELADO']:
             return ZERO
-        return self.valor - (self.pagamentos.aggregate(total=Sum('valor'))['total'] or ZERO)
+        cache=getattr(self,'_prefetched_objects_cache',{})
+        abatement=sum((event.valor for event in cache['eventos'] if event.tipo=='ABATIMENTO'),ZERO) if 'eventos' in cache else self.eventos.filter(tipo='ABATIMENTO').aggregate(total=Sum('valor'))['total'] or ZERO
+        paid=sum((payment.valor for payment in cache['pagamentos']),ZERO) if 'pagamentos' in cache else self.pagamentos.aggregate(total=Sum('valor'))['total'] or ZERO
+        return self.valor - paid - abatement
+
+    @property
+    def raiz_financeira(self):
+        return self.origem_raiz if self.origem_raiz_id else self
+
+    @property
+    def origem_financeira(self):
+        root = self.raiz_financeira
+        return root.ordem or root.orcamento or root.contrato or getattr(root, 'venda_origem', None) or getattr(root, 'compra_origem', None) or getattr(root,'devolucao_origem',None) or 'Manual'
 
     def clean(self):
         super().clean()
+        if self.origem_raiz_id:
+            root = self.origem_raiz
+            if root.pk == self.pk or root.origem_raiz_id or root.tipo != self.tipo or root.cliente_id != self.cliente_id or root.fornecedor_id != self.fornecedor_id:
+                raise ValidationError('Origem raiz incompatível com a parcela.')
         if sum(bool(getattr(self, field + '_id')) for field in ['ordem', 'orcamento', 'contrato']) > 1:
             raise ValidationError('Um lançamento deve ter somente uma origem.')
         for origin in [self.ordem if self.ordem_id else None, self.orcamento if self.orcamento_id else None, self.contrato if self.contrato_id else None]:
@@ -433,8 +510,9 @@ class Lancamento(Validado):
         if not getattr(self, '_service_write', False):
             if self.status != 'PENDENTE' or old and old.status != 'PENDENTE' or self.data_liquidacao:
                 raise ValidationError('Use a operação financeira para liquidar/cancelar.')
-            if old and (old.ordem_id or old.orcamento_id or old.contrato_id or self.pagamentos.exists() or hasattr(self, 'compra_origem') or hasattr(self, 'venda_origem')):
+            if old and (old.origem_raiz_id or old.ordem_id or old.orcamento_id or old.contrato_id or self.pagamentos.exists() or hasattr(self, 'compra_origem') or hasattr(self, 'venda_origem') or hasattr(self,'devolucao_origem')):
                 frozen = ['tipo', 'descricao', 'cliente_id', 'fornecedor_id', 'valor', 'data_emissao', 'vencimento', 'ordem_id', 'orcamento_id', 'contrato_id', 'competencia', 'criado_por_id']
+                frozen.append('origem_raiz_id')
                 if any(getattr(old, field) != getattr(self, field) for field in frozen):
                     raise ValidationError('Condições de lançamento automático são preservadas; apenas classificação e observações podem mudar.')
         return super().save(*args, **kwargs)
@@ -442,7 +520,7 @@ class Lancamento(Validado):
 
 class EventoFinanceiro(RegistroImutavel):
     lancamento = models.ForeignKey(Lancamento, on_delete=models.PROTECT, related_name='eventos')
-    tipo = models.CharField(max_length=12, choices=[('LIQUIDACAO', 'Liquidação'), ('CANCELAMENTO', 'Cancelamento')])
+    tipo = models.CharField(max_length=12, choices=[('LIQUIDACAO', 'Liquidação'), ('CANCELAMENTO', 'Cancelamento'), ('ABATIMENTO', 'Abatimento por devolução')])
     valor = models.DecimalField(max_digits=14, decimal_places=2)
     data = models.DateField()
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)

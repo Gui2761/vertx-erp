@@ -67,10 +67,16 @@ def situation(qs, status):
 
 
 def filter_query(qs, data, mapping, date_field=None):
+    mapping = dict(mapping)
+    if qs.model is OrdemServico:
+        mapping.update(contrato='contrato', tipo_atendimento='tipo_atendimento')
     for name, path in mapping.items():
         if data.get(name):
             selected = data[name]
-            qs = qs.filter(**{path: selected.pk if path in ['pk', 'id'] and hasattr(selected, 'pk') else selected})
+            if qs.model is OrdemServico and name == 'tecnico':
+                qs = qs.filter(Q(tecnico=selected) | Q(auxiliares=selected, auxiliares__ativo=True)).distinct()
+            else:
+                qs = qs.filter(**{path: selected.pk if path in ['pk', 'id'] and hasattr(selected, 'pk') else selected})
     if date_field:
         if data.get('inicio'):
             qs = qs.filter(**{date_field + '__gte': data['inicio']})
@@ -142,14 +148,15 @@ def report_data(user, key, data):
     qs = filter_query(qs, data, {'cliente': 'cliente'}, 'data_emissao')
     for name in ['unidade', 'tecnico', 'equipamento']:
         if data.get(name):
-            match = Q(**{'ordem__' + name: data[name]}) | Q(**{'orcamento__ordem_convertida__' + name: data[name]}) | Q(**{'orcamento__ordem__' + name: data[name]})
+            from .financial_origin import origin_query
+            match = origin_query(**{'ordem__' + name: data[name]}) | origin_query(**{'orcamento__ordem_convertida__' + name: data[name]}) | origin_query(**{'orcamento__ordem__' + name: data[name]})
             if name != 'tecnico':
-                match |= Q(**{'orcamento__' + name: data[name]})
-                match |= Q(**{'contrato__equipamentos__' + ('unidade' if name == 'unidade' else 'pk'): data[name].pk})
+                match |= origin_query(**{'orcamento__' + name: data[name]})
+                match |= origin_query(**{'contrato__equipamentos__' + ('unidade' if name == 'unidade' else 'pk'): data[name].pk})
                 if name == 'unidade':
-                    match |= Q(contrato__unidades=data[name])
+                    match |= origin_query(contrato__unidades=data[name])
             else:
-                match |= Q(contrato__agenda__tecnico=data[name])
+                match |= origin_query(contrato__agenda__tecnico=data[name])
             qs = qs.filter(match).distinct()
     qs = situation(qs, data.get('status'))
     return ['Lançamento', 'Cliente', 'Categoria', 'Emissão', 'Vencimento', 'Valor', 'Situação', 'Liquidação'], [[x.descricao, str(x.cliente or ''), str(x.categoria or ''), x.data_emissao, x.vencimento, x.valor, x.situacao, x.data_liquidacao or ''] for x in qs]
@@ -223,9 +230,9 @@ def pdf_bytes(title, organization, headers, rows, details=(), max_rows=1000):
     return buffer.getvalue()
 
 
-def financial_dashboard(inicio, fim):
+def financial_dashboard(inicio, fim, filters=None):
     from operacao.reporting import financial_dashboard as expanded
-    return expanded(inicio, fim)
+    return expanded(inicio, fim, filters)
 
 def legacy_financial_dashboard(inicio, fim):
     qs = m.Lancamento.objects.exclude(status='CANCELADO')

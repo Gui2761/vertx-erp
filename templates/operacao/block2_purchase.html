@@ -1,0 +1,7 @@
+{% if resource == 'compra' %}
+<section class="card p-3 mt-3"><h2 class="h5">Recebimento e pendências</h2>
+{% if object.status == 'PEDIDO' and can_write %}<a class="btn btn-primary mb-3" href="{% url 'operacao:compra_receber' object.pk %}">Receber parcial / final</a>{% endif %}
+<p class="text-muted">Entradas parciais atualizam lotes e estoque imediatamente. A conta a pagar oficial é gerada no recebimento final, conforme o fluxo atual.</p>
+<div class="table-responsive"><table class="table"><thead><tr><th>Produto</th><th>Pedido</th><th>Recebido</th><th>Pendente</th></tr></thead><tbody>{% for item in itens %}<tr><td>{{ item.peca }}</td><td>{{ item.quantidade }}</td><td>{{ item.quantidade_recebida }}</td><td>{{ item.quantidade_pendente }}</td></tr>{% endfor %}</tbody></table></div>
+<h3 class="h6">Histórico de entradas</h3>{% for receipt in recebimentos %}<article class="border-top pt-3"><p>{{ receipt.recebido_em }} · {{ receipt.usuario }} · {{ receipt.deposito }} · {{ receipt.documento }}</p><ul>{% for detail in receipt.itens.all %}<li>{{ detail.item.peca }}: {{ detail.quantidade }} · lote {{ detail.lote|default:'Não informado' }} · validade {{ detail.validade|default:'Não informada' }} · custo unitário R$ {{ detail.custo_unitario }} · movimento {{ detail.movimentacao_id }}</li>{% endfor %}</ul></article>{% empty %}<p>Sem recebimentos detalhados. Compras recebidas anteriores permanecem integralmente recebidas.</p>{% endfor %}</section>
+{% endif %}

@@ -1,0 +1,235 @@
+{
+  "stage": "RESOLUCAO DE BLOQUEADORES DO PREDEPLOY",
+  "date_local": "2026-10-03",
+  "status": {
+    "rollback_compativel": "VALIDADO",
+    "backup": "VALIDADO anteriormente, não repetido",
+    "restore": "VALIDADO anteriormente, cópia reutilizada",
+    "25_migrations_na_copia": "VALIDADO",
+    "health": "VALIDADO",
+    "health_check_render": "PREPARADO, ainda não configurado",
+    "r2_privado": "VALIDADO anteriormente, auditoria não repetida",
+    "postgresql": "persistente antes de operação real; Free somente homologação temporária",
+    "pacote_git": "PRONTO",
+    "deploy": "PRONTO PARA AUTORIZACAO DE HOMOLOGACAO CONTROLADA",
+    "operacao_real": "NAO PRONTA: persistência PostgreSQL e smoke R2/PWA dependem de autorização"
+  },
+  "contingency": {
+    "same_models_and_post_migration_schema": true,
+    "schema_migrations": 82,
+    "project_pending_migrations_already_applied_in_copy": 25,
+    "new_migrations": 0,
+    "artifact": "tmp/contingency/VERTYX_CONTINGENCIA_PILOTO_TECNOLMED.zip",
+    "sha256_and_file_manifest": "tmp/contingency/VERTYX_CONTINGENCIA_PILOTO_TECNOLMED.manifest.json",
+    "normal_entrypoint": "/bin/sh /app/scripts/start.sh",
+    "fallback_entrypoint": "/bin/sh /app/scripts/start-contingency.sh",
+    "fallback_settings": "tecnolmed.contingency_settings",
+    "mode_flag": "CONTINGENCIA_JORNADA_CONTRATUAL=True",
+    "normal_mode_flag": false,
+    "migration_reversal_required": false,
+    "fe6c554_code_only_still_unsafe": true,
+    "journey_gate_and_linking_suspended": true,
+    "journey_start_events_corrections_config_posts_suspended": true,
+    "administrative_history_get_preserved": true,
+    "os_mutations_audit_marked": true,
+    "auth_tenancy_erp_permissions_kept": true,
+    "credential_settings_unchanged": true,
+    "no_new_business_module": true
+  },
+  "new_tests": {
+    "scope": "existing restored local PostgreSQL copy only",
+    "tests": 11,
+    "passed": 11,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "all_preexisting_rows_unchanged": true,
+    "schema_migrations": 82,
+    "migrations_run": false,
+    "restore_repeated": false,
+    "production_access": false
+  },
+  "sequence_on_existing_restored_copy": {
+    "result": "PASS",
+    "database": "predeploy_restore_907cb941b43e",
+    "existing_restore_reused": true,
+    "restore_repeated": false,
+    "schema_migrations_before_and_after": 82,
+    "migrations_applied": 0,
+    "all_preexisting_restored_rows_preserved": true,
+    "qa_fixture_mutations_expected": true,
+    "preserved_baseline_rows": 663,
+    "processes_sequential_same_database": true,
+    "candidate_then_contingency": [
+      {
+        "mode": "candidate",
+        "result": "PASS",
+        "reused_completed_phase": true,
+        "wsgi_startup": "PASS",
+        "health": "PASS",
+        "real_http_login_with_csrf": "PASS",
+        "http_customer_create_with_csrf": "PASS",
+        "tenant_cross_access": "DENIED",
+        "technician_financial_access": "DENIED",
+        "journey_order_gate": "ACTIVE",
+        "existing_document_download": "PASS",
+        "existing_signed_pdf_identical": true,
+        "evidence": "fase candidata completa na execução anterior; linha de sucesso após todas as assertions HTTP"
+      },
+      {
+        "mode": "contingency",
+        "wsgi_startup": "PASS",
+        "health": "PASS",
+        "real_http_login_with_csrf": "PASS",
+        "http_customer_create_with_csrf": "PASS",
+        "pages": {
+          "/vertyx/": 200,
+          "/assistencia/": 200,
+          "/clientes/": 200,
+          "/equipamentos/": 200,
+          "/ordens/": 200,
+          "/estoque/": 200,
+          "/financeiro/": 200,
+          "/documentos/": 200,
+          "/compras/": 200,
+          "/contratos/jornadas/": 200
+        },
+        "tenant_cross_access": "DENIED",
+        "technician_financial_access": "DENIED",
+        "journey_order_gate": "SUSPENDED",
+        "existing_document_download": "PASS",
+        "existing_signed_pdf_identical": true
+      }
+    ],
+    "production_access": false,
+    "r2_access": false,
+    "gunicorn_render_tested": false,
+    "synthetic_data_retained_only_in_local_copy": true
+  },
+  "candidate_operations": [
+    "criação usuário/tenant/memberships e técnico",
+    "criação/edição cliente",
+    "criação/edição equipamento",
+    "Jornada Contratual normal",
+    "OS iniciar/conferir/finalizar/assinar",
+    "estoque entrada/saída FEFO auditadas",
+    "pagamento parcial sem banco rastreável",
+    "documento privado upload/leitura",
+    "PDF assinado imutável"
+  ],
+  "fallback_operations": [
+    "cliente criar/editar",
+    "equipamento criar/editar",
+    "técnico INSERT com competencias",
+    "OS criar/iniciar/conferir/finalizar com assinatura cliente",
+    "estoque entrada/saída FEFO auditadas",
+    "pagamento parcial anterior liquidado sem banco",
+    "nova conta a receber paga com movimento de caixa",
+    "documento privado upload/leitura",
+    "PDF anterior inalterado",
+    "histórico Jornada Contratual preservado",
+    "escritas Jornada Contratual recusadas",
+    "permissões/memberships válidos",
+    "auditoria de contingência"
+  ],
+  "settings_checks": {
+    "contingency_check": "PASS",
+    "contingency_makemigrations_check_dry_run": "PASS",
+    "settings_differences": [
+      "CONTINGENCIA_JORNADA_CONTRATUAL"
+    ],
+    "credential_storage_security_settings_unchanged": true,
+    "new_migrations": 0,
+    "schema_migrations": 82,
+    "production_access": false
+  },
+  "previous_suite": {
+    "passed": 441,
+    "failures": 0,
+    "skips": 0,
+    "rerun": false,
+    "new_full_suite_with_changes_executed": false,
+    "note": "441 anteriores + 11 novos aprovados em execuções distintas; não declarar suíte completa de 452 reexecutada"
+  },
+  "local_test_fixture_issues_resolved": [
+    "nome admin colidia com usuário restaurado; fixtures novas passaram a usar prefixo próprio",
+    "fixture de equipamento precisava da categoria obrigatória preexistente; corrigida somente no helper",
+    "fase candidata já aprovada foi preservada; somente fase de contingência pendente foi retomada"
+  ],
+  "health_check_instruction": {
+    "service": "vertyx-erp",
+    "service_id": "srv-dauq0560tbcc73c81nqg",
+    "path": "/health/",
+    "apply_only_after_authorization": true,
+    "blueprint_sync": false,
+    "endpoint_checks": "WSGI e PostgreSQL SELECT 1; não certifica bucket ou todos os módulos"
+  },
+  "r2": {
+    "bucket": "vertyx-homologacao",
+    "private_previously_validated": true,
+    "audit_repeated": false,
+    "object_io_this_stage": false,
+    "temporary_object_procedure_documented": true,
+    "permissions_credentials_configuration_changes": false
+  },
+  "postgresql_recommendation": {
+    "resource": "vertyx-postgres-homologacao",
+    "expires": "2026-10-30",
+    "preferred": "atualizar o banco existente para plano persistente aprovado antes do primeiro dado real",
+    "alternative": "migração planejada para PostgreSQL persistente se upgrade não for escolhido",
+    "temporary_free_use": "somente homologação com dados de teste e backups privados",
+    "contracted_or_created": false
+  },
+  "code_changed": [
+    "tecnolmed/settings.py",
+    "tecnolmed/contingency_settings.py",
+    "platform_core/contingency.py",
+    "scripts/start-contingency.sh",
+    "operacao/contract_workday.py",
+    "operacao/contract_workday_views.py",
+    "ordens/services.py",
+    "templates/base.html",
+    "operacao/test_contingency.py"
+  ],
+  "documents_changed": [
+    "ROLLBACK_COMPATIVEL_PILOTO_TECNOLMED.md",
+    "VALIDACAO_ROLLBACK_PILOTO_TECNOLMED.json",
+    "PREDEPLOY_PILOTO_TECNOLMED.md",
+    "VALIDACAO_PREDEPLOY_PILOTO_TECNOLMED.json",
+    "PACOTE_GIT_PREDEPLOY_PILOTO_TECNOLMED.md"
+  ],
+  "dependencies_changed_this_stage": [],
+  "migrations_created": [],
+  "risks": [
+    "contingência isola Jornada Contratual, não corrige regressão arbitrária nos outros módulos",
+    "jornadas abertas e período sem eventos exigem revisão administrativa antes de reativação; não inventar horários/medição",
+    "Gunicorn/container Render e novos fluxos não executados em produção nesta etapa",
+    "I/O real R2 e homologação física PWA pendentes",
+    "banco Free temporário não é indicado para operação real",
+    "Auto-Deploy On Commit aplica migrations; futuro push precisa de autorização completa"
+  ],
+  "actions": {
+    "commit": false,
+    "push": false,
+    "deploy": false,
+    "production_access": false,
+    "production_migrations": false,
+    "render_changed": false,
+    "r2_changed": false,
+    "postgresql_plan_changed": false,
+    "restore_repeated": false,
+    "backup_repeated": false,
+    "new_infrastructure": false,
+    "bloco4_started": false
+  },
+  "evidence": [
+    "tmp/validation/contingency_unit_tests.json",
+    "tmp/validation/contingency_sequence.json",
+    "tmp/validation/contingency_settings_checks.json",
+    "tmp/validation/contingency_http_checkpoint.json",
+    "tmp/validation/contingency_phase_candidate.json",
+    "tmp/validation/contingency_phase_contingency.json",
+    "tmp/validation/contingency_package_audit.json"
+  ],
+  "stop": "Aguardar autorização para publicação; esta entrega não executa nenhuma ação remota."
+}

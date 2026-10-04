@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views import generic
 from contas.permissions import PerfilRequeridoMixin
@@ -51,8 +51,9 @@ class EquipamentoDetailView(LoginRequiredMixin, generic.DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        from operacao.history import related
+        from operacao.history import related, equipment_timeline
         ctx.update(related(self.request.user, self.object.cliente, self.object))
+        ctx['timeline'] = equipment_timeline(self.request.user, self.object)
         return ctx
 
 
@@ -102,6 +103,21 @@ class EquipamentoQrRedirectView(EquipamentoDetailView):
     slug_url_kwarg = "codigo_publico"
     template_name = "equipamentos/equipamento_detail.html"
     context_object_name = "equipamento"
+
+    def get(self, request, *args, **kwargs):
+        from platform_core.access import effective_role
+        if effective_role(request.user) == 'CLIENTE':
+            from operacao.permissions import portal_clients
+            row = get_object_or_404(Equipamento.objects.filter(cliente_id__in=portal_clients(request.user)), codigo_publico=kwargs['codigo_publico'])
+            return redirect('operacao:portal_equipamento', codigo_publico=row.codigo_publico)
+        return super().get(request, *args, **kwargs)
+
+@login_required
+def etiqueta(request, pk):
+    from platform_core.access import require_erp
+    require_erp(request.user, roles=['ADMIN', 'GESTOR', 'TECNICO', 'ESTOQUE'])
+    row = get_object_or_404(Equipamento, pk=pk)
+    return render(request, 'equipamentos/etiqueta.html', {'equipamento': row})
 
 
 @login_required

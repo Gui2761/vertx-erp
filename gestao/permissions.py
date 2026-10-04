@@ -13,8 +13,10 @@ ROLES = {
 
 
 def allowed(user, permission):
-    return has_erp_access(user) and effective_role(user) in ROLES[permission]
+    from platform_core.modules import has_capability
+    return has_capability(user, permission, ROLES.get(permission,()))
 
 
 def require(user, permission):
-    return require_erp(user, roles=ROLES[permission])
+    from platform_core.modules import require_capability
+    return require_capability(user, permission, ROLES.get(permission,()))

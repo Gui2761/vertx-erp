@@ -30,9 +30,11 @@ class StockTests(Dados,TestCase):
         movement=gs.movimentar(self.admin,self.part.pk,'ENTRADA',quantity,'Entrada de teste',destino_id=self.depot.pk,lote_data=data)
         return movement.lotes_movimentados.get().lote
 
-    def purchase(self,quantity=4):
+    def purchase(self,quantity=4,approved=False):
         purchase=m.Compra.objects.create(fornecedor=self.supplier,deposito=self.depot,necessidade='Reposição',vencimento=self.today,criado_por=self.admin)
         m.ItemCompra.objects.create(compra=purchase,peca=self.part,quantidade=quantity,custo_unitario=10,lote='COMPRA',validade=self.today+timezone.timedelta(days=180))
+        if approved:
+            services.compra_acao(self.admin,purchase.pk,'aprovar')
         return purchase
 
     def invariant(self):
@@ -244,10 +246,10 @@ class StockTests(Dados,TestCase):
     def test_sugestao_ideal_desconta_disponivel_e_compra_pendente(self):
         with tenant_context(self.a):
             self.entry(1,None)
-            self.purchase(4)
+            self.purchase(4,approved=True)
             data=stock.metrics(self.part)
             self.assertEqual((data['disponivel'],data['em_compra'],data['sugerido']),(1,4,5))
-            self.purchase(5)
+            self.purchase(5,approved=True)
             self.assertEqual(stock.metrics(self.part)['sugerido'],0)
 
     def test_lotes_vencidos_e_vencendo_entram_na_reposicao(self):
@@ -302,7 +304,7 @@ class StockTests(Dados,TestCase):
         with tenant_context(self.a):
             report=stock.generate_report(self.admin)
             item=report.itens.get()
-            self.purchase(10)
+            self.purchase(10,approved=True)
             with self.assertRaises(ValidationError):
                 stock.report_purchase(self.admin,report.pk,{item.pk:10},self.depot.pk,self.today,uuid.uuid4())
             purchase=stock.report_purchase(self.admin,report.pk,{item.pk:2},self.depot.pk,self.today,uuid.uuid4(),'Reserva estratégica revisada pelo gestor')

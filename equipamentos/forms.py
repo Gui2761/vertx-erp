@@ -14,6 +14,7 @@ class EquipamentoForm(TenantModelForm):
             "nome",
             "categoria",
             "fabricante",
+            "marca", "tipo", "registro_anvisa", "tensao", "potencia", "situacao_cadastro",
             "modelo",
             "cliente",
             "unidade",

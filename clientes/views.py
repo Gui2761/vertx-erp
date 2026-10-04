@@ -46,10 +46,13 @@ class ClienteDetailView(LoginRequiredMixin, generic.DetailView):
 
 
 class ClienteCreateView(LoginRequiredMixin, PerfilRequeridoMixin, generic.CreateView):
-    perfis_permitidos = ('ADMIN', 'GESTOR')
+    perfis_permitidos = ('ADMIN', 'GESTOR','PDV','VENDEDOR')
     model = Cliente
     form_class = ClienteForm
     template_name = "clientes/cliente_form.html"
+
+    def get_form_kwargs(self):
+        kwargs=super().get_form_kwargs();kwargs['user']=self.request.user;return kwargs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -79,6 +82,9 @@ class ClienteUpdateView(LoginRequiredMixin, PerfilRequeridoMixin, generic.Update
     model = Cliente
     form_class = ClienteForm
     template_name = "clientes/cliente_form.html"
+
+    def get_form_kwargs(self):
+        kwargs=super().get_form_kwargs();kwargs['user']=self.request.user;return kwargs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

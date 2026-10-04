@@ -30,10 +30,11 @@ class CalendarioForm(FiltrosForm):
     q = forms.CharField(label='Buscar OS, cliente ou equipamento', required=False, max_length=100)
     def __init__(self,*args,user,**kwargs):
         super().__init__(*args,**kwargs)
+        self.fields.pop('tipo_atendimento', None)
         self.fields['contrato'].queryset=Contrato.objects.all()
         if effective_role(user)=='TECNICO':
             orders=ps.orders_for(user)
-            pending=ps.preventive_events(user)
+            pending=ps.preventive_events(user) + ps.call_events(user)
             self.fields['tecnico'].queryset=ps.technicians_for(user)
             from django.db.models import Q
             for name in ['cliente','unidade','equipamento','contrato']:
@@ -44,14 +45,14 @@ class CalendarioForm(FiltrosForm):
 def filtered(events,data):
     result=[]
     for event in events:
-        if any(data.get(name) and event[name+'_id']!=data[name].pk for name in ['cliente','unidade','tecnico','equipamento','contrato']):
+        if any(data.get(name) and (data[name].pk not in event.get('tecnico_ids', [event['tecnico_id']]) if name == 'tecnico' else event[name+'_id']!=data[name].pk) for name in ['cliente','unidade','tecnico','equipamento','contrato']):
             continue
         if any(data.get(name) and event[name+'_code']!=data[name] for name in ['status','prioridade','tipo']):
             continue
         if data.get('q') and data['q'].casefold() not in ' '.join(str(event[key]) for key in ['numero','title','cliente','equipamento','unidade','tecnico','contrato']).casefold():
             continue
         group=data.get('grupo')
-        if group=='ATRASADAS' and not event['late'] or group=='NAO_PLANEJADAS' and not event['unplanned'] or group=='SEM_TECNICO' and event['tecnico_id'] or group=='CONFLITOS' and not event['conflicts'] or group=='AG_PECA' and event['status_code']!='AG_PECA' or group=='PREVENTIVAS' and event['kind']=='OS' or group=='PREVENTIVAS_ATRASADAS' and (event['kind']=='OS' or not event['late']):
+        if group=='ATRASADAS' and not event['late'] or group=='NAO_PLANEJADAS' and not event['unplanned'] or group=='SEM_TECNICO' and event['tecnico_id'] or group=='CONFLITOS' and not event['conflicts'] or group=='AG_PECA' and event['status_code']!='AG_PECA' or group=='PREVENTIVAS' and event['kind'] not in ['PREVENTIVA', 'VISITA'] or group=='PREVENTIVAS_ATRASADAS' and (event['kind'] not in ['PREVENTIVA', 'VISITA'] or not event['late']):
             continue
         result.append(event)
     return result
@@ -63,7 +64,10 @@ def calendario(request):
     query.setdefault('data',timezone.localdate().isoformat())
     query.setdefault('visao','SEMANA')
     query.setdefault('modo','CALENDARIO')
-    form=CalendarioForm(query,user=request.user,statuses=Status.choices)
+    from .models import Chamado
+    statuses = dict(Status.choices)
+    statuses.update(dict(Chamado._meta.get_field('status').choices))
+    form=CalendarioForm(query,user=request.user,statuses=statuses.items())
     if not form.is_valid():
         return render(request,'operacao/calendario.html',{'form':form},status=400)
     data=form.cleaned_data
@@ -76,7 +80,7 @@ def calendario(request):
     from django.db.models import Q
     orders=list(ps.orders_for(request.user).filter(Q(status__in=ENCERRADAS,agendada_para__date__range=(start,end))|Q(status__in=ENCERRADAS,conclusao__date__range=(start,end))|~Q(status__in=ENCERRADAS)))
     conflict=ps.conflict_map(orders)
-    events=[ps.order_event(row,conflict.get(row.pk)) for row in orders]+ps.preventive_events(request.user)
+    events=[ps.order_event(row,conflict.get(row.pk)) for row in orders]+ps.preventive_events(request.user)+ps.call_events(request.user)
     for event in events:
         if event['kind']!='OS' and gestor(request.user):
             event['origin_url']=event['url']
@@ -157,7 +161,7 @@ def schedule(request,pk):
 def tecnico(request):
     ps.require_planning(request.user)
     today=timezone.localdate()
-    orders=visiveis(request.user).exclude(status__in=ENCERRADAS).order_by('agendada_para','prazo','pk')
+    orders=visiveis(request.user, destinos=True).exclude(status__in=ENCERRADAS).order_by('agendada_para','prazo','pk')
     groups=[]
     seen=set()
     for title,rows in [('Hoje',orders.filter(agendada_para__date=today)),('Atrasadas',[row for row in orders if ps.late(row)]),('Próximas',orders.filter(agendada_para__date__gt=today)),('Sem agendamento',orders.filter(agendada_para__isnull=True)),('Concluídas hoje',visiveis(request.user).filter(status__in=['FINALIZADA','APROVADA','FATURADA'],conclusao__date=today))]:
@@ -165,6 +169,11 @@ def tecnico(request):
         for row in rows:
             if row.pk not in seen:
                 seen.add(row.pk)
-                items.append({'order':row,'route':'https://www.google.com/maps/dir/?'+urlencode({'api':1,'destination':endereco(row.unidade or row.cliente)})})
+                from .contract_workday import blocked, config
+                if blocked(request.user,row):
+                    target=row.unidade or row.cliente
+                    items.append({'blocked':True,'destination':{'municipio':target.cidade,'contrato':row.contrato.numero,'resumo':str(target)},'activity_url':reverse('operacao:contract_activity',args=[row.pk])})
+                else:
+                    items.append({'order':row,'activity_url':reverse('operacao:contract_activity',args=[row.pk]) if config(row) else '', 'route':'https://www.google.com/maps/dir/?'+urlencode({'api':1,'destination':endereco(row.unidade or row.cliente)})})
         groups.append((title,items))
     return render(request,'operacao/tecnico.html',{'groups':groups})

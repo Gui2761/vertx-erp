@@ -36,6 +36,7 @@ class TecnicoForm(TenantModelForm):
             "whatsapp",
             "email",
             "especialidades",
+            "funcao", "conselho", "numero_registro", "competencias",
             "registro_profissional",
             "jornada",
             "custo_hora",

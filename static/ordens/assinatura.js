@@ -6,6 +6,19 @@
   const form = document.getElementById('os-sign-form');
   const hidden = document.getElementById('id_imagem');
   const message = document.getElementById('signature-message');
+  const techCanvas = document.getElementById('technician-signature-canvas');
+  let techInk = false, techDrawing = false, techPointer = null;
+  if (techCanvas) {
+    const ctx = techCanvas.getContext('2d');
+    ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.strokeStyle = '#102d42';
+    const pointTech = e => { const r=techCanvas.getBoundingClientRect(); return [(e.clientX-r.left)*techCanvas.width/r.width,(e.clientY-r.top)*techCanvas.height/r.height]; };
+    const clearTech = () => { ctx.fillStyle='#fff'; ctx.fillRect(0,0,techCanvas.width,techCanvas.height); techInk=false; techDrawing=false; document.getElementById('id_imagem_tecnico').value=''; };
+    clearTech();
+    techCanvas.addEventListener('pointerdown',e=>{ if(!e.isPrimary || (e.pointerType==='mouse' && e.button!==0)) return; e.preventDefault(); techPointer=e.pointerId; techCanvas.setPointerCapture(e.pointerId); techDrawing=true; ctx.beginPath(); ctx.moveTo(...pointTech(e)); });
+    techCanvas.addEventListener('pointermove',e=>{if(!techDrawing || e.pointerId!==techPointer)return;e.preventDefault();ctx.lineTo(...pointTech(e));ctx.stroke();techInk=true;});
+    ['pointerup','pointercancel','lostpointercapture'].forEach(t=>techCanvas.addEventListener(t,()=>{techDrawing=false;techPointer=null;}));
+    document.getElementById('clear-technician-signature').addEventListener('click',clearTech);
+  }
   let drawing = false, hasInk = false, activePointer = null;
   context.lineWidth = 3;
   context.lineCap = 'round';
@@ -54,6 +67,7 @@
       return;
     }
     hidden.value = canvas.toDataURL('image/png');
+    if (techCanvas && techInk) document.getElementById('id_imagem_tecnico').value=techCanvas.toDataURL('image/png');
     document.getElementById('confirm-signature').disabled = true;
   });
 })();

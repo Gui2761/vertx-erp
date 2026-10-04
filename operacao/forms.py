@@ -14,14 +14,83 @@ def model_form(model, fields):
 
 DepositoForm = model_form(m.Deposito, ['nome', 'endereco', 'ativo'])
 CategoriaPecaForm = model_form(m.CategoriaPeca, ['nome', 'ativo'])
-ChamadoForm = model_form(m.Chamado, ['cliente', 'unidade', 'equipamento', 'contrato', 'titulo', 'descricao', 'prioridade'])
-CompraForm = model_form(m.Compra, ['fornecedor', 'deposito', 'necessidade', 'vencimento', 'observacoes'])
+ChamadoForm = model_form(m.Chamado, ['cliente', 'unidade', 'equipamento', 'contrato', 'titulo', 'descricao', 'prioridade', 'solicitante', 'telefone', 'email', 'origem', 'tipo', 'tecnico', 'agendada_para', 'agendada_ate', 'prazo', 'observacoes_internas'])
+ChamadoBaseForm = ChamadoForm
+class ChamadoForm(ChamadoBaseForm):
+    request_id = forms.UUIDField(required=False, initial=uuid.uuid4, widget=forms.HiddenInput)
+    anexo = forms.FileField(label='Foto / anexo', required=False)
+    def clean(self):
+        # Token replay is validated against the intent by the locked service.
+        # It must not be rejected by the generic tenant uniqueness validator.
+        token = self.cleaned_data.pop('request_id', None)
+        data = super().clean()
+        data['request_id'] = token
+        return data
+    def clean_anexo(self):
+        upload = self.cleaned_data.get('anexo')
+        if upload:
+            if not upload.name.lower().endswith(('.pdf', '.jpg', '.jpeg', '.png', '.webp')):
+                raise forms.ValidationError('Anexe PDF ou imagem JPG, PNG ou WebP.')
+            validator = DocumentoForm()
+            validator.cleaned_data = {'arquivo': upload}
+            return validator.clean_arquivo()
+        return None
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ['agendada_para', 'agendada_ate', 'prazo']:
+            self.fields[name].widget = forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}, format='%Y-%m-%dT%H:%M')
+
+CompraForm = model_form(m.Compra, ['fornecedor', 'deposito', 'necessidade', 'vencimento', 'previsao_recebimento', 'observacoes'])
+ConhecimentoForm = model_form(m.ArtigoConhecimento, ['titulo', 'fabricante', 'modelo', 'equipamento', 'ordem', 'manual', 'sintoma', 'defeito', 'solucao', 'procedimento', 'observacoes', 'ativo'])
+NecessidadePecaForm = model_form(m.NecessidadePecaOS, ['peca', 'deposito', 'quantidade', 'urgencia', 'observacoes'])
 ItemCompraForm = model_form(m.ItemCompra, ['peca', 'quantidade', 'custo_unitario', 'lote', 'fabricacao', 'validade', 'documento_entrada'])
+ItemCompraBaseForm=ItemCompraForm
+class ItemCompraForm(ItemCompraBaseForm):
+    unidade_entrada=forms.ChoiceField(choices=[('base','Unidade base do estoque'),('compra','Unidade de compra configurada')],required=False,initial='base')
+    def clean(self):
+        data=super().clean()
+        if data.get('peca') and data.get('quantidade') is not None and data.get('custo_unitario') is not None:
+            from gestao.products import convert
+            result=convert(data['peca'],data['quantidade'],data.get('unidade_entrada') or 'base',data['custo_unitario'])
+            data['quantidade']=result['quantidade_base'];data['custo_unitario']=result['valor_base']
+            self.instance.conversao={key:str(value) for key,value in result.items()}
+        return data
 CotacaoCompraForm = model_form(m.CotacaoCompra, ['fornecedor', 'valor', 'validade', 'prazo', 'observacoes'])
 ItemVendaForm = model_form(m.ItemVenda, ['peca', 'quantidade', 'valor_unitario', 'desconto'])
 ContaBancariaForm = model_form(m.ContaBancaria, ['nome', 'banco', 'agencia', 'numero', 'tipo', 'saldo_inicial', 'permite_saldo_negativo', 'ativo'])
 ExtratoForm = model_form(m.ExtratoBancario, ['conta', 'identificador', 'data', 'valor', 'descricao'])
 FiscalForm = model_form(m.DocumentoFiscal, ['tipo', 'cliente', 'lancamento', 'ordem', 'venda', 'serie', 'ambiente', 'municipio', 'codigo_servico', 'impostos', 'retencoes', 'descricao', 'valor'])
+
+class RecebimentoCompraForm(forms.Form):
+    request_id = forms.UUIDField(initial=uuid.uuid4, widget=forms.HiddenInput)
+    deposito = forms.ModelChoiceField(queryset=m.Deposito.objects.none())
+    documento = forms.CharField(label='Documento/NF de referência', max_length=180, required=False)
+    def __init__(self, *args, compra, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['deposito'].queryset = m.Deposito.objects.filter(ativo=True)
+        self.initial['deposito'] = compra.deposito_id
+        self.items = list(compra.itens.select_related('peca', 'compra'))
+        for item in self.items:
+            self.fields[f'quantidade_{item.pk}'] = forms.DecimalField(label=f'{item.peca} — receber (pendente: {item.quantidade_pendente})', max_digits=14, decimal_places=3, min_value=0, max_value=item.quantidade_pendente, initial=0, required=False)
+            self.fields[f'lote_{item.pk}'] = forms.CharField(label=f'Lote — {item.peca.sku}', max_length=100, required=False, initial=item.lote)
+            self.fields[f'fabricacao_{item.pk}'] = forms.DateField(label=f'Fabricação — {item.peca.sku}', required=False, initial=item.fabricacao, widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+            self.fields[f'validade_{item.pk}'] = forms.DateField(label=f'Validade — {item.peca.sku}', required=False, initial=item.validade, widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
+    def clean(self):
+        data = super().clean()
+        lines = []
+        for item in self.items:
+            quantity = data.get(f'quantidade_{item.pk}')
+            if quantity:
+                lot, validity = data.get(f'lote_{item.pk}'), data.get(f'validade_{item.pk}')
+                if item.peca.controla_validade and (not lot or not validity):
+                    self.add_error(f'lote_{item.pk}', 'Produto exige lote e validade.')
+                lines.append({'item_id': item.pk, 'quantidade': quantity, 'lote': lot or '', 'fabricacao': data.get(f'fabricacao_{item.pk}'), 'validade': validity})
+        if not lines:
+            raise forms.ValidationError('Informe quantidade para pelo menos um item.')
+        data['linhas'] = lines
+        return data
 
 class VendaForm(Estilizado):
     class Meta:
@@ -32,27 +101,40 @@ class VendaForm(Estilizado):
         self.fields['vendedor'].queryset = Usuario.objects.filter(memberships__organization=current_organization(), memberships__status='ATIVO', is_active=True).distinct()
 
 class ChecklistForm(Estilizado):
-    itens = forms.CharField(label='Itens do checklist', widget=forms.Textarea(attrs={'rows': 8}), help_text='Um item por linha. Inicie com * os itens obrigatórios.')
+    itens = forms.CharField(label='Itens do checklist', widget=forms.Textarea(attrs={'rows': 8, 'data-checklist-builder': 'true'}), help_text='Adicione perguntas e escolha o tipo de resposta. Sem o editor, use um item por linha (* obrigatório).')
     class Meta:
         model = m.ModeloChecklist
-        fields = ['nome', 'ativo', 'itens']
+        fields = ['nome', 'ativo', 'categoria', 'tipo_equipamento', 'fabricante', 'modelo', 'tipo_servico', 'itens']
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.initial['itens'] = '\n'.join(('* ' if row.get('obrigatorio') else '') + row['item'] for row in self.instance.itens)
+        if any(row.get('tipo') for row in self.instance.itens):
+            import json
+            self.initial['itens'] = json.dumps(self.instance.itens, ensure_ascii=False, indent=2)
     def clean_itens(self):
         rows = [{'item': line.strip().lstrip('*').strip(), 'obrigatorio': line.strip().startswith('*')} for line in self.cleaned_data['itens'].splitlines() if line.strip()]
+        if self.cleaned_data['itens'].lstrip().startswith('['):
+            import json
+            try:
+                rows = json.loads(self.cleaned_data['itens'])
+            except (ValueError, TypeError):
+                raise forms.ValidationError('Lista JSON inválida.')
         m.checklist_valido(rows)
+        for row in rows:
+            row.pop('resposta', None)
+            row['concluido'] = False
         return rows
 
 class PlanoForm(Estilizado):
     equipamentos = forms.ModelMultipleChoiceField(queryset=Equipamento.objects.none())
     class Meta:
         model = m.PlanoPreventivo
-        fields = ['nome', 'cliente', 'contrato', 'equipamentos', 'checklist', 'tecnico', 'periodicidade', 'intervalo_dias', 'inicio', 'fim', 'observacoes', 'ativo']
+        fields = ['nome', 'cliente', 'unidade', 'contrato', 'equipamentos', 'checklist', 'tecnico', 'equipe', 'tipo_manutencao', 'periodicidade', 'intervalo_dias', 'inicio', 'fim', 'observacoes', 'ativo']
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
             self.initial['equipamentos'] = self.instance.equipamentos.all()
+            self.initial['equipe'] = self.instance.equipe.all()
     def clean(self):
         data = super().clean()
         if data.get('cliente') and any(eq.cliente_id != data['cliente'].pk for eq in data.get('equipamentos', [])):
@@ -64,7 +146,7 @@ class PlanoForm(Estilizado):
 class DocumentoForm(Estilizado):
     class Meta:
         model = m.Documento
-        fields = ['titulo', 'tipo', 'arquivo', 'cliente', 'equipamento', 'ordem', 'contrato', 'orcamento', 'fiscal', 'disponivel_portal']
+        fields = ['titulo', 'tipo', 'categoria', 'arquivo', 'cliente', 'unidade', 'equipamento', 'tecnico', 'fornecedor', 'chamado', 'ordem', 'contrato', 'orcamento', 'fiscal', 'peca', 'funcionario', 'compra', 'venda', 'emissao', 'validade', 'observacoes', 'disponivel_portal']
     def clean_arquivo(self):
         upload = self.cleaned_data['arquivo']
         if upload.size > 25 * 1024 * 1024:
@@ -111,7 +193,7 @@ class PortalForm(Estilizado):
 class PagamentoForm(forms.Form):
     valor = forms.DecimalField(max_digits=14, decimal_places=2, min_value=Decimal('.01'))
     data = forms.DateField(initial=timezone.localdate, widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
-    conta = forms.ModelChoiceField(queryset=m.ContaBancaria.objects.none(), required=False)
+    conta = forms.ModelChoiceField(queryset=m.ContaBancaria.objects.none(), required=False, help_text='Sem conta: pagamento não bancarizado, registrado no financeiro e identificado no histórico/relatório; não altera saldo bancário.')
     observacao = forms.CharField(required=False, widget=forms.Textarea)
     request_id = forms.UUIDField(initial=uuid.uuid4, widget=forms.HiddenInput)
     def __init__(self, *args, **kwargs):

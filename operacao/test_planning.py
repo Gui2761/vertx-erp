@@ -304,8 +304,12 @@ class PlanningTests(PlanningData,TestCase):
             part=self.da['part']
             gs.movimentar(self.admin,part.pk,'ENTRADA',5,'Entrada',destino_id=depot.pk)
             stock.reserve(self.admin,part.pk,depot.pk,2,'Separação',order_id=self.da['order'].pk)
-            purchase=m.Compra.objects.create(deposito=depot,necessidade='Reposição',vencimento=self.today,criado_por=self.admin)
+            supplier=g.Fornecedor.objects.create(nome='Fornecedor integrado')
+            purchase=m.Compra.objects.create(deposito=depot,fornecedor=supplier,necessidade='Reposição',vencimento=self.today,criado_por=self.admin)
             m.ItemCompra.objects.create(compra=purchase,peca=part,quantidade=4,custo_unitario=10)
+            self.assertEqual(stock.metrics(part)['em_compra'],0)
+            from .services import compra_acao
+            compra_acao(self.admin,purchase.pk,'aprovar')
         response=self.client.get(reverse('operacao:planning_detail',args=[self.da['order'].pk]))
         part=response.json()['pecas'][0]
         self.assertEqual(part['reservado_os'],'2.000')

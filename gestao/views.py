@@ -71,7 +71,11 @@ def lista(request, resource):
     search = request.GET.get('q', '').strip()
     field = 'descricao' if resource in ['peca', 'lancamento'] else 'numero' if resource == 'contrato' else 'cliente__nome_razao_social' if resource == 'orcamento' else 'nome'
     if search:
-        qs = qs.filter(**{field + '__icontains': search})
+        if resource == 'peca':
+            from django.db.models import Q
+            qs = qs.filter(Q(descricao__icontains=search) | Q(sku__icontains=search) | Q(gtin=search) | Q(codigo_barras=search) | Q(codigos_alternativos__codigo=search)).distinct()
+        else:
+            qs = qs.filter(**{field + '__icontains': search})
     if request.GET.get('status') in SITUATIONS and resource in ['orcamento', 'contrato', 'lancamento']:
         qs = reporting.situation(qs, request.GET['status'])
     stock_rows = None
@@ -85,6 +89,14 @@ def lista(request, resource):
     if resource == 'lancamento' and request.GET.get('tipo') in ['RECEBER', 'PAGAR']:
         qs = qs.filter(tipo=request.GET['tipo'])
     if resource == 'lancamento':
+        from .financial_origin import origin_query, origin_type_query
+        qs = qs.filter(origin_type_query(request.GET.get('origem')))
+        for name in ['ordem', 'orcamento', 'contrato', 'venda_origem', 'compra_origem']:
+            raw = request.GET.get(name)
+            if raw:
+                if not raw.isdigit():
+                    return HttpResponse('Filtro de origem inválido.', status=400)
+                qs = qs.filter(origin_query(**{name + '__pk': int(raw)}))
         from django.utils.dateparse import parse_date
         from django.db.models import Q
         dates = {}
@@ -102,7 +114,7 @@ def lista(request, resource):
                 qs = qs.filter(**{'vencimento__'+lookup:dates[key]})
         if dates.get('pagamento_inicio') and dates.get('pagamento_fim'):
             period=(dates['pagamento_inicio'],dates['pagamento_fim'])
-            qs=qs.filter(Q(pagamentos__data__range=period) | Q(status='LIQUIDADO',pagamentos__isnull=True,data_liquidacao__range=period)).distinct()
+            qs=qs.filter(Q(pagamentos__data__range=period) | (Q(status='LIQUIDADO',pagamentos__isnull=True,data_liquidacao__range=period) & ~Q(eventos__tipo='ABATIMENTO'))).distinct()
     page = Paginator(qs, 25).get_page(request.GET.get('page'))
     rows = [{'cells': [value(obj, col) for col in columns], 'url': reverse('gestao:' + resource + '_detalhe', args=[obj.pk])} for obj in page]
     headers = [label(model, col) for col in columns]
@@ -167,9 +179,10 @@ def detalhe(request, resource, pk):
     if resource == 'orcamento':
         ctx.update(itens=obj.itens.select_related('peca'), tecnico_form=forms.TecnicoForm())
     if resource == 'contrato':
-        ctx.update(unidades=obj.unidades.all(), equipamentos=obj.equipamentos.all(), agendas=obj.agenda.select_related('equipamento', 'tecnico', 'ordem')[:30], cobrancas=obj.lancamentos.all()[:30])
+        from .financial_origin import origin_query
+        ctx.update(unidades=obj.unidades.all(), equipamentos=obj.equipamentos.all(), agendas=obj.agenda.select_related('equipamento', 'tecnico', 'ordem')[:30], cobrancas=m.Lancamento.objects.filter(origin_query(contrato=obj))[:30])
     if resource == 'lancamento':
-        ctx.update(eventos=obj.eventos.select_related('usuario'), operacao_form=forms.OperacaoFinanceiraForm(), origem=obj.ordem or obj.orcamento or obj.contrato or 'Manual')
+        ctx.update(eventos=obj.eventos.select_related('usuario'), pagamentos=obj.pagamentos.select_related('conta','usuario'), operacao_form=forms.OperacaoFinanceiraForm(), origem=obj.origem_financeira)
     if resource == 'peca':
         from operacao.stock import metrics
         ctx['stock'] = metrics(obj)
@@ -318,9 +331,7 @@ def agenda_os(request, pk):
 
 @perfis_requeridos(*ROLES['financeiro'])
 def financeiro(request):
-    form = forms.FiltrosForm(request.GET)
-    for name in ['cliente', 'unidade', 'tecnico', 'equipamento', 'status']:
-        form.fields.pop(name)
+    form = forms.FinanceiroFiltrosForm(request.GET)
     if not form.is_valid():
         return render(request, 'gestao/financeiro.html', {'form': form}, status=400)
     today = timezone.localdate()
@@ -329,7 +340,7 @@ def financeiro(request):
     if fim < inicio:
         form.add_error(None, 'Período inválido.')
         return render(request, 'gestao/financeiro.html', {'form': form}, status=400)
-    return render(request, 'gestao/financeiro.html', {'form': form, 'totais': reporting.financial_dashboard(inicio, fim), 'inicio': inicio, 'fim': fim, 'can_write': allowed(request.user, 'financeiro_escrever')})
+    return render(request, 'gestao/financeiro.html', {'form': form, 'totais': reporting.financial_dashboard(inicio, fim, form.cleaned_data), 'inicio': inicio, 'fim': fim, 'can_write': allowed(request.user, 'financeiro_escrever')})
 
 
 @perfis_requeridos(*ROLES['financeiro_escrever'])
@@ -376,10 +387,17 @@ def relatorio(request, key):
     from equipamentos.models import SituacaoOperacional
     statuses = Status.choices if key.startswith('os_') or key == 'preventivas_realizadas' else SituacaoOperacional.choices if key.startswith('equipamentos_') else m.Movimentacao.Tipo.choices if key in ['pecas_utilizadas', 'movimentacao_estoque'] else m.Contrato._meta.get_field('status').choices if key.startswith('contratos_') else m.Lancamento._meta.get_field('status').choices if key in ['receitas', 'despesas'] else [(x, x.capitalize()) for x in ['PENDENTE', 'ATRASADA', 'AGENDADA']]
     form = forms.FiltrosForm(request.GET, statuses=statuses)
+    if key.startswith('custos_'):
+        form.fields['status'].choices = [('', 'Todos')] + list(Status.choices)
+    if key in ['preventivas_previstas', 'preventivas_executadas', 'planos_preventivos']:
+        form.fields['status'].choices = [('', 'Todos')] + [(code, code.capitalize()) for code in ['PENDENTE', 'ATRASADA', 'AGENDADA', 'CONCLUIDA', 'CANCELADA']]
     if key in reporting.ADDITIONAL_REPORTS:
         from operacao.reporting import REPORTS
         category = REPORTS[key][1]
         keep = ['inicio', 'fim'] if category == 'estoque' or key == 'fluxo_caixa' else ['inicio', 'fim', 'cliente'] if category in ['financeiro', 'orcamentos'] else list(form.fields)
+        if key == 'compras_pendentes':
+            keep.append('status')
+            form.fields['status'].choices = [('', 'Todos')] + [('APROVADA', 'Aprovada'), ('PEDIDO', 'Pedido')]
         if key == 'orcamentos_conversao':
             keep.append('status')
             form.fields['status'].choices = [('', 'Todos')] + list(m.Orcamento._meta.get_field('status').choices)

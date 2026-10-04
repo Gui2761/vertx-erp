@@ -28,11 +28,18 @@ def home(request):
 def chamado(request):
     ids = customers(request)
     obj = m.Chamado(criado_por=request.user)
-    form = forms.ChamadoForm(request.POST if request.method == 'POST' else None, instance=obj)
+    form = forms.ChamadoForm(request.POST if request.method == 'POST' else None, request.FILES or None, instance=obj)
+    for name in ['origem', 'tecnico', 'agendada_para', 'agendada_ate', 'prazo', 'observacoes_internas']:
+        form.fields.pop(name)
     for name, qs in {'cliente': Cliente.objects.filter(pk__in=ids), 'unidade': Unidade.objects.filter(cliente_id__in=ids), 'equipamento': Equipamento.objects.filter(cliente_id__in=ids), 'contrato': g.Contrato.objects.filter(cliente_id__in=ids)}.items():
         form.fields[name].queryset = qs
     if request.method == 'POST' and form.is_valid():
-        obj = form.save()
+        from .services import salvar_chamado
+        try:
+            obj = salvar_chamado(request.user, form, form.cleaned_data.get('request_id'), portal=True)
+        except ValidationError as exc:
+            form.add_error(None, '; '.join(exc.messages))
+            return render(request, 'operacao/form.html', {'titulo': 'Abrir chamado', 'form': form, 'back_url': '/portal/'}, status=400)
         gs.audit(request.user, 'CHAMADO_PORTAL_CRIADO', obj, {'posterior': {'titulo': obj.titulo, 'cliente': obj.cliente_id}})
         from .notifications import deliver
         deliver(f'chamado:{obj.pk}', 'Novo chamado do cliente', str(obj), ['ADMIN', 'GESTOR'], f'/chamados/{obj.pk}/')
@@ -43,6 +50,18 @@ def chamado(request):
 def ordem(request, pk):
     row = get_object_or_404(OrdemServico.objects.filter(cliente_id__in=customers(request)), pk=pk)
     return render(request, 'operacao/portal_os.html', {'ordem': row, 'assinaturas': row.assinaturas.all(), 'fotos': row.fotos.all()})
+
+@login_required
+def equipamento(request, codigo_publico):
+    row = get_object_or_404(Equipamento.objects.filter(cliente_id__in=customers(request)), codigo_publico=codigo_publico)
+    from .history import equipment_timeline
+    return render(request, 'operacao/portal_equipamento.html', {'equipamento': row, 'timeline': equipment_timeline(request.user, row, portal=True)})
+
+@login_required
+def chamado_detalhe(request, pk):
+    row = get_object_or_404(m.Chamado.objects.filter(cliente_id__in=customers(request)), pk=pk)
+    docs = documents(request.user).filter(chamado=row)
+    return render(request, 'operacao/portal_chamado.html', {'chamado': row, 'documentos': docs})
 
 @login_required
 def arquivo_os(request, pk, item_id, kind):

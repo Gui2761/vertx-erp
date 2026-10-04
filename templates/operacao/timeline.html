@@ -1,0 +1,2 @@
+<section class="card p-3 my-3"><h2 class="h5">Linha do tempo do equipamento</h2>
+{% for item in timeline %}<article class="border-bottom py-3"><small>{{ item.data|date:'d/m/Y H:i' }}</small><h3 class="h6 mt-1">{% if item.url %}<a href="{{ item.url }}">{{ item.titulo }}</a>{% else %}{{ item.titulo }}{% endif %}</h3><p class="mb-0">{{ item.descricao }}</p></article>{% empty %}<p>Nenhum evento autorizado.</p>{% endfor %}</section>

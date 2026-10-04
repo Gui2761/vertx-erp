@@ -57,7 +57,7 @@ def reservations(request):
     if request.method=='POST' and form.is_valid():
         d=form.cleaned_data
         try:
-            stock.reserve(request.user,d['peca'].pk,d['deposito'].pk,d['quantidade'],d['motivo'],d['ordem'].pk if d['ordem'] else None,d['venda'].pk if d['venda'] else None)
+            stock.reserve(request.user,d['peca'].pk,d['deposito'].pk,d['quantidade'],d['motivo'],d['ordem'].pk if d['ordem'] else None,d['venda'].pk if d['venda'] else None, request_id=d.get('request_id'), lot_id=d['lote'].pk if d.get('lote') else None)
         except ValidationError as exc:
             form.add_error(None,'; '.join(exc.messages))
         else:

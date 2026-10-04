@@ -69,6 +69,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "operacao.navigation.menu",
+                "platform_core.contingency.context",
             ],
         },
     },
@@ -144,3 +145,6 @@ USE_THOUSAND_SEPARATOR = True
 DATE_FORMAT = "d/m/Y"
 DATETIME_FORMAT = "d/m/Y H:i"
 SHORT_DATE_FORMAT = "d/m/Y"
+
+# Desativado na versão candidata. O entrypoint de contingência é explícito.
+CONTINGENCIA_JORNADA_CONTRATUAL = False

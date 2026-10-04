@@ -38,15 +38,23 @@ class OrganizationMiddleware:
                 return redirect_to_login(request.get_full_path(), reverse('contas:login'))
             if request.organization is None:
                 return redirect('platform_core:home')
-            if request.membership.role == 'PAINEL' and not request.path.startswith('/painel-operacional/'):
+            if request.membership.role in ['PAINEL', 'PAINEL_TV'] and not request.path.startswith('/painel-operacional/'):
                 return HttpResponseForbidden('Acesso restrito ao painel operacional.')
-            if request.membership.role == 'CLIENTE' and not request.path.startswith('/portal/'):
+            import re
+            equipment_qr = bool(re.fullmatch(r'/equipamentos/qr/[0-9a-fA-F-]{36}/', request.path))
+            if request.membership.role == 'CLIENTE' and not request.path.startswith('/portal/') and not equipment_qr:
                 return HttpResponseForbidden('Acesso restrito ao portal do cliente.')
             try:
                 require_erp(request.user, request.organization)
             except PermissionDenied:
                 return HttpResponseForbidden('Acesso ao ERP Assistência não autorizado nesta organização.')
         with tenant_context(request.organization):
+            if not public:
+                from .modules import module_enabled, module_for_path
+                if not module_enabled(module_for_path(request.path)):
+                    response=HttpResponseForbidden('Módulo desabilitado nesta organização.')
+                    response['Cache-Control']='private, no-store'
+                    return response
             response = self.get_response(request)
         if request.user.is_authenticated and not request.path.startswith('/static/'):
             response['Cache-Control'] = 'private, no-store'

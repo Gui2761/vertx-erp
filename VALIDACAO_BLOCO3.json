@@ -1,0 +1,1075 @@
+{
+  "project": "VERTYX",
+  "block": 3,
+  "date_started": "2026-10-02",
+  "status": "HOMOLOGACAO_LOCAL_CONCLUIDA_COM_PENDENCIAS_REAIS",
+  "block_fully_closed": false,
+  "ready_for_production": false,
+  "block4_started": false,
+  "source_request": "Solicitação do usuário VERTYX — BLOCO 3, seções 1–75",
+  "workspace": "Pasta original tecnolmed_erp; nenhuma extração/cópia do projeto para implementação",
+  "git": {
+    "head": "fe6c554eb1fce12f430d9e6a1f9da8ecf9eae261",
+    "branch": "main",
+    "repository": "tecnolmedengclinica-spec/vertx-erp",
+    "commit_created": false,
+    "pushed": false,
+    "deployed": false
+  },
+  "environment": {
+    "database": "PostgreSQL 16.15 sintético local, cluster preexistente em loopback",
+    "python": "3.12.14",
+    "django": "5.2.17",
+    "dependency_changes_block3": [],
+    "pip_check": "PASS: No broken requirements found.",
+    "production_database_accessed": false,
+    "existing_database_reset": false,
+    "credentials_or_infrastructure_changed": false
+  },
+  "categories": {
+    "VALIDADO_AUTOMATICAMENTE": "PASS_404_TESTES",
+    "VALIDADO_EM_BANCO_SINTETICO": "PASS_TESTES_PRESERVACAO_E_39_CONFERENCIAS_UI",
+    "VALIDADO_PELA_INTERFACE": "PASS_CENARIOS_LOCAIS_DOCUMENTADOS",
+    "VALIDADO_EM_DISPOSITIVO_REAL": "NAO_EXECUTADO",
+    "PENDENTE_DE_DISPOSITIVO_REAL": true,
+    "NAO_VALIDADO_EM_PRODUCAO": true
+  },
+  "tests": {
+    "previous": 335,
+    "new_methods": 69,
+    "discovered_methods": 404,
+    "final_ran": 404,
+    "final_seconds": 436.703,
+    "final_pass": true,
+    "source_hashes_match_final": true,
+    "test_source_unchanged": true,
+    "new_by_file": {
+      "operacao/test_block3_commerce.py": 11,
+      "operacao/test_block3_concurrency.py": 11,
+      "operacao/test_block3_foundation.py": 6,
+      "operacao/test_block3_integration.py": 7,
+      "operacao/test_block3_inventory.py": 5,
+      "operacao/test_block3_products.py": 5,
+      "operacao/test_block3_returns.py": 5,
+      "operacao/test_block3_security.py": 6,
+      "operacao/test_block3_workforce.py": 13
+    },
+    "old_tests_removed": false,
+    "old_test_change": {
+      "file": "platform_core/tests.py",
+      "test": "LegacyMigrationTests.test_upgrade_com_dados_anteriores_sem_reverter_bancos_existentes",
+      "change": "Somente timeout do subprocesso: 90 → 600 segundos",
+      "reason": "Script inalterado passou em 274,712s no PostgreSQL local; todas as assertivas mantidas",
+      "evidence": "tmp/validation/bloco3_legacy_timing.json"
+    },
+    "new_concurrency_tests": 11,
+    "skip_count": 0,
+    "commands": [
+      {
+        "command": [
+          "check"
+        ],
+        "exit_code": 0,
+        "log": "tmp/validation/bloco3_3h_final_0_check.log"
+      },
+      {
+        "command": [
+          "makemigrations",
+          "--check",
+          "--dry-run"
+        ],
+        "exit_code": 0,
+        "log": "tmp/validation/bloco3_3h_final_1_makemigrations.log"
+      },
+      {
+        "command": [
+          "test",
+          "--noinput",
+          "-v",
+          "1",
+          "--parallel",
+          "2"
+        ],
+        "exit_code": 0,
+        "log": "tmp/validation/bloco3_3h_final_2_test.log",
+        "source_unchanged_during_test": true
+      },
+      {
+        "command": [
+          "collectstatic",
+          "--noinput"
+        ],
+        "exit_code": 0,
+        "log": "tmp/validation/bloco3_3h_final_3_collectstatic.log"
+      }
+    ],
+    "log": "tmp/validation/bloco3_3h_final_2_test.log",
+    "baseline_before_3h": 401,
+    "new_3h": 3,
+    "new_3h_methods": [
+      "test_credit_limit_is_rendered_only_for_authorized_customer_editor",
+      "test_localized_year_links_inputs_and_exports_remain_machine_readable",
+      "test_menu_has_accessible_name_and_stock_alert_actions_keep_their_routes"
+    ]
+  },
+  "migrations": {
+    "new_count": 14,
+    "new_files": [
+      "clientes/migrations/0005_fundacao_bloco3.py",
+      "contas/migrations/0008_fundacao_bloco3.py",
+      "gestao/migrations/0009_fundacao_bloco3.py",
+      "gestao/migrations/0010_fundacao_bloco3.py",
+      "gestao/migrations/0011_fundacao_bloco3.py",
+      "gestao/migrations/0012_fundacao_bloco3.py",
+      "gestao/migrations/0013_fundacao_bloco3.py",
+      "operacao/migrations/0008_fundacao_bloco3.py",
+      "operacao/migrations/0009_fundacao_bloco3.py",
+      "operacao/migrations/0010_fundacao_bloco3.py",
+      "operacao/migrations/0011_fundacao_bloco3.py",
+      "operacao/migrations/0012_fundacao_bloco3.py",
+      "operacao/migrations/0013_fundacao_bloco3.py",
+      "platform_core/migrations/0005_fundacao_bloco3.py"
+    ],
+    "operations": [
+      "AddConstraint",
+      "AddField",
+      "AddIndex",
+      "AlterField",
+      "CreateModel",
+      "swappable_dependency"
+    ],
+    "old_hashes_count": 55,
+    "old_hashes_unchanged": true,
+    "applied_only_locally": true,
+    "applied_in_production_by_block3": false,
+    "pending_production_block3": [
+      "clientes/migrations/0005_fundacao_bloco3.py",
+      "contas/migrations/0008_fundacao_bloco3.py",
+      "gestao/migrations/0009_fundacao_bloco3.py",
+      "gestao/migrations/0010_fundacao_bloco3.py",
+      "gestao/migrations/0011_fundacao_bloco3.py",
+      "gestao/migrations/0012_fundacao_bloco3.py",
+      "gestao/migrations/0013_fundacao_bloco3.py",
+      "operacao/migrations/0008_fundacao_bloco3.py",
+      "operacao/migrations/0009_fundacao_bloco3.py",
+      "operacao/migrations/0010_fundacao_bloco3.py",
+      "operacao/migrations/0011_fundacao_bloco3.py",
+      "operacao/migrations/0012_fundacao_bloco3.py",
+      "operacao/migrations/0013_fundacao_bloco3.py",
+      "platform_core/migrations/0005_fundacao_bloco3.py"
+    ],
+    "prior_local_files_not_applied_in_production_by_this_work": [
+      "contas/0007_operacao_bloco2",
+      "equipamentos/0007_operacao_bloco2",
+      "gestao/0006_estabilizacao_bloco1",
+      "gestao/0007_origem_parcelas_existentes",
+      "gestao/0008_operacao_bloco2",
+      "operacao/0006_estabilizacao_bloco1",
+      "operacao/0007_operacao_bloco2",
+      "ordens/0010_operacao_bloco2"
+    ],
+    "published_schema_pending_list_checked": false,
+    "new_3h_count": 0,
+    "all_pre_3h_migration_files_unchanged": 69
+  },
+  "preservation": {
+    "result": "PASS",
+    "synthetic_original_rows": 1836,
+    "original_columns_values_and_relationships_unchanged": true,
+    "evidence": [
+      "tmp/validation/bloco3_baseline_rehearsal.json",
+      "tmp/validation/bloco3_incremental_preservation.json"
+    ],
+    "published_data_preservation_claim": false
+  },
+  "browser": {
+    "name": "Codex In-app Browser",
+    "environment": "PostgreSQL sintético local em loopback; pasta original; arquivos privados locais de QA",
+    "purchase_approval_and_order": "PASS_INTERFACE",
+    "purchase_receipts": "PASS_INTERFACE_PARCIAL_E_FINAL",
+    "pdv_journey": "PASS_INTERFACE_DINHEIRO_MISTO_TROCO_CREDIARIO_F8",
+    "technician_journey": "PASS_INTERFACE_OS50_DESKTOP_OS51_390x844",
+    "point_journey": "PASS_INTERFACE_4_MARCACOES_AJUSTE_REJEITADO_EXPORTS_FECHAMENTO",
+    "manager_journey": "PASS_INTERFACE_8_DOMINIOS_E_FILTRO_SEM_BASE",
+    "requested_resolutions": [
+      [
+        1440,
+        900
+      ],
+      [
+        768,
+        1024
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "requested_resolutions_validated_block3": [
+      [
+        1440,
+        900
+      ],
+      [
+        768,
+        1024
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "screenshots": [
+      {
+        "file": "tmp/validation/bloco3h/pdv-390x844.png",
+        "viewport": [
+          390,
+          844
+        ],
+        "captured_pixels": [
+          390,
+          802
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "d70a31d06933bd4ba8257ec083f5adc8204fe881685821d3f2d6e0b62eadf924"
+      },
+      {
+        "file": "tmp/validation/bloco3h/caixa-390x844.png",
+        "viewport": [
+          390,
+          844
+        ],
+        "captured_pixels": [
+          375,
+          771
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "44c2cb85ae86ddf73239912bca86749f4593e60e6fbf0763306469f8f3690caa"
+      },
+      {
+        "file": "tmp/validation/bloco3h/produto-390x844.png",
+        "viewport": [
+          390,
+          844
+        ],
+        "captured_pixels": [
+          375,
+          771
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "7b3ef3eb6df49cac086f6593ec89c01330c09ab7bfca768b220f28ddcf289ce2"
+      },
+      {
+        "file": "tmp/validation/bloco3h/compra-390x844.png",
+        "viewport": [
+          390,
+          844
+        ],
+        "captured_pixels": [
+          375,
+          771
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "db5ab7d036ad9643ac3e4b1a9271d9718d5fc6b63a8be0d5f78f6a5f8820e17d"
+      },
+      {
+        "file": "tmp/validation/bloco3h/estoque-390x844.png",
+        "viewport": [
+          390,
+          844
+        ],
+        "captured_pixels": [
+          375,
+          771
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "be2310bb906f86917007f8bfffeb6b80b22392cac70b8dbfd39ea60d26ee0f0c"
+      },
+      {
+        "file": "tmp/validation/bloco3h/dashboard-390x844.png",
+        "viewport": [
+          390,
+          844
+        ],
+        "captured_pixels": [
+          375,
+          771
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "c8e89e359246780d1595314e0e55cbdc6d4cccb70ad123c21573e43d393ea2c6"
+      },
+      {
+        "file": "tmp/validation/bloco3h/tecnico-390x844.png",
+        "viewport": [
+          390,
+          844
+        ],
+        "captured_pixels": [
+          375,
+          771
+        ],
+        "role": "TECNICO",
+        "no_horizontal_page_overflow": true,
+        "sha256": "f48ceaa911fca7adee4278ce8175b2d0aaa2ea1448efc90ccec1f4e0d2ed2cb8"
+      },
+      {
+        "file": "tmp/validation/bloco3h/ponto-390x844.png",
+        "viewport": [
+          390,
+          844
+        ],
+        "captured_pixels": [
+          375,
+          771
+        ],
+        "role": "TECNICO",
+        "no_horizontal_page_overflow": true,
+        "sha256": "6ec206891e61b6e3252cc7a24b5e6484718b42c747c3ecff2acfed9dc75b6596"
+      },
+      {
+        "file": "tmp/validation/bloco3h/pdv-768x1024.png",
+        "viewport": [
+          768,
+          1024
+        ],
+        "captured_pixels": [
+          768,
+          802
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "61469803dd5ac3e0b65b637bc2378b7195fbbcb4606100e308f8981eb3bcdbf1"
+      },
+      {
+        "file": "tmp/validation/bloco3h/caixa-768x1024.png",
+        "viewport": [
+          768,
+          1024
+        ],
+        "captured_pixels": [
+          768,
+          802
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "471b4aac874221e495f73e21c4651d0d93f2d24aa87d7e3d80536f65a08e11e3"
+      },
+      {
+        "file": "tmp/validation/bloco3h/produto-768x1024.png",
+        "viewport": [
+          768,
+          1024
+        ],
+        "captured_pixels": [
+          753,
+          786
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "b0d3a91b657cbe726ef75809aee3058168572cc45c4c2c0819e0f38009da850f"
+      },
+      {
+        "file": "tmp/validation/bloco3h/compra-768x1024.png",
+        "viewport": [
+          768,
+          1024
+        ],
+        "captured_pixels": [
+          753,
+          786
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "d29bbdeb1a54422dc62695be944f833f6f3e75ba66af6ddca39d9be682a76a5d"
+      },
+      {
+        "file": "tmp/validation/bloco3h/estoque-768x1024.png",
+        "viewport": [
+          768,
+          1024
+        ],
+        "captured_pixels": [
+          768,
+          802
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "81c9522eacd6aca8f81c1804fb4e16befe38c3ba6b1b15400df8c369eb72145c"
+      },
+      {
+        "file": "tmp/validation/bloco3h/dashboard-768x1024.png",
+        "viewport": [
+          768,
+          1024
+        ],
+        "captured_pixels": [
+          768,
+          802
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "67640d158e91b617fdf073c212b6e4e2516a6d15a5ef3fa705467786e1847a01"
+      },
+      {
+        "file": "tmp/validation/bloco3h/tecnico-768x1024.png",
+        "viewport": [
+          768,
+          1024
+        ],
+        "captured_pixels": [
+          753,
+          786
+        ],
+        "role": "TECNICO",
+        "no_horizontal_page_overflow": true,
+        "sha256": "c1b6895d6e868c8c892da1dc465d3923734e8f802d3df5b7ba68440247ad42c7"
+      },
+      {
+        "file": "tmp/validation/bloco3h/ponto-768x1024.png",
+        "viewport": [
+          768,
+          1024
+        ],
+        "captured_pixels": [
+          753,
+          786
+        ],
+        "role": "TECNICO",
+        "no_horizontal_page_overflow": true,
+        "sha256": "f66b726cfe2cdbdbe5eb9dd11071419e0f8fb6ef8835835d6339860a726c1337"
+      },
+      {
+        "file": "tmp/validation/bloco3h/pdv-1440x900.png",
+        "viewport": [
+          1440,
+          900
+        ],
+        "captured_pixels": [
+          1440,
+          802
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "fb07a0d812548e99241cfeb61d0c41aece85004f3fe030d449ae59bb159b45a5"
+      },
+      {
+        "file": "tmp/validation/bloco3h/caixa-1440x900.png",
+        "viewport": [
+          1440,
+          900
+        ],
+        "captured_pixels": [
+          1440,
+          802
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "3f26d15db2a4c127a38c9dae1bebd8c0ba1f2a205e286e9ade8b432ffe548e41"
+      },
+      {
+        "file": "tmp/validation/bloco3h/produto-1440x900.png",
+        "viewport": [
+          1440,
+          900
+        ],
+        "captured_pixels": [
+          1425,
+          794
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "9be29c4bf7ea7e45f6c432dc1e2ca03daf023cd0bb43a87fb3b0c41f1f77179d"
+      },
+      {
+        "file": "tmp/validation/bloco3h/compra-1440x900.png",
+        "viewport": [
+          1440,
+          900
+        ],
+        "captured_pixels": [
+          1425,
+          794
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "01faa266a29dc386a5845880f9204aa6546c024f1112b3f6fff0c7a21c98a533"
+      },
+      {
+        "file": "tmp/validation/bloco3h/estoque-1440x900.png",
+        "viewport": [
+          1440,
+          900
+        ],
+        "captured_pixels": [
+          1440,
+          802
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "240ecc1418a35436e726902de00237c68cd9455477ba0027084d547425dae32b"
+      },
+      {
+        "file": "tmp/validation/bloco3h/dashboard-1440x900.png",
+        "viewport": [
+          1440,
+          900
+        ],
+        "captured_pixels": [
+          1440,
+          802
+        ],
+        "role": "ADMIN",
+        "no_horizontal_page_overflow": true,
+        "sha256": "8eba02e9c0cbc1962f1f88eec6585e92b568de2604687ae9588e357ea4c88875"
+      },
+      {
+        "file": "tmp/validation/bloco3h/tecnico-1440x900.png",
+        "viewport": [
+          1440,
+          900
+        ],
+        "captured_pixels": [
+          1425,
+          794
+        ],
+        "role": "TECNICO",
+        "no_horizontal_page_overflow": true,
+        "sha256": "02e050f17bab49edfaa17b6fffc866bff13c03a7c8415809e258fc62b27362bb"
+      },
+      {
+        "file": "tmp/validation/bloco3h/ponto-1440x900.png",
+        "viewport": [
+          1440,
+          900
+        ],
+        "captured_pixels": [
+          1425,
+          794
+        ],
+        "role": "TECNICO",
+        "no_horizontal_page_overflow": true,
+        "sha256": "0ab82725304ac3361f306eb42b38b77f0a112d3a015ddc7f58e59c53ff97340e"
+      }
+    ],
+    "capture_limitation": "Viewport DOM confirmado nas três dimensões; screenshots capturam a área visível do painel do navegador, com altura limitada até 802 pixels. Não são capturas da página inteira.",
+    "physical_devices": [],
+    "other_browsers_tested": [],
+    "blocker": null,
+    "previous_blocker_resolved": true,
+    "prior_block2_validation_transferred_to_block3": false,
+    "console_errors_last_inspection": []
+  },
+  "journeys_automatic": {
+    "purchase_to_lots_stock_pdv_finance_report": "PASS",
+    "assistance_block2_regression": "PASS",
+    "point_adjustments_mirror_closure": "PASS",
+    "combined_physical_point_and_technical_workday": "NAO_VALIDADO"
+  },
+  "exports": {
+    "browser_generated": true,
+    "pdfs": {
+      "os50-assinada.pdf": {
+        "pages": 3,
+        "all_pages_visually_inspected": true,
+        "sha256": "0dd6c139f4a796f22e541ad312b6e6370fcad2c08becfd74ce3d6483e6c7c53f",
+        "browser_downloaded": true,
+        "text_integrity": "PASS"
+      },
+      "os51-assinada.pdf": {
+        "pages": 3,
+        "all_pages_visually_inspected": true,
+        "sha256": "a7aa143ad9f62ca4b3bc4da9ceadee290b5ec36a8d14bbe7dc5fe1e646567a94",
+        "browser_downloaded": true,
+        "text_integrity": "PASS",
+        "pagination_debt": "Nota de assinatura isolada na terceira página; conteúdo preservado e legível."
+      },
+      "ponto-espelho.pdf": {
+        "pages": 2,
+        "all_pages_visually_inspected": true,
+        "sha256": "d07c8adb107a29995ff881ba4e21f5b4c21ce689bfb2c03bce8f2eae137aaa12",
+        "browser_downloaded": true,
+        "text_integrity": "PASS"
+      }
+    },
+    "excel": {
+      "rows_including_header": 32,
+      "columns": 9,
+      "days": 31,
+      "four_ui_marks_present": true,
+      "sha256": "6130cbd53366f4500034357709d59a597967a5724ec96079e6a1bc8e3c4363d8",
+      "browser_downloaded": true
+    },
+    "method": "Controles de download da aplicação usados no navegador; PDFs renderizados e todas as oito páginas inspecionadas; Excel aberto e estrutura conferida",
+    "gps_collected": false,
+    "previous_exports_evidence": "tmp/validation/bloco3_exports.json",
+    "evidence": "tmp/validation/bloco3h/artefatos.json"
+  },
+  "upload": {
+    "automated_private_image_and_idor": "PASS",
+    "new_browser_upload_block3": "PASS_FOTOS14_E15",
+    "photo_hashes_verified": true,
+    "synthetic_source": "Imagem icon-512.png enviada e normalizada pelo fluxo oficial de Foto",
+    "r2_real_tested": false,
+    "camera_physical_tested": false
+  },
+  "performance": {
+    "executive_query_growth_test": "1 versus 6 vendas, aumento máximo de uma consulta",
+    "load_test": false,
+    "real_latency_measured": false,
+    "legacy_aggregate_optimization": "DEBITO_TECNICO"
+  },
+  "integrity": {
+    "old_migrations_unchanged": true,
+    "old_test_methods_retained": 335,
+    "current_test_methods": 404,
+    "new_test_methods_by_file": {
+      "operacao/test_block3_commerce.py": 11,
+      "operacao/test_block3_concurrency.py": 11,
+      "operacao/test_block3_foundation.py": 6,
+      "operacao/test_block3_integration.py": 7,
+      "operacao/test_block3_inventory.py": 5,
+      "operacao/test_block3_products.py": 5,
+      "operacao/test_block3_returns.py": 5,
+      "operacao/test_block3_security.py": 6,
+      "operacao/test_block3_workforce.py": 13
+    },
+    "python_files_parsed": 165,
+    "javascript_syntax": {
+      "static/pdv.js": true,
+      "static/ponto.js": true,
+      "static/mobile-qr.js": true
+    },
+    "git_diff_check_exit_code": 0,
+    "git_diff_check_messages": [],
+    "forbidden_paths_in_versionable_inventory": [],
+    "pdf": {
+      "pages": 2,
+      "synthetic_employee_label": true,
+      "all_pages_visually_inspected": true,
+      "sha256": "3c6b55cf0f3e09e524e9e0458eaa1a8961167e4dc14021aa85dc1aa6a5d498da"
+    },
+    "excel": {
+      "rows_including_header": 32,
+      "columns": 9,
+      "sha256": "a2735f99b4ffa2a6efb9972297bf36f56af6658cd6b00c682926c4a9b3345440"
+    },
+    "result": "PASS",
+    "previous_block3_tests_retained": 401,
+    "source_hashes_match_final": true,
+    "all_pre_3h_migration_files_unchanged": 69,
+    "evidence": "tmp/validation/bloco3h_integrity.json"
+  },
+  "partially_implemented": [
+    "Mobile/câmera/QR/touch/GPS em aparelho físico",
+    "KPIs gerenciais completos e alocação legada por filial/centro",
+    "Matriz completa de agregados legados sob flags/permissões",
+    "Planos/limites SaaS apenas informativos",
+    "Fiscal apenas fundação informativa"
+  ],
+  "not_implemented_by_scope": [
+    "Emissão NF-e/NFS-e/NFC-e/A1/SAT/TEF",
+    "Gateway/PIX/OpenFinance/conciliação bancária externa",
+    "WhatsApp/email transacional externo",
+    "IA/OCR/ANVISA/fabricante externos",
+    "Folha/eSocial/comissões complexas",
+    "App nativo/offline empresarial complexo",
+    "Grandes módulos públicos"
+  ],
+  "known_risks": [
+    "Recebível parcelado exige política de devolução; cenário bloqueado",
+    "Ponto interno não certificado REP; jornada/base e governança exigidas",
+    "Diferença caixa exige revisão operacional sem apagamento",
+    "Dados de filial/centro/contas/depositos/jornada/fiscal reais precisam configuração",
+    "Homologação Render/R2/backup/restore/celular/TV não executada",
+    "Cobertura de interface limitada aos cenários e navegador documentados; dispositivos reais e produção pendentes",
+    "Comprovante PDV ainda não detalha formas/troco; nota de assinatura pode ficar isolada em página extra do PDF da OS",
+    "PDV sem indicador permanente online/última sincronização; recomendação UX, não implementada nesta etapa"
+  ],
+  "files_working_tree_including_prior_blocks": [
+    " M clientes/forms.py",
+    " M clientes/models.py",
+    " M clientes/views.py",
+    " M contas/forms.py",
+    " M contas/models.py",
+    " M equipamentos/forms.py",
+    " M equipamentos/models.py",
+    " M equipamentos/urls.py",
+    " M equipamentos/views.py",
+    " M gestao/forms.py",
+    " M gestao/models.py",
+    " M gestao/permissions.py",
+    " M gestao/reporting.py",
+    " M gestao/services.py",
+    " M gestao/urls.py",
+    " M gestao/views.py",
+    " M operacao/dashboard.py",
+    " M operacao/executive.py",
+    " M operacao/forms.py",
+    " M operacao/history.py",
+    " M operacao/models.py",
+    " M operacao/navigation.py",
+    " M operacao/notifications.py",
+    " M operacao/operational_panel.py",
+    " M operacao/permissions.py",
+    " M operacao/planning.py",
+    " M operacao/planning_services.py",
+    " M operacao/portal.py",
+    " M operacao/reporting.py",
+    " M operacao/services.py",
+    " M operacao/stock.py",
+    " M operacao/stock_forms.py",
+    " M operacao/stock_models.py",
+    " M operacao/stock_views.py",
+    " M operacao/test_planning.py",
+    " M operacao/test_stock.py",
+    " M operacao/urls.py",
+    " M operacao/views.py",
+    " M ordens/forms.py",
+    " M ordens/models.py",
+    " M ordens/reports.py",
+    " M ordens/services.py",
+    " M ordens/views.py",
+    " M platform_core/middleware.py",
+    " M platform_core/models.py",
+    " M platform_core/tests.py",
+    " M platform_core/urls.py",
+    " M requirements.txt",
+    " M templates/base.html",
+    " M templates/clientes/cliente_form.html",
+    " M templates/core/painel.html",
+    " M templates/equipamentos/equipamento_detail.html",
+    " M templates/gestao/detalhe.html",
+    " M templates/gestao/financeiro.html",
+    " M templates/gestao/lista.html",
+    " M templates/operacao/detalhe.html",
+    " M templates/operacao/executive.html",
+    " M templates/operacao/notificacoes.html",
+    " M templates/operacao/os_extras.html",
+    " M templates/operacao/portal.html",
+    " M templates/operacao/tecnico.html",
+    " M templates/ordens/detalhe.html",
+    " M templates/ordens/resumo.html",
+    "?? AUDITORIA_ERP_COMPLETO.json",
+    "?? AUDITORIA_ERP_COMPLETO.md",
+    "?? BLOCO1_ESTABILIZACAO.md",
+    "?? HOMOLOGACAO_BLOCO3.md",
+    "?? MATRIZ_ADERENCIA_VERTYX.md",
+    "?? PLANO_BLOCO2.md",
+    "?? PLANO_BLOCO3.md",
+    "?? PLANO_BLOCO4.md",
+    "?? PLANO_DEPENDENCIAS_BLOCO1.md",
+    "?? PLANO_EXECUCAO_BLOCO3.md",
+    "?? RELATORIO_BLOCO2.md",
+    "?? RELATORIO_BLOCO3.md",
+    "?? VALIDACAO_BLOCO1.json",
+    "?? VALIDACAO_BLOCO2.json",
+    "?? VALIDACAO_BLOCO3.json",
+    "?? clientes/migrations/0005_fundacao_bloco3.py",
+    "?? contas/migrations/0007_operacao_bloco2.py",
+    "?? contas/migrations/0008_fundacao_bloco3.py",
+    "?? equipamentos/migrations/0007_operacao_bloco2.py",
+    "?? gestao/financial_origin.py",
+    "?? gestao/migrations/0006_estabilizacao_bloco1.py",
+    "?? gestao/migrations/0007_origem_parcelas_existentes.py",
+    "?? gestao/migrations/0008_operacao_bloco2.py",
+    "?? gestao/migrations/0009_fundacao_bloco3.py",
+    "?? gestao/migrations/0010_fundacao_bloco3.py",
+    "?? gestao/migrations/0011_fundacao_bloco3.py",
+    "?? gestao/migrations/0012_fundacao_bloco3.py",
+    "?? gestao/migrations/0013_fundacao_bloco3.py",
+    "?? gestao/product_views.py",
+    "?? gestao/products.py",
+    "?? operacao/block3_notices.py",
+    "?? operacao/commerce.py",
+    "?? operacao/commerce_scope.py",
+    "?? operacao/commercial_models.py",
+    "?? operacao/inventory.py",
+    "?? operacao/inventory_models.py",
+    "?? operacao/inventory_views.py",
+    "?? operacao/migrations/0006_estabilizacao_bloco1.py",
+    "?? operacao/migrations/0007_operacao_bloco2.py",
+    "?? operacao/migrations/0008_fundacao_bloco3.py",
+    "?? operacao/migrations/0009_fundacao_bloco3.py",
+    "?? operacao/migrations/0010_fundacao_bloco3.py",
+    "?? operacao/migrations/0011_fundacao_bloco3.py",
+    "?? operacao/migrations/0012_fundacao_bloco3.py",
+    "?? operacao/migrations/0013_fundacao_bloco3.py",
+    "?? operacao/mobile.py",
+    "?? operacao/pdv.py",
+    "?? operacao/purchase_scope.py",
+    "?? operacao/test_block2.py",
+    "?? operacao/test_block2_interfaces.py",
+    "?? operacao/test_block3_commerce.py",
+    "?? operacao/test_block3_concurrency.py",
+    "?? operacao/test_block3_foundation.py",
+    "?? operacao/test_block3_integration.py",
+    "?? operacao/test_block3_inventory.py",
+    "?? operacao/test_block3_products.py",
+    "?? operacao/test_block3_returns.py",
+    "?? operacao/test_block3_security.py",
+    "?? operacao/test_block3_workforce.py",
+    "?? operacao/test_stabilization.py",
+    "?? operacao/workforce.py",
+    "?? operacao/workforce_models.py",
+    "?? operacao/workforce_views.py",
+    "?? ordens/migrations/0010_operacao_bloco2.py",
+    "?? platform_core/company.py",
+    "?? platform_core/migrations/0005_fundacao_bloco3.py",
+    "?? platform_core/modules.py",
+    "?? static/js/checklist-builder.js",
+    "?? static/mobile-qr.js",
+    "?? static/pdv.js",
+    "?? static/ponto.js",
+    "?? templates/equipamentos/etiqueta.html",
+    "?? templates/gestao/product_links.html",
+    "?? templates/operacao/block2_call.html",
+    "?? templates/operacao/block2_checklist.html",
+    "?? templates/operacao/block2_dashboard.html",
+    "?? templates/operacao/block2_os.html",
+    "?? templates/operacao/block2_purchase.html",
+    "?? templates/operacao/executive_commercial.html",
+    "?? templates/operacao/inventory.html",
+    "?? templates/operacao/mobile_qr.html",
+    "?? templates/operacao/necessidades.html",
+    "?? templates/operacao/pdv_cash.html",
+    "?? templates/operacao/pdv_home.html",
+    "?? templates/operacao/pdv_products.html",
+    "?? templates/operacao/pdv_receipt.html",
+    "?? templates/operacao/pdv_sale.html",
+    "?? templates/operacao/pesquisa.html",
+    "?? templates/operacao/ponto.html",
+    "?? templates/operacao/ponto_adjustments.html",
+    "?? templates/operacao/ponto_mirror.html",
+    "?? templates/operacao/portal_chamado.html",
+    "?? templates/operacao/portal_equipamento.html",
+    "?? templates/operacao/rh.html",
+    "?? templates/operacao/timeline.html",
+    "?? templates/operacao/transfers.html",
+    "?? templates/platform_core/company.html"
+  ],
+  "documents": [
+    "PLANO_EXECUCAO_BLOCO3.md",
+    "RELATORIO_BLOCO3.md",
+    "VALIDACAO_BLOCO3.json",
+    "MATRIZ_ADERENCIA_VERTYX.md",
+    "PLANO_BLOCO4.md",
+    "HOMOLOGACAO_BLOCO3.md"
+  ],
+  "previous_block3_delivery": {
+    "date": "2026-10-02",
+    "status": "IMPLEMENTACAO_LOCAL_COM_HOMOLOGACAO_INTERFACE_PENDENTE",
+    "tests": {
+      "previous": 335,
+      "new_methods": 69,
+      "discovered_methods": 404,
+      "final_ran": 404,
+      "final_seconds": 436.703,
+      "final_pass": true,
+      "source_hashes_match_final": true,
+      "test_source_unchanged": true,
+      "new_by_file": {
+        "operacao/test_block3_commerce.py": 11,
+        "operacao/test_block3_concurrency.py": 11,
+        "operacao/test_block3_foundation.py": 6,
+        "operacao/test_block3_integration.py": 7,
+        "operacao/test_block3_inventory.py": 5,
+        "operacao/test_block3_products.py": 5,
+        "operacao/test_block3_returns.py": 5,
+        "operacao/test_block3_security.py": 6,
+        "operacao/test_block3_workforce.py": 13
+      },
+      "old_tests_removed": false,
+      "old_test_change": {
+        "file": "platform_core/tests.py",
+        "test": "LegacyMigrationTests.test_upgrade_com_dados_anteriores_sem_reverter_bancos_existentes",
+        "change": "Somente timeout do subprocesso: 90 → 600 segundos",
+        "reason": "Script inalterado passou em 274,712s no PostgreSQL local; todas as assertivas mantidas",
+        "evidence": "tmp/validation/bloco3_legacy_timing.json"
+      },
+      "new_concurrency_tests": 11,
+      "skip_count": 0,
+      "commands": [
+        {
+          "command": [
+            "check"
+          ],
+          "exit_code": 0,
+          "log": "tmp/validation/bloco3_3h_final_0_check.log"
+        },
+        {
+          "command": [
+            "makemigrations",
+            "--check",
+            "--dry-run"
+          ],
+          "exit_code": 0,
+          "log": "tmp/validation/bloco3_3h_final_1_makemigrations.log"
+        },
+        {
+          "command": [
+            "test",
+            "--noinput",
+            "-v",
+            "1",
+            "--parallel",
+            "2"
+          ],
+          "exit_code": 0,
+          "log": "tmp/validation/bloco3_3h_final_2_test.log",
+          "source_unchanged_during_test": true
+        },
+        {
+          "command": [
+            "collectstatic",
+            "--noinput"
+          ],
+          "exit_code": 0,
+          "log": "tmp/validation/bloco3_3h_final_3_collectstatic.log"
+        }
+      ],
+      "log": "tmp/validation/bloco3_3h_final_2_test.log",
+      "baseline_before_3h": 401,
+      "new_3h": 3,
+      "new_3h_methods": [
+        "test_credit_limit_is_rendered_only_for_authorized_customer_editor",
+        "test_localized_year_links_inputs_and_exports_remain_machine_readable",
+        "test_menu_has_accessible_name_and_stock_alert_actions_keep_their_routes"
+      ]
+    },
+    "browser": {
+      "name": "Codex in-app browser",
+      "environment": "Loopback local QA sintético",
+      "purchase_approval_and_order": "PASS_INTERFACE",
+      "purchase_receipts": "PENDENTE_INTERFACE",
+      "pdv_journey": "PENDENTE_INTERFACE",
+      "technician_journey": "PENDENTE_INTERFACE",
+      "point_journey": "PENDENTE_INTERFACE",
+      "manager_journey": "PENDENTE_INTERFACE",
+      "requested_resolutions": [
+        [
+          1440,
+          900
+        ],
+        [
+          768,
+          1024
+        ],
+        [
+          390,
+          844
+        ]
+      ],
+      "requested_resolutions_validated_block3": [],
+      "form_inspection_resolution": [
+        1200,
+        720
+      ],
+      "physical_devices": [],
+      "other_browsers_tested": [],
+      "blocker": "CUA deixou de executar cliques/teclas; Input.dispatchMouseEvent/Emulation.setFocusEmulationEnabled e inicialização do kernel com timeout, inclusive após nova aba/reset. HTTP tests não substituem jornada UI.",
+      "prior_block2_validation_transferred_to_block3": false
+    },
+    "exports": {
+      "evidence": "tmp/validation/bloco3_exports.json",
+      "pdf": {
+        "pages": 2,
+        "synthetic_employee_label": true,
+        "all_pages_visually_inspected": true,
+        "sha256": "3c6b55cf0f3e09e524e9e0458eaa1a8961167e4dc14021aa85dc1aa6a5d498da"
+      },
+      "excel": {
+        "rows_including_header": 32,
+        "columns": 9,
+        "sha256": "a2735f99b4ffa2a6efb9972297bf36f56af6658cd6b00c682926c4a9b3345440"
+      },
+      "browser_generated": false,
+      "method": "Application export views via Django TestClient; synthetic employee; four real-server-clock service marks",
+      "gps_collected": false,
+      "pdf_os_block2": "Histórico separado; não revalidado pela interface B3"
+    }
+  },
+  "date_homologation": "2026-10-03",
+  "homologation_3h": {
+    "local_stage_closed": true,
+    "report": "HOMOLOGACAO_BLOCO3.md",
+    "source_files_changed": [
+      "operacao/test_block3_security.py",
+      "operacao/test_block3_workforce.py",
+      "templates/base.html",
+      "templates/clientes/cliente_form.html",
+      "templates/gestao/lista.html",
+      "templates/operacao/ponto.html",
+      "templates/operacao/ponto_mirror.html"
+    ],
+    "new_migrations": [],
+    "dependency_changes": [],
+    "reconciliation": {
+      "status": "PASS",
+      "method": "Leitura dos registros criados pela interface, snapshots e arquivos; nenhuma escrita no banco",
+      "assertions": [
+        "Registros auditados pertencem somente à organização sintética 7",
+        "Devolução preservou integralmente snapshot da venda 11",
+        "Item original da venda devolvida não foi reescrito",
+        "Venda original preservada e parcialmente devolvida",
+        "Um reembolso formal de 9,50 para uma unidade devolvida",
+        "Devolução devolveu custo original 7,33",
+        "Venda mista consumiu duas unidades do primeiro lote FEFO por custo 14,66",
+        "Troco 3,00 registrado, sem lançamento financeiro do recebido 10,00",
+        "Pagamentos reais da venda mista somam exatamente 19,00",
+        "Crediário conserva recebível pendente de 10,00 sem recebimento artificial",
+        "Conversão repetida do orçamento 4 mantém a mesma única venda 14",
+        "Parcial compra 17 aumentou estoque para 18 sem criar conta a pagar",
+        "Recebimento final criou conta 42 por 36,65 na política existente",
+        "Necessidade de 20 menos 15 disponíveis gerou compra de 5",
+        "Ambas as necessidades da OS 50 foram regularizadas com histórico",
+        "Caixa inicial 50, esperado 67 e contado 66; diferença -1 justificada",
+        "Caixa móvel iniciou em zero e fechou com 10 sem diferença",
+        "Aberturas e fechamentos não geraram receita ou movimento fictício",
+        "Divergência de inventário gerou ajuste auditável no movimento 61",
+        "Transferência percorreu origem, trânsito e destino com duas etapas",
+        "Transferência preservou grupo, número, validade e custo do lote",
+        "Lote transferido tem zero na origem/trânsito e uma unidade no destino",
+        "Todos os 17 eventos por lote reconciliam quantidade anterior, variação e posterior",
+        "Todos os custos por lote correspondem exatamente à quantidade movimentada",
+        "Saldo final 19 reconciliado entre produto, lotes e depósitos",
+        "Saldos por depósito reconciliados: origem 18, destino 1, trânsito 0",
+        "Ambas as OS consumiram uma unidade do estoque oficial por custo 7,33",
+        "OS 50 e 51 finalizadas pelo navegador",
+        "Upload privado da foto 14 existe e confere SHA-256",
+        "Upload privado da foto 15 existe e confere SHA-256",
+        "Assinatura sintética 17 confere SHA-256",
+        "Assinatura sintética 18 confere SHA-256",
+        "Quatro marcações UI do funcionário correto, distintas das marcações antigas por serviço",
+        "Marcação 5: conteúdo e elo anterior conferem SHA-256",
+        "Marcação 6: conteúdo e elo anterior conferem SHA-256",
+        "Marcação 7: conteúdo e elo anterior conferem SHA-256",
+        "Marcação 8: conteúdo e elo anterior conferem SHA-256",
+        "Rejeição preservou exatamente horário original, com decisão auditada",
+        "Fechamento de setembro preserva snapshot e hash; outubro permanece aberto"
+      ],
+      "assertion_count": 39,
+      "stock_final": "19.000",
+      "organization": 7,
+      "production_accessed": false
+    },
+    "evidence_directory": "tmp/validation/bloco3h",
+    "physical_barcode_reader": "PENDENTE DE HOMOLOGAÇÃO COM LEITOR FÍSICO",
+    "physical_devices_status": "PENDENTE DE HOMOLOGAÇÃO EM DISPOSITIVO REAL",
+    "production_status": "NÃO VALIDADO EM PRODUÇÃO",
+    "synchronization_ux": "RECOMENDAÇÃO DE UX — INDICADOR/BOTÃO DE SINCRONIZAÇÃO DO PDV",
+    "no_offline_queue_implemented": true,
+    "publication_pending": [
+      "Autorização específica para commit/push/deploy",
+      "Homologação em celular/touch/câmera/QR/leitor/GPS/Smart TV reais",
+      "Revisão dos cadastros reais de contas, formas, filial/centro, depósitos e jornadas pelo administrador",
+      "Etapa autorizada de backup e verificação das migrations pendentes no serviço existente",
+      "Homologação de Render/Gunicorn/PostgreSQL publicado/R2 privado/logs após autorização"
+    ]
+  }
+}

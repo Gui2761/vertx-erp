@@ -19,7 +19,7 @@ def payload(user):
     now=timezone.now()
     rows=list(query.filter(~Q(status__in=ENCERRADAS)|Q(conclusao__date=today,status__in=['FINALIZADA','APROVADA','FATURADA'])|Q(agendada_para__date=today)))
     conflict=ps.conflict_map(rows)
-    events=[ps.order_event(row,conflict.get(row.pk)) for row in rows]
+    events=[ps.order_event(row,conflict.get(row.pk)) for row in rows]+ps.call_events(user, television=True)
     # Lista permitida. Endereço, descrição livre, contato, documentos, estoque,
     # custos e snapshot completo jamais são serializados na interface de TV.
     keys=['numero','cliente','unidade','equipamento','tecnico','tipo','status','status_code','prioridade','prioridade_code','date','time','start','end','inicio','conclusao','late','conflicts','tecnico_id','unplanned']
@@ -27,12 +27,12 @@ def payload(user):
     active=[event for event in events if event['status_code'] not in ENCERRADAS]
     current=[event for event in active if event['status_code']=='EXECUCAO']
     done=sorted([event for event in events if event['conclusao'] and timezone.localdate(timezone.datetime.fromisoformat(event['conclusao']))==today and event['status_code'] in ['FINALIZADA','APROVADA','FATURADA']],key=lambda event:event['conclusao'],reverse=True)
-    queue=sorted([event for event in active if event['status_code']!='EXECUCAO' and (event['unplanned'] or event['late'] or event['prioridade_code']=='URGENTE' or event['status_code'] in ['AG_PECA','AG_CLIENTE'] or event['date']==today)],key=lambda event:(event['prioridade_code']!='URGENTE',not event['late'],event['numero']))
+    queue=sorted([event for event in active if event['status_code']!='EXECUCAO' and (event['unplanned'] or event['late'] or event['prioridade_code']=='URGENTE' or event['status_code'] in ['AG_PECA','AG_CLIENTE','AG_APROVACAO','DESLOCAMENTO'] or event['date']==today)],key=lambda event:(event['prioridade_code']!='URGENTE',not event['late'],event['numero']))
     technicians=list(technicians_query)
     team=[]
     for tech in technicians:
-        executing=[safe(event) for event in current if event['tecnico_id']==tech.pk]
-        following=sorted([event for event in active if event['tecnico_id']==tech.pk and event['start'] and timezone.datetime.fromisoformat(event['start'])>=now and event['status_code']!='EXECUCAO'],key=lambda event:event['start'])
+        executing=[safe(event) for event in current if tech.pk in event.get('tecnico_ids', [event['tecnico_id']])]
+        following=sorted([event for event in active if tech.pk in event.get('tecnico_ids', [event['tecnico_id']]) and event['start'] and timezone.datetime.fromisoformat(event['start'])>=now and event['status_code']!='EXECUCAO'],key=lambda event:event['start'])
         team.append({'nome':tech.nome,'status':'Em atendimento' if executing else 'Sem atendimento em execução','agora':executing,'proxima':safe(following[0]) if following else None})
     next_by_tech={tech.pk:row['proxima'] for tech,row in zip(technicians,team)}
     preventive=ps.preventive_events(user,television=True)
@@ -44,7 +44,7 @@ def payload(user):
     alerts={'urgentes':sum(event['prioridade_code']=='URGENTE' for event in active),'atrasadas':sum(event['late'] for event in active),'conflitos':sum(bool(event['conflicts']) for event in active),'pecas':sum(event['status_code']=='AG_PECA' for event in active)}
     return {'organization':str(ps.current_organization().display_name),'date':today,'generated_at':now.isoformat(),
         'config':{'interval':config.painel_intervalo if config else 30,'theme':config.painel_tema if config else 'ESCURO','blocks':blocks},
-        'indicadores':{'OS hoje':sum(event['date']==today for event in events),'Em atendimento':len(current),'Aguardando':sum(event['status_code'] in ['ABERTA','AGENDADA','AG_CLIENTE'] for event in active),'Atrasadas':alerts['atrasadas'],'Concluídas hoje':len(done),'Aguardando peças':alerts['pecas']},
+        'indicadores':{'OS hoje':sum(event['date']==today and event['kind']=='OS' for event in events),'Em atendimento':len(current),'Aguardando':sum(event['status_code'] in ['ABERTA','AGENDADA','AG_CLIENTE'] for event in active),'Atrasadas':alerts['atrasadas'],'Concluídas hoje':len(done),'Aguardando peças':alerts['pecas'], 'Aguardando aprovação':sum(event['status_code']=='AG_APROVACAO' for event in active)},
         'agora':[dict(safe(event),proxima=next_by_tech.get(event['tecnico_id'])) for event in current] if 'agora' in blocks else [],'equipe':team if 'equipe' in blocks else [],
         'timeline':timeline if 'timeline' in blocks else [],'fila':[safe(event) for event in queue] if 'fila' in blocks else [],
         'concluidas':[safe(event) for event in done] if 'concluidas' in blocks else [],'preventivas':preventive if 'preventivas' in blocks else [],'alertas':alerts}

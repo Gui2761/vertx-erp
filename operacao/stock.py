@@ -29,7 +29,7 @@ def movement_parameters(data, lot_id, sale_id):
     return result
 
 def active_reservations(part, depot=None):
-    qs = m.ReservaEstoque.objects.filter(peca=part, status='ATIVA', quantidade__gt=0).exclude(ordem__status__in=m.ENCERRADAS).exclude(venda__status__in=['CONFIRMADA','CANCELADA'])
+    qs = m.ReservaEstoque.objects.filter(peca=part, status='ATIVA', quantidade__gt=0).exclude(ordem__status__in=m.ENCERRADAS).exclude(venda__status__in=['CONFIRMADA','FINALIZADA','PARCIALMENTE_DEVOLVIDA','DEVOLVIDA','CANCELADA'])
     return qs.filter(deposito=depot) if depot else qs
 
 def total(qs, field='quantidade'):
@@ -58,18 +58,21 @@ def ensure_lots(part):
         if missing:
             gs.write(m.LoteEstoque(peca=part, deposito=balance.deposito, numero=part.lote or f'LEGADO-{part.pk}', validade=part.validade, quantidade=missing, fornecedor=part.fornecedor, custo_unitario=part.custo_aquisicao, localizacao=part.localizacao, legado=True))
 
-def lot_change(user, movement, lot, delta):
+def lot_change(user, movement, lot, delta, cost=None):
     before = lot.quantidade
     lot.quantidade += delta
     if lot.quantidade < 0:
         raise ValidationError('Saldo do lote insuficiente.')
     gs.write(lot)
-    detail = gs.write(m.MovimentacaoLote(movimentacao=movement, lote=lot, quantidade_anterior=before, variacao=delta, quantidade_posterior=lot.quantidade))
-    gs.audit(user, 'LOTE_MOVIMENTADO', detail, {'produto':lot.peca_id, 'lote':lot.pk, 'numero':lot.numero, 'deposito':lot.deposito_id, 'quantidade_anterior':str(before), 'movimentacao':movement.pk, 'variacao':str(delta), 'quantidade_posterior':str(lot.quantidade), 'motivo':movement.observacao, 'origem':{'tipo':movement.tipo,'os':movement.ordem_id,'compra':lot.item_compra.compra_id if lot.item_compra_id else None}})
+    cost = lot.custo_unitario if cost is None else cost
+    detail = gs.write(m.MovimentacaoLote(movimentacao=movement, lote=lot, quantidade_anterior=before, variacao=delta, quantidade_posterior=lot.quantidade, custo_unitario=cost, custo_total=abs(delta) * cost))
+    gs.audit(user, 'LOTE_MOVIMENTADO', detail, {'produto':lot.peca_id, 'lote':lot.pk, 'numero':lot.numero, 'deposito':lot.deposito_id, 'quantidade_anterior':str(before), 'movimentacao':movement.pk, 'variacao':str(delta), 'quantidade_posterior':str(lot.quantidade), 'custo_unitario':str(cost), 'custo_total':str(detail.custo_total), 'motivo':movement.observacao, 'origem':{'tipo':movement.tipo,'os':movement.ordem_id,'compra':lot.item_compra.compra_id if lot.item_compra_id else None}})
 
 def incoming_lot(part, movement, data):
     data = dict(data or {})
     explicit = bool(data)
+    if part.exige_lote and not data.get('numero'):
+        raise ValidationError('Produto exige número do lote na entrada.')
     if part.controla_validade and (not data.get('numero') or not data.get('validade')):
         raise ValidationError('Produto exige número de lote e validade no recebimento.')
     supplier = data.pop('fornecedor', None)
@@ -89,6 +92,33 @@ def own_reservations(part, depot, order_id=None, sale_id=None):
         return qs.filter(venda_id=sale_id)
     return qs.none()
 
+
+def lot_holds(part, depot, excluded=()):
+    """Existing aggregate reservations remain effective without fabricated history."""
+    lots = list(valid_lots(part, depot))
+    used = {}
+    result = {}
+    legacy = []
+    for reservation in active_reservations(part, depot).prefetch_related('alocacoes').order_by('pk'):
+        details = list(reservation.alocacoes.all())
+        if not details:
+            legacy.append(reservation)
+        for detail in details:
+            used[detail.lote_id] = used.get(detail.lote_id, ZERO) + detail.quantidade
+            if reservation.pk not in excluded:
+                result[detail.lote_id] = result.get(detail.lote_id, ZERO) + detail.quantidade
+    for reservation in legacy:
+        remaining = reservation.quantidade
+        for lot in lots:
+            quantity = min(remaining, max(ZERO, lot.quantidade - used.get(lot.pk, ZERO)))
+            used[lot.pk] = used.get(lot.pk, ZERO) + quantity
+            if reservation.pk not in excluded:
+                result[lot.pk] = result.get(lot.pk, ZERO) + quantity
+            remaining -= quantity
+            if not remaining:
+                break
+    return result
+
 def consume_reservations(user, qs, quantity):
     remaining = quantity
     for row in qs.select_for_update(of=('self',)).order_by('pk'):
@@ -98,35 +128,121 @@ def consume_reservations(user, qs, quantity):
         if not row.quantidade:
             row.status = 'CONSUMIDA'
         gs.write(row)
+        allocated = used
+        for detail in row.alocacoes.select_for_update().order_by('lote__validade', 'pk'):
+            released = min(allocated, detail.quantidade)
+            if released:
+                detail.quantidade -= released
+                gs.write(detail)
+                gs.audit(user, 'RESERVA_LOTE_LIBERADA_POR_CONSUMO', detail, {'quantidade': str(released), 'saldo': str(detail.quantidade), 'motivo': 'Liberação do compromisso; os lotes efetivamente consumidos constam em MovimentacaoLote.'})
+                allocated -= released
+            if not allocated:
+                break
         gs.audit(user, 'RESERVA_CONSUMIDA', row, {'anterior':str(old),'posterior':str(row.quantidade)})
         remaining -= used
         if not remaining:
             break
 
+def return_allocation(part, movement):
+    remaining = movement.variacao
+    result = []
+    sale_id=movement.detalhamento.get('venda_id')
+    if sale_id:
+        item_id=movement.detalhamento.get('entrada',{}).get('devolucao_item')
+        try:
+            item=m.ItemVenda.objects.get(pk=int(item_id),venda_id=sale_id,peca=part,movimento__isnull=False)
+        except (TypeError,ValueError,m.ItemVenda.DoesNotExist):
+            raise ValidationError('Devolução exige item e movimento original da venda.')
+        for original in item.movimento.lotes_movimentados.select_related('lote').order_by('pk'):
+            if original.lote.deposito_id!=movement.destino_id: raise ValidationError('Devolução deve retornar ao depósito/lote original.')
+            returned=m.MovimentacaoLote.objects.filter(lote_id=original.lote_id,movimentacao__tipo='DEVOLUCAO',movimentacao__detalhamento__venda_id=sale_id,movimentacao__detalhamento__entrada__devolucao_item=item.pk).aggregate(total=Sum('variacao'))['total'] or ZERO
+            quantity=min(remaining,max(ZERO,-original.variacao-returned))
+            if quantity:
+                lot=m.LoteEstoque.objects.select_for_update().get(pk=original.lote_id)
+                result.append((lot,quantity,original.custo_unitario))
+                remaining-=quantity
+            if not remaining: break
+        if remaining: raise ValidationError('Devolução excede lotes consumidos na venda.')
+        return result
+    used = m.MovimentacaoLote.objects.filter(movimentacao__peca=part, movimentacao__ordem_id=movement.ordem_id, movimentacao__tipo__in=['OS','DEVOLUCAO'], lote__deposito_id=movement.destino_id).values('lote_id').annotate(net=Sum('variacao')).order_by('lote_id')
+    for row in used:
+        if row['net'] >= 0:
+            continue
+        lot = m.LoteEstoque.objects.select_for_update().get(pk=row['lote_id'])
+        original = lot.movimentos.filter(movimentacao__ordem_id=movement.ordem_id, movimentacao__tipo='OS').order_by('pk').first()
+        # Reverte o custo documentado da saída; não reprecifica o histórico legado.
+        cost = (original.custo_unitario if original.custo_unitario is not None else original.movimentacao.custo_unitario) if original else lot.custo_unitario
+        quantity = min(remaining, -row['net'])
+        result.append((lot, quantity, cost))
+        remaining -= quantity
+        if not remaining:
+            break
+    if remaining:
+        if m.MovimentacaoLote.objects.filter(movimentacao__peca=part, movimentacao__ordem_id=movement.ordem_id, movimentacao__tipo='OS').exists():
+            raise ValidationError('Devolução excede consumo por lote/depósito.')
+        result.append((None, remaining, movement.custo_unitario))
+    return result
+
+
+def outgoing_allocation(part, movement, lot_id=None, sale_id=None):
+    quantity = movement.quantidade if movement.tipo == 'TRANSFER' else -movement.variacao
+    source = movement.origem
+    qs = valid_lots(part, source)
+    expired_disposal = False
+    if lot_id:
+        try:
+            lot = m.LoteEstoque.objects.get(pk=lot_id, peca=part, deposito=source)
+        except m.LoteEstoque.DoesNotExist:
+            raise ValidationError('Lote não corresponde ao produto/depósito de origem.')
+        expired_disposal = bool(lot.validade and lot.validade < timezone.localdate())
+        if expired_disposal and movement.tipo not in ['AJUSTE','TRANSFER']:
+            raise ValidationError('Lote vencido não pode ser utilizado ou vendido.')
+        qs = m.LoteEstoque.objects.filter(pk=lot_id)
+    own = own_reservations(part, source, movement.ordem_id, sale_id)
+    other = active_reservations(part, source).exclude(pk__in=own.values('pk'))
+    if not expired_disposal and quantity > total(valid_lots(part, source)) - total(other):
+        raise ValidationError('Estoque válido disponível insuficiente; lotes vencidos e reservas não podem ser consumidos.')
+    remaining = quantity
+    allocation = []
+    held = lot_holds(part, source, set(own.values_list('pk', flat=True)))
+    for lot in qs.select_for_update():
+        used = min(max(ZERO, lot.quantidade - held.get(lot.pk, ZERO)), remaining)
+        if used:
+            allocation.append((lot, used, lot.custo_unitario))
+            remaining -= used
+        if not remaining:
+            break
+    if remaining:
+        raise ValidationError('Quantidade insuficiente nos lotes selecionados.')
+    return allocation, own, expired_disposal
+
+
+def planned_cost(part, movement, data=None, lot_id=None, sale_id=None):
+    if movement.tipo=='INVENTARIO':
+        return abs(movement.variacao)*m.LoteEstoque.objects.get(pk=lot_id,peca=part).custo_unitario
+    if movement.tipo == 'DEVOLUCAO' and (movement.ordem_id or sale_id):
+        allocation = return_allocation(part, movement)
+    elif movement.variacao > 0:
+        return movement.variacao * movement.custo_unitario
+    elif movement.variacao < 0 or movement.tipo == 'TRANSFER':
+        allocation, _, _ = outgoing_allocation(part, movement, lot_id, sale_id)
+    else:
+        return ZERO
+    return sum((quantity * cost for _, quantity, cost in allocation), ZERO)
+
+
 def move_lots(user, part, movement, data=None, lot_id=None, sale_id=None):
     delta = movement.variacao
+    if movement.tipo=='INVENTARIO':
+        lot=m.LoteEstoque.objects.select_for_update().get(pk=lot_id,peca=part)
+        lot_change(user,movement,lot,delta)
+        return
     if lot_id and (delta > 0 or movement.tipo == 'DEVOLUCAO'):
         raise ValidationError('Entradas usam metadados de um novo lote; devoluções recuperam o lote original automaticamente.')
-    if movement.tipo == 'DEVOLUCAO' and movement.ordem_id:
-        remaining = delta
-        used = m.MovimentacaoLote.objects.filter(movimentacao__peca=part, movimentacao__ordem_id=movement.ordem_id, movimentacao__tipo__in=['OS','DEVOLUCAO'], lote__deposito_id=movement.destino_id).values('lote_id').annotate(net=Sum('variacao')).order_by('lote_id')
-        for row in used:
-            if row['net'] >= 0:
-                continue
-            lot = m.LoteEstoque.objects.select_for_update().get(pk=row['lote_id'])
-            if movement.destino_id != lot.deposito_id:
-                raise ValidationError('Devolução deve usar o depósito do lote originalmente consumido.')
-            quantity = min(remaining, -row['net'])
-            lot_change(user, movement, lot, quantity)
-            remaining -= quantity
-            if not remaining:
-                break
-        if remaining:
-            # OS anterior ao detalhamento não tem lotes conhecidos; sinalizar legado.
-            if m.MovimentacaoLote.objects.filter(movimentacao__peca=part, movimentacao__ordem_id=movement.ordem_id, movimentacao__tipo='OS').exists():
-                raise ValidationError('Devolução excede consumo por lote.')
-            lot = incoming_lot(part, movement, data)
-            lot_change(user, movement, lot, remaining)
+    if movement.tipo == 'DEVOLUCAO' and (movement.ordem_id or sale_id):
+        for lot, quantity, cost in return_allocation(part, movement):
+            lot = lot or incoming_lot(part, movement, data)
+            lot_change(user, movement, lot, quantity, cost)
         return
     if delta > 0:
         lot = incoming_lot(part, movement, data)
@@ -135,57 +251,42 @@ def move_lots(user, part, movement, data=None, lot_id=None, sale_id=None):
     quantity = movement.quantidade if movement.tipo == 'TRANSFER' else -delta
     if not quantity:
         return
-    source = movement.origem
-    qs = valid_lots(part, source)
-    if lot_id:
-        try:
-            lot = m.LoteEstoque.objects.get(pk=lot_id, peca=part, deposito=source)
-        except m.LoteEstoque.DoesNotExist:
-            raise ValidationError('Lote não corresponde ao produto/depósito de origem.')
-        if lot.validade and lot.validade < timezone.localdate() and movement.tipo not in ['AJUSTE','TRANSFER']:
-            raise ValidationError('Lote vencido não pode ser utilizado ou vendido.')
-        qs = m.LoteEstoque.objects.filter(pk=lot_id)
-    own = own_reservations(part, source, movement.ordem_id, sale_id)
-    other = active_reservations(part, source).exclude(pk__in=own.values('pk'))
-    # Descarte explicitamente identificado pode remover vencidos; reservas de itens
-    # válidos continuam protegidas. Transferências não transportam reservas.
-    expired_disposal = lot_id and movement.tipo in ['AJUSTE','TRANSFER'] and lot.validade and lot.validade < timezone.localdate()
-    if not expired_disposal and quantity > total(valid_lots(part, source)) - total(other):
-        raise ValidationError('Estoque válido disponível insuficiente; lotes vencidos e reservas não podem ser consumidos.')
-    remaining = quantity
-    for lot in qs.select_for_update():
-        used = min(lot.quantidade, remaining)
-        if not used:
-            continue
-        lot_change(user, movement, lot, -used)
+    allocation, own, expired_disposal = outgoing_allocation(part, movement, lot_id, sale_id)
+    for lot, used, cost in allocation:
+        lot_change(user, movement, lot, -used, cost)
         if movement.tipo == 'TRANSFER':
             target = m.LoteEstoque.objects.filter(grupo=lot.grupo, deposito=movement.destino).first()
             if not target:
                 target = gs.write(m.LoteEstoque(peca=part, deposito=movement.destino, grupo=lot.grupo, numero=lot.numero, fabricacao=lot.fabricacao, validade=lot.validade, fornecedor=lot.fornecedor, custo_unitario=lot.custo_unitario, entrada_em=lot.entrada_em, localizacao=movement.destino.endereco, documento_entrada=lot.documento_entrada, item_compra=lot.item_compra, legado=lot.legado))
             lot_change(user, movement, target, used)
-        remaining -= used
-        if not remaining:
-            break
-    if remaining:
-        raise ValidationError('Quantidade insuficiente nos lotes selecionados.')
     if movement.tipo != 'TRANSFER' and not expired_disposal:
         consume_reservations(user, own, quantity)
 
 @transaction.atomic
-def reserve(user, part_id, depot_id, quantity, reason, order_id=None, sale_id=None):
-    require(user, 'estoque_escrever')
+def reserve(user, part_id, depot_id, quantity, reason, order_id=None, sale_id=None, request_id=None, lot_id=None):
+    from .commerce_scope import _authorized
+    if not _authorized(user,'reserve',sale_id=sale_id,part_id=part_id,depot_id=depot_id):
+        require(user, 'estoque_escrever')
+    order = None
+    if order_id:
+        from ordens.models import OrdemServico
+        order = OrdemServico.objects.select_for_update().get(pk=order_id)
+        if order.status in m.ENCERRADAS:
+            raise ValidationError('OS encerrada não aceita reserva.')
     part = g.Peca.objects.select_for_update().get(pk=part_id, ativo=True)
     depot = m.Deposito.objects.get(pk=depot_id, ativo=True)
     quantity = amount(quantity)
     if not reason.strip() or order_id and sale_id:
         raise ValidationError('Informe motivo e apenas uma origem para a reserva.')
-    order = None
+    previous = m.ReservaEstoque.objects.filter(request_id=request_id).first() if request_id else None
+    if previous:
+        initial = total(previous.alocacoes.all(), 'quantidade_inicial') or previous.quantidade
+        if (previous.peca_id, previous.deposito_id, previous.ordem_id, previous.venda_id, initial, previous.motivo) != (part_id, depot_id, order_id, sale_id, quantity, reason):
+            raise ValidationError('Identificador de reserva já utilizado com outros dados.')
+        if lot_id and not previous.alocacoes.filter(lote_id=lot_id).exists():
+            raise ValidationError('Identificador de reserva corresponde a outro lote.')
+        return previous
     sale = None
-    if order_id:
-        from ordens.models import OrdemServico
-        order = OrdemServico.objects.get(pk=order_id)
-        if order.status in m.ENCERRADAS:
-            raise ValidationError('OS encerrada não aceita reserva.')
     if sale_id:
         sale = m.Venda.objects.filter(pk=sale_id, status='RASCUNHO', deposito=depot).first()
         if not sale:
@@ -197,7 +298,24 @@ def reserve(user, part_id, depot_id, quantity, reason, order_id=None, sale_id=No
     ensure_lots(part)
     if quantity > total(valid_lots(part, depot)) - total(active_reservations(part, depot)):
         raise ValidationError('Quantidade excede estoque válido disponível.')
-    row = gs.write(m.ReservaEstoque(peca=part, deposito=depot, quantidade=quantity, motivo=reason, ordem=order, venda=sale, usuario=user))
+    held = lot_holds(part, depot)
+    lots = valid_lots(part, depot)
+    if lot_id:
+        lots = lots.filter(pk=lot_id)
+    allocations = []
+    remaining = quantity
+    for lot in lots.select_for_update():
+        allocated = min(remaining, max(ZERO, lot.quantidade - held.get(lot.pk, ZERO)))
+        if allocated:
+            allocations.append((lot, allocated))
+            remaining -= allocated
+        if not remaining:
+            break
+    if remaining:
+        raise ValidationError('Lotes válidos disponíveis insuficientes para reserva.')
+    row = gs.write(m.ReservaEstoque(peca=part, deposito=depot, quantidade=quantity, motivo=reason, ordem=order, venda=sale, usuario=user, request_id=request_id))
+    for lot, allocated in allocations:
+        gs.write(m.AlocacaoReservaEstoque(reserva=row, lote=lot, quantidade=allocated, quantidade_inicial=allocated))
     gs.audit(user, 'ESTOQUE_RESERVADO', row, {'produto':part.pk,'deposito':depot.pk,'quantidade':str(quantity),'os':order_id,'venda':sale_id,'motivo':reason})
     return row
 
@@ -205,6 +323,8 @@ def reserve(user, part_id, depot_id, quantity, reason, order_id=None, sale_id=No
 def release(user, pk, reason):
     require(user, 'estoque_escrever')
     row = m.ReservaEstoque.objects.get(pk=pk)
+    if row.transferencia_id:
+        raise ValidationError('Reserva de trânsito é liberada somente ao receber a transferência.')
     g.Peca.objects.select_for_update().get(pk=row.peca_id)
     row = m.ReservaEstoque.objects.select_for_update().get(pk=pk)
     if not reason.strip():
@@ -224,7 +344,8 @@ def metrics(part, config=None, today=None):
     reserved = total(active_reservations(part))
     available = max(ZERO, valid_quantity - reserved)
     expired = total(part.lotes.filter(validade__lt=today))
-    pending = total(m.ItemCompra.objects.filter(peca=part, compra__status__in=['RASCUNHO','APROVADA','PEDIDO']))
+    pending = sum((item.quantidade_pendente for item in m.ItemCompra.objects.filter(peca=part, compra__status__in=['APROVADA','PEDIDO']).select_related('compra')), ZERO)
+    drafts = total(m.ItemCompra.objects.filter(peca=part, compra__status='RASCUNHO'))
     since = today - timezone.timedelta(days=config.consumo_historico_dias - 1)
     history = part.movimentacoes.filter(tipo__in=['SAIDA','OS','DEVOLUCAO'], criado_em__date__range=(since,today))
     first = part.movimentacoes.filter(tipo__in=['SAIDA','OS']).order_by('criado_em').first()
@@ -245,12 +366,22 @@ def metrics(part, config=None, today=None):
         replacement += left - projected
     ideal = max(part.estoque_minimo, part.estoque_maximo or part.estoque_minimo, daily * config.reposicao_dias)
     effective = available - replacement
-    required = max(ZERO, ideal - effective - pending) if effective <= part.estoque_minimo else ZERO
+    need_quantity = sum((need_remaining(need) for need in m.NecessidadePecaOS.objects.filter(peca=part, resolvida_em__isnull=True).exclude(ordem__status__in=m.ENCERRADAS).select_related('ordem')), ZERO)
+    sales=m.ItemVenda.objects.filter(peca=part,venda__status='AG_PAGAMENTO').values('venda_id').annotate(demand=Sum('quantidade'))
+    pledged={row['venda_id']:row['held'] for row in active_reservations(part).filter(venda__isnull=False).values('venda_id').annotate(held=Sum('quantidade'))}
+    commercial=sum((max(ZERO,row['demand']-pledged.get(row['venda_id'],ZERO)) for row in sales),ZERO)
+    required = max(ZERO, max(ideal, need_quantity) + commercial - effective - pending) if effective <= part.estoque_minimo or need_quantity+commercial > available else ZERO
     suggested = required.quantize(THREE, rounding=ROUND_CEILING)
     last = part.lotes.order_by('-entrada_em','-pk').first()
     supplier = last.fornecedor if last and last.fornecedor_id else part.fornecedor
     cost = last.custo_unitario if last else part.custo_aquisicao
-    return {'peca':part, 'produto':part.descricao, 'sku':part.sku, 'categoria':str(part.categoria or ''), 'fisico':part.quantidade_atual, 'valido':valid_quantity, 'vencido':expired, 'reservado':reserved, 'disponivel':available, 'minimo':part.estoque_minimo, 'ideal':ideal.quantize(THREE, rounding=ROUND_CEILING), 'consumo_medio':daily.quantize(Decimal('.000001')), 'vencendo':expiring, 'substituir':replacement, 'em_compra':pending, 'sugerido':suggested, 'fornecedor':str(supplier or ''), 'fornecedor_id':supplier.pk if supplier else None, 'custo':cost, 'valor_estimado':(suggested * cost).quantize(Decimal('.01')), 'situacao':'ZERADO' if available == 0 else 'ESTOQUE BAIXO' if available <= part.estoque_minimo else 'REPOSIÇÃO POR VALIDADE' if replacement and effective <= part.estoque_minimo else 'NORMAL'}
+    return {'peca':part, 'produto':part.descricao, 'sku':part.sku, 'categoria':str(part.categoria or ''), 'fisico':part.quantidade_atual, 'valido':valid_quantity, 'vencido':expired, 'reservado':reserved, 'disponivel':available, 'minimo':part.estoque_minimo, 'ideal':ideal.quantize(THREE, rounding=ROUND_CEILING), 'consumo_medio':daily.quantize(Decimal('.000001')), 'vencendo':expiring, 'substituir':replacement, 'em_compra':pending, 'em_solicitacao':drafts, 'sugerido':suggested, 'fornecedor':str(supplier or ''), 'fornecedor_id':supplier.pk if supplier else None, 'custo':cost, 'valor_estimado':(suggested * cost).quantize(Decimal('.01')), 'situacao':'ZERADO' if available == 0 else 'ESTOQUE BAIXO' if available <= part.estoque_minimo else 'REPOSIÇÃO POR VALIDADE' if replacement and effective <= part.estoque_minimo else 'NORMAL'}
+
+def need_remaining(need):
+    movements = g.Movimentacao.objects.filter(ordem=need.ordem, peca_id=need.peca_id, criado_em__gte=need.criado_em, tipo__in=['OS', 'DEVOLUCAO']).filter(Q(tipo='OS', origem_id=need.deposito_id) | Q(tipo='DEVOLUCAO', destino_id=need.deposito_id))
+    consumed = max(ZERO, -total(movements, 'variacao'))
+    reserved = total(active_reservations(need.peca, need.deposito).filter(ordem=need.ordem))
+    return max(ZERO, need.quantidade - consumed - reserved)
 
 def snapshot(data):
     return {key:str(value) if isinstance(value, Decimal) else value for key,value in data.items() if key != 'peca'}

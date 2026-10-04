@@ -15,7 +15,7 @@ from .templatetags.ordens_format import data_os
 from .storage import private_storage
 
 
-def gerar_pdf(assinatura):
+def gerar_pdf_legado(assinatura):
     assinatura.validate_tenant()
     from .services import digest
     dados = assinatura.conferencia.dados
@@ -63,8 +63,22 @@ def gerar_pdf(assinatura):
     for label, key in [('Contrato', 'contrato'), ('Prioridade', 'prioridade'), ('Horas trabalhadas', 'horas'), ('Deslocamento (km)', 'deslocamento_km')]:
         if key in dados:
             campo(label, dados[key])
+    for label, key in [('Causa provável', 'causa_provavel'), ('Solução aplicada', 'solucao'), ('Recomendações', 'recomendacoes'), ('Materiais utilizados', 'materiais')]:
+        if dados.get(key):
+            campo(label, dados[key])
+    if dados.get('auxiliares'):
+        campo('Equipe auxiliar', ', '.join(dados['auxiliares']))
     if dados.get('checklist'):
-        campo('Checklist', '\n'.join(('Concluído: ' if item.get('concluido') else 'Pendente: ') + item['item'] + (' · ' + item.get('observacao','') if item.get('observacao') else '') for item in dados['checklist']))
+        answers = []
+        for item in dados['checklist']:
+            answer = item.get('resposta')
+            if item.get('tipo') in ['BOOLEANO', 'CONFORMIDADE'] and type(answer) is bool:
+                answer = ('Conforme' if answer else 'Não conforme') if item['tipo'] == 'CONFORMIDADE' else ('Sim' if answer else 'Não')
+            if item.get('tipo') == 'FOTO' and answer:
+                answer = f'Foto #{answer}'
+            response = f' · {answer} {item.get("unidade", "")}'.rstrip() if answer is not None and answer != '' else ''
+            answers.append(('Concluído: ' if item.get('concluido') else 'Pendente: ') + item['item'] + response + (' · ' + item.get('observacao', '') if item.get('observacao') else ''))
+        campo('Checklist / medições', '\n'.join(answers))
     for label, key in [('Localização inicial', 'localizacao_inicio'), ('Localização final', 'localizacao_final')]:
         geo = dados[key]
         block = [Paragraph(f'<b>{escape(label)}</b><br/>{escape(geo["resultado"])} | {escape(str(data_os(geo["data"])))}<br/>Latitude: {escape(geo["latitude"] or "-")}; longitude: {escape(geo["longitude"] or "-")}; precisão: {escape(geo["precisao"] or "-")} m<br/>Registrado por: {escape(geo["usuario"] or "-")}', styles['TextoOS'])]
@@ -80,7 +94,7 @@ def gerar_pdf(assinatura):
             raise ValidationError('Uma fotografia não corresponde à versão assinada.')
         image = Image(io.BytesIO(raw))
         image._restrictSize(150 * mm, 80 * mm)
-        story.append(KeepTogether([image, paragraph(f'{item["descricao"] or "Foto do atendimento"} | {data_os(item["data"])} | {item["usuario"]}', 'LegendaOS'), Spacer(1, 4 * mm)]))
+        story.append(KeepTogether([image, paragraph(f'{item.get("categoria", "")} {item["descricao"] or "Foto do atendimento"} | {data_os(item["data"])} | {item["usuario"]}', 'LegendaOS'), Spacer(1, 4 * mm)]))
     if not dados['fotos']:
         story.append(paragraph('Sem fotografias anexadas.'))
     signature = Image(io.BytesIO(base64.b64decode(assinatura.imagem)))
@@ -101,3 +115,40 @@ def gerar_pdf(assinatura):
 
     SimpleDocTemplate(output, pagesize=A4, rightMargin=19 * mm, leftMargin=19 * mm, topMargin=18 * mm, bottomMargin=23 * mm, title=f'{dados["numero"]} - {marca}', author=marca).build(story, onFirstPage=footer, onLaterPages=footer)
     return output.getvalue()
+
+
+def gerar_pdf(assinatura):
+    """Primeira emissão privada; futuras leituras usam exatamente o arquivo emitido."""
+    from django.db import transaction
+    from django.core.files.base import ContentFile
+    from .models import Assinatura, DocumentoOSAssinado
+    from .services import digest
+    import uuid
+    assinatura.validate_tenant()
+    if digest(assinatura.conferencia.dados) != assinatura.conferencia.digest:
+        raise ValidationError('Snapshot assinado alterado.')
+    if hashlib.sha256(base64.b64decode(assinatura.imagem)).hexdigest()!=assinatura.imagem_sha256:
+        raise ValidationError('Assinatura alterada.')
+    if assinatura.imagem_tecnico and hashlib.sha256(base64.b64decode(assinatura.imagem_tecnico)).hexdigest()!=assinatura.imagem_tecnico_sha256:
+        raise ValidationError('Assinatura técnica alterada.')
+    with transaction.atomic():
+        Assinatura.objects.select_for_update().get(pk=assinatura.pk)
+        existing=DocumentoOSAssinado.objects.filter(assinatura=assinatura).first()
+        if existing:
+            with existing.arquivo.open('rb') as f: content=f.read()
+            if hashlib.sha256(content).hexdigest()!=existing.sha256:
+                raise ValidationError('PDF emitido não corresponde ao hash.')
+            return content
+        if assinatura.conferencia.dados.get('pdf_modelo', 1) == 2:
+            from .pilot_report import render
+            content=render(assinatura)
+        else:
+            content=gerar_pdf_legado(assinatura)
+        key=private_storage.save(f'organizations/{assinatura.ordem.organization.public_id}/assistencia/ordens/{assinatura.ordem.codigo}/pdf/{assinatura.ciclo}-{uuid.uuid4().hex}.pdf',ContentFile(content))
+        try:
+            doc=DocumentoOSAssinado(ordem=assinatura.ordem,assinatura=assinatura,arquivo=key,sha256=hashlib.sha256(content).hexdigest())
+            doc.full_clean(); doc.save()
+        except Exception:
+            private_storage.delete(key)  # Apenas o novo arquivo cuja criação falhou.
+            raise
+        return content

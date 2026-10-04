@@ -16,6 +16,11 @@ class Perfil(models.TextChoices):
     PLANEJADOR = "PLANEJADOR", "Planejador"
     ATENDIMENTO = "ATENDIMENTO", "Atendimento"
     PAINEL = "PAINEL", "Somente painel operacional"
+    PDV = 'PDV', 'Operador de PDV'
+    VENDEDOR = 'VENDEDOR', 'Vendedor'
+    COMPRAS = 'COMPRAS', 'Compras'
+    RH = 'RH', 'Recursos humanos'
+    PAINEL_TV = 'PAINEL_TV', 'Painel TV somente leitura'
 
 
 class Usuario(AbstractUser):
@@ -64,6 +69,10 @@ class Usuario(AbstractUser):
 
 
 class Tecnico(OrganizationOwned):
+    funcao = models.CharField('Função', max_length=100, blank=True)
+    conselho = models.CharField(max_length=60, blank=True)
+    numero_registro = models.CharField('Número do registro', max_length=100, blank=True)
+    competencias = models.TextField('Competências', blank=True)
     """
     Ficha profissional do técnico. Separada da conta de acesso (Usuario)
     conforme pedido: um técnico pode existir sem login, e pode ser

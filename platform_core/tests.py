@@ -426,6 +426,8 @@ class LegacyMigrationTests(SimpleTestCase):
         from django.conf import settings
         environment = os.environ.copy()
         environment['VERTYX_LEGACY_SETTINGS_MODULE'] = settings.SETTINGS_MODULE
-        result = subprocess.run([sys.executable, str(Path(__file__).resolve().parent.parent / 'tests' / 'legacy_migration.py')], capture_output=True, text=True, timeout=90, env=environment)
+        # The unchanged full legacy upgrade took 274.7s with the B3 graph on
+        # local PostgreSQL. Keep a bounded budget without removing assertions.
+        result = subprocess.run([sys.executable, str(Path(__file__).resolve().parent.parent / 'tests' / 'legacy_migration.py')], capture_output=True, text=True, timeout=600, env=environment)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn('"legacy_upgrade": "PASS"', result.stdout)

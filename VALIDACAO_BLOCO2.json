@@ -1,0 +1,1047 @@
+{
+  "date": "2026-10-02",
+  "scope": "BLOCO_2_OPERACAO_ASSISTENCIA",
+  "result": "ENCERRADO_LOCAL_COM_LIMITES_DE_HOMOLOGACAO",
+  "base_commit": "fe6c554eb1fce12f430d9e6a1f9da8ecf9eae261",
+  "branch": "main",
+  "repository": "tecnolmedengclinica-spec/vertx-erp",
+  "working_tree": "alterações locais acumuladas dos Blocos 1 e 2; nenhum commit/push/deploy",
+  "environment": {
+    "python": "3.12.14",
+    "django": "5.2.17",
+    "postgresql": "16.15",
+    "database": "somente cluster PostgreSQL sintético local em loopback",
+    "storage": "arquivos sintéticos locais e storage externo simulado; sem R2 real"
+  },
+  "validation_levels": {
+    "VALIDADO_AUTOMATICAMENTE": true,
+    "VALIDADO_PELA_INTERFACE": "jornadas especificadas e 24 verificações responsivas",
+    "VALIDADO_EM_BANCO_SINTETICO": true,
+    "VALIDADO_EM_PRODUCAO": false
+  },
+  "dependency_changes_block2": {},
+  "dependency_notes": "Django 5.2.17 e requisitos estabilizados no Bloco 1 preservados; pip check aprovado na retomada.",
+  "checks": [
+    {
+      "command": [
+        "check"
+      ],
+      "exit_code": 0,
+      "log": "tmp/validation/bloco2_final_0_check.log"
+    },
+    {
+      "command": [
+        "makemigrations",
+        "--check",
+        "--dry-run"
+      ],
+      "exit_code": 0,
+      "log": "tmp/validation/bloco2_final_1_makemigrations.log"
+    },
+    {
+      "command": [
+        "test",
+        "--noinput",
+        "-v",
+        "1"
+      ],
+      "exit_code": 0,
+      "log": "tmp/validation/bloco2_final_2_test.log"
+    },
+    {
+      "command": [
+        "collectstatic",
+        "--noinput"
+      ],
+      "exit_code": 0,
+      "log": "tmp/validation/bloco2_final_3_collectstatic.log"
+    }
+  ],
+  "pip_check": "PASS",
+  "integrity": {
+    "result": "PASS",
+    "python_files_parsed": 203,
+    "conflict_markers": false,
+    "old_migration_hashes_verified": 50,
+    "old_test_methods_retained": 293,
+    "diff_check": "PASS",
+    "production_settings_or_render_modified": false,
+    "secret_or_database_files_in_working_changes": false,
+    "branch": "main",
+    "base_commit": "fe6c554eb1fce12f430d9e6a1f9da8ecf9eae261",
+    "modified_tracked_files": [
+      "contas/forms.py",
+      "contas/models.py",
+      "equipamentos/forms.py",
+      "equipamentos/models.py",
+      "equipamentos/urls.py",
+      "equipamentos/views.py",
+      "gestao/forms.py",
+      "gestao/models.py",
+      "gestao/reporting.py",
+      "gestao/services.py",
+      "gestao/views.py",
+      "operacao/dashboard.py",
+      "operacao/executive.py",
+      "operacao/forms.py",
+      "operacao/history.py",
+      "operacao/models.py",
+      "operacao/navigation.py",
+      "operacao/notifications.py",
+      "operacao/operational_panel.py",
+      "operacao/permissions.py",
+      "operacao/planning.py",
+      "operacao/planning_services.py",
+      "operacao/portal.py",
+      "operacao/reporting.py",
+      "operacao/services.py",
+      "operacao/stock.py",
+      "operacao/stock_forms.py",
+      "operacao/stock_models.py",
+      "operacao/stock_views.py",
+      "operacao/test_planning.py",
+      "operacao/test_stock.py",
+      "operacao/urls.py",
+      "operacao/views.py",
+      "ordens/forms.py",
+      "ordens/models.py",
+      "ordens/reports.py",
+      "ordens/services.py",
+      "ordens/views.py",
+      "platform_core/middleware.py",
+      "requirements.txt",
+      "templates/base.html",
+      "templates/core/painel.html",
+      "templates/equipamentos/equipamento_detail.html",
+      "templates/gestao/detalhe.html",
+      "templates/gestao/financeiro.html",
+      "templates/gestao/lista.html",
+      "templates/operacao/detalhe.html",
+      "templates/operacao/notificacoes.html",
+      "templates/operacao/os_extras.html",
+      "templates/operacao/portal.html",
+      "templates/ordens/detalhe.html",
+      "templates/ordens/resumo.html"
+    ],
+    "added_nonignored_files": [
+      "AUDITORIA_ERP_COMPLETO.json",
+      "AUDITORIA_ERP_COMPLETO.md",
+      "BLOCO1_ESTABILIZACAO.md",
+      "PLANO_BLOCO2.md",
+      "PLANO_BLOCO3.md",
+      "PLANO_DEPENDENCIAS_BLOCO1.md",
+      "RELATORIO_BLOCO2.md",
+      "VALIDACAO_BLOCO1.json",
+      "VALIDACAO_BLOCO2.json",
+      "contas/migrations/0007_operacao_bloco2.py",
+      "equipamentos/migrations/0007_operacao_bloco2.py",
+      "gestao/financial_origin.py",
+      "gestao/migrations/0006_estabilizacao_bloco1.py",
+      "gestao/migrations/0007_origem_parcelas_existentes.py",
+      "gestao/migrations/0008_operacao_bloco2.py",
+      "operacao/migrations/0006_estabilizacao_bloco1.py",
+      "operacao/migrations/0007_operacao_bloco2.py",
+      "operacao/test_block2.py",
+      "operacao/test_block2_interfaces.py",
+      "operacao/test_stabilization.py",
+      "ordens/migrations/0010_operacao_bloco2.py",
+      "static/js/checklist-builder.js",
+      "templates/equipamentos/etiqueta.html",
+      "templates/operacao/block2_call.html",
+      "templates/operacao/block2_checklist.html",
+      "templates/operacao/block2_dashboard.html",
+      "templates/operacao/block2_os.html",
+      "templates/operacao/block2_purchase.html",
+      "templates/operacao/necessidades.html",
+      "templates/operacao/pesquisa.html",
+      "templates/operacao/portal_chamado.html",
+      "templates/operacao/portal_equipamento.html",
+      "templates/operacao/timeline.html"
+    ]
+  },
+  "tests": {
+    "full_postgresql": {
+      "found": 335,
+      "passed": 335,
+      "skipped": 0,
+      "seconds": 363.355,
+      "result": "PASS"
+    },
+    "previous_methods_retained": 293,
+    "new_tests": 42,
+    "new_postgresql_concurrency_tests": 7,
+    "targeted_postgresql": {
+      "found": 42,
+      "passed": 42,
+      "skipped": 0,
+      "seconds": 54.49,
+      "result": "PASS"
+    },
+    "inventory": {
+      "operacao/test_block2.py": {
+        "Block2Fixtures": [],
+        "Block2OperationsTests": [
+          "test_partial_receipt_pending_lots_and_final_account",
+          "test_receipt_same_token_returns_same_record",
+          "test_over_receipt_rolls_back_all_details",
+          "test_received_history_is_immutable_and_partial_cannot_cancel",
+          "test_expired_receipt_and_foreign_item_are_rejected",
+          "test_purchase_receipt_permissions_and_organization",
+          "test_reservation_allocates_fefo_without_reducing_physical",
+          "test_reserved_lot_is_not_consumed_by_other_order",
+          "test_reserved_consumption_partial_then_return_preserves_cost",
+          "test_cancel_releases_reservations_without_stock_change",
+          "test_reservation_idempotent_and_foreign_lot_denied",
+          "test_call_conversion_status_tracking_without_duplicate_order",
+          "test_call_agenda_requires_responsible_and_schedule",
+          "test_typed_checklist_false_zero_decimal_and_selection",
+          "test_checklist_model_copy_and_signed_snapshot_frozen",
+          "test_photo_checklist_rejects_unrelated_photo",
+          "test_auxiliary_authorization_and_new_states",
+          "test_quadrimestral_generation_is_anchored_and_idempotent"
+        ],
+        "Block2PostgreSQLTests": [
+          "test_partial_receipt_race_never_exceeds_order",
+          "test_same_receipt_token_race_creates_one_entry",
+          "test_reservation_race_does_not_overcommit_lot",
+          "test_call_conversion_race_creates_one_order",
+          "test_call_opening_same_token_race",
+          "test_preventive_generation_and_conversion_are_idempotent_in_race",
+          "test_reserved_consumption_race_retains_lot_cost_and_remaining_hold"
+        ]
+      },
+      "operacao/test_block2_interfaces.py": {
+        "Block2InterfaceTests": [
+          "test_portal_qr_and_internal_equipment_are_separate_permissions",
+          "test_portal_call_priority_and_internal_fields_cannot_be_forged",
+          "test_document_release_does_not_release_other_customers",
+          "test_call_attachments_validate_type_and_are_audited",
+          "test_document_validity_alert_updates_resolves_and_reopens_same_notice",
+          "test_contract_sla_snapshot_and_visit_alert",
+          "test_piece_need_pending_purchase_discount_and_idempotent_draft",
+          "test_piece_need_is_not_bought_again_when_approved_order_covers_it",
+          "test_piece_need_other_depot_consumption_does_not_satisfy_it",
+          "test_new_earlier_lot_preserves_fefo_and_actual_cost_with_reservation",
+          "test_auxiliary_planning_and_checklist_template_cannot_be_swapped",
+          "test_global_search_scopes_organization_and_permissions",
+          "test_real_dashboard_counts_same_names_as_distinct_equipment",
+          "test_financial_filters_preserve_root_and_nonbanked_control",
+          "test_reports_export_real_cost_and_pending_receipt_in_all_formats",
+          "test_all_new_pages_render_and_other_organization_ids_are_denied",
+          "test_complete_call_order_acceptance_pdf_finance_equipment_history"
+        ]
+      }
+    }
+  },
+  "migrations": {
+    "added": [
+      "contas/migrations/0007_operacao_bloco2.py",
+      "equipamentos/migrations/0007_operacao_bloco2.py",
+      "gestao/migrations/0008_operacao_bloco2.py",
+      "operacao/migrations/0007_operacao_bloco2.py",
+      "ordens/migrations/0010_operacao_bloco2.py"
+    ],
+    "operations": {
+      "contas/migrations/0007_operacao_bloco2.py": [
+        "AddField"
+      ],
+      "equipamentos/migrations/0007_operacao_bloco2.py": [
+        "AddField"
+      ],
+      "gestao/migrations/0008_operacao_bloco2.py": [
+        "AddField"
+      ],
+      "operacao/migrations/0007_operacao_bloco2.py": [
+        "AddConstraint",
+        "AddField",
+        "AlterField",
+        "CreateModel",
+        "swappable_dependency"
+      ],
+      "ordens/migrations/0010_operacao_bloco2.py": [
+        "AddConstraint",
+        "AddField",
+        "AlterField",
+        "CreateModel"
+      ]
+    },
+    "historical_files_hashes_verified": 50,
+    "old_migrations_modified": false,
+    "pending_model_changes": false,
+    "production_applied_in_this_block": [],
+    "production_application_status": "NÃO VALIDADO EM PRODUÇÃO; nenhuma dessas cinco foi executada em produção por esta tarefa. Não se consultou a tabela de migrations publicada.",
+    "block1_local_prerequisites": [
+      "gestao/0006_estabilizacao_bloco1",
+      "gestao/0007_origem_parcelas_existentes",
+      "operacao/0006_estabilizacao_bloco1"
+    ]
+  },
+  "database_preservation": {
+    "result": "PASS_SYNTHETIC",
+    "method": "banco isolado no cluster local: schema anterior, cópia de colunas/dados sintéticos, snapshot, cinco migrations forward e comparação de todas as colunas/linhas anteriores",
+    "old_tables": 71,
+    "preserved_rows": 1505,
+    "all_old_columns_unchanged": true,
+    "existing_database_reset": false,
+    "production_database_verified": false,
+    "post_migration_noop_verification": {
+      "result": "PASS",
+      "rows": 1836,
+      "note": "snapshot já migrado, incluindo fixtures visuais; evidencia repetição sem alterações, não substitui o ensaio do schema anterior."
+    }
+  },
+  "static": {
+    "collectstatic": "PASS",
+    "manifest_assets": 146,
+    "manifest_storage": "CompressedManifestStaticFilesStorage verificado separadamente com assets existentes"
+  },
+  "pwa": {
+    "result": "PASS_FOUNDATION",
+    "existing_test": "test_pwa_publica_nao_cacheia_documentos_ou_sessao",
+    "private_data_cached": false,
+    "physical_device_installation_tested": false,
+    "complex_offline_sync_implemented": false
+  },
+  "interfaces": {
+    "result": "PASS_LOCAL_JOURNEYS",
+    "responsive": [
+      {
+        "page": "dashboard",
+        "size": {
+          "width": 1440,
+          "height": 900
+        },
+        "errors": false,
+        "heading": "Boa tarde, b2-admin-5ecde512",
+        "title": "Painel · VERTYX | ASSISTÊNCIA",
+        "viewport": 1440,
+        "width": 1425
+      },
+      {
+        "page": "agenda",
+        "size": {
+          "width": 1440,
+          "height": 900
+        },
+        "errors": false,
+        "heading": "Planejamento",
+        "title": "Planejamento · VERTYX | ASSISTÊNCIA",
+        "viewport": 1440,
+        "width": 1425
+      },
+      {
+        "page": "os",
+        "size": {
+          "width": 1440,
+          "height": 900
+        },
+        "errors": false,
+        "heading": "OS-000046",
+        "title": "OS-000046 · VERTYX | ASSISTÊNCIA",
+        "viewport": 1440,
+        "width": 1425
+      },
+      {
+        "page": "equipamento",
+        "size": {
+          "width": 1440,
+          "height": 900
+        },
+        "errors": false,
+        "title": "Câmara de vacinas · VERTYX | ASSISTÊNCIA",
+        "viewport": 1440,
+        "width": 1425
+      },
+      {
+        "page": "compra",
+        "size": {
+          "width": 1440,
+          "height": 900
+        },
+        "errors": false,
+        "heading": "Compras · COMP-000014",
+        "title": "Compras · COMP-000014 · VERTYX | ASSISTÊNCIA",
+        "viewport": 1440,
+        "width": 1425
+      },
+      {
+        "page": "estoque",
+        "size": {
+          "width": 1440,
+          "height": 900
+        },
+        "errors": false,
+        "heading": "Lotes e Validades",
+        "title": "Lotes e Validades · VERTYX | ASSISTÊNCIA",
+        "viewport": 1440,
+        "width": 1425
+      },
+      {
+        "page": "financeiro",
+        "size": {
+          "width": 1440,
+          "height": 900
+        },
+        "errors": false,
+        "heading": "Financeiro",
+        "title": "Financeiro · VERTYX | ASSISTÊNCIA",
+        "viewport": 1440,
+        "width": 1425
+      },
+      {
+        "page": "checklist",
+        "size": {
+          "width": 1440,
+          "height": 900
+        },
+        "errors": false,
+        "heading": "Editar Modelos de checklist",
+        "title": "Editar Modelos de checklist · VERTYX | ASSISTÊNCIA",
+        "viewport": 1440,
+        "width": 1425
+      },
+      {
+        "page": "dashboard",
+        "size": {
+          "width": 768,
+          "height": 1024
+        },
+        "errors": false,
+        "heading": "Boa tarde, b2-admin-5ecde512",
+        "title": "Painel · VERTYX | ASSISTÊNCIA",
+        "viewport": 768,
+        "width": 753
+      },
+      {
+        "page": "agenda",
+        "size": {
+          "width": 768,
+          "height": 1024
+        },
+        "errors": false,
+        "heading": "Planejamento",
+        "title": "Planejamento · VERTYX | ASSISTÊNCIA",
+        "viewport": 768,
+        "width": 753
+      },
+      {
+        "page": "os",
+        "size": {
+          "width": 768,
+          "height": 1024
+        },
+        "errors": false,
+        "heading": "OS-000046",
+        "title": "OS-000046 · VERTYX | ASSISTÊNCIA",
+        "viewport": 768,
+        "width": 753
+      },
+      {
+        "page": "equipamento",
+        "size": {
+          "width": 768,
+          "height": 1024
+        },
+        "errors": false,
+        "title": "Câmara de vacinas · VERTYX | ASSISTÊNCIA",
+        "viewport": 768,
+        "width": 753
+      },
+      {
+        "page": "compra",
+        "size": {
+          "width": 768,
+          "height": 1024
+        },
+        "errors": false,
+        "heading": "Compras · COMP-000014",
+        "title": "Compras · COMP-000014 · VERTYX | ASSISTÊNCIA",
+        "viewport": 768,
+        "width": 753
+      },
+      {
+        "page": "estoque",
+        "size": {
+          "width": 768,
+          "height": 1024
+        },
+        "errors": false,
+        "heading": "Lotes e Validades",
+        "title": "Lotes e Validades · VERTYX | ASSISTÊNCIA",
+        "viewport": 768,
+        "width": 768
+      },
+      {
+        "page": "financeiro",
+        "size": {
+          "width": 768,
+          "height": 1024
+        },
+        "errors": false,
+        "heading": "Financeiro",
+        "title": "Financeiro · VERTYX | ASSISTÊNCIA",
+        "viewport": 768,
+        "width": 753
+      },
+      {
+        "page": "checklist",
+        "size": {
+          "width": 768,
+          "height": 1024
+        },
+        "errors": false,
+        "heading": "Editar Modelos de checklist",
+        "title": "Editar Modelos de checklist · VERTYX | ASSISTÊNCIA",
+        "viewport": 768,
+        "width": 753
+      },
+      {
+        "page": "dashboard",
+        "size": {
+          "width": 390,
+          "height": 844
+        },
+        "errors": false,
+        "heading": "Boa tarde, b2-admin-5ecde512",
+        "title": "Painel · VERTYX | ASSISTÊNCIA",
+        "viewport": 390,
+        "width": 375
+      },
+      {
+        "page": "agenda",
+        "size": {
+          "width": 390,
+          "height": 844
+        },
+        "errors": false,
+        "heading": "Planejamento",
+        "title": "Planejamento · VERTYX | ASSISTÊNCIA",
+        "viewport": 390,
+        "width": 375
+      },
+      {
+        "page": "os",
+        "size": {
+          "width": 390,
+          "height": 844
+        },
+        "errors": false,
+        "heading": "OS-000046",
+        "title": "OS-000046 · VERTYX | ASSISTÊNCIA",
+        "viewport": 390,
+        "width": 375
+      },
+      {
+        "page": "equipamento",
+        "size": {
+          "width": 390,
+          "height": 844
+        },
+        "errors": false,
+        "title": "Câmara de vacinas · VERTYX | ASSISTÊNCIA",
+        "viewport": 390,
+        "width": 375
+      },
+      {
+        "page": "compra",
+        "size": {
+          "width": 390,
+          "height": 844
+        },
+        "errors": false,
+        "heading": "Compras · COMP-000014",
+        "title": "Compras · COMP-000014 · VERTYX | ASSISTÊNCIA",
+        "viewport": 390,
+        "width": 375
+      },
+      {
+        "page": "estoque",
+        "size": {
+          "width": 390,
+          "height": 844
+        },
+        "errors": false,
+        "heading": "Lotes e Validades",
+        "title": "Lotes e Validades · VERTYX | ASSISTÊNCIA",
+        "viewport": 390,
+        "width": 375
+      },
+      {
+        "page": "financeiro",
+        "size": {
+          "width": 390,
+          "height": 844
+        },
+        "errors": false,
+        "heading": "Financeiro",
+        "title": "Financeiro · VERTYX | ASSISTÊNCIA",
+        "viewport": 390,
+        "width": 375
+      },
+      {
+        "page": "checklist",
+        "size": {
+          "width": 390,
+          "height": 844
+        },
+        "errors": false,
+        "heading": "Editar Modelos de checklist",
+        "title": "Editar Modelos de checklist · VERTYX | ASSISTÊNCIA",
+        "viewport": 390,
+        "width": 375
+      }
+    ],
+    "journeys": {
+      "result": "PASS",
+      "environment": "local synthetic PostgreSQL",
+      "responsive_pages": 24,
+      "customer": [
+        "portal equipamento e histórico",
+        "abertura de chamado",
+        "acompanhamento até Concluído",
+        "documentos liberados"
+      ],
+      "technician": [
+        "deslocamento",
+        "início com localização indisponível registrada",
+        "campos técnicos",
+        "medição 4.80 °C",
+        "upload de foto confirmado",
+        "conferência",
+        "assinatura por traço",
+        "Finalizada",
+        "traço de assinatura efetivamente enviado e OS 48 Finalizada"
+      ],
+      "stock": [
+        "compra Pedido com 2/5 recebidos",
+        "recebimento final de 3",
+        "Recebida com 5/5 e zero pendente",
+        "duas entradas por lote e conta vinculada",
+        "reserva OS 47 de 1.000",
+        "consumo parcial 0.500 e devolução 0.250",
+        "saldo físico 7.750 e reservado 0.500 confirmados antes da nova compra"
+      ],
+      "manager": [
+        "dashboard",
+        "planejamento",
+        "conversão de chamado",
+        "agendamento da OS",
+        "editor de checklist",
+        "contrato: cobertura, SLA, visitas e cobranças",
+        "relatório custo líquido de peças OS 47: 1.83250"
+      ],
+      "screenshots": [
+        "bloco2-chamado-concluido-mobile.jpg",
+        "bloco2-compra-recebida-mobile.jpg"
+      ],
+      "limitations": [
+        "Sessões de QA por perfil; autenticação normal coberta pela suíte, sem login de produção.",
+        "Não valida celulares físicos, instalação standalone ou sincronização offline complexa.",
+        "O seletor de arquivo demorou; foto 13 na OS 48 e FOTO_ADICIONADA confirmam o envio."
+      ],
+      "preventive": [
+        "plano quadrimestral com datas 02/10/2026, 02/02/2027 e 02/06/2027",
+        "geração OS 49",
+        "agendamento",
+        "início e execução",
+        "assinatura e Finalizada",
+        "ocorrência CONCLUIDA e datas futuras PENDENTE preservadas"
+      ],
+      "purchase_from_need": [
+        "necessidade OS 47 de 12.000",
+        "solicitação oficial COMP 15 de 4.250 após desconto de cobertura",
+        "aprovação",
+        "pedido",
+        "recebimento parcial 2.000 com pendente 2.250",
+        "recebimento final 2.250",
+        "Recebida e pendente zero",
+        "dois lotes e uma conta vinculada",
+        "resolução da necessidade com motivo obrigatório, sem movimentar saldo"
+      ],
+      "production_validated": false
+    },
+    "console_errors_or_warnings_in_final_inspection": 0,
+    "synthetic_sessions": true,
+    "real_production_login_tested": false
+  },
+  "upload": {
+    "result": "PASS_BROWSER_AND_AUTOMATED",
+    "browser": "foto 13 na OS 48 e evento FOTO_ADICIONADA confirmados após envio pelo formulário",
+    "note": "seleção do arquivo demorou no controle do navegador; envio posteriormente confirmado, sem alteração funcional para contornar",
+    "private_files_and_rejections": "testes de arquivos válidos, tipo/assinatura, vínculos, isolamento e indisponibilidade de storage aprovados"
+  },
+  "pdf": {
+    "result": "PASS_GENERATED_AND_VISUALLY_INSPECTED",
+    "artifact": "tmp/validation/bloco2-os.pdf",
+    "pages_inspected": 3,
+    "contents": [
+      "identificação e dados técnicos",
+      "peças utilizadas",
+      "checklist e medições",
+      "foto categorizada",
+      "assinatura, data e hashes"
+    ],
+    "page_images": [
+      "tmp/validation/bloco2-os-1.png",
+      "tmp/validation/bloco2-os-2.png",
+      "tmp/validation/bloco2-os-3.png"
+    ],
+    "production_storage_tested": false
+  },
+  "areas": [
+    {
+      "area": "Chamados e triagem",
+      "before": "Cadastro básico e conversão oficial para OS.",
+      "change": "Contato, origem, tipo, agenda, técnico, prazo/SLA, prioridade solicitada separada da interna, anexos privados e estados sincronizados com a OS; abertura/conversão idempotentes.",
+      "files": [
+        "operacao/models.py",
+        "operacao/forms.py",
+        "operacao/services.py",
+        "operacao/views.py",
+        "operacao/portal.py",
+        "templates/operacao/block2_call.html",
+        "templates/operacao/portal_chamado.html"
+      ],
+      "migrations": [
+        "operacao/0007"
+      ],
+      "tests": "test_call_*; test_portal_call_priority_*; test_contract_sla_*; test_call_attachments_*",
+      "limit": "SLA básico por prazo; nenhum motor avançado, mensagem externa ou confirmação de atendimento fora do sistema."
+    },
+    {
+      "area": "OS, equipe e assinatura",
+      "before": "Execução, fotos, assinatura eletrônica, conferência congelada e PDFs históricos.",
+      "change": "Auxiliares autorizados, deslocamento/aguardando aprovação, campos técnicos, categorias de foto, checklist tipado e sincronização do chamado; dados novos no snapshot/PDF, sem reescrever versões antigas.",
+      "files": [
+        "ordens/models.py",
+        "ordens/forms.py",
+        "ordens/services.py",
+        "ordens/views.py",
+        "ordens/reports.py",
+        "templates/ordens/detalhe.html",
+        "templates/ordens/resumo.html",
+        "templates/operacao/block2_os.html"
+      ],
+      "migrations": [
+        "ordens/0010"
+      ],
+      "tests": "test_auxiliary_authorization_*; test_checklist_model_copy_*; test_complete_call_order_*",
+      "limit": "Assinatura eletrônica com trilha e hashes; não é certificado A1/ICP-Brasil. Celular físico ainda requer homologação."
+    },
+    {
+      "area": "Checklists",
+      "before": "Modelo JSON com caixas obrigatórias e notas.",
+      "change": "Editor de perguntas com nove tipos, critérios de equipamento/serviço, respostas Boolean/Decimal/data/seleção/foto, cópia independente para a OS e validação antes da assinatura.",
+      "files": [
+        "operacao/forms.py",
+        "operacao/models.py",
+        "operacao/services.py",
+        "static/js/checklist-builder.js",
+        "templates/operacao/block2_checklist.html"
+      ],
+      "migrations": [
+        "operacao/0007"
+      ],
+      "tests": "test_typed_checklist_*; test_photo_checklist_*; test_checklist_model_copy_*; test_auxiliary_planning_*",
+      "limit": "Editor depende de JavaScript; fallback textual legado permanece. Não há editor offline com sincronização."
+    },
+    {
+      "area": "Equipamentos, técnicos, fornecedores e histórico",
+      "before": "Cadastros multiempresa, vínculos e QR interno.",
+      "change": "Metadados faltantes opcionais, classificação do ciclo de vida, campos profissionais/fornecedor, linha do tempo consolidada, etiqueta e QR autorizado para o cliente.",
+      "files": [
+        "equipamentos/models.py",
+        "equipamentos/forms.py",
+        "equipamentos/views.py",
+        "equipamentos/urls.py",
+        "contas/models.py",
+        "contas/forms.py",
+        "gestao/models.py",
+        "gestao/forms.py",
+        "operacao/history.py",
+        "templates/equipamentos/etiqueta.html",
+        "templates/equipamentos/equipamento_detail.html",
+        "templates/operacao/timeline.html"
+      ],
+      "migrations": [
+        "contas/0007",
+        "equipamentos/0007",
+        "gestao/0008"
+      ],
+      "tests": "test_portal_qr_*; test_complete_call_order_*; test_all_new_pages_*",
+      "limit": "Metadados antigos vazios não foram presumidos; registro ANVISA é cadastro, sem consulta externa."
+    },
+    {
+      "area": "Preventivas e planejamento",
+      "before": "PlanoPreventivo/PreventivaProgramada e contrato/AgendaPreventiva oficiais.",
+      "change": "Quadrimestral ancorada, unidade/tipo/equipe, agenda unificada, chamados e auxiliares em filtros/conflitos; geração/conversão/conclusão idempotentes e próxima data preservada.",
+      "files": [
+        "operacao/models.py",
+        "operacao/services.py",
+        "operacao/planning.py",
+        "operacao/planning_services.py",
+        "operacao/forms.py",
+        "operacao/views.py"
+      ],
+      "migrations": [
+        "operacao/0007"
+      ],
+      "tests": "test_quadrimestral_generation_*; test_preventive_generation_*; test_auxiliary_planning_*; suíte anterior de planejamento",
+      "limit": "Planos e visitas contratuais são fontes distintas. Não fundir históricos coincidentes automaticamente; evento sem fim não recebe duração fictícia."
+    },
+    {
+      "area": "Estoque, FEFO, reserva e necessidade",
+      "before": "Peça/depósito/saldo/lote/movimento oficiais; FEFO, custos e devoluções estabilizados no Bloco 1.",
+      "change": "Alocação de lotes dentro da reserva existente, proteção de compromissos de outras OS, liberação no consumo/cancelamento, necessidade ligada à OS, compra oficial e resolução auditada por motivo.",
+      "files": [
+        "operacao/stock_models.py",
+        "operacao/stock.py",
+        "operacao/stock_forms.py",
+        "operacao/stock_views.py",
+        "operacao/services.py",
+        "gestao/services.py",
+        "templates/operacao/necessidades.html"
+      ],
+      "migrations": [
+        "operacao/0007"
+      ],
+      "tests": "test_reservation_*; test_reserved_*; test_new_earlier_lot_*; test_piece_need_*; regressões FEFO/validade/devolução anteriores",
+      "limit": "Reservas agregadas legadas são respeitadas, sem fabricar detalhes passados. Resolver necessidade não baixa nem ajusta estoque."
+    },
+    {
+      "area": "Compras e recebimentos",
+      "before": "Compra, ItemCompra, CotacaoCompra, aprovação/pedido e conta a pagar oficiais.",
+      "change": "Previsão, cabeçalho idempotente e itens de recebimento imutáveis ligados ao movimento/lote, parcial/final, bloqueio de excesso/cancelamento após entrada; necessidade desconta cobertura real.",
+      "files": [
+        "operacao/models.py",
+        "operacao/forms.py",
+        "operacao/services.py",
+        "operacao/views.py",
+        "operacao/stock.py",
+        "templates/operacao/block2_purchase.html"
+      ],
+      "migrations": [
+        "operacao/0007"
+      ],
+      "tests": "test_partial_receipt_*; test_receipt_same_*; test_over_receipt_*; test_received_history_*; test_expired_receipt_*; test_purchase_receipt_*; test_same_receipt_token_*",
+      "limit": "Parcial entra no estoque imediatamente; a única conta a pagar do pedido nasce no recebimento final, política atual preservada. Recebidas legadas continuam recebidas sem inventar detalhes."
+    },
+    {
+      "area": "Financeiro, contratos e centros de custo",
+      "before": "Origem raiz, parcelas exatas, pagamentos parciais/idempotentes, eventos, caixa/banco e contratos do Bloco 1.",
+      "change": "Filtros de período/origem/banco e controle não bancarizado; integração mantida com OS/compras/contrato e indicadores sem simular saldo bancário.",
+      "files": [
+        "gestao/forms.py",
+        "gestao/views.py",
+        "gestao/reporting.py",
+        "operacao/dashboard.py",
+        "operacao/executive.py",
+        "operacao/reporting.py",
+        "templates/gestao/financeiro.html"
+      ],
+      "migrations": [],
+      "tests": "test_financial_filters_*; test_complete_call_order_*; todos os testes de estabilização",
+      "limit": "Banco/controle filtram valores realizados; contas pendentes não têm banco presumido. Não há conciliação externa/Open Finance."
+    },
+    {
+      "area": "Documentos e portal",
+      "before": "Storage privado, uploads validados, vínculo explícito usuário/cliente e liberação individual.",
+      "change": "Categorias/vínculos/validade/observações, técnicos/fornecedores/chamados, documentos e histórico de equipamento no portal, abertura e acompanhamento de chamado sem revelar campos internos.",
+      "files": [
+        "operacao/models.py",
+        "operacao/forms.py",
+        "operacao/services.py",
+        "operacao/permissions.py",
+        "operacao/portal.py",
+        "platform_core/middleware.py",
+        "templates/operacao/portal.html",
+        "templates/operacao/portal_equipamento.html"
+      ],
+      "migrations": [
+        "operacao/0007"
+      ],
+      "tests": "test_document_release_*; test_call_attachments_*; test_portal_qr_*; test_portal_call_*; testes anteriores de storage privado",
+      "limit": "R2 real e permissões com usuários reais não foram acessados; uploads externos cobertos por simulação e guardas existentes."
+    },
+    {
+      "area": "Notificações e ocorrências",
+      "before": "Notificacao/OcorrenciaEstoque, comandos e runner de estoque existentes.",
+      "change": "Chave estável, atualização, leitura independente da resolução/reabertura; alertas de prazos, contrato/visitas, preventiva/documento e necessidade de peças.",
+      "files": [
+        "operacao/notifications.py",
+        "operacao/stock.py",
+        "operacao/services.py",
+        "templates/operacao/notificacoes.html"
+      ],
+      "migrations": [],
+      "tests": "test_document_validity_alert_*; test_contract_sla_*; testes anteriores de não duplicação/resolução/reabertura de estoque",
+      "limit": "Nenhum runner externo foi ativado. Notificações operacionais usam a atualização existente; não há envio real de email/WhatsApp. Alertas diários históricos são preservados."
+    },
+    {
+      "area": "Dashboard, TV, pesquisa e conhecimento",
+      "before": "Painéis, DTO restrito de TV e navegação oficiais.",
+      "change": "Novos estados/chamados/auxiliares, pendências e métricas reais; pesquisa autorizada e artigos técnicos estruturados vinculados a equipamento/OS/manual.",
+      "files": [
+        "operacao/dashboard.py",
+        "operacao/executive.py",
+        "operacao/operational_panel.py",
+        "operacao/navigation.py",
+        "operacao/views.py",
+        "operacao/models.py",
+        "templates/core/painel.html",
+        "templates/operacao/block2_dashboard.html",
+        "templates/operacao/pesquisa.html",
+        "templates/base.html"
+      ],
+      "migrations": [
+        "operacao/0007"
+      ],
+      "tests": "test_real_dashboard_*; test_global_search_*; test_all_new_pages_*; regressões anteriores do painel TV",
+      "limit": "Artigos não representam IA externa. TV conserva a lista permitida de campos; indicadores sem histórico suficiente ficam vazios, sem números demonstrativos."
+    },
+    {
+      "area": "Relatórios, PDF e PWA",
+      "before": "Exportadores CSV/Excel/PDF, manifesto e worker com cache público.",
+      "change": "OS/preventivas pendentes e executadas, custo líquido registrado de peças e compras pendentes, filtros e isolamento; PDF da OS com novos dados; editor local no collectstatic.",
+      "files": [
+        "gestao/reporting.py",
+        "operacao/reporting.py",
+        "ordens/reports.py",
+        "templates/operacao/block2_checklist.html"
+      ],
+      "migrations": [],
+      "tests": "test_reports_export_*; test_complete_call_order_*; teste PWA e relatórios anteriores",
+      "limit": "Custos de peças não incluem mão de obra/deslocamento presumidos. Instalação PWA em dispositivo físico e operação offline complexa não foram homologadas."
+    }
+  ],
+  "partially_completed_or_pending_real_homologation": [
+    "Execução contínua de notificações e relatórios automáticos em infraestrutura real: mecanismo existente preservado; runner não ativado.",
+    "PWA: fundamento, manifesto, worker e cache público validados; instalação em celulares físicos e offline complexo não validados.",
+    "Homologação operacional com equipes/clientes reais, permissões finais e cadastros legados opcionais: pendente.",
+    "Ensaios visuais não repetem todas as combinações de filtros, permissões, redes, modelos de checklist e navegadores; a cobertura automatizada complementa o ensaio."
+  ],
+  "not_implemented_out_of_scope": [
+    "NF-e/NFS-e real",
+    "certificado A1/ICP-Brasil",
+    "email/WhatsApp real",
+    "gateway de pagamento",
+    "Open Finance/conciliação externa",
+    "IA/OCR externo",
+    "integração fabricante/ANVISA",
+    "roteirização avançada",
+    "aplicativo nativo",
+    "novo frontend/ERP Loja separado",
+    "sincronização offline complexa",
+    "deploy/Bloco 3"
+  ],
+  "known_risks_and_technical_debt": [
+    "Recebimento parcial antecede a geração da conta a pagar final; política explicitada na interface e deve ser confirmada pela gestão.",
+    "Dois calendários preventivos oficiais podem conter atividades semelhantes; preservam-se as fontes, sem fusão destrutiva.",
+    "Reservas/históricos legados sem detalhes não recebem reconstrução presumida; precisam de revisão assistida quando necessário.",
+    "Notificações antigas com chaves diárias permanecem e podem coexistir com a primeira ocorrência estável; nenhuma exclusão histórica.",
+    "Módulos de serviços/views existentes cresceram; refatoração futura deve preservar contratos e não criar módulos paralelos.",
+    "Disponibilidade de R2, configuração Render/Gunicorn, credenciais, backup e volume/carga reais não foram certificados por esta validação local."
+  ],
+  "problems_found_and_resolved": [
+    "exibição da equipe vazia do plano como manager interno: corrigida e verificada em teste/interface",
+    "fixture nova de plano sem fim obrigatório: corrigida; 42 específicos e suíte final repetidos",
+    "comparação inicial de metadata Django precisou distinguir acréscimos de permissões da preservação histórica; ensaio independente de schema anterior executado"
+  ],
+  "expected_test_logs": "dois status 503 nos testes de indisponibilidade de storage; esperados, sem falha da suíte. Nenhum erro 500 encontrado nas telas ensaiadas.",
+  "production": {
+    "accessed": false,
+    "render_changed": false,
+    "r2_changed": false,
+    "credentials_changed": false,
+    "database_changed": false,
+    "commit": false,
+    "push": false,
+    "deploy": false,
+    "periodic_runner_activated": false
+  },
+  "delivery_documents": [
+    "PLANO_BLOCO2.md",
+    "RELATORIO_BLOCO2.md",
+    "VALIDACAO_BLOCO2.json",
+    "PLANO_BLOCO3.md"
+  ],
+  "evidence_artifacts": {
+    "tmp/validation/bloco2_final_0_check.log": {
+      "bytes": 49,
+      "sha256": "f87ceb15410bde28ff826ce26228e0576558258fa64d145847921a593a61ee63"
+    },
+    "tmp/validation/bloco2_final_1_makemigrations.log": {
+      "bytes": 21,
+      "sha256": "93e6e2d5be3c054add80c0f19101608803f7ca8a7df1fa41f76bbb9a1f570f4a"
+    },
+    "tmp/validation/bloco2_final_2_test.log": {
+      "bytes": 809,
+      "sha256": "67450a4bbe3415c5d184c43382eba1a7a6b3f8c88f0f30dcce15a60bb86fa464"
+    },
+    "tmp/validation/bloco2_final_3_collectstatic.log": {
+      "bytes": 125,
+      "sha256": "85ac72aecb69c00611d98abaccbbde4dcf2f78434d65976453fc209ae2a21dda"
+    },
+    "tmp/validation/bloco2_targeted_0_test.log": {
+      "bytes": 11598,
+      "sha256": "0404469bbd9a731d811b6b53f2632a58f06a461a8030848865daf38e8805d6ae"
+    },
+    "tmp/validation/bloco2_baseline_rehearsal.json": {
+      "bytes": 10030,
+      "sha256": "2649b0763e41cbf5c9e829382ae7b39acc2c5ede0ad590a18f58f47e82668e01"
+    },
+    "tmp/validation/bloco2_incremental_preservation.json": {
+      "bytes": 11111,
+      "sha256": "60e43cd87cfa8c40c2d4cf478b1ecf7abc8719ffe2095d50c3879b4b36990a83"
+    },
+    "tmp/validation/bloco2_integrity.json": {
+      "bytes": 3473,
+      "sha256": "650ffad75dfd61f6bf6b8f95580649d0ddd1464d38d8bde9a3dc180e78fe556d"
+    },
+    "tmp/validation/bloco2-responsive.json": {
+      "bytes": 5839,
+      "sha256": "1804e5e6e73b51034e835136e236df09fee73c7e4b331fd0bd7a85bb5333dbc9"
+    },
+    "tmp/validation/bloco2-browser-journeys.json": {
+      "bytes": 2270,
+      "sha256": "ba0375cf296f8288555b2929c4dd6612353e703bcd2ce1cf1bcf4dbe1f58eca0"
+    },
+    "tmp/validation/bloco2-os.pdf": {
+      "bytes": 13084,
+      "sha256": "e28826f76fa6ad514a3f436a54518bd592657eb6944eb0ef6f7df4c7265476d6"
+    },
+    "tmp/validation/bloco2-os-1.png": {
+      "bytes": 113948,
+      "sha256": "e865138682ae23eaa6611d65a45a2f60cfaad9f154289a9a0eea8e3416410a88"
+    },
+    "tmp/validation/bloco2-os-2.png": {
+      "bytes": 87141,
+      "sha256": "0384193972d2b76435044a444645b5df89d941ef193b99cda32041c04f2b2f09"
+    },
+    "tmp/validation/bloco2-os-3.png": {
+      "bytes": 54488,
+      "sha256": "e482e0c65f9a9e021fa63dee790eec11ad727c9244395c1b2906745bf2c07e5a"
+    },
+    "tmp/validation/bloco2-chamado-concluido-mobile.jpg": {
+      "bytes": 34286,
+      "sha256": "c01db68e2478baa56d7f6abd39106f5ab75ebc9002aabec469ff76cd2e096cb6"
+    },
+    "tmp/validation/bloco2-necessidade-compra-final.jpg": {
+      "bytes": 25831,
+      "sha256": "c90a96fc69d16216d24f08e1b46fbbf95bbbd9dca30e8a3163d54033bd82af87"
+    },
+    "tmp/validation/bloco2-preventiva-concluida-mobile.jpg": {
+      "bytes": 24900,
+      "sha256": "458097346350a4fad6b7a9fa4684cd47a8a7b037f1887a0f5a1000615981f916"
+    },
+    "tmp/validation/bloco2-devolucao-mobile.jpg": {
+      "bytes": 25981,
+      "sha256": "c3f9451fafabd02062eebeb4229207e47ae2231c62a3e0eb0fa6a083ffe536e1"
+    },
+    "tmp/validation/bloco2-necessidade-resolvida.jpg": {
+      "bytes": 18951,
+      "sha256": "eb2ac8a4978f35d1ca8ec9f42d1a77cc8ec675c020e15f36b39e62e7e60f7381"
+    }
+  },
+  "next_step": "aguardar autorização do usuário; Bloco 3 não iniciado"
+}

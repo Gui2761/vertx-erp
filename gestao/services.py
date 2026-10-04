@@ -1,5 +1,5 @@
 import uuid
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
@@ -30,14 +30,22 @@ def write(instance):
 
 @transaction.atomic
 def movimentar(user, peca_id, tipo, quantidade, observacao='', ordem_id=None, request_id=None, origem_id=None, destino_id=None, lote_data=None, lote_id=None, venda_id=None):
-    require(user, 'estoque')
+    from operacao.commerce_scope import _authorized
+    commerce = _authorized(user,'stock',sale_id=venda_id,part_id=peca_id,kind=tipo,depot_id=origem_id)
+    from operacao.purchase_scope import _authorized as purchase_authorized
+    commerce = commerce or purchase_authorized(user,peca_id,tipo,Decimal(quantidade),destino_id,lote_data)
+    if not commerce:
+        require(user, 'estoque')
     quantity = Decimal(quantidade)
-    if not quantity.is_finite() or quantity < 0 or quantity == 0 and tipo != 'AJUSTE' or quantity.as_tuple().exponent < -3:
+    if not quantity.is_finite() or quantity < 0 or quantity == 0 and tipo not in ['AJUSTE','INVENTARIO'] or quantity.as_tuple().exponent < -3:
         raise ValidationError('Quantidade inválida. Use até três casas decimais.')
     if tipo not in m.Movimentacao.Tipo.values:
         raise ValidationError('Tipo de movimentação inválido.')
     order = OrdemServico.objects.select_for_update().get(pk=ordem_id) if ordem_id else None
-    if not allowed(user, 'estoque_escrever'):
+    if order and tipo in ['OS', 'DEVOLUCAO']:
+        from operacao.contract_workday import link_order
+        link_order(user, order)
+    if not commerce and not allowed(user, 'estoque_escrever'):
         if tipo not in ['OS', 'DEVOLUCAO'] or order is None:
             raise PermissionDenied('Técnico registra somente utilização/devolução em suas OS.')
         os_services.autorizar(user, order)
@@ -48,6 +56,17 @@ def movimentar(user, peca_id, tipo, quantidade, observacao='', ordem_id=None, re
     if tipo == 'AJUSTE' and not observacao.strip():
         raise ValidationError('Ajuste exige justificativa.')
     part = m.Peca.objects.select_for_update().get(pk=peca_id)
+    if not part.fracionavel and quantity != quantity.to_integral_value():
+        raise ValidationError('Produto não fracionável exige quantidade base inteira.')
+    inventory_lot=None
+    if tipo=='INVENTARIO':
+        from operacao.inventory import authorized_count
+        from operacao.models import LoteEstoque
+        if not authorized_count(user,part.pk,lote_id,quantity):
+            raise PermissionDenied('Ajuste de inventário exige aprovação da contagem.')
+        inventory_lot=LoteEstoque.objects.select_for_update().get(pk=lote_id,peca=part)
+        if (origem_id or destino_id)!=inventory_lot.deposito_id:
+            raise ValidationError('Lote não pertence ao depósito do inventário.')
     if tipo == 'TRANSFER' and ordem_id:
         raise ValidationError('Transferência física não representa utilização em OS.')
     token = request_id or uuid.uuid4()
@@ -76,6 +95,8 @@ def movimentar(user, peca_id, tipo, quantidade, observacao='', ordem_id=None, re
     if tipo == 'AJUSTE' and (origem_id or destino_id):
         raise ValidationError('Ajuste global usa o depósito Principal. Para redistribuir, use transferência.')
     delta = quantity - part.quantidade_atual if tipo == 'AJUSTE' else m.ZERO if tipo == 'TRANSFER' else -quantity if tipo in ['SAIDA', 'OS'] else quantity
+    if inventory_lot is not None:
+        delta=quantity-inventory_lot.quantidade
     balance = part.quantidade_atual + delta
     if balance < 0:
         raise ValidationError('Estoque insuficiente; saldo negativo não é permitido.')
@@ -84,8 +105,19 @@ def movimentar(user, peca_id, tipo, quantidade, observacao='', ordem_id=None, re
     part.quantidade_atual = balance
     part._stock_write = True
     part.save()
-    movement = write(m.Movimentacao(peca=part, origem=source, destino=target, tipo=tipo, quantidade=quantity, variacao=delta, saldo_apos=balance, custo_unitario=Decimal(lote_data['custo_unitario']) if lote_data and 'custo_unitario' in lote_data else part.custo_aquisicao, preco_unitario=part.preco_venda, ordem=order, usuario=user, observacao=observacao, request_id=token, detalhamento=parameters))
+    movement = m.Movimentacao(peca=part, origem=source, destino=target, tipo=tipo, quantidade=quantity, variacao=delta, saldo_apos=balance, custo_unitario=Decimal(lote_data['custo_unitario']) if lote_data and 'custo_unitario' in lote_data else part.custo_aquisicao, preco_unitario=part.preco_venda, ordem=order, usuario=user, observacao=observacao, request_id=token, detalhamento=parameters)
+    from operacao.stock import planned_cost
+    movement.custo_total = planned_cost(part, movement, lote_data, lote_id, venda_id)
+    cost_quantity = quantity if tipo == 'TRANSFER' else abs(delta)
+    if cost_quantity:
+        movement.custo_unitario = (movement.custo_total / cost_quantity).quantize(Decimal('.01'), rounding=ROUND_HALF_UP)
+    movement = write(movement)
     move_lots(user, part, movement, lote_data, lote_id, venda_id)
+    details = movement.lotes_movimentados.all()
+    if tipo == 'TRANSFER':
+        details = details.filter(variacao__lt=0)
+    if sum((row.custo_total for row in details), m.ZERO) != movement.custo_total:
+        raise ValidationError('Custo dos lotes diverge do planejamento; operação revertida.')
     if order:
         order.revisao += 1
         order.save()
@@ -95,7 +127,7 @@ def movimentar(user, peca_id, tipo, quantidade, observacao='', ordem_id=None, re
 
 
 def pecas_snapshot(ordem):
-    return [{'sku': mov.peca.sku, 'descricao': mov.peca.descricao, 'tipo': mov.tipo, 'quantidade': str(mov.quantidade), 'variacao': str(mov.variacao), 'movimentacao': mov.pk} for mov in m.Movimentacao.objects.filter(ordem=ordem, tipo__in=['OS', 'DEVOLUCAO']).select_related('peca').order_by('pk')]
+    return [{'sku': mov.peca.sku, 'descricao': mov.peca.descricao, 'tipo': mov.tipo, 'quantidade': str(mov.quantidade), 'variacao': str(mov.variacao), 'movimentacao': mov.pk, 'custo_total':str(mov.valor_custo), 'custo_legado_estimado':mov.custo_total is None, 'lotes':[{'id':row.lote_id,'numero':row.lote.numero,'quantidade':str(abs(row.variacao)),'custo_unitario':str(row.custo_unitario) if row.custo_unitario is not None else None,'custo_total':str(row.custo_total) if row.custo_total is not None else None} for row in mov.lotes_movimentados.all()]} for mov in m.Movimentacao.objects.filter(ordem=ordem, tipo__in=['OS', 'DEVOLUCAO']).select_related('peca').prefetch_related('lotes_movimentados__lote').order_by('pk')]
 
 
 @transaction.atomic
@@ -149,6 +181,9 @@ def converter_orcamento(user, pk, tecnico_id):
     from contas.models import Tecnico
     require(user, 'orcamentos')
     quote = m.Orcamento.objects.select_for_update().get(pk=pk)
+    from operacao.models import Venda
+    if Venda.objects.filter(orcamento_origem=quote).exists():
+        raise ValidationError('Orçamento já convertido em venda; não pode gerar outra operação.')
     if quote.status == 'CONVERTIDO' and quote.ordem_convertida_id:
         return quote.ordem_convertida
     if quote.status != 'APROVADO' or not quote.equipamento_id:
@@ -256,6 +291,11 @@ def novo_recebivel(user, defaults, **origin):
 
 
 def gerar_do_orcamento(user, quote):
+    from operacao.models import Venda
+    sale=Venda.objects.filter(orcamento_origem=quote).first()
+    if sale:
+        if sale.conta_id: return sale.conta
+        raise ValidationError('Orçamento convertido em venda; recebível é gerado na finalização comercial.')
     if quote.ordem_id:
         order = OrdemServico.objects.select_for_update().get(pk=quote.ordem_id)
         if order.lancamentos.filter(tipo='RECEBER').exists():

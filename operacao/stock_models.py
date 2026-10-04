@@ -53,6 +53,8 @@ class LoteEstoque(Validado):
         raise ValidationError('Histórico de lote deve ser preservado.')
 
 class MovimentacaoLote(RegistroImutavel):
+    custo_unitario = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, editable=False)
+    custo_total = models.DecimalField(max_digits=30, decimal_places=5, null=True, blank=True, editable=False)
     movimentacao = models.ForeignKey('gestao.Movimentacao', on_delete=models.PROTECT, related_name='lotes_movimentados')
     lote = models.ForeignKey(LoteEstoque, on_delete=models.PROTECT, related_name='movimentos')
     quantidade_anterior = models.DecimalField(max_digits=14, decimal_places=3)
@@ -60,6 +62,8 @@ class MovimentacaoLote(RegistroImutavel):
     quantidade_posterior = models.DecimalField(max_digits=14, decimal_places=3)
 
 class ReservaEstoque(Validado):
+    transferencia=models.ForeignKey('operacao.TransferenciaEstoque',on_delete=models.PROTECT,null=True,blank=True,related_name='reservas')
+    request_id = models.UUIDField(null=True, blank=True, editable=False)
     peca = models.ForeignKey('gestao.Peca', on_delete=models.PROTECT, related_name='reservas')
     deposito = models.ForeignKey('operacao.Deposito', on_delete=models.PROTECT)
     ordem = models.ForeignKey('ordens.OrdemServico', on_delete=models.PROTECT, null=True, blank=True, related_name='reservas_estoque')
@@ -70,10 +74,26 @@ class ReservaEstoque(Validado):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     criado_em = models.DateTimeField(auto_now_add=True)
     class Meta:
-        constraints = [models.CheckConstraint(check=Q(quantidade__gte=0), name='reserva_quantidade_positiva')]
+        constraints = [models.CheckConstraint(check=Q(quantidade__gte=0), name='reserva_quantidade_positiva'), models.UniqueConstraint(fields=['organization', 'request_id'], name='reserva_org_request_unico')]
     def save(self, *args, **kwargs):
         if not getattr(self, '_service_write', False):
             raise ValidationError('Reservas exigem serviço auditado.')
+        return super().save(*args, **kwargs)
+
+class AlocacaoReservaEstoque(Validado):
+    reserva = models.ForeignKey(ReservaEstoque, on_delete=models.PROTECT, related_name='alocacoes')
+    lote = models.ForeignKey(LoteEstoque, on_delete=models.PROTECT, related_name='alocacoes_reserva')
+    quantidade_inicial = models.DecimalField(max_digits=14, decimal_places=3)
+    quantidade = models.DecimalField(max_digits=14, decimal_places=3)
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['reserva', 'lote'], name='reserva_lote_unico'), models.CheckConstraint(condition=Q(quantidade__gte=0, quantidade__lte=models.F('quantidade_inicial')), name='reserva_lote_saldo_valido')]
+    def clean(self):
+        super().clean()
+        if self.lote.peca_id != self.reserva.peca_id or self.lote.deposito_id != self.reserva.deposito_id:
+            raise ValidationError('Lote fora do produto/depósito da reserva.')
+    def save(self, *args, **kwargs):
+        if not getattr(self, '_service_write', False):
+            raise ValidationError('Alocação exige serviço transacional de estoque.')
         return super().save(*args, **kwargs)
 
 class OcorrenciaEstoque(Validado):

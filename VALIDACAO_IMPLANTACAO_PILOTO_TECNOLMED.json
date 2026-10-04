@@ -1,0 +1,395 @@
+{
+  "stage": "Implantação piloto TECNOLMED — preparação local",
+  "date": "2026-10-03",
+  "closure_confirmation": {
+    "suite_already_finished": true,
+    "result_confirmed_from_existing_logs": true,
+    "tests_rerun": false,
+    "homologations_repeated": false,
+    "bloco3h_repeated": false,
+    "existing_evidence_preserved": true,
+    "next_action": "Aguardar autorização expressa do usuário."
+  },
+  "status": {
+    "jornada_contratual": "PRONTA_LOCALMENTE",
+    "bloqueio_os": "PRONTO",
+    "pdf_novo": "PRONTO_LOCALMENTE",
+    "pwa": "PRONTA_PARA_HOMOLOGACAO_FISICA",
+    "dispositivo_fisico": "PENDENTE",
+    "producao": "NAO_PRONTA",
+    "deploy_executado": false
+  },
+  "baseline": {
+    "documents": [
+      "RELATORIO_BLOCO3.md",
+      "VALIDACAO_BLOCO3.json",
+      "HOMOLOGACAO_BLOCO3.md"
+    ],
+    "tests": 404,
+    "skips": 0,
+    "previous_reconciliations": 39,
+    "repeated_3h": false
+  },
+  "git": {
+    "branch": "main",
+    "head": "fe6c554eb1fce12f430d9e6a1f9da8ecf9eae261",
+    "repository": "tecnolmedengclinica-spec/vertx-erp",
+    "commit_performed": false,
+    "push_performed": false,
+    "head_includes_local_pilot_changes": false
+  },
+  "safety": {
+    "production_accessed": false,
+    "production_migrations_applied": [],
+    "secrets_changed": false,
+    "infra_changed": false,
+    "existing_database_reset": false,
+    "historical_migrations_edited": false,
+    "existing_tests_removed_or_relaxed": false,
+    "bloco4_started": false
+  },
+  "validation_classes": {
+    "VALIDADO_AUTOMATICAMENTE": [
+      "441 testes PostgreSQL, 37 novos",
+      "check",
+      "makemigrations --check --dry-run",
+      "collectstatic",
+      "diff --check",
+      "integridade de fontes/testes/migrations",
+      "concorrência com duas conexões/threads"
+    ],
+    "VALIDADO_EM_BANCO_SINTETICO": [
+      "Preservação incremental de 2451 registros e colunas anteriores",
+      "Reconciliação de jornada, correção e documento da OS sintética 52"
+    ],
+    "VALIDADO_PELA_INTERFACE": [
+      "Destino antes do início e OS 403",
+      "Início/chegada/liberação/atendimento",
+      "Checklist e medição 121.5 °C",
+      "Upload de imagem sintética pelo seletor de arquivos",
+      "Duas assinaturas sintéticas via mouse",
+      "Finalização e download do PDF",
+      "Retorno/encerramento",
+      "Correção solicitada e aprovada por administrador",
+      "Medição separada e configuração contratual",
+      "Negação de área administrativa ao técnico",
+      "9 conferências de viewport"
+    ],
+    "PENDENTE_DE_DISPOSITIVO_REAL": [
+      "Instalação/standalone",
+      "Touch",
+      "Câmera",
+      "QR físico",
+      "GPS obtido real",
+      "Falhas GPS no aparelho",
+      "Assinaturas pelo dedo",
+      "Wi-Fi/rede móvel e troca de rede"
+    ],
+    "NAO_VALIDADO_EM_PRODUCAO": [
+      "Todos os recursos desta etapa",
+      "Render/PostgreSQL publicado/R2",
+      "Dados reais e migração do schema publicado"
+    ]
+  },
+  "tests": {
+    "total_passed": 441,
+    "added_passed": 37,
+    "previous_passed": 404,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "full_duration_seconds": 434.894,
+    "stable_sources": true,
+    "commands": [
+      {
+        "command": [
+          "check"
+        ],
+        "exit_code": 0,
+        "log": "tmp/validation/pilot_final_0_check.log"
+      },
+      {
+        "command": [
+          "makemigrations",
+          "--check",
+          "--dry-run"
+        ],
+        "exit_code": 0,
+        "log": "tmp/validation/pilot_final_1_makemigrations.log"
+      },
+      {
+        "command": [
+          "test",
+          "--noinput",
+          "-v",
+          "1",
+          "--parallel",
+          "2"
+        ],
+        "exit_code": 0,
+        "log": "tmp/validation/pilot_final_2_test.log",
+        "source_unchanged_during_test": true
+      },
+      {
+        "command": [
+          "collectstatic",
+          "--noinput"
+        ],
+        "exit_code": 0,
+        "log": "tmp/validation/pilot_final_3_collectstatic.log"
+      }
+    ],
+    "targeted": [
+      {
+        "command": [
+          "test",
+          "operacao.test_pilot_contract",
+          "--noinput",
+          "-v",
+          "2"
+        ],
+        "exit_code": 0,
+        "log": "tmp/validation/pilot_targeted_0_test.log",
+        "source_unchanged_during_test": true
+      }
+    ],
+    "new_test_names": [
+      "test_common_contract_keeps_existing_operation",
+      "test_admin_can_plan_before_technician_starts_workday",
+      "test_required_contract_blocks_service_and_direct_get_post",
+      "test_destination_is_only_projection_before_start",
+      "test_start_unlocks_and_links_order_without_changing_os_clock",
+      "test_server_time_ignores_injected_payload",
+      "test_immutable_original_cannot_be_directly_edited_or_deleted",
+      "test_double_start_and_end_are_idempotent",
+      "test_open_order_prevents_pause_return_and_end",
+      "test_finalized_order_allows_end_and_originals_preserved",
+      "test_multiple_orders_share_workday",
+      "test_approved_correction_preserves_original_events",
+      "test_rejected_correction_does_not_affect_measurement",
+      "test_correction_requires_admin_separate_actor_and_unique_decision",
+      "test_correction_rejects_future_or_wrong_day",
+      "test_snapshot_rules_preserved_when_contract_reconfigured",
+      "test_decimal_travel_pause_return_rounding_and_daily_limit",
+      "test_destination_start_excludes_outward_even_if_marked_billable",
+      "test_measurement_excludes_outside_allowed_hours_and_overlapping_break_only",
+      "test_allowed_hours_and_invalid_tariffs_rejected",
+      "test_gps_variants_and_invalid_obtained_coordinate",
+      "test_paused_or_returning_journey_blocks_execution",
+      "test_administrative_start_cannot_bypass_required_journey",
+      "test_stock_need_and_transition_cannot_bypass_gate",
+      "test_technician_cannot_view_admin_config_or_measurement",
+      "test_technician_activity_projection_omits_financial_data",
+      "test_tenant_isolation_and_idor",
+      "test_measurement_screen_and_pdf_administrative_only",
+      "test_pdf_has_tenant_and_no_internal_cost_or_contract_measurement",
+      "test_emitted_pdf_is_immutable_after_reopen_and_issuer_change",
+      "test_pdf_detects_signature_and_snapshot_tampering",
+      "test_invalid_technical_signature_rejected",
+      "test_required_workday_requires_technical_signature",
+      "test_client_portal_never_receives_workday_financial_data",
+      "test_technical_audit_does_not_expose_prior_internal_cost",
+      "test_concurrent_start_creates_one_workday",
+      "test_concurrent_order_start_and_workday_end_cannot_leave_orphan_execution"
+    ]
+  },
+  "migrations": {
+    "created": [
+      "operacao/migrations/0014_piloto_jornada_contratual.py",
+      "ordens/migrations/0011_piloto_jornada_contratual.py",
+      "ordens/migrations/0012_piloto_jornada_contratual.py"
+    ],
+    "total_project": 64,
+    "directory_files_including_initializers": 72,
+    "historical_files_preserved": 69,
+    "synthetic_preservation": "PASS",
+    "preserved_rows": 2451,
+    "production_state": "Não consultado; nenhuma aplicada nesta etapa"
+  },
+  "dependencies_changed": [],
+  "source_files_changed": [
+    "gestao/services.py",
+    "operacao/contract_workday.py",
+    "operacao/contract_workday_models.py",
+    "operacao/contract_workday_views.py",
+    "operacao/history.py",
+    "operacao/migrations/0014_piloto_jornada_contratual.py",
+    "operacao/models.py",
+    "operacao/planning.py",
+    "operacao/planning_services.py",
+    "operacao/services.py",
+    "operacao/test_pilot_contract.py",
+    "operacao/urls.py",
+    "ordens/forms.py",
+    "ordens/migrations/0011_piloto_jornada_contratual.py",
+    "ordens/migrations/0012_piloto_jornada_contratual.py",
+    "ordens/models.py",
+    "ordens/pilot_report.py",
+    "ordens/reports.py",
+    "ordens/services.py",
+    "static/js/contract-workday.js",
+    "static/ordens/assinatura.js",
+    "templates/403.html",
+    "templates/gestao/detalhe.html",
+    "templates/operacao/contract_activity.html",
+    "templates/operacao/contract_measurement.html",
+    "templates/operacao/tecnico.html",
+    "templates/ordens/conferencia.html",
+    "templates/ordens/detalhe.html",
+    "templates/ordens/resumo.html"
+  ],
+  "delivery_documents": [
+    "PLANO_IMPLANTACAO_PILOTO_TECNOLMED.md",
+    "RELATORIO_IMPLANTACAO_PILOTO_TECNOLMED.md",
+    "VALIDACAO_IMPLANTACAO_PILOTO_TECNOLMED.json"
+  ],
+  "pdfs": [
+    {
+      "file": "OS-piloto-v1.pdf",
+      "pages": 3,
+      "sha256": "47def22d5da002215627684236bfa076d0c2e883fc9ee56ca08b5ed2bfbd9130",
+      "text_checks": "PASS",
+      "visual_inspection": "PASS",
+      "scope": "Todas as páginas renderizadas com Poppler e inspecionadas; dados sintéticos."
+    },
+    {
+      "file": "Medicao-contrato-administrativo.pdf",
+      "pages": 1,
+      "sha256": "d60f4448be7410b34ef6a1594b9b6a33426679362ae66ad08977e6b422c5f89a",
+      "text_checks": "PASS",
+      "visual_inspection": "PASS",
+      "scope": "Todas as páginas renderizadas com Poppler e inspecionadas; dados sintéticos."
+    }
+  ],
+  "responsive_viewports": [
+    {
+      "page": "atividade",
+      "client": 375,
+      "height": 844,
+      "scroll": 375,
+      "width": 390
+    },
+    {
+      "page": "medicao",
+      "client": 375,
+      "height": 844,
+      "scroll": 375,
+      "width": 390
+    },
+    {
+      "page": "configuracao",
+      "client": 375,
+      "height": 844,
+      "scroll": 375,
+      "width": 390
+    },
+    {
+      "page": "configuracao",
+      "client": 753,
+      "height": 1024,
+      "scroll": 753,
+      "width": 768
+    },
+    {
+      "page": "medicao",
+      "client": 753,
+      "height": 1024,
+      "scroll": 753,
+      "width": 768
+    },
+    {
+      "page": "atividade",
+      "client": 753,
+      "height": 1024,
+      "scroll": 753,
+      "width": 768
+    },
+    {
+      "page": "atividade",
+      "client": 1425,
+      "height": 900,
+      "scroll": 1425,
+      "width": 1440
+    },
+    {
+      "page": "medicao",
+      "client": 1425,
+      "height": 900,
+      "scroll": 1425,
+      "width": 1440
+    },
+    {
+      "page": "configuracao",
+      "client": 1425,
+      "height": 900,
+      "scroll": 1425,
+      "width": 1440
+    }
+  ],
+  "local_reconciliation": {
+    "scope": "synthetic local only",
+    "order": "OS-000052",
+    "state": "FINALIZADA",
+    "signatures": 2,
+    "photos": 1,
+    "snapshot_model": 2,
+    "download_matches_issued_pdf": true,
+    "workday_closed": true,
+    "original_start": "2026-10-03T22:26:21.939423+00:00",
+    "original_end": "2026-10-03T22:37:53.787599+00:00",
+    "effective_start": "2026-10-03T22:26:00+00:00",
+    "effective_end": "2026-10-03T22:38:00+00:00",
+    "originals_preserved": true,
+    "gps_workday": "NEGADA",
+    "gps_os": "TIMEOUT",
+    "hours": "0.2500",
+    "amount": "34.36",
+    "os_start_independent": true,
+    "pdf_sha256": "47def22d5da002215627684236bfa076d0c2e883fc9ee56ca08b5ed2bfbd9130",
+    "result": "PASS",
+    "measurement_pdf_sha256": "d60f4448be7410b34ef6a1594b9b6a33426679362ae66ad08977e6b422c5f89a"
+  },
+  "known_limits": [
+    "OS aberta bloqueia pausa/retorno/encerramento; revisar regra para atendimentos de vários dias",
+    "Uma categoria por jornada e uma jornada por técnico/contrato/dia",
+    "Faixa de horário no mesmo dia; sem turno noturno configurável",
+    "Correção somente de limites; sem sobrescrita dos eventos originais",
+    "Sem cobrança automática",
+    "PDF legado mantém renderer anterior; igualdade byte a byte de downloads antigos não previamente persistidos não comprovada",
+    "Sem novo endpoint público/QR de validação de OS",
+    "Texto livre deve ser revisado antes de entrega ao cliente",
+    "Sem homologação física ou publicada"
+  ],
+  "evidence_sha256": {
+    "tmp/validation/pilot_integrity.json": "c643c53332978abbfeec5328073391235b53a0021e9c93445914030fc9159dc1",
+    "tmp/validation/pilot_preservation.json": "233671fca7591a09b9328158a7f08f48e2a0bbce3b4cdded78eb1f0db1b1d1ed",
+    "tmp/validation/pilot_reconciliation.json": "62a94046152853e8aad8328b1645bc7d09bfe084b99470e1826f676ab85d482e",
+    "tmp/validation/pilot_pdf_checks.json": "4f487ecf77eb96d2f536f33d6180dc71281e87bb097d5efbaa55b6fd2f325868",
+    "tmp/validation/pilot_final_results.json": "297c7344626f6f9c4b0c60a8de4d606df3b8d9328b50493fcc17b51fd3706977",
+    "tmp/validation/pilot_targeted_results.json": "3295826d974b4b8e2ef9462b89b4716ffe4ed9b0ea5c576f0650088deb2c8bc8",
+    "tmp/validation/pilot_tested_source.json": "a7ab59e66f61531f40662db8c2c4914331d46c459bc64c5b596404e244704ab0",
+    "tmp/validation/pilot_final_0_check.log": "f87ceb15410bde28ff826ce26228e0576558258fa64d145847921a593a61ee63",
+    "tmp/validation/pilot_final_1_makemigrations.log": "93e6e2d5be3c054add80c0f19101608803f7ca8a7df1fa41f76bbb9a1f570f4a",
+    "tmp/validation/pilot_final_2_test.log": "77f9cdd5a612297f303bb9fe3b0544c2f38bec6a6fec138fa76aa54e489d1367",
+    "tmp/validation/pilot_final_3_collectstatic.log": "a61da73653a2668782c8176af21d0ed7b3c04900e29de32dff7b4bfc5bcd9d3c",
+    "tmp/validation/pilot_targeted_0_test.log": "e030e39a57ff54b72291b697e55ca29f3d5ec7ed3cafa1fc3274af70887fddb3",
+    "tmp/validation/pilot-ui/agenda-bloqueada.png": "9a87d199c91c835e7a6f98788c7d3122d15677da4228268eb1493cb609fcccac",
+    "tmp/validation/pilot-ui/assinaturas-cliente-tecnico.png": "a2b6b4037e30a14c9a8e1faa272cfccd0c2005e0a24cd0e684b69440fca88a22",
+    "tmp/validation/pilot-ui/atividade-encerrada.png": "91ec4970abbf09b3069005788b28679715bc3c6d01626b53aa5d093899f71bd9",
+    "tmp/validation/pilot-ui/atividade-iniciada.png": "2a0afa1a8ee8b597c93e03b61b36e9c2255b8b6f5d62cae46d2487a61ebc64af",
+    "tmp/validation/pilot-ui/atividade-mobile.png": "430cf31bdce22bc1c50ab5f71e2d74a0a8c128a8e3fb5d0efbc99f5d07a5b140",
+    "tmp/validation/pilot-ui/configuracao-mobile.png": "5926c882e22040c3b1ad5e168d0769354fc60462e866faebe2c535c0738427f6",
+    "tmp/validation/pilot-ui/medicao-correcao-aprovada.png": "f4c018a9c60e05e8d9edfe3c40cb4852f05c53a7c5afd7bf40d66454892950fb",
+    "tmp/validation/pilot-ui/medicao-mobile.png": "300cf54cd740b580d51c0b5d4990783e186b77dda393d35b2ca57a7b2b8eeef4",
+    "tmp/validation/pilot-ui/os-bloqueada.png": "80b3af6be908d90dd789cea8c676fa44a5af0241a26451456477b7737751218d",
+    "tmp/validation/pilot-ui/os-finalizada.png": "3d4ba7da04814e9c40ead5059e508ccc6146f4be7502e68cf01fe2202dedfb35",
+    "tmp/validation/pilot-ui/responsividade.json": "98ace39db3a83433006af242d83f040c5c19a5333caea4e2514514b105c43827",
+    "tmp/validation/pilot-pdf/Medicao-contrato-administrativo.pdf": "d60f4448be7410b34ef6a1594b9b6a33426679362ae66ad08977e6b422c5f89a",
+    "tmp/validation/pilot-pdf/OS-piloto-v1.pdf": "47def22d5da002215627684236bfa076d0c2e883fc9ee56ca08b5ed2bfbd9130",
+    "tmp/validation/pilot-pdf/medicao-1.png": "338436688b8d8b5be87059db8de207b9fbd9e8a045c449a7f9d4d2533ec493c4",
+    "tmp/validation/pilot-pdf/os-1.png": "8aae024b5c5c23024b8cbb620a1824dfa93db1645f73629820f8b43784a19c92",
+    "tmp/validation/pilot-pdf/os-2.png": "13b7dd851468c0d32fdbe32fe0b980c72c957ac0a2c54485e8a6c7c67da82a9d",
+    "tmp/validation/pilot-pdf/os-3.png": "a326b99ad93658aae33eea9782a9694cd94914fba1b3d08eab3c96496e6a468b"
+  },
+  "stop": "Aguardar autorização expressa; sem commit/push/deploy/migrations em produção."
+}

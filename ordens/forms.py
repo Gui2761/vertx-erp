@@ -14,13 +14,14 @@ class OrdemForm(TenantModelForm):
 
     class Meta:
         model = OrdemServico
-        fields = ['cliente', 'unidade', 'equipamento', 'contrato', 'tecnico', 'tipo_atendimento', 'prioridade', 'agendada_para', 'agendada_ate', 'prazo', 'defeito', 'diagnostico', 'servico_executado', 'pecas', 'horas', 'deslocamento_km', 'observacoes', 'valor_cobranca', 'vencimento_cobranca']
+        fields = ['cliente', 'unidade', 'equipamento', 'contrato', 'tecnico', 'auxiliares', 'modelo_checklist', 'tipo_atendimento', 'prioridade', 'agendada_para', 'agendada_ate', 'prazo', 'defeito', 'diagnostico', 'condicao_final', 'pendencias_tecnicas', 'causa_provavel', 'solucao', 'servico_executado', 'recomendacoes', 'materiais', 'pecas', 'horas', 'deslocamento_km', 'observacoes', 'valor_cobranca', 'vencimento_cobranca']
         widgets = {name: forms.Textarea(attrs={'rows': 3}) for name in ['defeito', 'diagnostico', 'servico_executado', 'pecas', 'observacoes']}
 
     def __init__(self, *args, operacional=False, **kwargs):
         super().__init__(*args, **kwargs)
+        # Campos aditivos de resultado técnico, independentes do cadastro físico.
         if operacional:
-            for name in ['cliente', 'unidade', 'equipamento', 'contrato', 'tecnico', 'tipo_atendimento', 'prioridade', 'agendada_para', 'agendada_ate', 'prazo', 'defeito', 'valor_cobranca', 'vencimento_cobranca']:
+            for name in ['cliente', 'unidade', 'equipamento', 'contrato', 'tecnico', 'auxiliares', 'modelo_checklist', 'tipo_atendimento', 'prioridade', 'agendada_para', 'agendada_ate', 'prazo', 'defeito', 'valor_cobranca', 'vencimento_cobranca']:
                 self.fields.pop(name)
         self.fields['revisao'].initial = self.instance.revisao
         for name in ['agendada_para', 'agendada_ate', 'prazo']:
@@ -28,6 +29,10 @@ class OrdemForm(TenantModelForm):
                 self.fields[name].widget = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
+
+    def _save_m2m(self):
+        # Tenant-validated explicit through rows are written by ordens.services.
+        pass
 
     def clean_valor_cobranca(self):
         return self.cleaned_data.get('valor_cobranca') or Decimal('0')
@@ -71,6 +76,8 @@ class GeoForm(forms.Form):
 
 
 class FotoForm(forms.Form):
+    from .models import Foto
+    categoria = forms.ChoiceField(label='Categoria', choices=[('', 'Sem classificação')] + list(Foto._meta.get_field('categoria').choices), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
     arquivo = forms.ImageField(widget=forms.FileInput(attrs={'accept': 'image/*', 'capture': 'environment', 'class': 'form-control'}))
     descricao = forms.CharField(label='Descrição (opcional)', max_length=255, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
 
@@ -93,6 +100,7 @@ class FotoForm(forms.Form):
 
 
 class AssinaturaForm(forms.Form):
+    imagem_tecnico = forms.CharField(widget=forms.HiddenInput, max_length=400000, required=False)
     token = forms.CharField(widget=forms.HiddenInput)
     nome = forms.CharField(label='Nome completo', max_length=150)
     cargo = forms.CharField(label='Cargo / função', max_length=100)
@@ -122,6 +130,19 @@ class AssinaturaForm(forms.Form):
         except (ValueError, binascii.Error, OSError, UnidentifiedImageError, Image.DecompressionBombError):
             raise forms.ValidationError('Desenhe uma assinatura válida antes de confirmar.')
         return base64.b64encode(raw).decode('ascii')
+
+    def clean_imagem_tecnico(self):
+        value=self.cleaned_data.get('imagem_tecnico')
+        if not value:
+            return ''
+        # A mesma validação/normalização de imagem da assinatura do responsável.
+        original=self.cleaned_data.get('imagem')
+        try:
+            self.cleaned_data['imagem']=value
+            return self.clean_imagem()
+        finally:
+            if original is None: self.cleaned_data.pop('imagem',None)
+            else: self.cleaned_data['imagem']=original
 
 
 class ReabrirForm(forms.Form):

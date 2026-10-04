@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block title %}{{ chamado.numero }}{% endblock %}{% block content %}
+<header class="vx-page-header"><h1>{{ chamado.numero }} · {{ chamado.titulo }}</h1><a class="btn btn-outline-secondary" href="{% url 'operacao:portal' %}">Portal</a></header>
+<section class="card p-3"><p>{{ chamado.get_status_display }} · {{ chamado.criado_em }}</p><p>{{ chamado.equipamento|default:'Equipamento não informado' }} · {{ chamado.unidade|default:'Sem unidade' }}</p><p>{{ chamado.descricao }}</p><p>Solicitante: {{ chamado.solicitante }} · Prioridade solicitada: {{ chamado.get_prioridade_solicitada_display|default:'Não registrada' }}</p><p>Previsão: {{ chamado.agendada_para|default:'A definir' }}</p>{% if chamado.ordem_id %}<a class="btn btn-primary" href="{% url 'operacao:portal_os' chamado.ordem_id %}">Acompanhar OS {{ chamado.ordem.numero }}</a>{% endif %}</section>
+<section class="card p-3 mt-3"><h2 class="h5">Anexos compartilhados</h2>{% for document in documentos %}<p><a href="{% url 'operacao:portal_documento' document.pk %}">{{ document.titulo }}</a></p>{% empty %}<p>Sem documentos liberados.</p>{% endfor %}</section>
+{% endblock %}

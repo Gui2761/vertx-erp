@@ -69,6 +69,12 @@ class Equipamento(OrganizationOwned):
         CategoriaEquipamento, on_delete=models.PROTECT, related_name="equipamentos"
     )
     fabricante = models.CharField(max_length=150, blank=True)
+    marca = models.CharField(max_length=150, blank=True)
+    tipo = models.CharField('Tipo de equipamento', max_length=100, blank=True)
+    registro_anvisa = models.CharField('Registro ANVISA (quando aplicável)', max_length=100, blank=True)
+    tensao = models.CharField('Tensão', max_length=60, blank=True)
+    potencia = models.CharField('Potência', max_length=60, blank=True)
+    situacao_cadastro = models.CharField('Situação do cadastro', max_length=20, blank=True, choices=[('ATIVO', 'Ativo'), ('INATIVO', 'Inativo'), ('MANUTENCAO', 'Em manutenção'), ('AG_PECA', 'Aguardando peça'), ('FORA_USO', 'Fora de uso'), ('BAIXADO', 'Baixado')], help_text='Independente da condição física. Vazio: histórico sem classificação.')
     modelo = models.CharField(max_length=150, blank=True)
 
     cliente = models.ForeignKey(
@@ -134,6 +140,12 @@ class Equipamento(OrganizationOwned):
 
     @property
     def proxima_preventiva(self):
+        from operacao.models import PreventivaProgramada, ENCERRADAS
+        from gestao.models import AgendaPreventiva
+        dates = list(PreventivaProgramada.objects.filter(equipamento=self, plano__ativo=True, cancelada=False).exclude(ordem__status__in=ENCERRADAS).values_list('data', flat=True))
+        dates += list(AgendaPreventiva.objects.filter(equipamento=self, cancelada=False).exclude(contrato__status__in=['SUSPENSO', 'ENCERRADO']).exclude(ordem__status__in=ENCERRADAS).values_list('data_prevista', flat=True))
+        if dates:
+            return min(dates)
         if self.data_ultima_preventiva and self.periodicidade_preventiva_meses:
             from dateutil.relativedelta import relativedelta
 

@@ -5,6 +5,7 @@ from . import views
 app_name = "equipamentos"
 
 urlpatterns = [
+    path('<int:pk>/etiqueta/', views.etiqueta, name='etiqueta'),
     path('categorias/nova/', views.CategoriaCreateView.as_view(), name='categoria_create'),
     path('categorias/<int:pk>/editar/', views.CategoriaUpdateView.as_view(), name='categoria_update'),
     path("", views.EquipamentoListView.as_view(), name="equipamento_list"),

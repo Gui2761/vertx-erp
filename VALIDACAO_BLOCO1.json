@@ -1,0 +1,232 @@
+{
+  "date": "2026-10-02",
+  "scope": "BLOCO_1_ESTABILIZACAO",
+  "result": "PASS_LOCAL_READY_FOR_BLOCK_2",
+  "base_commit": "fe6c554eb1fce12f430d9e6a1f9da8ecf9eae261",
+  "branch": "main",
+  "repository": "tecnolmedengclinica-spec/vertx-erp",
+  "environment": {
+    "django": "5.2.17",
+    "python": "3.12.14",
+    "postgresql": "16.15",
+    "database": "local synthetic loopback only; temporary Django test database",
+    "storage": "local fixtures and simulated S3; no real R2"
+  },
+  "files_modified": [
+    "gestao/forms.py",
+    "gestao/models.py",
+    "gestao/reporting.py",
+    "gestao/services.py",
+    "gestao/views.py",
+    "operacao/executive.py",
+    "operacao/forms.py",
+    "operacao/history.py",
+    "operacao/models.py",
+    "operacao/reporting.py",
+    "operacao/services.py",
+    "operacao/stock.py",
+    "operacao/stock_models.py",
+    "operacao/test_planning.py",
+    "operacao/test_stock.py",
+    "ordens/models.py",
+    "requirements.txt",
+    "templates/gestao/detalhe.html",
+    "templates/gestao/financeiro.html",
+    "templates/gestao/lista.html"
+  ],
+  "files_added_in_block": [
+    "BLOCO1_ESTABILIZACAO.md",
+    "PLANO_DEPENDENCIAS_BLOCO1.md",
+    "VALIDACAO_BLOCO1.json",
+    "gestao/financial_origin.py",
+    "gestao/migrations/0006_estabilizacao_bloco1.py",
+    "gestao/migrations/0007_origem_parcelas_existentes.py",
+    "operacao/migrations/0006_estabilizacao_bloco1.py",
+    "operacao/test_stabilization.py"
+  ],
+  "migrations_added": [
+    "gestao/migrations/0006_estabilizacao_bloco1.py",
+    "operacao/migrations/0006_estabilizacao_bloco1.py",
+    "gestao/migrations/0007_origem_parcelas_existentes.py"
+  ],
+  "old_migrations_changed": false,
+  "dependency_direct_changes": {
+    "Django": {
+      "before": "5.0.9",
+      "after": "5.2.17"
+    }
+  },
+  "dependency_shared_environment_changes": {
+    "django": {
+      "before": "5.0.9",
+      "after": "5.2.17"
+    },
+    "python-dotenv": {
+      "before": "1.2.3",
+      "after": "1.2.4"
+    }
+  },
+  "dependency_notes": "python-dotenv 1.2.4 is a test-environment transitive dependency; other production pins unchanged",
+  "verification": {
+    "pip_check": "PASS",
+    "django_check": "PASS",
+    "makemigrations_check_dry_run": "NO_CHANGES",
+    "full_postgresql_suite": {
+      "found": 293,
+      "passed": 293,
+      "skipped": 0,
+      "seconds": 263.946,
+      "result": "PASS",
+      "local_log": "tmp/validation/bloco1_final_test.log"
+    },
+    "previous_tests_preserved": 258,
+    "new_tests": 35,
+    "targeted_postgresql_suite": {
+      "found": 35,
+      "passed": 35,
+      "skipped": 0,
+      "seconds": 29.985,
+      "result": "PASS",
+      "local_log": "tmp/validation/bloco1_final_test_targeted.log"
+    },
+    "new_postgresql_concurrency_tests": 5,
+    "all_final_commands": [
+      {
+        "command": [
+          "check"
+        ],
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "makemigrations",
+          "--check",
+          "--dry-run"
+        ],
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "migrate",
+          "--plan"
+        ],
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "test",
+          "operacao.test_stabilization",
+          "--noinput",
+          "-v",
+          "2"
+        ],
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "test",
+          "--noinput",
+          "-v",
+          "1"
+        ],
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "collectstatic",
+          "--noinput"
+        ],
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "verify_incremental"
+        ],
+        "exit_code": 0
+      }
+    ],
+    "incremental_existing_local_database": {
+      "result": "PASS",
+      "migrations_applied_in_first_rehearsal": [
+        "operacao.0006_estabilizacao_bloco1",
+        "gestao.0006_estabilizacao_bloco1",
+        "gestao.0007_origem_parcelas_existentes"
+      ],
+      "tables_compared": 71,
+      "original_rows_preserved": 1470,
+      "old_column_values_unchanged": true,
+      "first_rehearsal_log": "tmp/validation/bloco1_incremental_verify_incremental.log",
+      "final_idempotent_recheck": "PASS"
+    },
+    "collectstatic": "PASS",
+    "production_storage_static_manifest": {
+      "result": "PASS",
+      "assets": 145
+    },
+    "pdf_pwa_upload_s3_simulator": "PASS_IN_FULL_SUITE",
+    "git_diff_check": "PASS",
+    "credential_scan": {
+      "result": "PASS",
+      "scope": "modified/new versionable files; patterns and known local-secret values",
+      "local_environment_and_databases": "IGNORED_NOT_VERSIONED"
+    }
+  },
+  "purchase_pending_policy": {
+    "RASCUNHO": false,
+    "APROVADA": true,
+    "PEDIDO": true,
+    "RECEBIDA": false,
+    "CANCELADA": false
+  },
+  "payment_without_bank": "Audited payment and financial event; included in realized financial totals, labeled non-banked; does not invent or change bank balance.",
+  "historic_cost_policy": "No historical repricing. Existing null economic snapshots use documented historic unit cost. Returns reverse that cost; old signed snapshots unchanged.",
+  "fixed_validation_findings": [
+    "PostgreSQL nullable join row locking restricted with FOR UPDATE OF self",
+    "Old pending-purchase fixtures now use approved purchases and explicitly exclude drafts",
+    "Added test fixture UUID comparison and misplaced assertions corrected before final acceptance"
+  ],
+  "limitations": [
+    "Real R2, Render, published PostgreSQL and Linux/Gunicorn startup not accessed/tested",
+    "Legacy lot costs not retroactively reconstructed",
+    "Full dependency CVE/advisory audit outside this compatibility check",
+    "Partial purchase receiving and commercial return/financial reversal are later scopes"
+  ],
+  "actions_not_performed": [
+    "commit",
+    "push",
+    "deploy",
+    "external environment changes",
+    "production database access",
+    "credential changes",
+    "stock runner activation",
+    "new fiscal/commercial/SLA modules"
+  ],
+  "code_sha256": {
+    "gestao/financial_origin.py": "dd3e11d9e36e0b79ddb530b29793961664cc2d5d059c91a4991b9521af4731df",
+    "gestao/forms.py": "f4309350b99fddb9fc1d0c047fe044c7edcda3bf59f429c9cc3bbeb0faf40540",
+    "gestao/migrations/0006_estabilizacao_bloco1.py": "f46a4f173b5066511d653c52254a94620da807d2bbe0a9165a13b0c6b3f7e802",
+    "gestao/migrations/0007_origem_parcelas_existentes.py": "97ca8e207574226b08e786946e7aa64df4afbdccc72f9524303b299d7b6b1172",
+    "gestao/models.py": "ac378fd35ff9821d74423f6100d373947c0d79d7069aa88bba9540f258c564d1",
+    "gestao/reporting.py": "f34b7f8bb8791d88fd2c63e58299da1667c8cdb6986fc6846ba16312f79b8ce5",
+    "gestao/services.py": "37a0164fb65b9fe6233d2f1dc67a2f6c128150145f0dfc5464eca71465e263a6",
+    "gestao/views.py": "8ed8080b7e60dc671a55832d6541b760dc3a5641715bcbc67ded32f8f1e02332",
+    "operacao/executive.py": "18b32b1aaadc0342640709c3877a5df14a31055842d91d15ecc82d828c1f5509",
+    "operacao/forms.py": "db87e1c07a8a67ab1d413fb0d8bd3a0ab7e38c1ab48ebf815c55d294b4f92a5f",
+    "operacao/history.py": "4e40217bda0af8bfaab9fdfb3640ae61189397d931fc9d558977b3829838a7f8",
+    "operacao/migrations/0006_estabilizacao_bloco1.py": "10c42d55dfa1b8258ff8a954a46a4bebe38a3578b3136d15d93c273b413aee06",
+    "operacao/models.py": "c3e4209d75e7e7be57aaf52f241f0dd260db49957a33df0c809332e3b7949198",
+    "operacao/reporting.py": "f7483be43a6cf14bc578ed3dbb2af218a2662bdbc3efb91255e0d0563a883a73",
+    "operacao/services.py": "1997e68abbeb3b679551a193085ae966d211ff79457cbf1db379dda1d2701b5d",
+    "operacao/stock.py": "e1d5f7dacc4cc56fa4a270cf7876522de44a574a2449654fabf3fbd365f15cbc",
+    "operacao/stock_models.py": "f3514ad88a9f25947f4501bfa5b54c260937dd3b4653fcdddb9bede845deb9ef",
+    "operacao/test_planning.py": "a9214cdc9152b1915c2253b589640deb9236dcf52972f6ca725e3d64884fee3e",
+    "operacao/test_stabilization.py": "c984ec6028b3c278e1988db3170e6d1534dbacb76d48c551a29f31bab6375102",
+    "operacao/test_stock.py": "b6b2794758fb2e23e2800937f90c50f66e8abbb01eb97d32f492d36f25b5791b",
+    "ordens/models.py": "872dc96bce29f90a871e67d4bcd3feac56e6aaf6da521a139eb33c6f7873ac45",
+    "requirements.txt": "7b3531a7c3f72fdf96b1f4fa353e144ae9347cb4934ae590ab369646ca777cf8",
+    "templates/gestao/detalhe.html": "f11f6721afd9dc67677b74b22291ca525ad5199078ca9c118c3d48372ce707cc",
+    "templates/gestao/financeiro.html": "821ed6337847e4c3eb0f58f6e40a6d547c8ccb43d453c9cb5d07d6e9680e27a2",
+    "templates/gestao/lista.html": "6fdcea52b87af5c3f6702b86e2825a158b86b613623539d04c7bc7d6a1fa2a84"
+  },
+  "ready_for_block_2": true
+}

@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block title %}Etiqueta — {{ equipamento.nome }}{% endblock %}{% block content %}
+<div class="vx-actions mb-3"><a class="btn btn-outline-secondary" href="{% url 'equipamentos:equipamento_detail' equipamento.pk %}">Voltar</a><button class="btn btn-primary" id="print-label">Imprimir etiqueta</button></div>
+<section class="card p-3" id="equipment-label" style="max-width:360px"><h1 class="h5">{{ request.organization.display_name }}</h1><h2 class="h6">{{ equipamento.nome }}</h2><p>{{ equipamento.patrimonio|default:equipamento.codigo_interno }} · Série {{ equipamento.numero_serie }}</p>{% if equipamento.qr_code %}<img src="{{ equipamento.qr_code.url }}" alt="QR Code autenticado do equipamento" width="180" height="180">{% else %}<p>QR ainda não gerado no cadastro.</p>{% endif %}<small>Acesso autenticado conforme permissão.</small></section>
+<style>@media print{body *{visibility:hidden}#equipment-label,#equipment-label *{visibility:visible}#equipment-label{position:absolute;left:0;top:0;border:1px solid #333}}</style><script>document.getElementById('print-label').addEventListener('click',function(){window.print();});</script>
+{% endblock %}

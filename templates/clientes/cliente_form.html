@@ -70,6 +70,13 @@
         {{ form.observacoes|add_class:"form-control" }}
       </div>
       <div class="col-12 form-check">
+        {% if form.limite_credito %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.limite_credito.id_for_label }}">{{ form.limite_credito.label }}</label>
+          {{ form.limite_credito|add_class:"form-control" }}
+          {{ form.limite_credito.errors }}
+        </div>
+        {% endif %}
         {{ form.ativo|add_class:"form-check-input" }}
         <label class="form-check-label">Ativo</label>
       </div>

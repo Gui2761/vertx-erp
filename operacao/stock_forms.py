@@ -1,6 +1,7 @@
 import uuid
 from decimal import Decimal
 from django import forms
+from django.db.models import Q
 from django.utils import timezone
 from gestao.forms import Estilizado
 from gestao.models import Peca, Fornecedor
@@ -42,6 +43,8 @@ class EntradaLoteForm(forms.Form):
         return data
 
 class ReservaForm(forms.Form):
+    request_id = forms.UUIDField(initial=uuid.uuid4, required=False, widget=forms.HiddenInput)
+    lote = forms.ModelChoiceField(queryset=m.LoteEstoque.objects.none(), required=False, help_text='Opcional. Sem seleção: FEFO entre lotes livres e válidos.')
     peca=forms.ModelChoiceField(queryset=Peca.objects.none(),label='Produto')
     deposito=forms.ModelChoiceField(queryset=m.Deposito.objects.none())
     quantidade=forms.DecimalField(max_digits=14,decimal_places=3,min_value=Decimal('.001'))
@@ -54,6 +57,7 @@ class ReservaForm(forms.Form):
         self.fields['deposito'].queryset=m.Deposito.objects.filter(ativo=True)
         self.fields['ordem'].queryset=OrdemServico.objects.exclude(status__in=m.ENCERRADAS)
         self.fields['venda'].queryset=m.Venda.objects.filter(status='RASCUNHO')
+        self.fields['lote'].queryset=m.LoteEstoque.objects.filter(quantidade__gt=0).filter(Q(validade__isnull=True) | Q(validade__gte=timezone.localdate()))
         style(self)
 
 class RecebimentoLoteForm(Estilizado):

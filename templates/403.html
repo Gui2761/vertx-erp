@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block title %}Acesso não permitido{% endblock %}{% block content %}<h1>Acesso não permitido</h1><p class="alert alert-warning">{{ exception|default:'Seu usuário não possui autorização para esta operação.' }}</p><a class="btn btn-primary" href="{% url 'operacao:tecnico' %}">Abrir agenda / atividade do dia</a>{% endblock %}

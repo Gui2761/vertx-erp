@@ -49,7 +49,7 @@ def charts(start,end,interval):
         periods.append({'inicio':max(date,start),'fim':until,'label':date.strftime('%m/%Y' if monthly else '%d/%m'),'entrada':g.ZERO,'saida':g.ZERO,'faturamento':g.ZERO})
         date=date+relativedelta(months=1) if monthly else date+timezone.timedelta(days=1)
     payments=m.Pagamento.objects.filter(data__range=(start,end)).select_related('lancamento')
-    legacy=g.Lancamento.objects.filter(status='LIQUIDADO',pagamentos__isnull=True,data_liquidacao__range=(start,end))
+    legacy=g.Lancamento.objects.filter(status='LIQUIDADO',pagamentos__isnull=True,data_liquidacao__range=(start,end)).exclude(eventos__tipo='ABATIMENTO')
     revenues=g.Lancamento.objects.filter(tipo='RECEBER',data_emissao__range=(start,end)).exclude(status='CANCELADO')
     for row in periods:
         row['entrada']=sum((p.valor for p in payments if row['inicio']<=p.data<=row['fim'] and p.lancamento.tipo=='RECEBER'),g.ZERO)+sum((p.valor for p in legacy if row['inicio']<=p.data_liquidacao<=row['fim'] and p.tipo=='RECEBER'),g.ZERO)
@@ -95,8 +95,8 @@ def context(request, form, orders):
     quotes=g.Orcamento.objects.filter(data__range=(start,end))
     open_quotes=quotes.filter(status__in=['RASCUNHO','ENVIADO'])
     approved=quotes.filter(status__in=['APROVADO','CONVERTIDO'])
-    confirmed=list(m.Venda.objects.filter(status='CONFIRMADA',criado_em__date__range=(start,end)).prefetch_related('itens'))
-    sales_value=sum((sale.total for sale in confirmed),g.ZERO)
+    confirmed=list(m.Venda.objects.filter(status__in=['CONFIRMADA','FINALIZADA','PARCIALMENTE_DEVOLVIDA','DEVOLVIDA'],criado_em__date__range=(start,end)).prefetch_related('itens','devolucoes'))
+    sales_value=sum(((Decimal(sale.snapshot['total']) if sale.snapshot else sale.total)-sum((row.valor for row in sale.devolucoes.all()),g.ZERO) for sale in confirmed),g.ZERO)
     ctx['commercial']={'abertos':open_quotes.count(),'aprovados':approved.count(),'vendas':len(confirmed),'valor':sales_value,'ticket':sales_value/len(confirmed) if confirmed else g.ZERO,'conversao':round(100*approved.count()/quotes.count(),1) if quotes.exists() else 0,'base':quotes.count()}
     if allowed(request.user,'financeiro'):
         ledger=g.Lancamento.objects.filter(status__in=['PENDENTE','VENCIDO'])
@@ -117,11 +117,67 @@ def context(request, form, orders):
         ctx['cash_out_points']=' '.join(f'{row["x"]},{row["y_saida"]}' for row in ctx['cash_chart'])
         month_start=today.replace(day=1)-relativedelta(months=11)
         ctx['revenue_chart']=charts(month_start,today,'12M')
-        entries=g.Lancamento.objects.filter(tipo='RECEBER',data_emissao__range=(start,end)).exclude(status='CANCELADO').select_related('contrato','orcamento').prefetch_related('orcamento__itens')
+        entries=g.Lancamento.objects.filter(tipo='RECEBER',data_emissao__range=(start,end)).exclude(status='CANCELADO').select_related('contrato','orcamento','origem_raiz__contrato','origem_raiz__orcamento','origem_raiz__ordem').prefetch_related('orcamento__itens','origem_raiz__orcamento__itens')
         totals={'Serviços':g.ZERO,'Produtos':g.ZERO,'Contratos':g.ZERO,'Locações':g.ZERO,'Sem classificação':g.ZERO}
         sale_accounts=set(m.Venda.objects.exclude(conta=None).values_list('conta_id',flat=True))
         for entry in entries:
-            category='Locações' if entry.contrato_id and 'loca' in entry.contrato.tipo.lower() else 'Contratos' if entry.contrato_id else 'Produtos' if entry.pk in sale_accounts else 'Serviços' if entry.ordem_id or entry.orcamento_id and not entry.orcamento.itens.filter(tipo='PECA').exists() else 'Sem classificação'
+            origin=entry.origem_raiz or entry
+            category='Locações' if origin.contrato_id and 'loca' in origin.contrato.tipo.lower() else 'Contratos' if origin.contrato_id else 'Produtos' if origin.pk in sale_accounts else 'Serviços' if origin.ordem_id or origin.orcamento_id and not origin.orcamento.itens.filter(tipo='PECA').exists() else 'Sem classificação'
             totals[category]+=entry.valor
         ctx['revenue_categories']=totals.items()
     return ctx
+
+
+"""Executive indicators from official transactions, net of formal returns."""
+from decimal import Decimal
+from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.utils import timezone
+from django.utils.dateparse import parse_date
+from platform_core.modules import require_capability, module_enabled
+from platform_core.models import FilialEmpresa
+from gestao import models as g
+from . import models as m, reporting
+
+def indicators(user,start,end,branch=None,center=None):
+    require_capability(user,'executivo')
+    if start>end: raise ValidationError('Período inválido.')
+    sales=m.Venda.objects.filter(status__in=['CONFIRMADA','FINALIZADA','PARCIALMENTE_DEVOLVIDA','DEVOLVIDA']).filter(Q(finalizada_em__date__range=(start,end))|Q(finalizada_em__isnull=True,status='CONFIRMADA',criado_em__date__range=(start,end))).select_related('vendedor','cliente').prefetch_related('itens')
+    returns=m.DevolucaoVenda.objects.filter(criado_em__date__range=(start,end)).select_related('venda__vendedor').prefetch_related('itens__movimento')
+    if branch:
+        branch=FilialEmpresa.objects.get(pk=branch,ativo=True);sales=sales.filter(filial=branch);returns=returns.filter(venda__filial=branch)
+    if center:
+        center=g.CentroCusto.objects.get(pk=center,ativo=True);sales=sales.filter(centro_custo=center);returns=returns.filter(venda__centro_custo=center)
+    gross=Decimal('0');cost=Decimal('0');by_seller={}
+    if module_enabled('pdv'):
+        for sale in sales:
+            value=Decimal(sale.snapshot['total']) if sale.snapshot else sale.total
+            actual=sum((item.custo_total if item.custo_total is not None else item.quantidade*item.custo_unitario for item in sale.itens.all()),Decimal('0'))
+            gross+=value;cost+=actual
+            label=str(sale.vendedor or 'Vendedor não informado');row=by_seller.setdefault(label,{'vendedor':label,'vendas':0,'valor':Decimal('0'),'custo':Decimal('0')})
+            row['vendas']+=1;row['valor']+=value;row['custo']+=actual
+        for returned in returns:
+            gross-=returned.valor
+            restored=sum((item.movimento.valor_custo for item in returned.itens.all()),Decimal('0'));cost-=restored
+            label=str(returned.venda.vendedor or 'Vendedor não informado');row=by_seller.setdefault(label,{'vendedor':label,'vendas':0,'valor':Decimal('0'),'custo':Decimal('0')});row['valor']-=returned.valor;row['custo']-=restored
+    financial=reporting.financial_dashboard(start,end,{'filial':branch,'centro_custo':center}) if allowed(user,'financeiro') else {}
+    from ordens.models import OrdemServico
+    orders=OrdemServico.objects.filter(abertura__date__range=(start,end))
+    if branch or center: orders=orders.none()  # Legacy OS lack own-company allocation; never infer from customer unit.
+    lots=m.LoteEstoque.objects.filter(quantidade__gt=0)
+    if branch or center: lots=lots.none()  # Deposit allocations are explicit, not inferred from a client address.
+    total_stock=lots.count() if module_enabled('estoque') and not branch and not center else None
+    return {'vendas_liquidas':gross,'custo_liquido_produtos':cost,'margem_registrada':gross-cost,'vendedores':list(by_seller.values()),'financeiro':financial,'os_no_periodo':orders.count() if module_enabled('assistencia') and not branch and not center else None,'lotes_com_saldo':total_stock,'lotes_vencidos':lots.filter(validade__lt=timezone.localdate()).count() if module_enabled('estoque') and not branch and not center else None,'funcionarios_ativos':m.Funcionario.objects.filter(ativo=True).count() if module_enabled('rh') and not branch and not center else None}
+
+@login_required
+def dashboard(request):
+    today=timezone.localdate()
+    require_capability(request.user,'executivo')
+    try:
+        start=parse_date(request.GET.get('inicio','')) or today.replace(day=1);end=parse_date(request.GET.get('fim','')) or today
+        data=indicators(request.user,start,end,int(request.GET['filial']) if request.GET.get('filial') else None,int(request.GET['centro_custo']) if request.GET.get('centro_custo') else None)
+    except (ValidationError,ValueError,FilialEmpresa.DoesNotExist,g.CentroCusto.DoesNotExist): return HttpResponse('Filtros inválidos.',status=400)
+    return render(request,'operacao/executive_commercial.html',{'data':data,'inicio':start,'fim':end,'filiais':FilialEmpresa.objects.filter(ativo=True),'centros':g.CentroCusto.objects.filter(ativo=True)})

@@ -7,9 +7,12 @@
 <dt>Defeito / reclamação</dt><dd>{{ dados.defeito|linebreaksbr }}</dd>
 <dt>Diagnóstico</dt><dd>{{ dados.diagnostico|default:'Não registrado'|linebreaksbr }}</dd>
 <dt>Serviço executado</dt><dd>{{ dados.servico_executado|default:'Não registrado'|linebreaksbr }}</dd>
+{% if dados.condicao_final %}<dt>Condição final após atendimento</dt><dd>{{ dados.condicao_final }}</dd>{% endif %}{% if dados.pendencias %}<dt>Pendências</dt><dd>{{ dados.pendencias|linebreaksbr }}</dd>{% endif %}
 <dt>Peças utilizadas</dt><dd>{{ dados.pecas|default:'Nenhuma informada'|linebreaksbr }}</dd>
 <dt>Observações</dt><dd>{{ dados.observacoes|default:'-'|linebreaksbr }}</dd>
-<dt>Técnico</dt><dd>{{ dados.tecnico }} · {{ dados.registro_profissional|default:'Registro profissional não cadastrado' }}</dd>
+{% if dados.causa_provavel %}<dt>Causa provável</dt><dd>{{ dados.causa_provavel|linebreaksbr }}</dd>{% endif %}{% if dados.solucao %}<dt>Solução aplicada</dt><dd>{{ dados.solucao|linebreaksbr }}</dd>{% endif %}{% if dados.recomendacoes %}<dt>Recomendações</dt><dd>{{ dados.recomendacoes|linebreaksbr }}</dd>{% endif %}{% if dados.materiais %}<dt>Materiais utilizados</dt><dd>{{ dados.materiais|linebreaksbr }}</dd>{% endif %}
+<dt>Técnico</dt><dd>{{ dados.tecnico }} · {{ dados.registro_profissional|default:'Registro profissional não cadastrado' }}{% if dados.auxiliares %}<br>Auxiliares: {{ dados.auxiliares|join:', ' }}{% endif %}</dd>
+{% if dados.checklist %}<dt>Checklist / medições conferidas</dt><dd><ul>{% for item in dados.checklist %}<li>{{ item.item }} · {% if item.tipo == 'BOOLEANO' or item.tipo == 'CONFORMIDADE' %}{% if item.resposta is True %}{% if item.tipo == 'CONFORMIDADE' %}Conforme{% else %}Sim{% endif %}{% elif item.resposta is False %}{% if item.tipo == 'CONFORMIDADE' %}Não conforme{% else %}Não{% endif %}{% else %}Não respondido{% endif %}{% elif item.tipo %}{{ item.resposta|default_if_none:'Não respondido' }} {{ item.unidade }}{% else %}{{ item.concluido|yesno:'Concluído,Pendente' }}{% endif %}{% if item.observacao %} · {{ item.observacao }}{% endif %}</li>{% endfor %}</ul></dd>{% endif %}
 <dt>Abertura</dt><dd>{{ dados.abertura|data_os }}</dd><dt>Início</dt><dd>{{ dados.inicio|data_os|default:'Não iniciado' }}</dd><dt>Conclusão do serviço</dt><dd>{{ dados.conclusao|data_os|default:'Ainda não registrada' }}</dd></dl>
 {% include 'ordens/localizacao.html' with geo=dados.localizacao_inicio titulo='Localização inicial' %}
 {% include 'ordens/localizacao.html' with geo=dados.localizacao_final titulo='Localização final' %}

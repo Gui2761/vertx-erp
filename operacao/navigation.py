@@ -14,9 +14,9 @@ def menu(request):
         return {'can_operational_panel':panel_access}
     groups=[
         ('INÍCIO',[('Painel','/assistencia/','grid')]),
-        ('ASSISTÊNCIA',[('Planejamento','/planejamento/','calendar3'),('Ordens de Serviço','/ordens/','clipboard2-pulse'),('Chamados','/chamados/','telephone'),('Preventivas','/preventivas/','calendar-check'),('Contratos','/contratos/','file-earmark-text')]),
+        ('ASSISTÊNCIA',[('Planejamento','/planejamento/','calendar3'),('Ordens de Serviço','/ordens/','clipboard2-pulse'),('Chamados','/chamados/','telephone'),('Base de conhecimento','/conhecimento/','document'),('Preventivas','/preventivas/','calendar-check'),('Contratos','/contratos/','file-earmark-text')]),
         ('COMERCIAL',[('Orçamentos','/orcamentos/','file-earmark-ruled'),('Vendas e loja','/vendas/','bag'),('Clientes','/clientes/','people')]),
-        ('ESTOQUE',[('Peças e Estoque','/estoque/','box-seam'),('Movimentações','/estoque/movimentar/','arrow-left-right'),('Lotes / Validades','/estoque/lotes/','hourglass-split'),('Depósitos','/depositos/','buildings'),('Inventário','/relatorios/estoque_atual/','list-check'),('Reservas','/estoque/reservas/','bookmark-check')]),
+        ('ESTOQUE',[('Peças e Estoque','/estoque/','box-seam'),('Movimentações','/estoque/movimentar/','arrow-left-right'),('Lotes / Validades','/estoque/lotes/','hourglass-split'),('Depósitos','/depositos/','buildings'),('Inventário','/relatorios/estoque_atual/','list-check'),('Reservas','/estoque/reservas/','bookmark-check'),('Peças necessárias para OS','/estoque/necessidades/','stock')]),
         ('COMPRAS',[('Necessidade de Compra','/estoque/relatorios/','cart-check'),('Compras','/compras/','cart'),('Cotações','/compras/?cotacoes=1','chat-square-text'),('Pedidos','/compras/?status=PEDIDO','truck'),('Recebimentos','/compras/?status=PEDIDO','box-arrow-in-down'),('Fornecedores','/estoque/fornecedores/','person-vcard')]),
         ('FINANCEIRO',[('Financeiro','/financeiro/','cash-stack'),('Contas a receber','/financeiro/lancamentos/?tipo=RECEBER','arrow-down-circle'),('Contas a Pagar','/financeiro/lancamentos/?tipo=PAGAR','arrow-up-circle'),('Caixa / Bancos','/bancos/','bank'),('Fluxo de Caixa','/relatorios/fluxo_caixa/','graph-up'),('Fiscal','/fiscal/','file-earmark-check')]),
         ('CADASTROS',[('Clientes e Unidades','/clientes/','people'),('Equipamentos','/equipamentos/','heart-pulse'),('Técnicos','/contas/tecnicos/','person-gear'),('Documentos','/documentos/','folder'),('Acessos ao portal','/portal-acessos/','person-lock')]),
@@ -26,4 +26,11 @@ def menu(request):
         groups[1][1].insert(1,('Painel operacional','/painel-operacional/','grid'))
     if membership.role=='ADMIN':
         groups[-1][1].extend([('Configurações','/configuracoes/','gear'),('Estoque e Compras','/configuracoes/estoque-compras/','sliders'),('Painel operacional · Configuração','/configuracoes/painel-operacional/','sliders'),('Usuários','/contas/usuarios/','person-check')])
+        groups[-1][1].append(('Empresa e módulos','/vertyx/empresa/','settings'))
+    groups[0][1].append(('Gestão executiva','/gestao/executiva/','chart'))
+    groups[2][1].append(('PDV','/pdv/','cart'))
+    groups[3][1].extend([('Contagem de inventário','/inventarios/','document'),('Transferências por etapas','/transferencias/','arrows')])
+    groups.insert(-1,('RH / PONTO',[('Funcionários','/rh/funcionarios/','users'),('Jornadas','/rh/jornadas/','calendar'),('Escalas e folgas','/rh/escalas/','calendar'),('Meu ponto','/ponto/','users'),('Ajustes de ponto','/ponto/ajustes/','document')]))
+    from platform_core.modules import module_for_path,module_enabled
+    groups=[(title,[(label,url,icon) for label,url,icon in links if module_enabled(module_for_path(url))]) for title,links in groups]
     return {'can_operational_panel':panel_access,'executive_navigation':[{'title':title,'links':[{'label':label,'url':url,'icon':ICON_ALIASES.get(icon,icon)} for label,url,icon in links]} for title,links in groups]}
