@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.test import Client, RequestFactory, TestCase
-from django.urls import reverse
+from django.urls import reverse, resolve
 from platform_core.context import tenant_context
 from platform_core.models import Organization, OrganizationMembership, OrganizationERP, MembershipERP, ERPCatalog
 from contas.models import Usuario
@@ -121,6 +121,41 @@ class CommercialTests(TestCase):
         self.assertContains(response,'href="/login/"')
         self.assertTemplateUsed(self.client.get('/login/'),'registration/login.html')
         self.assertTemplateUsed(self.client.get('/contas/login/'),'registration/login.html')
+
+    def test_menu_mobile_acesso_unico_oficial_sem_redirecionar_visitante(self):
+        from contas.views import LoginView
+        before=(Organization.objects.count(),Usuario.objects.count(),OrganizationMembership.objects.count(),InteresseComercial.objects.count())
+        for url in ['/', '/planos/']:
+            response=self.client.get(url)
+            self.assertEqual(response.status_code,200)
+            self.assertNotIn('Location',response)
+            html=response.content.decode()
+            menu=html.split('<nav id="public-menu"',1)[1].split('</nav>',1)[0]
+            labels=['Funcionalidades','Soluções','Planos e preços','Recursos','Suporte','ENTRAR NO VERTYX','Solicitar demonstração']
+            positions=[menu.index(label) for label in labels]
+            self.assertEqual(positions,sorted(positions))
+            self.assertEqual(menu.count('href="/login/"'),1)
+            self.assertIn('class="button button-quiet header-login"',menu)
+            self.assertIn('class="login-label-desktop">Acessar VERTYX',menu)
+            self.assertContains(self.client.get('/login/'),'name="username"')
+            self.assertContains(self.client.get('/login/'),'name="password"')
+        self.assertIs(resolve('/login/').func.view_class,LoginView)
+        self.assertIs(resolve('/contas/login/').func.view_class,LoginView)
+        self.assertEqual(before,(Organization.objects.count(),Usuario.objects.count(),OrganizationMembership.objects.count(),InteresseComercial.objects.count()))
+
+    def test_tecnico01_login_do_menu_usa_membership_e_preserva_isolamento(self):
+        user,org=self.role('TECNICO','commercial-mobile-login')
+        user.username='tecnico01';user.perfil='ADMIN';user.save()
+        self.assertContains(self.client.get('/'),'ENTRAR NO VERTYX')
+        response=self.client.post('/login/',{'username':'tecnico01','password':'only-test-password','next':'/assistencia/'},follow=True)
+        self.assertEqual(response.redirect_chain[0],('/tecnico/',302))
+        self.assertContains(response,'Meus atendimentos')
+        self.assertEqual(self.client.session['organization_id'],org.pk)
+        for url in ['/financeiro/','/contas/usuarios/','/configuracoes/']:
+            self.assertEqual(self.client.get(url).status_code,403)
+        _,foreign=self.role('ADMIN','commercial-mobile-other')
+        self.assertEqual(self.client.post(reverse('platform_core:select_organization'),{'organization':str(foreign.public_id)}).status_code,404)
+        self.assertEqual(self.client.session['organization_id'],org.pk)
 
     def test_lead_registrado_sem_organizacao_usuario_ou_assinatura(self):
         before=(Organization.objects.count(),Usuario.objects.count(),OrganizationMembership.objects.count())
