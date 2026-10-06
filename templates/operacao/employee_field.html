@@ -1,0 +1,7 @@
+<div class="vx-employee-field{% if field.field.widget.input_type == 'checkbox' %} vx-employee-check{% endif %}">
+  {% if field.field.widget.input_type == 'checkbox' %}{{ field }}{% endif %}
+  <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span aria-label="obrigatório">*</span>{% endif %}</label>
+  {% if field.field.widget.input_type != 'checkbox' %}{{ field }}{% endif %}
+  {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+  {{ field.errors }}
+</div>

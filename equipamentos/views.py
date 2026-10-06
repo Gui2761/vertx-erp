@@ -22,6 +22,8 @@ class EquipamentoListView(LoginRequiredMixin, generic.ListView):
 
     def get_queryset(self):
         qs = Equipamento.objects.select_related("cliente", "unidade", "categoria")
+        from operacao.technician_access import scoped_records
+        qs = scoped_records(self.request.user, qs, 'equipamento')
         busca = self.request.GET.get("q")
         if busca:
             qs = qs.filter(nome__icontains=busca) | qs.filter(codigo_interno__icontains=busca) | qs.filter(
@@ -48,6 +50,10 @@ class EquipamentoDetailView(LoginRequiredMixin, generic.DetailView):
     model = Equipamento
     template_name = "equipamentos/equipamento_detail.html"
     context_object_name = "equipamento"
+
+    def get_queryset(self):
+        from operacao.technician_access import scoped_records
+        return scoped_records(self.request.user, super().get_queryset(), 'equipamento')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}{% if form.instance.pk %}Editar funcionário{% else %}Novo funcionário{% endif %}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/employee.css' %}">
+<main class="vx-employee">
+  <header class="vx-page-header"><div><p class="vx-eyebrow">RH · Cadastro central</p><h1>{% if form.instance.pk %}Editar funcionário{% else %}Novo funcionário{% endif %}</h1><p>Dados, trabalho, acesso e jornada em uma única ficha.</p></div><a class="btn btn-outline-secondary" href="{{ back_url }}">Voltar para funcionários</a></header>
+  <form method="post" data-employee-form data-editing="{% if form.instance.pk %}true{% else %}false{% endif %}">
+    {% csrf_token %}{{ form.non_field_errors }}
+    <div class="vx-employee-columns">
+      <section class="card card-body" aria-labelledby="employee-data"><h2 id="employee-data">Dados do funcionário</h2><div class="vx-employee-grid">
+        {% include 'operacao/employee_field.html' with field=form.nome %}{% include 'operacao/employee_field.html' with field=form.matricula %}
+        {% include 'operacao/employee_field.html' with field=form.telefone %}{% include 'operacao/employee_field.html' with field=form.email %}
+        {% include 'operacao/employee_field.html' with field=form.admissao %}{% include 'operacao/employee_field.html' with field=form.desligamento %}
+        {% include 'operacao/employee_field.html' with field=form.ativo %}
+      </div></section>
+      <section class="card card-body" aria-labelledby="employee-work"><h2 id="employee-work">Trabalho</h2><div class="vx-employee-grid">
+        {% include 'operacao/employee_field.html' with field=form.departamento %}{% include 'operacao/employee_field.html' with field=form.cargo %}
+        {% include 'operacao/employee_field.html' with field=form.gestor %}{% include 'operacao/employee_field.html' with field=form.vinculo %}
+      </div><p class="small text-muted mt-3 mb-0">Cargo/Função descreve o trabalho. O perfil de acesso é escolhido na seção seguinte.</p></section>
+    </div>
+    <section class="card card-body" aria-labelledby="employee-access"><h2 id="employee-access">Acesso ao VERTYX</h2>
+      {% include 'operacao/employee_field.html' with field=form.conta_modo %}
+      <div data-existing-account>{% include 'operacao/employee_field.html' with field=form.usuario %}</div>
+      {% if form.manage_access %}<div data-new-account class="vx-employee-grid">
+        {% include 'operacao/employee_field.html' with field=form.username %}{% include 'operacao/employee_field.html' with field=form.password1 %}{% include 'operacao/employee_field.html' with field=form.password2 %}
+      </div><div class="vx-employee-grid">
+        {% include 'operacao/employee_field.html' with field=form.perfil %}{% include 'operacao/employee_field.html' with field=form.acesso_assistencia %}
+      </div>{% else %}<p class="text-muted small">O administrador da organização gerencia as contas e os perfis de acesso. Esta ficha mantém o vínculo autorizado da pessoa selecionada.</p><p data-access-profile></p>{% endif %}
+    </section>
+    <section class="card card-body" aria-labelledby="employee-schedule"><h2 id="employee-schedule">Jornada de trabalho</h2>
+      {% include 'operacao/employee_field.html' with field=form.jornada_modo %}
+      <div data-existing-schedule>{% include 'operacao/employee_field.html' with field=form.jornada %}</div>
+      <div data-new-schedule>{{ journey_form.non_field_errors }}<div class="vx-employee-grid">
+        {% include 'operacao/employee_field.html' with field=journey_form.nome %}{% include 'operacao/employee_field.html' with field=journey_form.ativo %}
+      </div>{% include 'operacao/schedule_grid.html' with schedule=journey_form %}
+      <details class="vx-schedule-options"><summary>Regras adicionais da jornada</summary><div class="vx-employee-grid">
+        {% include 'operacao/employee_field.html' with field=journey_form.virada_dia %}{% include 'operacao/employee_field.html' with field=journey_form.tolerancia_atraso_minutos %}
+        {% include 'operacao/employee_field.html' with field=journey_form.banco_horas_habilitado %}{% include 'operacao/employee_field.html' with field=journey_form.compensar_deficit %}
+      </div></details></div>
+      {% include 'operacao/employee_field.html' with field=form.autoriza_geolocalizacao %}<p class="small text-muted">A jornada será utilizada pelo Meu Ponto desta pessoa.</p>
+    </section>
+    {% if form.manage_technical %}<section class="card card-body" data-technical-section aria-labelledby="employee-technical"><h2 id="employee-technical">Informações do técnico</h2><p class="text-muted small">A ficha operacional será vinculada à conta desta pessoa. Cadastros existentes serão reutilizados.</p>
+      {% include 'operacao/employee_field.html' with field=form.tecnico_existente %}<div class="vx-employee-grid">{% for field in form.technical_fields %}{% include 'operacao/employee_field.html' %}{% endfor %}</div>
+    </section>{% endif %}
+    <div class="vx-employee-save"><a class="btn btn-outline-secondary" href="{{ back_url }}">Cancelar</a><button class="btn btn-primary" type="submit">Salvar funcionário</button></div>
+  </form>
+</main>
+{{ profiles|json_script:'employee-profiles' }}{{ technical|json_script:'employee-technical-data' }}
+<script src="{% static 'js/employee.js' %}" defer></script>
+{% endblock %}

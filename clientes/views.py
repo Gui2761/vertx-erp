@@ -19,6 +19,8 @@ class ClienteListView(LoginRequiredMixin, generic.ListView):
 
     def get_queryset(self):
         qs = Cliente.objects.all()
+        from operacao.technician_access import scoped_records
+        qs = scoped_records(self.request.user, qs, 'cliente')
         busca = self.request.GET.get("q")
         if busca:
             qs = qs.filter(nome_razao_social__icontains=busca) | qs.filter(cpf_cnpj__icontains=busca)
@@ -35,11 +37,20 @@ class ClienteDetailView(LoginRequiredMixin, generic.DetailView):
     template_name = "clientes/cliente_detail.html"
     context_object_name = "cliente"
 
+    def get_queryset(self):
+        from operacao.technician_access import scoped_records
+        return scoped_records(self.request.user, super().get_queryset(), 'cliente')
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["unidades"] = self.object.unidades.all()
         ctx["contatos"] = self.object.contatos.all()
         ctx["equipamentos"] = self.object.equipamentos.all() if hasattr(self.object, "equipamentos") else []
+        if self.request.membership.role == 'TECNICO':
+            from operacao.technician_access import scoped_records
+            ctx['unidades'] = scoped_records(self.request.user, self.object.unidades.all(), 'unidade')
+            ctx['equipamentos'] = scoped_records(self.request.user, self.object.equipamentos.all(), 'equipamento')
+            ctx['contatos'] = []
         from operacao.history import related
         ctx.update(related(self.request.user, self.object))
         return ctx

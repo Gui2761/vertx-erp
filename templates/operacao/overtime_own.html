@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% load static l10n ponto_horas %}{% block content %}
+<link rel="stylesheet" href="{% static 'css/overtime.css' %}">
+<main class="ot-page container-fluid"><p class="ot-eyebrow">MEU PONTO</p><h1>Minhas horas extras</h1>
+<p>O excedente fica registrado. Somente uma aprovação autoriza a hora extra.</p>
+<a class="btn btn-outline-primary" href="{% url 'operacao:ponto_home' %}">Voltar para Meu Ponto</a>
+{% if missing %}<p class="alert alert-info mt-3">Solicite ao RH sua ficha ativa de funcionário e jornada.</p>{% else %}
+<p class="mt-3">{{ employee.nome }} · {{ employee.matricula }}</p>
+<form method="get" class="ot-date"><label for="ot-date">Consultar data</label><input id="ot-date" name="data" type="date" value="{{ day|date:'Y-m-d' }}" class="form-control"><button class="btn btn-outline-primary">Consultar</button></form>
+<section class="ot-card"><h2 class="h4">Jornada e registro</h2><p>{{ data.jornada_nome|default:'Sem jornada registrada' }}</p>
+<p>{% with h=data.horarios_previstos %}{% if h %}{{ h.entrada }}–{% if h.inicio_intervalo %}{{ h.inicio_intervalo }} / {{ h.fim_intervalo }}–{% endif %}{{ h.saida }}{% else %}Folga ou referência não definida{% endif %}{% endwith %}</p>
+<dl class="ot-summary"><div><dt>Horas previstas</dt><dd>{{ data.previsto|ponto_duracao }}</dd></div><div><dt>Horas trabalhadas</dt><dd>{{ data.trabalhado|ponto_duracao }}</dd></div><div><dt>Excedente identificado</dt><dd>{{ data.extra|ponto_duracao }}</dd></div><div><dt>Hora extra aprovada</dt><dd>{{ data.extra_aprovada|default_if_none:0|ponto_duracao }}</dd></div></dl>
+<p>Saída prevista: <strong>{{ data.saida_prevista|default:'—' }}</strong><br>Saída registrada: <strong>{{ data.saida_registrada|ponto_instante }}</strong></p>
+<p class="small">Ponto efetivo: {{ data.marcacoes|default:'Nenhuma marcação neste dia' }}</p>
+{% if data.extra_status %}<p class="ot-status">Solicitação: {{ data.extra_status }}</p>{% endif %}
+{% if closed %}<p class="alert alert-info">Competência fechada. Histórico preservado.</p>{% endif %}
+{% if data.inconsistente %}<p class="alert alert-warning">Conclua o ponto ou solicite um ajuste antes de enviar hora extra.</p>{% endif %}</section>
+<section class="ot-card"><h2 class="h4">Solicitar hora extra</h2><p class="small">A jornada e as marcações são conferidas pelo servidor. Informe a quantidade em minutos; 60 minutos = 1h00.</p>
+{{ form.non_field_errors }}{% if data.extra and not data.inconsistente and not closed and not data.extra_status %}<form method="post">{% csrf_token %}{{ form.request_id }}{% for field in form.visible_fields %}<div class="mb-3">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}<button class="btn btn-primary">Enviar solicitação</button></form>{% else %}<p>Para solicitar, consulte um dia com ponto concluído e excedente identificado, ainda sem solicitação. Dias já enviados permanecem no histórico abaixo.</p>{% endif %}</section>
+<section class="ot-card"><h2 class="h4">Histórico de solicitações</h2>{% for row in requests %}<article class="ot-history"><h3 class="h6">{{ row.data|date:'d/m/Y' }} · {{ row.minutos_solicitados|ponto_duracao }} solicitadas</h3><p class="ot-status">{{ row.status }}</p><p>{{ row.motivo }}</p>{% if row.status != 'PENDENTE' %}<p>{{ row.decisao.minutos_aprovados|ponto_duracao }} aprovadas · {{ row.decisao.usuario.get_full_name|default:row.decisao.usuario.username }} · {{ row.decisao.criado_em }}</p><p>Motivo da decisão: {{ row.decisao.motivo }}</p>{% endif %}</article>{% empty %}<p>Nenhuma solicitação.</p>{% endfor %}</section>
+{% endif %}</main>{% endblock %}

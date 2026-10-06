@@ -77,6 +77,9 @@ def mark(user,kind,request_id,origin='WEB',device='',session='',ip=None,latitude
     if employee.admissao and timezone.localdate(now)<employee.admissao or employee.desligamento and timezone.localdate(now)>employee.desligamento: raise ValidationError('Funcionário fora do período de vínculo.')
     rows=effective_marks(employee)
     if not sequence_valid(rows+[{'tipo':kind,'at':now,'id':None}]): raise ValidationError('Sequência inválida; revise a última marcação ou solicite ajuste.')
+    if kind=='ENTRADA':
+        from .overtime import freeze_schedule
+        freeze_schedule(employee,timezone.localdate(now))
     previous=employee.marcacoes.order_by('-pk').first()
     data={'organization':employee.organization_id,'funcionario':employee.pk,'tipo':kind,'data_hora':now.isoformat(),'request_id':str(key),'origem':origin,'dispositivo':device[:160],'ip':ip,'latitude':str(lat) if lat is not None else None,'longitude':str(lon) if lon is not None else None,'hash_anterior':previous.sha256 if previous else ''}
     row=gs.write(m.MarcacaoPonto(funcionario=employee,tipo=kind,data_hora=now,request_id=key,origem=origin,dispositivo=device[:160],sessao_hash=hashlib.sha256(session.encode()).hexdigest() if session else '',ip=ip,latitude=lat,longitude=lon,geo_consentimento=bool(lat is not None),hash_anterior=data['hash_anterior'],sha256=hashlib.sha256(json.dumps(data,sort_keys=True).encode()).hexdigest()))
@@ -95,6 +98,9 @@ def request_adjustment(user,kind,at,reason,mark_id=None):
         if employee.fechamentos_ponto.filter(ano=date.year,mes=date.month).exists(): raise ValidationError('Marcação original pertence a competência fechada.')
     if original and employee.solicitacoes_ponto.filter(marcacao=original,status__in=['PENDENTE','APROVADO']).exists(): raise ValidationError('Marcação já possui ajuste aberto/aprovado.')
     row=gs.write(m.SolicitacaoAjustePonto(funcionario=employee,marcacao=original,tipo=kind,data_hora=at,motivo=reason.strip()))
+    if kind=='ENTRADA':
+        from .overtime import freeze_schedule
+        freeze_schedule(employee,timezone.localdate(at),'AJUSTE')
     gs.audit(user,'AJUSTE_PONTO_SOLICITADO',row,{'tipo':kind,'data_hora':at.isoformat(),'motivo':reason,'original':mark_id})
     return row
 
@@ -118,6 +124,13 @@ def decide_adjustment(user,public_id,approve,reason):
         if not sequence_valid(sorted(rows,key=lambda item:item['at'])): raise ValidationError('Ajuste resultaria em sequência inconsistente.')
     gs.write(m.DecisaoAjustePonto(solicitacao=row,aprovado=bool(approve),usuario=user,motivo=reason.strip(),antes=before,depois=after))
     row.status='APROVADO' if approve else 'REJEITADO';gs.write(row)
+    if approve:
+        dates={timezone.localdate(row.data_hora)}
+        if row.marcacao_id: dates.add(timezone.localdate(row.marcacao.data_hora))
+        # Check the whole affected month, including overnight entries.
+        for year,month in {(d.year,d.month) for d in dates}:
+            if any(d['extra_aprovada']>(d['extra'] or 0) or (d['inconsistente'] and d['extra_aprovada']) for d in mirror(user,employee.public_id,year,month)['dias']):
+                raise ValidationError('Ajuste incompatível com hora extra já aprovada; preserve a decisão auditada.')
     gs.audit(user,'AJUSTE_PONTO_'+row.status,row,{'antes':before,'depois':after,'motivo':reason})
     return row
 
@@ -140,6 +153,8 @@ def mirror(user,public_id,year,month):
         return {**closed.snapshot,'funcionario':employee,'fechado':True,'saldo_anterior_minutos':closed.saldo_anterior_minutos,'saldo_final_minutos':closed.saldo_final_minutos}
     first=timezone.datetime(int(year),int(month),1).date();last=first+timedelta(days=calendar.monthrange(int(year),int(month))[1]-1)
     scales={row.data:row for row in employee.escala.filter(data__range=(first,last)).select_related('jornada')}
+    references={row.data:row.snapshot for row in employee.referencias_jornada.filter(data__range=(first,last))}
+    overtime={row.data:row for row in employee.solicitacoes_hora_extra.filter(data__range=(first,last)).select_related('decisao')}
     all_rows=effective_marks(employee);groups={};current_day=None
     for row in all_rows:
         local=timezone.localtime(row['at'])
@@ -150,20 +165,31 @@ def mirror(user,public_id,year,month):
     for index in range((last-first).days+1):
         date=first+timedelta(days=index);rows=groups.get(date,[])
         planned,start,journey=expected(employee,date,scales)
-        worked=0;running=None
+        reference=references.get(date)
+        if reference:
+            planned,start=reference['previsto'],reference['inicio']
+        rules=reference or {'tolerancia_atraso_minutos':journey.tolerancia_atraso_minutos if journey else 0,'banco_horas_habilitado':bool(journey and journey.banco_horas_habilitado),'compensar_deficit':bool(journey and journey.compensar_deficit)}
+        seconds=0;running=None
         for row in rows:
             if row['tipo'] in ('ENTRADA','RETORNO_INTERVALO'): running=row['at']
             elif running:
-                worked+=max(0,int((row['at']-running).total_seconds()//60));running=None
+                seconds+=max(0,(row['at']-running).total_seconds());running=None
+        worked=int(seconds//60)
         incomplete=bool(rows and (not sequence_valid(rows) or rows[-1]['tipo']!='SAIDA'))
         first_mark=next((r for r in rows if r['tipo']=='ENTRADA'),None)
         lateness=max(0,timezone.localtime(first_mark['at']).hour*60+timezone.localtime(first_mark['at']).minute-start) if first_mark and start is not None else 0
-        if journey and lateness<=journey.tolerancia_atraso_minutos: lateness=0
+        if lateness<=rules['tolerancia_atraso_minutos']: lateness=0
         extra=max(0,worked-planned) if planned is not None else None
         missing=(max(0,planned-worked) if date<timezone.localdate() and not incomplete else 0) if planned is not None else None
-        delta=(extra-(missing if journey and journey.compensar_deficit else 0)) if journey and journey.banco_horas_habilitado and not incomplete else 0
+        request=overtime.get(date)
+        status=request.status if request else ''
+        pending=request.minutos_solicitados if status=='PENDENTE' else 0
+        approved=request.decisao.minutos_aprovados if status=='APROVADA' else 0
+        rejected=request.minutos_solicitados if status=='RECUSADA' else 0
+        delta=(approved-(missing if rules['compensar_deficit'] else 0)) if rules['banco_horas_habilitado'] and not incomplete else 0
         bank+=delta
-        result.append({'data':date.isoformat(),'marcacoes':' / '.join(timezone.localtime(row['at']).strftime('%H:%M')+' '+row['tipo']+(' (ajuste)' if row.get('ajuste') else '') for row in rows),'previsto':planned,'trabalhado':worked,'atraso':lateness,'extra':extra,'falta':missing,'banco':delta,'inconsistente':incomplete,'escala':scales[date].get_tipo_display() if date in scales else ''})
+        times=reference.get('horarios',{}) if reference else (journey.semana.get(str(date.weekday()),{}) if journey and planned else {})
+        result.append({'data':date.isoformat(),'marcacoes':' / '.join(timezone.localtime(row['at']).strftime('%H:%M:%S')+' '+row['tipo']+(' (ajuste)' if row.get('ajuste') else '') for row in rows),'previsto':planned,'trabalhado':worked,'trabalhado_segundos':seconds,'atraso':lateness,'extra':extra,'extra_pendente':pending,'extra_aprovada':approved,'extra_recusada':rejected,'extra_status':status,'falta':missing,'banco':delta,'inconsistente':incomplete,'escala':reference.get('escala','') if reference else (scales[date].get_tipo_display() if date in scales else ''),'jornada_nome':reference.get('jornada_nome','') if reference else (journey.nome if journey else ''),'horarios_previstos':times,'saida_prevista':times.get('saida',''),'saida_registrada':timezone.localtime(rows[-1]['at']).isoformat() if rows and rows[-1]['tipo']=='SAIDA' else '','saida_registrada_display':timezone.localtime(rows[-1]['at']).strftime('%d/%m/%Y %H:%M:%S') if rows and rows[-1]['tipo']=='SAIDA' else ''})
     return {'funcionario':employee,'ano':int(year),'mes':int(month),'dias':result,'saldo_banco_minutos':bank,'ressalva':'Espelho interno. Regras parametrizadas; não constitui certificação REP/conformidade trabalhista.'}
 
 @transaction.atomic
@@ -178,6 +204,7 @@ def close_month(user,public_id,year,month):
     if previous and (previous.ano,previous.mes)==(year,month): return previous
     if previous and (previous.ano,previous.mes)>(year,month): raise ValidationError('Fechamentos devem seguir ordem cronológica.')
     if employee.solicitacoes_ponto.filter(status='PENDENTE',data_hora__year=year,data_hora__month=month).exists(): raise ValidationError('Existem solicitações de ajuste pendentes nesta competência.')
+    if employee.solicitacoes_hora_extra.filter(data__year=year,data__month=month,decisao__isnull=True).exists(): raise ValidationError('Existem solicitações de hora extra pendentes nesta competência.')
     data=mirror(user,public_id,year,month)
     if any(row['previsto'] is None for row in data['dias']): raise ValidationError('Configure jornada/escala para apurar e fechar a competência.')
     if any(row['inconsistente'] for row in data['dias']): raise ValidationError('Resolva as marcações inconsistentes antes de fechar.')

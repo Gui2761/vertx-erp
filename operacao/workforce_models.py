@@ -36,6 +36,8 @@ class Funcionario(Validado):
     tecnico=models.ForeignKey('contas.Tecnico',on_delete=models.PROTECT,null=True,blank=True)
     matricula=models.CharField(max_length=30)
     nome=models.CharField(max_length=150)
+    telefone=models.CharField(max_length=20,blank=True)
+    email=models.EmailField(blank=True)
     departamento=models.ForeignKey(Departamento,on_delete=models.PROTECT,null=True,blank=True)
     gestor=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,null=True,blank=True,related_name='funcionarios_supervisionados')
     cargo=models.CharField(max_length=100,blank=True)
@@ -127,3 +129,48 @@ class FechamentoPonto(RegistroImutavel):
     sha256=models.CharField(max_length=64,editable=False)
     class Meta:
         constraints=[models.UniqueConstraint(fields=['organization','funcionario','ano','mes'],name='fechamento_ponto_competencia_org'),models.CheckConstraint(condition=models.Q(mes__gte=1,mes__lte=12),name='fechamento_ponto_mes_valido')]
+
+class ReferenciaJornadaPonto(RegistroImutavel):
+    """Immutable schedule effective when a day's attendance was first recorded."""
+    funcionario=models.ForeignKey(Funcionario,on_delete=models.PROTECT,related_name='referencias_jornada')
+    data=models.DateField()
+    jornada=models.ForeignKey(JornadaTrabalho,on_delete=models.PROTECT,null=True,blank=True)
+    snapshot=models.JSONField(default=dict)
+    criado_em=models.DateTimeField(auto_now_add=True)
+    origem=models.CharField(max_length=20,default='MARCACAO')
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['organization','funcionario','data'],name='ponto_referencia_dia_org')]
+
+class SolicitacaoHoraExtra(RegistroImutavel):
+    public_id=models.UUIDField(default=uuid.uuid4,unique=True,editable=False)
+    funcionario=models.ForeignKey(Funcionario,on_delete=models.PROTECT,related_name='solicitacoes_hora_extra')
+    referencia=models.ForeignKey(ReferenciaJornadaPonto,on_delete=models.PROTECT)
+    data=models.DateField()
+    minutos_solicitados=models.PositiveIntegerField()
+    motivo=models.TextField()
+    snapshot=models.JSONField(default=dict)
+    request_id=models.UUIDField()
+    criado_em=models.DateTimeField(auto_now_add=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['organization','request_id'],name='extra_request_org'),models.UniqueConstraint(fields=['organization','funcionario','data'],name='extra_funcionario_dia_org'),models.CheckConstraint(condition=models.Q(minutos_solicitados__gt=0),name='extra_minutos_positivos')]
+    @property
+    def status(self):
+        try: return 'APROVADA' if self.decisao.aprovado else 'RECUSADA'
+        except DecisaoHoraExtra.DoesNotExist: return 'PENDENTE'
+    def clean(self):
+        super().clean()
+        if self.referencia.funcionario_id!=self.funcionario_id or self.referencia.data!=self.data: raise ValidationError('Referência de jornada não pertence a este funcionário/dia.')
+
+class DecisaoHoraExtra(RegistroImutavel):
+    solicitacao=models.OneToOneField(SolicitacaoHoraExtra,on_delete=models.PROTECT,related_name='decisao')
+    aprovado=models.BooleanField()
+    minutos_aprovados=models.PositiveIntegerField(default=0)
+    usuario=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT)
+    motivo=models.TextField()
+    criado_em=models.DateTimeField(auto_now_add=True)
+    class Meta:
+        constraints=[models.CheckConstraint(condition=(models.Q(aprovado=True,minutos_aprovados__gt=0)|models.Q(aprovado=False,minutos_aprovados=0)),name='extra_decisao_quantidade')]
+    def clean(self):
+        super().clean()
+        if self.usuario_id==self.solicitacao.funcionario.usuario_id: raise ValidationError('Não é permitido aprovar ou recusar a própria solicitação.')
+        if self.minutos_aprovados>self.solicitacao.minutos_solicitados: raise ValidationError('Quantidade aprovada excede a solicitada.')

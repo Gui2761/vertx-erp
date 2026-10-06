@@ -1,0 +1,12 @@
+.vx-technician .vx-main{max-width:1100px;padding-bottom:110px}
+.vx-technician .btn,.vx-technician input:not([type=hidden]),.vx-technician select{min-height:48px;font-size:1rem}
+.vx-technician .vx-actions .btn{flex:1 1 140px;white-space:normal}
+.vx-technician .vx-field-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}
+.vx-technician .vx-field-links a{padding:18px;text-decoration:none;background:white;border:1px solid var(--vx-border);border-radius:12px;font-weight:700}
+.vx-technician .vx-connection{padding:12px;border-radius:10px;background:#e9f4f9;font-size:.9rem;margin:20px 0}
+.vx-technician .vx-connection[data-offline=true]{background:#fff0dd;color:#784900}
+.vx-technician .card,.vx-technician .os-page,.vx-technician .os-actions{min-width:0;overflow-wrap:anywhere}
+.vx-technician .vx-bottom a{min-height:48px;display:flex;align-items:center;justify-content:center;padding:8px;flex:1;text-transform:uppercase}
+.vx-technician .vx-nav .nav-link{min-height:48px;font-size:.95rem}
+.vx-technician .vx-breadcrumb{flex-wrap:wrap;overflow-wrap:anywhere}
+@media(max-width:767px){.vx-technician .vx-main{padding:18px 12px 110px}.vx-technician .vx-field-links{gap:8px}.vx-technician .vx-field-links a{padding:14px 10px}.vx-technician .os-actions{flex-wrap:wrap}.vx-technician .os-actions .btn{flex:1 1 150px}.vx-technician .navbar-brand{white-space:normal}.vx-technician .os-summary{padding:14px}.vx-technician .table-responsive{max-width:100%}}

@@ -200,7 +200,8 @@ class OperacaoTests(Dados, TestCase):
             self.assertEqual(response.status_code,200)
             self.assertContains(response,'Planejamento')
         self.assertEqual(self.client.get(reverse('operacao:calendario'),{'cliente':self.db['customer'].pk}).status_code,400)
-        self.assertEqual(self.client.get(reverse('operacao:tecnico')).status_code,200)
+        # The shared PWA now routes ADMIN to the complete ERP.
+        self.assertRedirects(self.client.get(reverse('operacao:tecnico')),reverse('core:painel'))
         self.client.force_login(self.users['ESTOQUE'])
         self.assertEqual(self.client.get(reverse('operacao:calendario')).status_code,403)
 

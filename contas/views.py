@@ -18,6 +18,21 @@ from .permissions import PerfilRequeridoMixin
 class LoginView(auth_views.LoginView):
     template_name = "registration/login.html"
 
+    def get_success_url(self):
+        # Authentication happens after OrganizationMiddleware: select from the
+        # newly authenticated account, never from the previous request's role.
+        memberships = self.request.user.memberships.filter(status='ATIVO', organization__status='ATIVA').select_related('organization')
+        selected = self.request.session.get('organization_id')
+        membership = memberships.filter(organization_id=selected).first() if isinstance(selected, int) else None
+        if membership is None:
+            candidates = list(memberships[:2])
+            membership = candidates[0] if len(candidates) == 1 else None
+        if membership and membership.role == 'TECNICO':
+            from platform_core.access import has_erp_access
+            if has_erp_access(self.request.user, membership.organization):
+                return str(reverse_lazy('operacao:tecnico'))
+        return super().get_success_url()
+
 
 class LogoutView(auth_views.LogoutView):
     pass

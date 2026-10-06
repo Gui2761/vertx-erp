@@ -45,7 +45,8 @@ def movimentar(user, peca_id, tipo, quantidade, observacao='', ordem_id=None, re
     if order and tipo in ['OS', 'DEVOLUCAO']:
         from operacao.contract_workday import link_order
         link_order(user, order)
-    if not commerce and not allowed(user, 'estoque_escrever'):
+    from platform_core.access import effective_role
+    if not commerce and (effective_role(user) == 'TECNICO' or not allowed(user, 'estoque_escrever')):
         if tipo not in ['OS', 'DEVOLUCAO'] or order is None:
             raise PermissionDenied('Técnico registra somente utilização/devolução em suas OS.')
         os_services.autorizar(user, order)

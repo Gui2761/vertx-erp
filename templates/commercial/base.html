@@ -1,0 +1,24 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}VERTYX — sua operação, em uma única plataforma{% endblock %}</title>
+<meta name="description" content="Conheça o VERTYX: assistência técnica, vendas, estoque, financeiro, contratos e gestão em uma única plataforma. Veja os planos e solicite uma demonstração.">
+<meta property="og:type" content="website"><meta property="og:locale" content="pt_BR"><meta property="og:site_name" content="VERTYX"><meta property="og:title" content="VERTYX — uma plataforma para toda a sua operação"><meta property="og:description" content="Conecte atendimento, equipe e gestão. Conheça os planos do VERTYX."><meta property="og:url" content="{{ canonical }}"><meta property="og:image" content="{{ social_image }}">
+<link rel="canonical" href="{{ canonical }}"><link rel="icon" href="{% static 'commercial/brand.svg' %}" type="image/svg+xml"><meta name="theme-color" content="#245de6">
+<link rel="stylesheet" href="{% static 'css/commercial.css' %}"><script src="{% static 'js/commercial.js' %}" defer></script>
+{% block page_styles %}{% endblock %}
+</head><body class="commercial-site {% block body_class %}{% endblock %}">
+{% include 'commercial/icons.html' %}<a class="skip-link" href="#main">Pular para o conteúdo</a>
+<header class="site-header"><div class="container header-inner">
+<a class="brand" href="{% url 'commercial:home' %}" aria-label="VERTYX · Início"><img src="{% static 'commercial/brand.svg' %}" width="32" height="32" alt="">VERTYX<span class="brand-dot"></span></a>
+<button class="menu-toggle" aria-label="Abrir menu" aria-controls="public-menu" aria-expanded="false" data-menu-toggle><svg><use href="#i-menu"></use></svg></button>
+<nav id="public-menu" aria-label="Navegação comercial" class="header-menu">
+<a href="{% url 'commercial:home' %}#funcionalidades">Funcionalidades</a><a href="{% url 'commercial:home' %}#solucoes">Soluções</a><a href="{% url 'commercial:pricing' %}"{% if request.resolver_match.url_name == 'pricing' %} aria-current="page"{% endif %}>Planos e preços</a><a href="{% url 'commercial:home' %}#recursos">Recursos</a><a href="{% url 'commercial:support' %}">Suporte</a>
+<div class="header-actions"><a class="button button-quiet" href="{% url 'commercial:login' %}">Acessar VERTYX <svg><use href="#i-arrow"></use></svg></a><a class="button button-primary" href="{% url 'commercial:demo' %}">Solicitar demonstração</a></div>
+</nav></div></header>
+<main id="main">{% block content %}{% endblock %}</main>
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-intro"><a class="brand" href="{% url 'commercial:home' %}"><img src="{% static 'commercial/brand.svg' %}" width="32" height="32" alt="">VERTYX<span class="brand-dot"></span></a><p>Conecte pessoas, processos e informações.<br>Mais clareza para o seu próximo passo.</p><span class="footer-label">Uma plataforma. Toda a operação.</span></div>
+<div><h2>Produto</h2><a href="{% url 'commercial:home' %}#funcionalidades">Funcionalidades</a><a href="{% url 'commercial:home' %}#solucoes">Soluções</a><a href="{% url 'commercial:pricing' %}">Planos e preços</a></div>
+<div><h2>Vamos conversar</h2><a href="{% url 'commercial:demo' %}">Demonstração</a><a href="{% url 'commercial:contact' %}">Contato comercial</a><a href="{% url 'commercial:support' %}">Suporte</a></div>
+<div><h2>VERTYX</h2><a href="{% url 'commercial:terms' %}">Termos</a><a href="{% url 'commercial:privacy' %}">Privacidade</a><a href="{% url 'commercial:login' %}">Acesso ao sistema <span aria-hidden="true">↗</span></a></div></div>
+<div class="container footer-bottom"><span>© {% now 'Y' %} VERTYX. Todos os direitos reservados.</span><span>Gestão que acompanha sua operação.</span></div></footer>
+</body></html>

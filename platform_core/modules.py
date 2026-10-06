@@ -42,6 +42,12 @@ def has_capability(user, code, roles=None):
     membership = membership_for(user)
     if membership is None or not has_erp_access(user):
         return False
+    if membership.role == 'TECNICO' and code in {
+        'estoque_escrever','inventario_aprovar','compras','pdv','desconto_supervisor',
+        'devolucao','caixa_supervisor','rh','ajuste_ponto','config_empresa','executivo',
+        'credito_cliente','financeiro','financeiro_escrever','contratos','orcamentos','gestao',
+    }:
+        return False
     module, defaults = CAPABILITIES.get(code, ('', roles or ()))
     if not module_enabled(module):
         return False

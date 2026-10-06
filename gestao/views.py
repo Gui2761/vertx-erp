@@ -196,6 +196,15 @@ def detalhe(request, resource, pk):
 @perfis_requeridos(*ROLES['estoque'])
 @require_http_methods(['GET', 'POST'])
 def movimentar(request):
+    technical = request.membership.role == 'TECNICO'
+    order = None
+    if technical:
+        from ordens.views import ordem_permitida
+        raw_pk = request.POST.get('ordem') if request.method == 'POST' else request.GET.get('ordem')
+        if not raw_pk or not str(raw_pk).isdigit():
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied('Selecione uma das suas OS para utilizar ou devolver peças.')
+        order = ordem_permitida(request, int(raw_pk))
     form = forms.MovimentoForm(request.POST if request.method == 'POST' else None, user=request.user, initial={'ordem': request.GET.get('ordem'), 'peca': request.GET.get('peca'), 'tipo': 'OS' if request.GET.get('ordem') else 'ENTRADA'})
     status = 200
     if request.method == 'POST' and form.is_valid():
@@ -207,10 +216,10 @@ def movimentar(request):
             status = 400
         else:
             messages.success(request, 'Movimentação registrada e saldo atualizado.')
-            return redirect('gestao:peca_detalhe', pk=data['peca'].pk)
+            return redirect('ordens:detalhe', pk=order.pk) if technical else redirect('gestao:peca_detalhe', pk=data['peca'].pk)
     elif request.method == 'POST':
         status = 400
-    return render(request, 'gestao/form.html', {'titulo': 'Movimentação de estoque', 'form': form, 'back_url': reverse('gestao:peca_lista')}, status=status)
+    return render(request, 'gestao/form.html', {'titulo': f'Peças na OS {order.numero}' if technical else 'Movimentação de estoque', 'form': form, 'back_url': reverse('ordens:detalhe', args=[order.pk]) if technical else reverse('gestao:peca_lista')}, status=status)
 
 
 @perfis_requeridos(*ROLES['orcamentos'])
@@ -295,6 +304,8 @@ def contrato_gerar(request, pk, action):
 
 @perfis_requeridos(*ROLES['planejamento'])
 def planejamento(request):
+    if request.membership.role == 'TECNICO':
+        return redirect('operacao:calendario')
     qs = m.AgendaPreventiva.objects.select_related('contrato__cliente', 'equipamento', 'tecnico', 'ordem')
     if not allowed(request.user, 'contratos'):
         qs = qs.filter(tecnico__usuario=request.user)

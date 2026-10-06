@@ -43,6 +43,11 @@ def document_allowed(user, document, writing=False):
         return allowed(user, 'financeiro_escrever' if writing else 'financeiro')
     if role == 'TECNICO' and not any([document.contrato_id, document.orcamento_id, document.fornecedor_id,document.compra_id,document.venda_id]):
         from ordens.services import visiveis
+        from .technician_access import scoped_records
+        for field in ['cliente', 'unidade', 'equipamento']:
+            record = getattr(document, field)
+            if record and not scoped_records(user, type(record).objects.filter(pk=record.pk), field).exists():
+                return False
         if document.tecnico_id and document.tecnico.usuario_id != user.pk:
             return False
         if document.chamado_id and not (document.chamado.tecnico_id and document.chamado.tecnico.usuario_id == user.pk or document.chamado.ordem_id and visiveis(user).filter(pk=document.chamado.ordem_id).exists()):
@@ -69,6 +74,11 @@ def documents(user):
         return qs.filter(disponivel_portal=True, cliente_id__in=portal_clients(user))
     if role == 'TECNICO':
         from ordens.services import visiveis
+        from .technician_access import scoped_records
+        from clientes.models import Cliente, Unidade
+        from equipamentos.models import Equipamento
+        for field, model in [('cliente',Cliente),('unidade',Unidade),('equipamento',Equipamento)]:
+            qs=qs.filter(Q(**{field+'__isnull':True}) | Q(**{field+'__in':scoped_records(user,model.objects.all(),field)}))
         return qs.filter(fiscal__isnull=True, contrato__isnull=True, orcamento__isnull=True, fornecedor__isnull=True,compra__isnull=True,venda__isnull=True).filter(Q(tecnico__isnull=True) | Q(tecnico__usuario=user)).filter(Q(ordem__isnull=True) | Q(ordem__in=visiveis(user))).filter(Q(chamado__isnull=True) | Q(chamado__tecnico__usuario=user) | Q(chamado__ordem__in=visiveis(user)))
     if role == 'ESTOQUE':
         return qs.filter(fiscal__isnull=True, cliente__isnull=True, unidade__isnull=True, equipamento__isnull=True, tecnico__isnull=True, chamado__isnull=True, ordem__isnull=True, contrato__isnull=True, orcamento__isnull=True,venda__isnull=True).filter(Q(fornecedor__isnull=False)|Q(peca__isnull=False)|Q(compra__isnull=False))

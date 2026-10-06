@@ -395,7 +395,8 @@ class StockTests(Dados,TestCase):
         client=Client(enforce_csrf_checks=True);client.force_login(self.admin)
         self.assertEqual(client.post(reverse('operacao:stock_entry'),{}).status_code,403)
         self.client.force_login(self.users['TECNICO'])
-        response=self.client.get(reverse('core:painel'))
+        self.assertRedirects(self.client.get(reverse('core:painel')),reverse('operacao:tecnico'))
+        response=self.client.get(reverse('operacao:tecnico'))
         self.assertNotContains(response,'Contas e caixa')
         self.assertNotContains(response,'Recebimentos do mês')
 
@@ -466,8 +467,10 @@ class StockTests(Dados,TestCase):
         self.assertContains(response,'vx-nav-group')
         self.assertContains(response,'Recolher menu')
         self.client.force_login(self.users['TECNICO'])
-        response=self.client.get(reverse('core:painel'))
-        self.assertNotContains(response,'vx-nav-group')
+        self.assertRedirects(self.client.get(reverse('core:painel')),reverse('operacao:tecnico'))
+        response=self.client.get(reverse('operacao:tecnico'))
+        self.assertContains(response,'ASSISTÊNCIA EM CAMPO')
+        self.assertNotContains(response,'href="/financeiro/"')
         self.assertContains(response,'Agenda')
 
     def test_relatorio_item_nao_selecionado_com_sugestao_zero_nao_bloqueia_compra(self):

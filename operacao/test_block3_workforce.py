@@ -150,7 +150,8 @@ class WorkforceTests(WorkforceData,TestCase):
             self.assertEqual((day['atraso'],day['trabalhado'],day['extra']),(0,597,117))
             m.EscalaFuncionario.objects.create(funcionario=self.employee,data=self.day,tipo='FOLGA',motivo='Folga configurada')
             data=w.mirror(self.worker,self.employee.public_id,2026,9)
-            self.assertEqual(next(row['previsto'] for row in data['dias'] if row['data']==self.day.isoformat()),0)
+            # A schedule created after attendance cannot rewrite its reference.
+            self.assertEqual(next(row['previsto'] for row in data['dias'] if row['data']==self.day.isoformat()),480)
 
     def test_invalid_schedule_and_foreign_user_rejected(self):
         with tenant_context(self.a):

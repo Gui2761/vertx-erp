@@ -1,0 +1,11 @@
+{% load modulos_erp %}<article class="card p-3 mb-3">
+{% if row.blocked %}
+<h3 class="h5">ATENDIMENTO EXTERNO PROGRAMADO</h3><p>{{ row.destination.municipio }} · {{ row.destination.contrato }}<br>{{ row.destination.resumo }}</p><p>Antes de sair da empresa, inicie a atividade.</p><a class="btn btn-primary" href="{{ row.activity_url }}">INICIAR ATIVIDADE DO DIA</a>
+{% else %}
+<div class="d-flex justify-content-between gap-2"><strong>{{ row.order.numero }}</strong><span class="badge bg-info text-dark">{{ row.order.get_prioridade_display }}</span></div>
+<h3 class="h5 mt-2">{{ row.order.cliente }}</h3><p>{{ row.order.unidade|default:'Sem unidade' }}<br>{{ row.order.equipamento }}</p>
+<p>{{ row.address }}</p><p class="text-muted">{{ row.order.agendada_para|date:'d/m/Y H:i'|default:'Sem horário' }} · {{ row.order.get_status_display }}</p>
+<div class="vx-actions"><a class="btn btn-primary" href="{% url 'ordens:detalhe' row.order.pk %}">Abrir atendimento</a>
+{% if row.order.status == 'ABERTA' or row.order.status == 'AGENDADA' or row.order.status == 'DESLOCAMENTO' %}<a class="btn btn-outline-primary" href="{% url 'ordens:detalhe' row.order.pk %}#atendimento">Iniciar atendimento</a>{% elif row.order.status == 'EXECUCAO' %}<a class="btn btn-outline-primary" href="{% url 'ordens:editar' row.order.pk %}">Diagnóstico / checklist</a><a class="btn btn-outline-primary" href="{% url 'ordens:detalhe' row.order.pk %}#atendimento">Fotos / finalizar</a>{% modulo_permitido 'estoque' as stock_ok %}{% if stock_ok %}<a class="btn btn-outline-primary" href="{% url 'gestao:movimentar' %}?ordem={{ row.order.pk }}">Peças na OS</a>{% endif %}{% endif %}
+{% if row.activity_url %}<a class="btn btn-outline-primary" href="{{ row.activity_url }}">Atividade do dia</a>{% endif %}<a class="btn btn-outline-primary" href="{{ row.route }}" target="_blank" rel="noopener noreferrer">Rota</a></div>
+{% endif %}</article>

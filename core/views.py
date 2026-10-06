@@ -13,6 +13,8 @@ class PainelView(LoginRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         from django.shortcuts import redirect
         role = request.membership.role if request.membership else ''
+        if role == 'TECNICO':
+            return redirect('operacao:tecnico')
         if role in ['PLANEJADOR','ATENDIMENTO']:
             return redirect('operacao:calendario')
         if role == 'PAINEL':

@@ -58,7 +58,8 @@ def queryset(user, resource):
         if resource == 'plano':
             qs = qs.filter(Q(tecnico__usuario=user) | Q(equipe__usuario=user)).distinct()
         if resource == 'chamado':
-            qs = qs.filter(Q(tecnico__usuario=user) | Q(ordem__tecnico__usuario=user) | Q(ordem__auxiliares__usuario=user)).distinct()
+            from .technician_access import calls_for
+            qs = calls_for(user)
         if resource == 'conhecimento':
             from ordens.services import visiveis
             qs = qs.filter(Q(ordem__isnull=True) | Q(ordem__in=visiveis(user)))
@@ -115,6 +116,9 @@ def editar(request, resource, pk=None):
     form = cls(request.POST if request.method == 'POST' else None, request.FILES or None, instance=obj, initial=initial)
     if resource == 'documento' and effective_role(request.user) == 'TECNICO':
         from ordens.services import visiveis
+        from .technician_access import scoped_records
+        for field in ['cliente','unidade','equipamento']:
+            form.fields[field].queryset=scoped_records(request.user,form.fields[field].queryset,field)
         form.fields['ordem'].queryset = visiveis(request.user)
         for field in ['fiscal', 'contrato', 'orcamento', 'fornecedor']:
             form.fields[field].queryset = form.fields[field].queryset.none()

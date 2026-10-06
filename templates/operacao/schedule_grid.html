@@ -1,0 +1,15 @@
+<div class="vx-schedule" data-schedule-editor>
+  <div class="vx-schedule-bulk"><h3 class="h6">Um horário para os dias úteis</h3><p class="text-muted small">Preencha uma vez e aplique de segunda a sexta. Cada dia pode ser ajustado depois.</p>
+    <div class="vx-schedule-bulk-fields">
+      <label>Entrada<input class="form-control" type="time" data-bulk-time="entrada"></label>
+      <label>Início intervalo<input class="form-control" type="time" data-bulk-time="inicio_intervalo"></label>
+      <label>Fim intervalo<input class="form-control" type="time" data-bulk-time="fim_intervalo"></label>
+      <label>Saída<input class="form-control" type="time" data-bulk-time="saida"></label>
+    </div><button class="btn btn-outline-primary" type="button" data-apply-weekdays>Aplicar horário de segunda a sexta</button><p class="small mb-0" role="status" data-schedule-feedback></p>
+  </div>
+  <div class="vx-schedule-heading" aria-hidden="true"><span>Dia</span><span>Entrada</span><span>Início intervalo</span><span>Fim intervalo</span><span>Saída</span></div>
+  {% for day in schedule.days %}<div class="vx-schedule-day" data-schedule-day="{{ day.index }}">
+    <div class="vx-schedule-day-label"><strong>{{ day.label }}</strong><label>{{ day.works }} Trabalha</label><small data-day-state></small>{{ day.works.errors }}</div>
+    {% for field in day.times %}<div class="vx-schedule-time"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
+  </div>{% endfor %}
+</div>

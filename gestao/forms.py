@@ -154,8 +154,14 @@ class MovimentoForm(forms.Form):
         self.fields['peca'].queryset = m.Peca.objects.filter(ativo=True)
         self.fields['tipo'].choices = [(key,label) for key,label in self.fields['tipo'].choices if key!='INVENTARIO']
         self.fields['ordem'].queryset = (OrdemServico.objects.all() if allowed(user, 'estoque_escrever') else os_services.visiveis(user)).exclude(status__in=['FINALIZADA', 'APROVADA', 'FATURADA', 'CANCELADA'])
-        if not allowed(user, 'estoque_escrever'):
+        from platform_core.access import effective_role
+        if effective_role(user) == 'TECNICO' or not allowed(user, 'estoque_escrever'):
             self.fields['tipo'].choices = [('OS', 'Utilização em OS'), ('DEVOLUCAO', 'Devolução da OS')]
+            self.fields['ordem'].queryset = os_services.visiveis(user).exclude(status__in=['FINALIZADA','APROVADA','FATURADA','CANCELADA'])
+            self.fields['ordem'].required = True
+            self.fields['ordem'].widget = forms.HiddenInput()
+            self.fields['lote'].queryset = self.fields['lote'].queryset.none()
+            self.fields['lote'].widget = forms.HiddenInput()
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
 

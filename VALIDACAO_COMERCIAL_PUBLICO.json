@@ -1,0 +1,438 @@
+{
+  "etapa": "Experiência comercial pública VERTYX",
+  "gerado_em_utc": "2026-10-06T15:16:27.567239+00:00",
+  "status": "VALIDADO LOCALMENTE; AGUARDANDO HOMOLOGAÇÃO VISUAL; NÃO PUBLICADO",
+  "automaticamente_validado": {
+    "postgresql_total": 503,
+    "novos_testes": 32,
+    "testes_anteriores": 471,
+    "aprovados": 503,
+    "falhas": 0,
+    "erros": 0,
+    "duracao_segundos": 447.179,
+    "testes_especificos": 32,
+    "duracao_especificos_segundos": 9.823,
+    "check": "APROVADO",
+    "makemigrations_check_dry_run": "APROVADO",
+    "javascript_node_check": "APROVADO",
+    "comandos": [
+      {
+        "command": [
+          "check"
+        ],
+        "exit_code": 0,
+        "log": "tmp\\validation\\commercial_full_check.log",
+        "source_unchanged": true,
+        "database": "synthetic loopback PostgreSQL test database",
+        "remote_access": false
+      },
+      {
+        "command": [
+          "makemigrations",
+          "--check",
+          "--dry-run"
+        ],
+        "exit_code": 0,
+        "log": "tmp\\validation\\commercial_full_makemigrations.log",
+        "source_unchanged": true,
+        "database": "synthetic loopback PostgreSQL test database",
+        "remote_access": false
+      },
+      {
+        "command": [
+          "test",
+          "--keepdb",
+          "--noinput",
+          "--parallel",
+          "2",
+          "-v",
+          "1"
+        ],
+        "exit_code": 0,
+        "log": "tmp\\validation\\commercial_full_test.log",
+        "source_unchanged": true,
+        "database": "synthetic loopback PostgreSQL test database",
+        "remote_access": false
+      }
+    ],
+    "codigo_inalterado_durante_suite": true
+  },
+  "interface_validada": {
+    "ambiente": "loopback local, banco sintético de testes, cookies QA próprios",
+    "home_planos_formulario": [
+      {
+        "page": "home",
+        "clientWidth": 305,
+        "documentWidth": 305,
+        "height": 844,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 320
+      },
+      {
+        "page": "plans",
+        "clientWidth": 305,
+        "documentWidth": 305,
+        "height": 844,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 320
+      },
+      {
+        "page": "demo",
+        "clientWidth": 305,
+        "documentWidth": 305,
+        "height": 844,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 320
+      },
+      {
+        "page": "home",
+        "clientWidth": 375,
+        "documentWidth": 375,
+        "height": 844,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 390
+      },
+      {
+        "page": "plans",
+        "clientWidth": 375,
+        "documentWidth": 375,
+        "height": 844,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 390
+      },
+      {
+        "page": "demo",
+        "clientWidth": 375,
+        "documentWidth": 375,
+        "height": 844,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 390
+      },
+      {
+        "page": "home",
+        "clientWidth": 753,
+        "documentWidth": 753,
+        "height": 844,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 768
+      },
+      {
+        "page": "plans",
+        "clientWidth": 753,
+        "documentWidth": 753,
+        "height": 844,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 768
+      },
+      {
+        "page": "demo",
+        "clientWidth": 753,
+        "documentWidth": 753,
+        "height": 844,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 768
+      },
+      {
+        "page": "home",
+        "clientWidth": 1350,
+        "documentWidth": 1350,
+        "height": 860,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 1365
+      },
+      {
+        "page": "plans",
+        "clientWidth": 1350,
+        "documentWidth": 1350,
+        "height": 860,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 1365
+      },
+      {
+        "page": "demo",
+        "clientWidth": 1350,
+        "documentWidth": 1350,
+        "height": 860,
+        "imagesLoaded": true,
+        "overflow": false,
+        "width": 1365
+      }
+    ],
+    "menu_mobile": "APROVADO",
+    "jornada": "Menu → Profissional → formulário pré-selecionado → envio sintético → confirmação real",
+    "lead_persistido_verificado": true,
+    "console_erros_warnings": [],
+    "evidencias": [
+      {
+        "arquivo": "tmp/validation/commercial-evidence/demo-1365.jpg",
+        "sha256": "eded8338fa598e6481914d151bb55c45c896f8a0bbc4d55f0a7a0ae4651cf0ee"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/demo-320.jpg",
+        "sha256": "628c52a2ec5cfd56ace291d4b874c4646615ab88644233471169238289f1d881"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/demo-390.jpg",
+        "sha256": "84460f20fe8ab6f13f7db18f8babd188026bd077ac82e2dcd50dc7a92a34e4eb"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/demo-768.jpg",
+        "sha256": "c8fc899541436c0861c4153d66956d8dcba964a39491ad60195dc448f4e61a3b"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/home-1365.jpg",
+        "sha256": "04a41d82d64716f4c56aaa95f1cfee5bca983769aaf351d304960d06fc0fa212"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/home-320.jpg",
+        "sha256": "e44c55174a2815155b0c1f0c70cf96555b25fe2fe3d5da04e523aa05240ccd78"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/home-390.jpg",
+        "sha256": "70c07f6639226984e00f8629ddca071ed3213e17d617c645377c374c90868613"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/home-768.jpg",
+        "sha256": "843c115fe788ac717cf6392012060de5e5b3499f52f0f0d0e5a9c19fd5060616"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/lead-confirmation-390.jpg",
+        "sha256": "46cb1dac3d80750ea990e50d559836c9fff5a5ce2eef38936006379b29a340bb"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/menu-390.jpg",
+        "sha256": "4b8ad7229a2cdc65cc93668b60787a0a9b733cc0d44ed5052e02d7bb709458f5"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/plans-1365.jpg",
+        "sha256": "18a9720ed5b5024696a54c1cef7a8bd844ef5db77b96c79476cf57d7cff5c704"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/plans-320.jpg",
+        "sha256": "d6d657302b78bf9e3a5e7182b1b8bb930065b47644746ed25779c3af3c459171"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/plans-390.jpg",
+        "sha256": "0517ad8965b6fba99eabe6d2352fe16718f8c8196483a6187702a3cf38ccbecf"
+      },
+      {
+        "arquivo": "tmp/validation/commercial-evidence/plans-768.jpg",
+        "sha256": "954202d378d20f17ecfad1401c52695cdd63114d896864769261435beee63b6c"
+      }
+    ],
+    "iphone_fisico": "NÃO TESTADO; ADIADO CONFORME SOLICITAÇÃO"
+  },
+  "planos": {
+    "nomes": [
+      "Básico",
+      "Profissional",
+      "Empresarial",
+      "Personalizado"
+    ],
+    "precos_mensais": [
+      "149.00",
+      "249.00",
+      "399.00",
+      null
+    ],
+    "destaque": "Profissional",
+    "configuracao": "Catálogo global no Django Admin, exclusivo de superusuários da plataforma",
+    "limites": "Nulos/A definir na proposta; sem cotas técnicas presumidas",
+    "recursos_futuros_nao_divulgados": true,
+    "anual": "Preparado; não anunciado desconto/preço anual sem configuração"
+  },
+  "fluxo_comercial": {
+    "tipo": "Lead/pedido de demonstração; contato humano",
+    "idempotencia": true,
+    "csrf": true,
+    "token_sessao_expiracao": true,
+    "consentimento": true,
+    "oferta_historica": true,
+    "criacao_organizacao": false,
+    "criacao_usuario": false,
+    "criacao_assinatura": false,
+    "pagamento_real": false,
+    "gateway": false,
+    "emails_externos": false
+  },
+  "migrations": {
+    "novas": [
+      "commercial/0001_initial.py"
+    ],
+    "operacoes": "CreateModel PlanoComercial e InteresseComercial + seed congelado de 4 planos; nenhum model/tabela anterior alterado",
+    "aplicadas_somente_em_testes": [
+      {
+        "database": "test_vertyx_homologation",
+        "migrations": [
+          "0001_initial"
+        ],
+        "synthetic_browser_lead_verified": true
+      },
+      {
+        "database": "test_vertyx_homologation_1",
+        "migrations": [
+          "0001_initial"
+        ]
+      },
+      {
+        "database": "test_vertyx_homologation_2",
+        "migrations": [
+          "0001_initial"
+        ]
+      }
+    ],
+    "base_trabalho_commercial_aplicadas": 0,
+    "producao_aplicadas": 0,
+    "pendentes_producao": [
+      "commercial/0001_initial.py"
+    ],
+    "migrations_anteriores_preservadas": true
+  },
+  "preservacao": {
+    "erp_pwa_tecnico": "Arquivos técnicos protegidos com SHA256 inalterado; login reaproveitado; suite de regressão aprovada",
+    "integracao": "Rotas comerciais públicas exatas; vendedor direcionado ao PDV; nenhum novo acesso administrativo ao técnico",
+    "verificacao_base_sintetica": {
+      "database": "vertyx_homologation, synthetic loopback only",
+      "commercial_migrations_applied": 0,
+      "commercial_tables": [],
+      "business_counts": {
+        "platform_core_organization": 8,
+        "platform_core_organizationmembership": 54,
+        "contas_usuario": 54,
+        "clientes_cliente": 8,
+        "equipamentos_equipamento": 7,
+        "ordens_ordemservico": 56,
+        "gestao_peca": 20,
+        "gestao_lancamento": 43,
+        "operacao_compra": 17,
+        "ordens_conferencia": 19,
+        "ordens_assinatura": 19
+      },
+      "file_preservation": {
+        "protected_files": true,
+        "previous_migrations": true
+      },
+      "production_access": false
+    },
+    "contagens_negocio_antes_depois_iguais": true,
+    "dependencias_alteradas": [],
+    "render_alterado": false,
+    "r2_alterado": false,
+    "credenciais_alteradas": false,
+    "producao_acessada": false,
+    "producao_validada": false,
+    "varredura_padrao_credenciais_novos_arquivos": []
+  },
+  "arquivos_modificados_nesta_etapa": [
+    "tecnolmed/settings.py",
+    "tecnolmed/urls.py",
+    "platform_core/middleware.py",
+    "platform_core/views.py",
+    "templates/platform_core/home.html"
+  ],
+  "arquivos_novos_nesta_etapa": [
+    "RELATORIO_COMERCIAL_PUBLICO.md",
+    "VALIDACAO_COMERCIAL_PUBLICO.json",
+    "commercial/__init__.py",
+    "commercial/admin.py",
+    "commercial/apps.py",
+    "commercial/catalog.py",
+    "commercial/forms.py",
+    "commercial/migrations/0001_initial.py",
+    "commercial/migrations/__init__.py",
+    "commercial/models.py",
+    "commercial/services.py",
+    "commercial/tests.py",
+    "commercial/urls.py",
+    "commercial/views.py",
+    "static/commercial/brand.svg",
+    "static/commercial/erp-preview.jpg",
+    "static/commercial/technician-preview.jpg",
+    "static/css/commercial.css",
+    "static/js/commercial.js",
+    "templates/commercial/base.html",
+    "templates/commercial/cta.html",
+    "templates/commercial/demo.html",
+    "templates/commercial/faq.html",
+    "templates/commercial/home.html",
+    "templates/commercial/icons.html",
+    "templates/commercial/information.html",
+    "templates/commercial/plans.html",
+    "templates/commercial/pricing.html",
+    "templates/commercial/thanks.html"
+  ],
+  "problemas_corrigidos": [
+    "Fixture comercial inicialmente dependia de catálogo ERP ausente no banco descartável; corrigida antes das execuções aprovadas"
+  ],
+  "pendencias": [
+    "Homologação visual e comercial pelo usuário",
+    "Definir módulos, limites, suporte e condições anuais por plano",
+    "Completar/aprovar identificação institucional, contato oficial, retenção e termos/privacidade",
+    "Definir rotina humana de acompanhamento de leads; nenhum e-mail automático",
+    "Publicação e testes em ambiente real dependem de autorização posterior"
+  ],
+  "riscos_conhecidos": [
+    "Proteção antispam básica; não ensaiada sob tráfego público real",
+    "Catálogo comercial não concede permissões ou aplica quotas automaticamente",
+    "Validação local de responsividade não substitui homologação em aparelhos físicos"
+  ],
+  "restricoes_respeitadas": {
+    "commit": false,
+    "push": false,
+    "deploy": false,
+    "pagamento": false,
+    "novo_erp": false,
+    "mudanca_infraestrutura": false,
+    "banco_producao": false
+  },
+  "ajuste_visual_2026_10_06": {
+    "referencia_inspecionada": "C:/Users/StartReparos/Downloads/erp vendas de produtos 001TELA ERP.png",
+    "pagina": "/planos/",
+    "ordem": [
+      "Cabeçalho branco",
+      "Hero azul escuro com notebook VERTYX e CTA verde",
+      "Escolha o plano ideal para sua empresa: quatro cards",
+      "Recursos dos planos com checkmarks",
+      "FAQ",
+      "CTA final",
+      "Footer"
+    ],
+    "arquivos": [
+      "templates/commercial/base.html",
+      "templates/commercial/pricing.html",
+      "templates/commercial/plans.html",
+      "static/css/commercial-pricing.css"
+    ],
+    "migrations_adicionais": [],
+    "alteracao_banco": false,
+    "alteracao_infraestrutura": false,
+    "suite_anterior": "503/503 antes deste ajuste visual; não reexecutada",
+    "capturas_diretorio": "tmp/validation/commercial-visual-homologacao/",
+    "viewports": [
+      [
+        1365,
+        768
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "home_captura": [
+      1365,
+      768
+    ],
+    "status": "AGUARDANDO AVALIAÇÃO VISUAL; NÃO PUBLICADO"
+  }
+}

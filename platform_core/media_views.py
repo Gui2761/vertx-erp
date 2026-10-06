@@ -11,7 +11,8 @@ from .logging_utils import operation_failure
 @login_required
 def legacy_media(request, name):
     require_erp(request.user)
-    equipment = Equipamento.objects.filter(Q(foto=name) | Q(manual=name) | Q(qr_code=name)).first()
+    from operacao.technician_access import scoped_records
+    equipment = scoped_records(request.user, Equipamento.objects.filter(Q(foto=name) | Q(manual=name) | Q(qr_code=name)), 'equipamento').first()
     if not equipment:
         raise Http404()
     field = next(getattr(equipment, key) for key in ['foto', 'manual', 'qr_code'] if getattr(equipment, key).name == name)

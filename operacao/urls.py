@@ -5,6 +5,7 @@ from . import stock_views
 from . import operational_panel
 from . import pdv
 from . import workforce_views
+from . import overtime_views
 from . import inventory_views
 from . import executive
 from . import mobile
@@ -20,6 +21,8 @@ urlpatterns = [
     path('inventarios/<uuid:public_id>/',inventory_views.inventories,name='inventory_detail'),
     path('transferencias/',inventory_views.transfers,name='transfer_list'),
     path('ponto/',workforce_views.home,name='ponto_home'),
+    path('ponto/horas-extras/',overtime_views.own,name='ponto_overtime'),
+    path('rh/horas-extras/',overtime_views.management,name='rh_overtime'),
     path('ponto/espelho/<uuid:public_id>/',workforce_views.mirror,name='ponto_mirror'),
     path('ponto/ajustes/',workforce_views.adjustments,name='ponto_adjustments'),
     path('rh/<str:resource>/',workforce_views.management,name='rh_list'),

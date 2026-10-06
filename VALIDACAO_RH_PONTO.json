@@ -1,0 +1,277 @@
+{
+  "date": "2026-10-06",
+  "status": "VALIDADO LOCALMENTE; AGUARDANDO HOMOLOGAÇÃO DO USUÁRIO",
+  "classification": [
+    "VALIDADO AUTOMATICAMENTE",
+    "VALIDADO PELA INTERFACE",
+    "VALIDADO EM BANCO SINTÉTICO",
+    "NÃO VALIDADO EM PRODUÇÃO"
+  ],
+  "tests": {
+    "complete_postgresql": {
+      "total": 551,
+      "passed": 551,
+      "duration_seconds": 581.03,
+      "failures": 0,
+      "errors": 0,
+      "log": "tmp/validation/overtime_final_2_test.log"
+    },
+    "targeted_postgresql": {
+      "total": 86,
+      "passed": 86,
+      "duration_seconds": 128.848,
+      "log": "tmp/validation/overtime_targeted_2_test.log"
+    },
+    "new_employee_tests": 18,
+    "new_overtime_tests": 22,
+    "previous_tests": 511,
+    "check": "PASS",
+    "makemigrations_check_dry_run": "PASS",
+    "javascript_syntax": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "migrations": [
+    {
+      "name": "operacao.0015_funcionario_contato",
+      "kind": "AddField telefone/email e preenchimento em campos novos",
+      "production_applied": false
+    },
+    {
+      "name": "operacao.0016_hora_extra_aprovacao",
+      "kind": "CreateModel referência/solicitação/decisão; constraints; referências legadas aditivas",
+      "production_applied": false
+    }
+  ],
+  "database": "isolated loopback PostgreSQL test databases only",
+  "dependencies_changed": false,
+  "visual_employee": {
+    "database": "isolated synthetic PostgreSQL",
+    "employee_created_in_browser": true,
+    "employee_edited_in_browser": true,
+    "employee_count_for_user": 1,
+    "technician_count_for_user": 1,
+    "links_preserved": true,
+    "weekdays": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "weekend_folga": true,
+    "planned_minutes": 510,
+    "marks_for_overtime_ui": 8,
+    "migration_applied_only_to_test_database": "0016_hora_extra_aprovacao",
+    "production_access": false
+  },
+  "visual_overtime": {
+    "environment": "isolated synthetic PostgreSQL",
+    "browser_requests": 2,
+    "statuses": [
+      {
+        "status": "RECUSADA",
+        "requested_minutes": 60,
+        "approved_minutes": 0
+      },
+      {
+        "status": "APROVADA",
+        "requested_minutes": 60,
+        "approved_minutes": 60
+      }
+    ],
+    "approved_by_assigned_manager": true,
+    "original_marks_preserved": true,
+    "reference_minutes": 510,
+    "bank_enabled_for_ui_employee": false,
+    "internal_employee_notifications": 2,
+    "pending_approval_notifications_resolved": true,
+    "employee_count": 1,
+    "request_audits": 2,
+    "decision_audits": 2,
+    "production_access": false
+  },
+  "employee_layout": {
+    "mobile390": {
+      "documentWidth": 390,
+      "height": 844,
+      "overflow": false,
+      "width": 390
+    },
+    "mobile320": {
+      "documentWidth": 305,
+      "height": 844,
+      "overflow": false,
+      "width": 320
+    }
+  },
+  "browser_flows": [
+    "cadastro de funcionário com conta existente, técnico reaproveitado e jornada nova",
+    "edição e persistência do cargo",
+    "Meu Ponto e acesso pelo menu técnico",
+    "identificação de excedente e solicitação pendente",
+    "aprovação por Gestor responsável",
+    "recusa com motivo e zero aprovado",
+    "filtro de aprovadas",
+    "histórico e notificações do técnico"
+  ],
+  "captures": [
+    {
+      "path": "tmp/validation/employee-central-evidence/ficha-desktop-1365x768.jpg",
+      "width": 1365,
+      "height": 768
+    },
+    {
+      "path": "tmp/validation/employee-central-evidence/ficha-desktop-full.jpg",
+      "width": 1350,
+      "height": 3480
+    },
+    {
+      "path": "tmp/validation/employee-central-evidence/ficha-mobile-390x844.jpg",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "path": "tmp/validation/employee-central-evidence/ficha-mobile-full.jpg",
+      "width": 375,
+      "height": 6068
+    },
+    {
+      "path": "tmp/validation/employee-central-evidence/jornada-mobile-390x844.jpg",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/aprovacao-desktop-1365x768.jpg",
+      "width": 1365,
+      "height": 768
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/aprovacao-desktop-full.jpg",
+      "width": 1350,
+      "height": 1916
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/historico-pwa-390x844.jpg",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/historico-pwa-full.jpg",
+      "width": 375,
+      "height": 2358
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/notificacoes-pwa-full.jpg",
+      "width": 375,
+      "height": 959
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/pwa-320-full.jpg",
+      "width": 305,
+      "height": 2575
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/recusa-pwa-390x844.jpg",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/relatorio-aprovadas-desktop-full.jpg",
+      "width": 1350,
+      "height": 1661
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/resultado-desktop-1365x768.jpg",
+      "width": 1365,
+      "height": 768
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/solicitacao-mobile-390x844.jpg",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "path": "tmp/validation/overtime-evidence/solicitacao-mobile-full.jpg",
+      "width": 375,
+      "height": 2252
+    }
+  ],
+  "source_files_changed_this_stage": [
+    "operacao/employee_forms.py",
+    "operacao/employee_services.py",
+    "operacao/workforce_models.py",
+    "operacao/workforce_views.py",
+    "operacao/models.py",
+    "operacao/workforce.py",
+    "operacao/overtime.py",
+    "operacao/overtime_views.py",
+    "operacao/urls.py",
+    "operacao/technician_access.py",
+    "operacao/templatetags/ponto_horas.py",
+    "operacao/test_employee_central.py",
+    "operacao/test_overtime.py",
+    "operacao/test_block3_workforce.py",
+    "operacao/migrations/0015_funcionario_contato.py",
+    "operacao/migrations/0016_hora_extra_aprovacao.py",
+    "templates/operacao/employee_form.html",
+    "templates/operacao/employee_field.html",
+    "templates/operacao/schedule_grid.html",
+    "templates/operacao/rh.html",
+    "templates/operacao/ponto.html",
+    "templates/operacao/ponto_mirror.html",
+    "templates/operacao/overtime_own.html",
+    "templates/operacao/overtime_management.html",
+    "static/css/employee.css",
+    "static/js/employee.js",
+    "static/css/overtime.css"
+  ],
+  "source_sha256": {
+    "operacao/employee_forms.py": "2c2692a9ac7d1918f4981ad927eec31a8cd4669fec25b14b3e2c711e01dd08f0",
+    "operacao/employee_services.py": "b61a6b1e0e2a39cd8d762b1e4c265973102790a1418f70cc1a83e583d0edefc0",
+    "operacao/workforce_models.py": "92ad244e8eb5d6ce9c22587f99b38c79004af4ed4c30738b2587fb5bd98b4c24",
+    "operacao/workforce_views.py": "a40bb9a3ad1d4ac0208f38589fda0e90d85bf2c168e078f682c2cec8793fc5fa",
+    "operacao/models.py": "81525ea3d7199242a0ff8a7fed145ec795f1aef1cafd1f6562cdcdaccdce5219",
+    "operacao/workforce.py": "a3b7639a57d5baed3810726ed3b1899b913245ecce4403cd622417bb28050c39",
+    "operacao/overtime.py": "8bc9928b4d4e334cb6da3b59ad8d35566f0a971a5543c770707653117cc851b7",
+    "operacao/overtime_views.py": "f1337426a1f360f345426a254f3ad57054e9f935ad1f1a8bdd617c260537708c",
+    "operacao/urls.py": "008d363e4dc27047ba02092ecc8e1f92577019889e84420ff4cae311256cbfa0",
+    "operacao/technician_access.py": "6175741900497800b1d97b09a12500b82d8ad9e85fd7e74d1849af3c94efa932",
+    "operacao/templatetags/ponto_horas.py": "60d97f3eb7b51e25dfc56e32f8a880512725dbbec5755c89f7d9678b550379dc",
+    "operacao/test_employee_central.py": "dc6c8a5b6aaf34d5a5930947e01e758f66cf474b1fd8bafbfa60cc934763af8e",
+    "operacao/test_overtime.py": "e17468795ad27c28123ac6f6d2a61495c92f8d6852884b4d43eac55c7362fc59",
+    "operacao/test_block3_workforce.py": "7541e2dce50c7eaee97763caafef47439e64170206eac1038c53f4a50e534113",
+    "operacao/migrations/0015_funcionario_contato.py": "f7f19c75dcf58818805faba11ca5ba2f73e580b2b08f555c553d7fd1de2541a1",
+    "operacao/migrations/0016_hora_extra_aprovacao.py": "b6e4b55b19463f76e9ac8ccc946a7f208d277b2cf28e6f1f359ceb17bcd81168",
+    "templates/operacao/employee_form.html": "da9aac65354351070b6b94fb03e1d83e90512d8fbbab23206743a0208a280014",
+    "templates/operacao/employee_field.html": "8378082566efc20e9dda03ff76546f7cff915199a946d8f8b41a303489791e6a",
+    "templates/operacao/schedule_grid.html": "09c235bd14cdd4026de5b6f54ffa68b8e458c040160c7ae3694f5f0638dd6893",
+    "templates/operacao/rh.html": "9051d99a5faccb2c0def01a34cf50b8c21cb66499c2233a65da2e2c7ba0e3faf",
+    "templates/operacao/ponto.html": "41d7af09a12938dbc58000ea9d397229655e92d27cd0bb9e49c79213422edb13",
+    "templates/operacao/ponto_mirror.html": "12b0c802aa6494c8d1b73c8cef982bbf1001a980aea96b6bb89d5c316b2f4c1b",
+    "templates/operacao/overtime_own.html": "dfa93ce789023f7ee5ea34321323c2a6757f0f9e7ba0fce5a9b107aa59185523",
+    "templates/operacao/overtime_management.html": "d95573dbde7a4299df06507690c8264fcb22d7a26e929cfde36a5208832762fe",
+    "static/css/employee.css": "90ff28eeac030a912e17b68edeaf4601bd15d46a3ee09e78c4632df8b7281485",
+    "static/js/employee.js": "e8b34032785b78ce6b76fa359971955c79841d4e216fa4a7c55d97f2a20fdd3f",
+    "static/css/overtime.css": "741629607ef86df67b592dcca0e8458f7fcaf2709780f8f43d5bf549c430b36d"
+  },
+  "protected_files_unchanged_during_suite": true,
+  "production_access": false,
+  "credentials_changed": false,
+  "render_changed": false,
+  "r2_changed": false,
+  "commit": false,
+  "push": false,
+  "deploy": false,
+  "pending": [
+    "homologação visual do usuário e iPhone físico",
+    "publicação/migrations de produção somente mediante autorização",
+    "folha, percentuais, adicional noturno, feriados e integrações externas fora desta etapa"
+  ],
+  "limitations": [
+    "uma solicitação por funcionário/dia; decisões imutáveis; reenvio ou revisão exige fluxo futuro auditado",
+    "consulta gerencial de até 367 dias; filtros de departamento/cargo/jornada usam o vínculo atual do funcionário",
+    "referências legadas usam a jornada/escala disponível na migration; não inventam versões antigas ausentes",
+    "fechamentos anteriores preservados integralmente e não reclassificados como aprovação",
+    "solicitar/decidir exige conexão; não foi criada fila offline de aprovação"
+  ]
+}

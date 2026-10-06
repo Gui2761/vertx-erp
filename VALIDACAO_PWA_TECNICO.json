@@ -1,0 +1,434 @@
+{
+  "tarefa": "PWA operacional do TÉCNICO",
+  "gerado_em_utc": "2026-10-06T14:05:08.487504+00:00",
+  "status": "VALIDADO LOCALMENTE; NÃO PUBLICADO",
+  "validacao_automatica": {
+    "status": "APROVADO",
+    "postgresql_total": 471,
+    "duracao_segundos": 434.233,
+    "novos_testes": 19,
+    "categorias": [
+      "Login real e redirecionamento pela membership; perfil global não concede acesso",
+      "Home operacional, chamados e OS atribuídos; técnico auxiliar autorizado",
+      "URLs administrativas GET/POST negadas, inclusive overrides e superusuário com membership técnica",
+      "ADMIN e GESTOR conservam ERP completo",
+      "Troca de conta e organização recalcula perfil; HTML autenticado não armazenado em cache",
+      "Isolamento entre organizações, técnicos, clientes, unidades e equipamentos; QR e mídia privada",
+      "Documentos e campos de upload respeitam os vínculos autorizados",
+      "Peças limitadas à OS autorizada, FEFO e bloqueio de entrada administrativa",
+      "Jornada Contratual mantém bloqueio até o início da atividade",
+      "Fluxo de OS com tentativa de GPS, diagnóstico, serviços, fotos antes/depois, assinaturas e PDF",
+      "Identidade única do PWA e entrada conforme perfil",
+      "Exportação operacional das próprias OS mantida; exportações administrativas negadas"
+    ],
+    "comandos": [
+      {
+        "command": [
+          "check"
+        ],
+        "exit_code": 0,
+        "log": "tmp\\validation\\technician_final_0_check.log",
+        "source_unchanged": true,
+        "database": "synthetic loopback PostgreSQL",
+        "remote_access": false
+      },
+      {
+        "command": [
+          "makemigrations",
+          "--check",
+          "--dry-run"
+        ],
+        "exit_code": 0,
+        "log": "tmp\\validation\\technician_final_1_makemigrations.log",
+        "source_unchanged": true,
+        "database": "synthetic loopback PostgreSQL",
+        "remote_access": false
+      },
+      {
+        "command": [
+          "test",
+          "--keepdb",
+          "--noinput",
+          "--parallel",
+          "2",
+          "-v",
+          "1"
+        ],
+        "exit_code": 0,
+        "log": "tmp\\validation\\technician_final_2_test.log",
+        "source_unchanged": true,
+        "database": "synthetic loopback PostgreSQL",
+        "remote_access": false
+      }
+    ],
+    "execucoes_especificas": {
+      "targeted": [
+        {
+          "command": [
+            "test",
+            "operacao.test_technician_pwa",
+            "--keepdb",
+            "--noinput",
+            "-v",
+            "2"
+          ],
+          "exit_code": 0,
+          "log": "tmp\\validation\\technician_targeted_0_test.log",
+          "source_unchanged": true,
+          "database": "synthetic loopback PostgreSQL",
+          "remote_access": false
+        }
+      ],
+      "related": [
+        {
+          "command": [
+            "test",
+            "operacao.test_stock.StockTests.test_csrf_e_dashboard_financeiro_protegidos",
+            "operacao.test_stock.StockTests.test_menu_de_gestao_agrupado_e_operacional_preservado",
+            "platform_core.test_deployment.HealthTests",
+            "--keepdb",
+            "--noinput",
+            "-v",
+            "2"
+          ],
+          "exit_code": 0,
+          "log": "tmp\\validation\\technician_related_0_test.log",
+          "source_unchanged": true,
+          "database": "synthetic loopback PostgreSQL",
+          "remote_access": false
+        }
+      ]
+    },
+    "javascript_syntax": "node --check static/js/vertyx.js e static/pwa/sw.js: aprovados",
+    "git_diff_check": "aprovado",
+    "escopo": "Entrega inicial do PWA, anterior à correção de menu; resultado histórico preservado."
+  },
+  "validacao_interface": {
+    "ambiente": "local, PostgreSQL sintético; sem produção",
+    "resolucoes": [
+      {
+        "largura": 320,
+        "altura": 740,
+        "home_scroll_width": 305,
+        "os_scroll_width": 305
+      },
+      {
+        "largura": 390,
+        "altura": 844,
+        "home_scroll_width": 375,
+        "os_scroll_width": 375
+      }
+    ],
+    "validado": [
+      "Home com hoje, atrasados, próximos, em andamento e chamado atribuído",
+      "OS em atendimento, botões, campo de câmera com capture=environment",
+      "Checklist salvo pela interface em 320 px e confirmação persistida",
+      "Navegação direta a Financeiro e Usuários negada",
+      "Troca ADMIN → TÉCNICO e Dashboard completo do administrador",
+      "Nenhum erro de console observado nas páginas locais"
+    ],
+    "screenshots": [
+      "tmp/validation/technician-evidence/home-320.png",
+      "tmp/validation/technician-evidence/home-390.png",
+      "tmp/validation/technician-evidence/os-320.png",
+      "tmp/validation/technician-evidence/os-390.png",
+      "tmp/validation/technician-evidence/checklist-390.png"
+    ],
+    "dispositivo_fisico": false
+  },
+  "validado_em_banco_sintetico": true,
+  "validado_em_producao": false,
+  "migrations_novas": [],
+  "migrations_antigas_alteradas": false,
+  "dependencias_alteradas": [],
+  "arquivos_aplicacao_testes": [
+    "clientes/views.py",
+    "contas/views.py",
+    "core/views.py",
+    "equipamentos/views.py",
+    "gestao/forms.py",
+    "gestao/services.py",
+    "gestao/tests.py",
+    "gestao/views.py",
+    "operacao/navigation.py",
+    "operacao/permissions.py",
+    "operacao/planning.py",
+    "operacao/pwa.py",
+    "operacao/test_stock.py",
+    "operacao/tests.py",
+    "operacao/views.py",
+    "platform_core/media_views.py",
+    "platform_core/middleware.py",
+    "platform_core/modules.py",
+    "platform_core/views.py",
+    "static/js/vertyx.js",
+    "static/pwa/sw.js",
+    "templates/base.html",
+    "templates/operacao/tecnico.html",
+    "templates/platform_core/home.html",
+    "operacao/technician_access.py",
+    "operacao/test_technician_pwa.py",
+    "static/css/technician.css",
+    "templates/operacao/technician_order.html"
+  ],
+  "documentos_entrega": [
+    "RELATORIO_PWA_TECNICO.md",
+    "VALIDACAO_PWA_TECNICO.json"
+  ],
+  "alteracao_preexistente_preservada": "templates/operacao/executive.html",
+  "pwa": {
+    "id_preservado": "/tecnico/",
+    "start_url": "/vertyx/",
+    "admin_gestor": "ERP completo",
+    "tecnico": "/tecnico/",
+    "segundo_aplicativo": false,
+    "dados_empresariais_em_cache": false,
+    "fila_de_gravacoes_offline": false
+  },
+  "testes_anteriores_ajustados": {
+    "operacao/tests.py": "ADMIN/GESTOR em /tecnico/ redirecionam para o painel completo.",
+    "gestao/tests.py": "TÉCNICO sem estoque geral/central administrativa; painel e planejamento antigos encaminham à operação técnica.",
+    "operacao/test_stock.py": "Painel técnico redireciona à Home operacional; menu técnico mantém agenda e omite financeiro."
+  },
+  "pendencias": [
+    "Homologar no iPhone físico: abertura pelo ícone instalado, câmera, permissões GPS, assinatura por toque e troca de conta.",
+    "Sem gravação ou fila automática offline: arquitetura atual mantém somente assets públicos e página offline. É necessário reconectar para salvar.",
+    "R2 e ambiente publicado não foram acessados ou testados nesta etapa."
+  ],
+  "limites_respeitados": {
+    "commit": false,
+    "push": false,
+    "deploy": false,
+    "producao_acessada": false,
+    "credenciais_alteradas": false,
+    "infraestrutura_alterada": false,
+    "migration_producao": false
+  },
+  "correcao_menu_tecnico_2026_10_06": {
+    "data_local": "2026-10-06",
+    "status": "VALIDADO LOCALMENTE; NÃO PUBLICADO",
+    "escopo": "Menu exclusivamente operacional, logo/breadcrumbs técnicos e entrada da organização",
+    "postgresql_total": 511,
+    "duracao_segundos": 447.153,
+    "testes_novos": 8,
+    "teste_existente_ampliado": "troca de organização/perfil",
+    "direcionados": {
+      "total": 63,
+      "duracao_segundos": 50.205
+    },
+    "check": "APROVADO",
+    "makemigrations_check_dry_run": "No changes detected",
+    "migrations_novas": [],
+    "dependencias_alteradas": [],
+    "autorizacao_backend_preservada": true,
+    "isolamento_preservado": true,
+    "migrations_antigas_inalteradas": true,
+    "admin_gestor_preservados": true,
+    "vendedor_destino_pdv_preservado": true,
+    "interface": {
+      "environment": "loopback local with existing synthetic pilot fixture",
+      "viewport390": {
+        "bottom": [
+          {
+            "href": "/tecnico/",
+            "label": "Atender"
+          },
+          {
+            "href": "/planejamento/",
+            "label": "Agenda"
+          },
+          {
+            "href": "/ordens/",
+            "label": "OS"
+          },
+          {
+            "href": "/notificacoes/",
+            "label": "Alertas"
+          }
+        ],
+        "breadcrumbs": [
+          "/tecnico/",
+          "/tecnico/"
+        ],
+        "height": 844,
+        "logo": "/tecnico/",
+        "menu": [
+          {
+            "height": 48,
+            "href": "/tecnico/",
+            "label": "Meu atendimento / Atender"
+          },
+          {
+            "height": 48,
+            "href": "/planejamento/",
+            "label": "Minha agenda"
+          },
+          {
+            "height": 48,
+            "href": "/ordens/",
+            "label": "Minhas OS"
+          },
+          {
+            "height": 48,
+            "href": "/chamados/",
+            "label": "Meus chamados"
+          },
+          {
+            "height": 48,
+            "href": "/tecnico/qr/",
+            "label": "Ler QR / cÃ³digo"
+          },
+          {
+            "height": 48,
+            "href": "/ponto/",
+            "label": "Meu ponto"
+          },
+          {
+            "height": 48,
+            "href": "/notificacoes/",
+            "label": "Alertas / notificaÃ§Ãµes"
+          },
+          {
+            "height": 48,
+            "href": "/conhecimento/",
+            "label": "Conhecimento tÃ©cnico"
+          }
+        ],
+        "overflow": false,
+        "path": "/tecnico/",
+        "width": 390
+      },
+      "viewport320": {
+        "bottomCount": 4,
+        "height": 844,
+        "linksInside": true,
+        "menuCount": 8,
+        "overflow": false,
+        "width": 320
+      },
+      "journeys": [
+        {
+          "action": "logo VERTYX",
+          "path": "/tecnico/",
+          "title": "Meus atendimentos"
+        },
+        {
+          "bottomLinks": 4,
+          "logo": "/tecnico/",
+          "path": "/planejamento/",
+          "title": "Planejamento"
+        },
+        {
+          "bottomLinks": 4,
+          "logo": "/tecnico/",
+          "path": "/ordens/",
+          "title": "Minhas OS"
+        },
+        {
+          "bottomLinks": 4,
+          "logo": "/tecnico/",
+          "path": "/notificacoes/",
+          "title": "NotificaÃ§Ãµes"
+        },
+        {
+          "bottomLinks": 4,
+          "logo": "/tecnico/",
+          "path": "/tecnico/",
+          "title": "Meus atendimentos"
+        },
+        {
+          "action": "rota VERTYX anterior",
+          "path": "/tecnico/",
+          "title": "Meus atendimentos"
+        },
+        {
+          "action": "URL financeira direta",
+          "path": "/financeiro/",
+          "result": "Acesso restrito Ã  operaÃ§Ã£o tÃ©cnica"
+        }
+      ],
+      "physicalIPhoneValidated": false
+    },
+    "arquivo_captura": "tmp/validation/technician-menu-evidence/menu-tecnico-390x844.jpg",
+    "arquivos_codigo_alterados_nesta_correcao": [
+      "operacao/navigation.py",
+      "templates/base.html",
+      "static/css/technician.css",
+      "platform_core/views.py",
+      "templates/platform_core/home.html",
+      "operacao/test_technician_pwa.py"
+    ],
+    "comandos": [
+      {
+        "command": [
+          "check"
+        ],
+        "exit_code": 0,
+        "database": "synthetic loopback PostgreSQL test database",
+        "protected_files_unchanged": true,
+        "production_access": false,
+        "log": "tmp\\validation\\technician_menu_final_0_check.log"
+      },
+      {
+        "command": [
+          "makemigrations",
+          "--check",
+          "--dry-run"
+        ],
+        "exit_code": 0,
+        "database": "synthetic loopback PostgreSQL test database",
+        "protected_files_unchanged": true,
+        "production_access": false,
+        "log": "tmp\\validation\\technician_menu_final_1_makemigrations.log"
+      },
+      {
+        "command": [
+          "test",
+          "--keepdb",
+          "--noinput",
+          "--parallel",
+          "2",
+          "-v",
+          "1"
+        ],
+        "exit_code": 0,
+        "database": "synthetic loopback PostgreSQL test database",
+        "protected_files_unchanged": true,
+        "production_access": false,
+        "log": "tmp\\validation\\technician_menu_final_2_test.log"
+      }
+    ],
+    "comandos_direcionados": [
+      {
+        "command": [
+          "test",
+          "operacao.test_technician_pwa",
+          "operacao.test_stock.StockTests.test_menu_de_gestao_agrupado_e_operacional_preservado",
+          "platform_core.test_deployment.HealthTests",
+          "commercial",
+          "--keepdb",
+          "--noinput",
+          "-v",
+          "2"
+        ],
+        "exit_code": 0,
+        "database": "synthetic loopback PostgreSQL test database",
+        "protected_files_unchanged": true,
+        "production_access": false,
+        "log": "tmp\\validation\\technician_menu_targeted_0_test.log"
+      }
+    ],
+    "problemas_do_ensaio_inicial": [
+      "Banco descartável compartilhado com a prévia comercial continha dados sintéticos; testes de contagem exigiam uma base sem esses dados. Execuções finais usaram bancos de teste exclusivos.",
+      "Asserção genérica sobre hidden rejeitava atributos legítimos de acessibilidade/CSRF. Corrigida para verificar destinos e ausência literal de itens administrativos no HTML."
+    ],
+    "pendencias": [
+      "Repetir homologação no iPhone físico após publicação expressamente autorizada."
+    ],
+    "commit": false,
+    "push": false,
+    "deploy": false,
+    "acesso_producao": false,
+    "alteracao_infraestrutura_credenciais": false
+  }
+}

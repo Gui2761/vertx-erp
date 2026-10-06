@@ -385,7 +385,7 @@ class GestaoTests(Dados, TestCase):
         self.assertEqual(self.client.post(reverse('gestao:lancamento_novo'), {}).status_code, 403)
 
     def test_permissoes_por_perfil_e_menu_sem_concessao_pelo_perfil_global(self):
-        expected = {'ADMIN': [1,1,1,1,1], 'GESTOR': [1,1,1,1,1], 'TECNICO': [1,0,0,0,1], 'ESTOQUE': [1,0,0,0,1], 'FINANCEIRO': [0,0,0,1,1], 'CONTABILIDADE': [0,0,0,1,1]}
+        expected = {'ADMIN': [1,1,1,1,1], 'GESTOR': [1,1,1,1,1], 'TECNICO': [0,0,0,0,0], 'ESTOQUE': [1,0,0,0,1], 'FINANCEIRO': [0,0,0,1,1], 'CONTABILIDADE': [0,0,0,1,1]}
         urls = [reverse('gestao:' + name) for name in ['peca_lista', 'orcamento_lista', 'contrato_lista', 'financeiro', 'relatorios']]
         for role, user in self.users.items():
             self.client.force_login(user)
@@ -471,7 +471,8 @@ class GestaoTests(Dados, TestCase):
         self.assertContains(response, 'OS abertas')
         self.assertContains(response, 'Contas a receber')
         self.client.force_login(self.users['TECNICO'])
-        self.assertNotContains(self.client.get(reverse('core:painel')), 'Contas a receber')
+        self.assertRedirects(self.client.get(reverse('core:painel')), reverse('operacao:tecnico'))
+        self.assertNotContains(self.client.get(reverse('operacao:tecnico')), 'Contas a receber')
         for url in [reverse('ordens:lista'), reverse('clientes:cliente_list'), reverse('equipamentos:equipamento_list')]:
             self.assertEqual(self.client.get(url).status_code, 200)
         self.client.force_login(self.admin)
@@ -513,7 +514,8 @@ class GestaoTests(Dados, TestCase):
         self.assertEqual(self.client.post(reverse('gestao:contrato_editar', args=[contract.pk]), data).status_code, 302)
         self.assertEqual(self.client.post(reverse('gestao:agenda_os', args=[agenda.pk]), {'tecnico': self.da['tech'].pk}).status_code, 302)
         self.client.force_login(self.users['TECNICO'])
-        self.assertContains(self.client.get(reverse('gestao:planejamento')), 'CT-1')
+        self.assertRedirects(self.client.get(reverse('gestao:planejamento')), reverse('operacao:calendario'))
+        self.assertContains(self.client.get(reverse('operacao:calendario')), 'CT-1')
         self.assertEqual(self.client.post(reverse('gestao:agenda_os', args=[agenda.pk]), {'tecnico': self.da['tech'].pk}).status_code, 403)
 
     def test_financeiro_http_crud_liquidacao_e_fk_estrangeira(self):

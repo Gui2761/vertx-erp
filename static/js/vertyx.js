@@ -1,6 +1,12 @@
 if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('/sw.js').catch(() => {});
 /* Comportamentos compartilhados; nenhum dado empresarial é guardado em cache. */
 document.addEventListener('DOMContentLoaded',()=>{
+  const connection=document.querySelector('[data-connection-status]');
+  if(connection){
+    const report=()=>{connection.dataset.offline=String(!navigator.onLine);connection.textContent=navigator.onLine?'Conexão disponível. Alterações são confirmadas ao salvar.':'Sem conexão. Nenhuma alteração será enviada ou sincronizada automaticamente. Reconecte antes de salvar.';};
+    report();addEventListener('online',report);addEventListener('offline',report);
+    document.addEventListener('submit',event=>{if(!navigator.onLine){event.preventDefault();report();connection.scrollIntoView({block:'nearest'});}},true);
+  }
   const sidebar=document.querySelector('[data-sidebar-toggle]');
   if(sidebar){
     const apply=(collapsed)=>{document.body.classList.toggle('vx-sidebar-collapsed',collapsed);sidebar.setAttribute('aria-expanded',String(!collapsed));sidebar.setAttribute('aria-label',collapsed?'Expandir menu lateral':'Recolher menu lateral');};
@@ -19,3 +25,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   addEventListener('beforeinstallprompt',event=>{event.preventDefault();prompt=event;if(install)install.hidden=false;});
   if(install)install.addEventListener('click',async()=>{if(prompt){await prompt.prompt();prompt=null;install.hidden=true;}});
 });
+// A restored browser page must reauthorize against the current login/tenant.
+addEventListener('pageshow',event=>{if(event.persisted)location.reload();});

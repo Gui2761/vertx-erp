@@ -5,6 +5,31 @@ def menu(request):
     match=getattr(request,'resolver_match',None)
     from .planning_services import can_tv
     panel_access=bool(membership and can_tv(request.user))
+    if membership and membership.role == 'TECNICO':
+        from platform_core.access import has_erp_access
+        from platform_core.modules import has_capability, module_enabled, module_for_path
+        # Presentation uses the active membership and the existing capabilities.
+        # Never fall back to the administrative menu, even with no allowed links.
+        links = [
+            ('Meu atendimento / Atender', '/tecnico/', 'health', 'planejamento'),
+            ('Minha agenda', '/planejamento/', 'calendar', 'planejamento'),
+            ('Minhas OS', '/ordens/', 'document', None),
+            ('Meus chamados', '/chamados/', 'document', 'operacional'),
+            ('Ler QR / código', '/tecnico/qr/', 'document', 'planejamento'),
+            ('Meu ponto', '/ponto/', 'users', 'ponto'),
+            ('Alertas / notificações', '/notificacoes/', 'bell', None),
+            ('Conhecimento técnico', '/conhecimento/', 'document', 'operacional'),
+        ]
+        erp_access = has_erp_access(request.user, request.organization)
+        allowed = [
+            {'label': label, 'url': url, 'icon': icon}
+            for label, url, icon, capability in links
+            if erp_access
+            and module_enabled(module_for_path(url))
+            and (capability is None or has_capability(request.user, capability))
+        ]
+        return {'technician_experience': True, 'can_operational_panel': False,
+                'technician_navigation': allowed}
     if membership and membership.role in ['PLANEJADOR','ATENDIMENTO'] and not (match and match.app_name=='platform_core'):
         links=[{'label':'Planejamento','url':'/planejamento/','icon':'calendar'}]
         if panel_access:

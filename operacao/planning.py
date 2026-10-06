@@ -160,6 +160,8 @@ def schedule(request,pk):
 @login_required
 def tecnico(request):
     ps.require_planning(request.user)
+    if effective_role(request.user) in ['ADMIN', 'GESTOR']:
+        return redirect('core:painel')
     today=timezone.localdate()
     orders=visiveis(request.user, destinos=True).exclude(status__in=ENCERRADAS).order_by('agendada_para','prazo','pk')
     groups=[]
@@ -174,6 +176,11 @@ def tecnico(request):
                     target=row.unidade or row.cliente
                     items.append({'blocked':True,'destination':{'municipio':target.cidade,'contrato':row.contrato.numero,'resumo':str(target)},'activity_url':reverse('operacao:contract_activity',args=[row.pk])})
                 else:
-                    items.append({'order':row,'activity_url':reverse('operacao:contract_activity',args=[row.pk]) if config(row) else '', 'route':'https://www.google.com/maps/dir/?'+urlencode({'api':1,'destination':endereco(row.unidade or row.cliente)})})
+                    items.append({'order':row,'address':endereco(row.unidade or row.cliente),'activity_url':reverse('operacao:contract_activity',args=[row.pk]) if config(row) else '', 'route':'https://www.google.com/maps/dir/?'+urlencode({'api':1,'destination':endereco(row.unidade or row.cliente)})})
         groups.append((title,items))
-    return render(request,'operacao/tecnico.html',{'groups':groups})
+    from .technician_access import calls_for
+    calls = calls_for(request.user).exclude(status__in=['CANCELADO', 'CONCLUIDO']).select_related('cliente', 'unidade', 'equipamento').order_by('agendada_para', 'pk')
+    # The same cards are reused; an operational section also includes unplanned
+    # or previously scheduled work without removing the existing agenda groups.
+    ongoing = [item for _, items in groups for item in items if not item.get('blocked') and item['order'].status in ['EXECUCAO', 'DESLOCAMENTO', 'AG_PECA', 'AG_CLIENTE', 'AG_APROVACAO']]
+    return render(request,'operacao/tecnico.html',{'groups':groups,'calls':calls[:20],'calls_count':calls.count(),'ongoing':ongoing})
