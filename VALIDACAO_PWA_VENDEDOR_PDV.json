@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "phase": "PWA Vendedor e PDV — homologação local",
+  "status": "PRONTO_PARA_HOMOLOGACAO_VISUAL_LOCAL",
+  "branch": "main",
+  "base_commit": "d82d6e1ba9782fe847b23c2beb64b665582e61d8",
+  "preview": {
+    "url": "http://127.0.0.1:8883/vendedor/",
+    "pdv": "http://127.0.0.1:8883/pdv/",
+    "data": "SINTETICOS",
+    "production": false
+  },
+  "tests": {
+    "postgresql_full": {
+      "status": "APROVADO",
+      "found": 605,
+      "passed": 605,
+      "failed": 0,
+      "errors": 0,
+      "log": "tmp/validation/seller_full_final.log",
+      "ran": 605,
+      "seconds": 1051.291
+    },
+    "seller_new_tests": 52,
+    "directed_initial": {
+      "ran": 64,
+      "errors": 1,
+      "reason": "Fixture de documento sem enviado_por",
+      "fixed_case_passed": true
+    },
+    "check": {
+      "status": "APROVADO",
+      "issues": 0
+    },
+    "makemigrations_check_dry_run": {
+      "status": "APROVADO",
+      "changes": 0
+    },
+    "javascript_syntax": {
+      "status": "APROVADO",
+      "files": [
+        "static/js/seller-pdv.js",
+        "static/js/vertyx.js",
+        "static/pdv.js"
+      ]
+    },
+    "git_diff_check": "APROVADO",
+    "concurrency": "VALIDADO_EM_POSTGRESQL_SINTETICO",
+    "migration_preservation": "VALIDADO_EM_POSTGRESQL_SINTETICO",
+    "final_template_regression": {
+      "status": "APROVADO",
+      "ran": 3,
+      "passed": 3
+    }
+  },
+  "migrations": {
+    "new": [
+      "operacao/migrations/0017_seller_central.py"
+    ],
+    "operations": [
+      "CreateModel MetaVendedor",
+      "CreateModel SolicitacaoDescontoPDV"
+    ],
+    "old_files_changed": [],
+    "local_synthetic_applied": true,
+    "production_applied": false
+  },
+  "implemented": [
+    "Membership VENDEDOR/PDV para /vendedor/ no login compartilhado",
+    "Home e indicadores próprios",
+    "Menu exclusivo e bloqueio de rotas administrativas no backend",
+    "Isolamento tenant/vendedor incluindo documentos",
+    "Carrinho e pesquisa oficial",
+    "Desconto combinado e autorização de supervisor auditada vinculada ao carrinho",
+    "Cadastro limitado de Cliente existente",
+    "Fechamento com meios configurados, pagamentos múltiplos e troco",
+    "FEFO/estoque/reservas/financeiro reutilizados",
+    "Resumo e operação do caixa próprio",
+    "Meta mensal configurável ADMIN/GESTOR",
+    "Alertas próprios e mensagens internas",
+    "Meu Ponto/jornada/hora extra existentes",
+    "Mesmo manifest PWA e sem gravação offline"
+  ],
+  "interface_validated": [
+    "Login vendedor",
+    "Home",
+    "Busca por produto",
+    "Quantidade +/-",
+    "Solicitação de desconto e aprovação gestor",
+    "Dinheiro + PIX com troco",
+    "Finalização e comprovante não fiscal",
+    "Entrada direta SKU",
+    "Fechamento mobile após reorganização visual",
+    "F8 abre fechamento sem confirmar",
+    "Resumo do caixa próprio"
+  ],
+  "responsive": {
+    "viewports": [
+      {
+        "width": 320,
+        "height": 740
+      },
+      {
+        "width": 390,
+        "height": 844
+      },
+      {
+        "width": 768,
+        "height": 1024
+      },
+      {
+        "width": 1365,
+        "height": 768
+      }
+    ],
+    "horizontal_overflow": false,
+    "main_mobile_touch_min_height": 48,
+    "measurement_file": "evidencias/pwa_vendedor/layout_metrics.json",
+    "capture_note": "JPEGs mostram área de conteúdo; resolução física pode excluir barras/moldura do navegador."
+  },
+  "pending": [
+    "Homologação visual pelo usuário",
+    "PWA Vendedor instalado e câmera em iPhone físico",
+    "Impressão/periféricos reais",
+    "Regra e apuração de comissão",
+    "Importação F6",
+    "Novo assistente de parcelamento no PDV",
+    "Novos filtros avançados F5",
+    "Integração real PIX/adquirente/fiscal"
+  ],
+  "restrictions": {
+    "seller_change_other_seller": false,
+    "seller_manual_stock": false,
+    "seller_admin_finance": false,
+    "seller_cash_withdraw_supply": false,
+    "commission_rules_invented": false,
+    "payment_gateway_added": false,
+    "fiscal_emission_added": false
+  },
+  "preservation": {
+    "technician_pwa": true,
+    "workforce_services": true,
+    "public_commercial_content": true,
+    "erp_existing_services": true,
+    "production_database_untouched": true,
+    "credentials_untouched": true,
+    "r2_untouched": true,
+    "render_untouched": true,
+    "dependencies_unchanged": true
+  },
+  "security": {
+    "credential_files_found": [],
+    "credential_patterns_found": [],
+    "scan_file": "tmp/validation/seller_secret_scan.json",
+    "private_test_runtime_ignored": true
+  },
+  "evidence_dir": "evidencias/pwa_vendedor",
+  "report": "RELATORIO_PWA_VENDEDOR_PDV.md",
+  "production_validated": false,
+  "commit_created": false,
+  "push": false,
+  "deploy": false
+}

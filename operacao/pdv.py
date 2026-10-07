@@ -35,6 +35,10 @@ def products(request,public_id):
 @transaction.atomic
 def home(request):
     require_capability(request.user,'pdv')
+    from .seller_access import is_seller
+    if is_seller(request.user):
+        from .seller import terminal
+        return terminal(request)
     if request.method=='POST':
         try:
             session=c.open_cash(request.user,int(request.POST['conta']),request.POST['contado'],request.POST['request_id'])
@@ -49,6 +53,9 @@ def home(request):
 def cash(request,public_id):
     try: session=c.own_session(request.user,public_id,True)
     except m.SessaoCaixa.DoesNotExist: raise Http404
+    from .seller_access import is_seller
+    if is_seller(request.user) and request.method=='GET':
+        return redirect('operacao:pdv_home')
     if request.method=='POST':
         try:
             action=request.POST.get('action')
@@ -58,11 +65,16 @@ def cash(request,public_id):
             if action=='fechar': c.close_cash(request.user,public_id,request.POST['contado'],request.POST.get('motivo',''))
             elif action=='movimento': c.cash_operation(request.user,public_id,request.POST['tipo'],request.POST['valor'],request.POST.get('motivo',''),request.POST['request_id'])
             elif action=='converter':
+                if is_seller(request.user):
+                    from django.core.exceptions import PermissionDenied
+                    raise PermissionDenied('Conversão de orçamento exige gestor.')
                 sale=c.quote_to_sale(request.user,int(request.POST['orcamento']),public_id,int(request.POST['deposito']))
                 return redirect('operacao:pdv_sale',public_id=sale.public_id)
             else: raise ValidationError('Operação inválida.')
             messages.success(request,'Operação registrada.');return redirect('operacao:pdv_cash',public_id=public_id)
         except (ValidationError,ValueError,KeyError,ObjectDoesNotExist) as exc: messages.error(request,'; '.join(exc.messages) if isinstance(exc,ValidationError) else 'Revise os dados selecionados.')
+    if is_seller(request.user):
+        return redirect('operacao:pdv_home')
     from contas.models import Usuario
     from platform_core.context import current_organization
     from platform_core.models import FilialEmpresa
@@ -81,6 +93,13 @@ def sale(request,public_id,receipt=False):
             elif action=='editar': c.edit_item(request.user,public_id,int(request.POST['item']),request.POST['quantidade'],request.POST.get('desconto') or 0,request.POST.get('motivo',''))
             elif action=='observacao': c.sale_note(request.user,public_id,request.POST.get('observacoes',''))
             elif action=='preco': c.pricing(request.user,public_id,request.POST.get('desconto') or 0,request.POST.get('acrescimo') or 0,request.POST.get('motivo',''))
+            elif action=='solicitar_desconto':
+                from .seller_services import request_discount
+                request_discount(request.user,public_id,request.POST.get('desconto') or 0,request.POST.get('motivo',''))
+            elif action=='cliente':
+                c.draft(sale,session)
+                sale.cliente=Cliente.objects.get(pk=request.POST['cliente'],ativo=True) if request.POST.get('cliente') else None
+                gs.write(sale);gs.audit(request.user,'PDV_CLIENTE_SELECIONADO',sale,{'cliente':sale.cliente_id})
             elif action=='finalizar': c.finalize(request.user,public_id,json.loads(request.POST['pagamentos']),request.POST['request_id'])
             elif action=='estado': c.sale_state(request.user,public_id,request.POST['estado'],request.POST.get('motivo',''))
             elif action=='devolver':
@@ -90,7 +109,11 @@ def sale(request,public_id,receipt=False):
             else: raise ValidationError('Operação inválida.')
             messages.success(request,'Operação registrada.');return redirect('operacao:pdv_sale',public_id=public_id)
         except (ValidationError,ValueError,KeyError,TypeError,ObjectDoesNotExist) as exc: messages.error(request,'; '.join(exc.messages) if isinstance(exc,ValidationError) else 'Revise os dados da operação.')
-    return render(request,'operacao/pdv_receipt.html' if receipt else 'operacao/pdv_sale.html',{'sale':sale,'session':session,'items':sale.itens.select_related('peca'),'forms':g.FormaPagamento.objects.filter(ativo=True).exclude(tipo_pdv=''),'contas':m.ContaBancaria.objects.filter(ativo=True),'can_return':has_capability(request.user,'devolucao'),'request_id':uuid.uuid4(),'back_url':reverse('operacao:pdv_cash',args=[session.public_id]) if session else reverse('operacao:pdv_home')})
+    from .seller_access import is_seller
+    if is_seller(request.user) and not receipt:
+        from .seller import sale_context
+        return render(request,'operacao/seller_pdv.html',sale_context(request,sale,session))
+    return render(request,'operacao/pdv_receipt.html' if receipt else 'operacao/pdv_sale.html',{'sale':sale,'session':session,'items':sale.itens.select_related('peca'),'forms':g.FormaPagamento.objects.filter(ativo=True).exclude(tipo_pdv=''),'contas':m.ContaBancaria.objects.filter(ativo=True) if not is_seller(request.user) else m.ContaBancaria.objects.none(),'can_return':has_capability(request.user,'devolucao'),'request_id':uuid.uuid4(),'back_url':reverse('operacao:pdv_cash',args=[session.public_id]) if session else reverse('operacao:pdv_home')})
 
 @login_required
 def config(request):

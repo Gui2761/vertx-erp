@@ -10,6 +10,7 @@
     document.getElementById('pagamentos').value = JSON.stringify(payments);
   });
   document.addEventListener('keydown', event => {
+    if (document.querySelector('.sv-console')) return;
     if (event.key === 'F2') {event.preventDefault(); document.getElementById('codigo')?.focus();}
     if (event.key === 'F4') {event.preventDefault(); document.getElementById('forma-1')?.focus();}
     if (event.key === 'F8' && form) {event.preventDefault(); form.requestSubmit();}

@@ -34,7 +34,7 @@ def document_allowed(user, document, writing=False):
     if document.funcionario_id:
         return has_capability(user,'rh')
     if role in ['PDV','VENDEDOR']:
-        return has_capability(user,'pdv') and bool(document.venda_id) and (document.venda.criado_por_id==user.pk or document.venda.vendedor_id==user.pk) and not any([document.fiscal_id,document.compra_id,document.contrato_id,document.orcamento_id,document.fornecedor_id])
+        return has_capability(user,'pdv') and bool(document.venda_id) and document.venda.vendedor_id==user.pk and not any([document.fiscal_id,document.compra_id,document.contrato_id,document.orcamento_id,document.fornecedor_id])
     if document.compra_id and role in ['ESTOQUE','COMPRAS']:
         return has_capability(user,'compras') and not any([document.fiscal_id,document.cliente_id,document.ordem_id,document.contrato_id,document.orcamento_id,document.venda_id])
     if role == 'CLIENTE':
@@ -68,7 +68,7 @@ def documents(user):
     if role=='RH' and has_capability(user,'rh'): return qs.filter(funcionario__isnull=False)
     qs=qs.filter(funcionario__isnull=True)
     if role in ['PDV','VENDEDOR']:
-        return qs.filter(venda__isnull=False,fiscal__isnull=True,compra__isnull=True,contrato__isnull=True,orcamento__isnull=True,fornecedor__isnull=True).filter(Q(venda__criado_por=user)|Q(venda__vendedor=user)) if has_capability(user,'pdv') else qs.none()
+        return qs.filter(venda__vendedor=user,fiscal__isnull=True,compra__isnull=True,contrato__isnull=True,orcamento__isnull=True,fornecedor__isnull=True) if has_capability(user,'pdv') else qs.none()
     if role=='COMPRAS': return qs.filter(compra__isnull=False,fiscal__isnull=True,cliente__isnull=True,ordem__isnull=True,contrato__isnull=True,orcamento__isnull=True,venda__isnull=True) if has_capability(user,'compras') else qs.none()
     if role == 'CLIENTE':
         return qs.filter(disponivel_portal=True, cliente_id__in=portal_clients(user))

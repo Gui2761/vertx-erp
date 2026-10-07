@@ -170,9 +170,9 @@ class TechnicianPWATests(Block2Fixtures, TestCase):
         seller = self.user('seller-navigation', self.a, 'VENDEDOR')
         self.client.force_login(seller)
         self.assertRedirects(self.client.get(self.url('platform_core:home')),
-                             self.url('operacao:pdv_home'), fetch_redirect_response=False)
+                             self.url('operacao:seller_home'), fetch_redirect_response=False)
         response = self.client.get(self.url('platform_core:home'), {'organizacoes': '1'})
-        self.assertContains(response, 'href="/pdv/"')
+        self.assertContains(response, 'href="/vendedor/"')
         self.assertNotContains(response, 'Acessar meus atendimentos')
 
     def test_real_login_uses_membership_role_even_with_admin_global_profile(self):

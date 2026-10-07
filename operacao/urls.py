@@ -4,6 +4,7 @@ from . import planning, portal, pwa, configuration
 from . import stock_views
 from . import operational_panel
 from . import pdv
+from . import seller
 from . import workforce_views
 from . import overtime_views
 from . import inventory_views
@@ -12,6 +13,14 @@ from . import mobile
 from . import contract_workday_views
 app_name = 'operacao'
 urlpatterns = [
+    path('vendedor/',seller.home,name='seller_home'),
+    path('vendedor/vendas/',seller.sales,name='seller_sales'),
+    path('vendedor/meta/',seller.goal,name='seller_goal'),
+    path('vendedor/comissao/',seller.commission,name='seller_commission'),
+    path('vendedor/alertas/',seller.alerts,name='seller_alerts'),
+    path('vendedor/alertas/<int:pk>/lida/',seller.notice_read,name='seller_notice_read'),
+    path('vendedor/cliente/',seller.customer,name='seller_customer'),
+    path('vendedor/gestao/',seller.management,name='seller_management'),
     path('contratos/jornadas/', contract_workday_views.measurement, name='contract_measurement'),
     path('contratos/<int:pk>/jornada/', contract_workday_views.configuration, name='contract_configuration'),
     path('tecnico/atividade/<int:order_id>/', contract_workday_views.activity, name='contract_activity'),

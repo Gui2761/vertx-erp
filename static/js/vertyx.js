@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     sidebar.addEventListener('click',()=>{const collapsed=!document.body.classList.contains('vx-sidebar-collapsed');apply(collapsed);try{localStorage.setItem('vertyx.sidebarCollapsed',String(collapsed));}catch{}});
   }
   document.querySelectorAll('.navbar-nav a').forEach(a=>{if(a.pathname===location.pathname)a.setAttribute('aria-current','page');});
+  document.querySelectorAll('.sv-bottom a').forEach(a=>{if(a.pathname===location.pathname || (a.pathname==='/pdv/' && location.pathname.startsWith('/pdv/')))a.setAttribute('aria-current','page');});
+  if(document.body.classList.contains('vx-seller')&&location.hash==='#abrir-meu-caixa'){const panel=document.getElementById('abrir-meu-caixa');if(panel){panel.open=true;panel.scrollIntoView({block:'center'});}}
   document.querySelectorAll('form').forEach(form=>form.addEventListener('submit',event=>{
     if(!form.checkValidity())return;
     const button=event.submitter;

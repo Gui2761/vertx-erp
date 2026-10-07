@@ -95,4 +95,9 @@ class IntegrationTests(CommerceData,TestCase):
         with tenant_context(self.a):
             member=OrganizationMembership.objects.get(user=self.operator,organization=self.a)
             PermissaoMembership.objects.create(membership=member,capacidade='executivo',permitido=True)
-            self.assertEqual(executive.indicators(self.operator,self.today,self.today)['financeiro'],{})
+            with self.assertRaises(PermissionDenied):
+                executive.indicators(self.operator,self.today,self.today)
+            # Other explicitly authorized roles retain the original separation.
+            stock_member=OrganizationMembership.objects.get(user=self.users['ESTOQUE'],organization=self.a)
+            PermissaoMembership.objects.create(membership=stock_member,capacidade='executivo',permitido=True)
+            self.assertEqual(executive.indicators(self.users['ESTOQUE'],self.today,self.today)['financeiro'],{})

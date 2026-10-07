@@ -699,3 +699,4 @@ from .workforce_models import Departamento, JornadaTrabalho, Funcionario, Escala
 from .workforce_models import ReferenciaJornadaPonto, SolicitacaoHoraExtra, DecisaoHoraExtra  # noqa: E402,F401
 from .inventory_models import Inventario, ItemInventario, ContagemInventario, AjusteInventario, TransferenciaEstoque, EtapaTransferencia  # noqa: E402,F401
 from .contract_workday_models import ConfiguracaoJornadaContrato, JornadaContrato, EventoJornadaContrato, OrdemJornadaContrato, CorrecaoJornadaContrato, DecisaoJornadaContrato  # noqa: E402,F401
+from .seller_models import MetaVendedor, SolicitacaoDescontoPDV  # noqa: E402,F401

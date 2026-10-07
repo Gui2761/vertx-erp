@@ -5,6 +5,10 @@ def menu(request):
     match=getattr(request,'resolver_match',None)
     from .planning_services import can_tv
     panel_access=bool(membership and can_tv(request.user))
+    if membership and membership.role in {'VENDEDOR','PDV'}:
+        from platform_core.modules import has_capability, module_enabled, module_for_path
+        links=[('Central de Vendas','/vendedor/','grid','pdv'),('Abrir PDV','/pdv/','cart','pdv'),('Minhas vendas','/vendedor/vendas/','document','pdv'),('Minha meta','/vendedor/meta/','chart','pdv'),('Minha comissão','/vendedor/comissao/','chart','pdv'),('Meu ponto','/ponto/','users','ponto'),('Hora extra','/ponto/horas-extras/','calendar','ponto'),('Alertas','/vendedor/alertas/','bell','pdv')]
+        return {'seller_experience':True,'can_operational_panel':False,'seller_navigation':[{'label':label,'url':url,'icon':icon} for label,url,icon,cap in links if has_capability(request.user,cap) and module_enabled(module_for_path(url))]}
     if membership and membership.role == 'TECNICO':
         from platform_core.access import has_erp_access
         from platform_core.modules import has_capability, module_enabled, module_for_path
@@ -54,6 +58,7 @@ def menu(request):
         groups[-1][1].append(('Empresa e módulos','/vertyx/empresa/','settings'))
     groups[0][1].append(('Gestão executiva','/gestao/executiva/','chart'))
     groups[2][1].append(('PDV','/pdv/','cart'))
+    groups[2][1].append(('Gestão dos vendedores','/vendedor/gestao/','chart'))
     groups[3][1].extend([('Contagem de inventário','/inventarios/','document'),('Transferências por etapas','/transferencias/','arrows')])
     groups.insert(-1,('RH / PONTO',[('Funcionários','/rh/funcionarios/','users'),('Jornadas','/rh/jornadas/','calendar'),('Escalas e folgas','/rh/escalas/','calendar'),('Meu ponto','/ponto/','users'),('Ajustes de ponto','/ponto/ajustes/','document')]))
     from platform_core.modules import module_for_path,module_enabled

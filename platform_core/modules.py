@@ -10,6 +10,7 @@ CAPABILITIES = {
     'inventario_aprovar': ('estoque', ('ADMIN', 'GESTOR')),
     'compras': ('compras', ('ADMIN', 'GESTOR', 'ESTOQUE', 'COMPRAS')),
     'pdv': ('pdv', ('ADMIN', 'GESTOR', 'PDV', 'VENDEDOR')),
+    'pdv_cliente_cadastrar': ('pdv', ('ADMIN', 'GESTOR', 'PDV', 'VENDEDOR')),
     'desconto_supervisor': ('pdv', ('ADMIN', 'GESTOR')),
     'devolucao': ('pdv', ('ADMIN', 'GESTOR')),
     'caixa_supervisor': ('pdv', ('ADMIN', 'GESTOR', 'FINANCEIRO')),
@@ -42,6 +43,13 @@ def has_capability(user, code, roles=None):
     membership = membership_for(user)
     if membership is None or not has_erp_access(user):
         return False
+    if membership.role in {'VENDEDOR','PDV'} and code in {
+        'estoque','estoque_escrever','inventario_aprovar','compras','desconto_supervisor',
+        'devolucao','caixa_supervisor','rh','ajuste_ponto','config_empresa','executivo',
+        'credito_cliente','financeiro','financeiro_escrever','contratos','orcamentos',
+        'planejamento','operacional','gestao','relatorios',
+    }:
+        return False
     if membership.role == 'TECNICO' and code in {
         'estoque_escrever','inventario_aprovar','compras','pdv','desconto_supervisor',
         'devolucao','caixa_supervisor','rh','ajuste_ponto','config_empresa','executivo',
@@ -60,5 +68,7 @@ def require_capability(user, code, roles=None):
     return membership_for(user)
 
 def module_for_path(path):
+    if path.startswith('/vendedor/'):
+        return 'pdv'
     mapping = [('/estoque/fornecedores/', 'compras'), ('/configuracoes/estoque', 'estoque'), ('/pdv/', 'pdv'), ('/vendas/', 'pdv'), ('/estoque/', 'estoque'), ('/depositos/', 'estoque'), ('/inventarios/', 'estoque'), ('/transferencias/', 'estoque'), ('/compras/', 'compras'), ('/financeiro/', 'financeiro'), ('/bancos/', 'financeiro'), ('/ponto/', 'ponto'), ('/rh/', 'rh'), ('/portal/', 'portal'), ('/contratos/', 'contratos'), ('/fiscal/', 'fiscal'), ('/documentos/', 'documentos'), ('/ordens/', 'assistencia'), ('/chamados/', 'assistencia'), ('/preventivas/', 'assistencia'), ('/planejamento/', 'assistencia'), ('/tecnico/', 'assistencia'), ('/equipamentos/', 'assistencia'), ('/painel-operacional/', 'assistencia')]
     return next((code for prefix,code in mapping if path.startswith(prefix)), '')

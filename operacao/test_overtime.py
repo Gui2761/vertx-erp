@@ -124,7 +124,7 @@ class OvertimeTests(OvertimeFixture,TestCase):
         self.assertEqual(response.status_code,302)
         for url in ('/financeiro/','/rh/horas-extras/','/contas/usuarios/'):
             self.assertEqual(self.client.get(url).status_code,403)
-        self.assertEqual(self.client.get('/vertyx/').url,'/pdv/')
+        self.assertEqual(self.client.get('/vertyx/').url,'/vendedor/')
     def test_journey_changes_do_not_change_recorded_reference(self):
         with tenant_context(self.a):
             self.excess();row=self.request();before=self.day_row()

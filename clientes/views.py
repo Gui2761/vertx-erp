@@ -62,6 +62,13 @@ class ClienteCreateView(LoginRequiredMixin, PerfilRequeridoMixin, generic.Create
     form_class = ClienteForm
     template_name = "clientes/cliente_form.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        from operacao.seller_access import is_seller
+        from platform_core.modules import require_capability
+        if request.user.is_authenticated and is_seller(request.user):
+            require_capability(request.user, 'pdv_cliente_cadastrar')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form_kwargs(self):
         kwargs=super().get_form_kwargs();kwargs['user']=self.request.user;return kwargs
 
@@ -84,6 +91,9 @@ class ClienteCreateView(LoginRequiredMixin, PerfilRequeridoMixin, generic.Create
             contato_formset.save()
             record_write(self.request, self.object, previous)
             messages.success(self.request, "Cliente cadastrado com sucesso.")
+            from operacao.seller_access import is_seller
+            if is_seller(self.request.user):
+                return redirect("operacao:pdv_home")
             return redirect("clientes:cliente_detail", pk=self.object.pk)
         return self.render_to_response(self.get_context_data(form=form))
 

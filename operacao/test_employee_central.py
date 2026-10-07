@@ -176,7 +176,7 @@ class EmployeeCentralTests(EmployeeFixture, TestCase):
             self.assertEqual(OrganizationMembership.objects.get(user=user, organization=self.a).role, 'VENDEDOR')
             self.assertEqual(Tecnico.objects.filter(usuario=user).count(), 1)
         self.client.force_login(user)
-        self.assertRedirects(self.client.get('/vertyx/'), '/pdv/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/vertyx/'), '/vendedor/', fetch_redirect_response=False)
         self.assertEqual(self.client.get('/financeiro/').status_code, 403)
 
     def test_seller_pdv_and_financial_roles_use_existing_authorizations(self):
@@ -191,7 +191,7 @@ class EmployeeCentralTests(EmployeeFixture, TestCase):
             self.client.logout()
             self.client.post('/login/', {'username': user.username, 'password': self.password})
             if role in ['VENDEDOR', 'PDV']:
-                self.assertRedirects(self.client.get('/vertyx/'), '/pdv/', fetch_redirect_response=False)
+                self.assertRedirects(self.client.get('/vertyx/'), '/vendedor/', fetch_redirect_response=False)
                 self.assertEqual(self.client.get('/financeiro/').status_code, 403)
                 self.assertEqual(self.client.get('/contas/usuarios/').status_code, 403)
             else:

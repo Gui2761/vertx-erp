@@ -83,6 +83,9 @@ def cash_operation(user,public_id,kind,amount,reason,request_id):
 @transaction.atomic
 def new_sale(user,session_id,depot_id,customer_id=None,seller_id=None,branch_id=None,center_id=None,request_id=None):
     session=own_session(user,session_id)
+    from .seller_access import is_seller
+    if is_seller(user) and seller_id and int(seller_id)!=user.pk:
+        raise PermissionDenied('Vendedor não pode atribuir vendas a outra pessoa.')
     key=token(request_id) if request_id else uuid.uuid4()
     intent={'caixa':session.pk,'deposito':int(depot_id),'cliente':int(customer_id) if customer_id else None,'vendedor':int(seller_id or user.pk),'filial':int(branch_id) if branch_id else None,'centro':int(center_id) if center_id else None,'usuario':user.pk}
     prior=m.Venda.objects.filter(criacao_id=key).first()
@@ -194,6 +197,9 @@ def return_sale(user,public_id,rows,reason,request_id,account_id=None,settle=Fal
 def lock_sale(user,public_id):
     require_capability(user,'pdv')
     candidate=m.Venda.objects.get(public_id=public_id)
+    from .seller_access import is_seller
+    if is_seller(user) and candidate.vendedor_id != user.pk:
+        raise PermissionDenied('Venda pertence a outro vendedor.')
     session=own_session(user,candidate.sessao_caixa.public_id,True) if candidate.sessao_caixa_id else None
     sale=m.Venda.objects.select_for_update().get(pk=candidate.pk)
     if not session and not has_capability(user,'caixa_supervisor'): raise PermissionDenied('Venda legada exige supervisor.')
@@ -218,6 +224,8 @@ def add_item(user,public_id,code,quantity,mode='venda',discount=0,reason=''):
     if config.reservar_rascunho:
         with _execution(user,sale=sale,session=session): stock.reserve(user,part.pk,sale.deposito_id,item.quantidade,'Reserva PDV',sale_id=sale.pk,request_id=uuid.uuid5(sale.public_id,'reserva:'+str(item.pk)))
     gs.audit(user,'VENDA_ITEM_ADICIONADO',item,{'conversao':item.conversao,'desconto':str(value),'motivo':reason})
+    from .seller_services import validate_discount
+    validate_discount(user,sale)
     return item
 
 @transaction.atomic
@@ -240,6 +248,8 @@ def edit_item(user,public_id,item_id,quantity,discount=0,reason=''):
         needed=stock.total(sale.itens.filter(peca=part))
         with _execution(user,sale=sale,session=session): stock.reserve(user,part.pk,sale.deposito_id,needed,'Carrinho atualizado',sale_id=sale.pk,request_id=uuid.uuid4())
     gs.audit(user,'VENDA_ITEM_ALTERADO',item,{'antes':before,'depois':{'quantidade':str(qty),'desconto':str(value)},'motivo':reason})
+    from .seller_services import validate_discount
+    validate_discount(user,sale)
     return item
 
 @transaction.atomic
@@ -261,9 +271,11 @@ def remove_item(user,public_id,item_id):
     needed=stock.total(sale.itens.filter(peca=part))
     if held and needed:
         with _execution(user,sale=sale,session=session): stock.reserve(user,part.pk,sale.deposito_id,needed,'Carrinho após remoção',sale_id=sale.pk,request_id=uuid.uuid4())
+    from .seller_services import validate_discount
+    validate_discount(user,sale)
 
 @transaction.atomic
-def pricing(user,public_id,discount,addition,reason=''):
+def pricing(user,public_id,discount,addition,reason='',record_approval=True):
     sale,session=lock_sale(user,public_id);draft(sale,session)
     discount,addition=money(discount,True),money(addition,True)
     gross=sum((item.total for item in sale.itens.all()),ZERO)
@@ -274,6 +286,10 @@ def pricing(user,public_id,discount,addition,reason=''):
     before={'desconto':str(sale.desconto_global),'acrescimo':str(sale.acrescimo)}
     sale.desconto_global=discount;sale.acrescimo=addition;gs.write(sale)
     gs.audit(user,'VENDA_PRECO_ALTERADO',sale,{'antes':before,'depois':{'desconto':str(discount),'acrescimo':str(addition)},'motivo':reason})
+    from .seller_services import cart_hash, validate_discount
+    if record_approval and has_capability(user,'desconto_supervisor') and (discount or addition):
+        gs.write(m.SolicitacaoDescontoPDV(venda=sale,solicitado_por=user,valor=discount,motivo=reason.strip(),carrinho_hash=cart_hash(sale),status='APROVADO',decidido_por=user,decidido_em=timezone.now(),decisao_motivo=reason.strip()))
+    validate_discount(user,sale)
     return sale
 
 def normalize_payments(rows):
@@ -296,6 +312,8 @@ def finalize(user,public_id,payments,request_id):
         return sale
     draft(sale,session)
     items=list(sale.itens.select_related('peca').order_by('peca_id','pk'))
+    from .seller_services import validate_discount
+    validate_discount(user,sale)
     total=sale.total
     if not items or total<=0: raise ValidationError('Venda exige itens e total positivo.')
     # One stable lock order across all sales, including multiple products/accounts.

@@ -17,6 +17,12 @@ class OrganizationMiddleware:
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         membership = getattr(request, 'membership', None)
+        if membership and membership.role in {'VENDEDOR','PDV'} and request.path not in PUBLIC_COMMERCIAL_PATHS:
+            from operacao.seller_access import route_allowed
+            if not route_allowed(request.resolver_match):
+                response = HttpResponseForbidden('Acesso restrito à Central de Vendas.')
+                response['Cache-Control'] = 'private, no-store'
+                return response
         if membership and membership.role == 'TECNICO' and request.path not in PUBLIC_COMMERCIAL_PATHS:
             from operacao.technician_access import route_allowed
             if request.path != '/' and not route_allowed(request.resolver_match):

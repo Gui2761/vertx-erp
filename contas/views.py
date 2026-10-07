@@ -31,6 +31,12 @@ class LoginView(auth_views.LoginView):
             from platform_core.access import has_erp_access
             if has_erp_access(self.request.user, membership.organization):
                 return str(reverse_lazy('operacao:tecnico'))
+        if membership and membership.role in {'VENDEDOR','PDV'}:
+            from platform_core.access import has_erp_access
+            if has_erp_access(self.request.user, membership.organization):
+                return str(reverse_lazy('operacao:seller_home'))
+        if membership is None and memberships.filter(role__in=['VENDEDOR','PDV']).exists():
+            return str(reverse_lazy('platform_core:home')) + '?organizacoes=1'
         return super().get_success_url()
 
 

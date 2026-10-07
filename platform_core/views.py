@@ -14,7 +14,7 @@ def home(request):
     if request.membership and request.membership.role in ['VENDEDOR','PDV'] and not request.GET.get('organizacoes'):
         from .access import has_erp_access
         if has_erp_access(request.user, request.organization):
-            return redirect('operacao:pdv_home')
+            return redirect('operacao:seller_home')
     memberships = request.user.memberships.filter(status='ATIVO', organization__status='ATIVA').select_related('organization')
     erps = []
     if request.organization:
@@ -39,4 +39,8 @@ def select_organization(request):
         from .access import has_erp_access
         if has_erp_access(request.user, membership.organization):
             return redirect('operacao:tecnico')
+    if membership.role in {'VENDEDOR','PDV'}:
+        from .access import has_erp_access
+        if has_erp_access(request.user, membership.organization):
+            return redirect('operacao:seller_home')
     return redirect('platform_core:home')

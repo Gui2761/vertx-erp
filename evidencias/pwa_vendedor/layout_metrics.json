@@ -1,0 +1,47 @@
+[
+  {
+    "height": 740,
+    "page": "pdv",
+    "scrollWidth": 305,
+    "smallTargets": 0,
+    "width": 320
+  },
+  {
+    "height": 740,
+    "page": "home",
+    "scrollWidth": 305,
+    "width": 320
+  },
+  {
+    "height": 1024,
+    "page": "home",
+    "scrollWidth": 753,
+    "width": 768
+  },
+  {
+    "height": 1024,
+    "page": "pdv",
+    "scrollWidth": 753,
+    "width": 768
+  },
+  {
+    "footerBottom": 745.765625,
+    "height": 768,
+    "page": "pdv",
+    "scrollWidth": 1350,
+    "width": 1365
+  },
+  {
+    "height": 844,
+    "page": "pdv",
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "height": 740,
+    "page": "pdv-final",
+    "scrollWidth": 305,
+    "smallTargets": 0,
+    "width": 320
+  }
+]

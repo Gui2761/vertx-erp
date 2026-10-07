@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}VERTYX{% endblock %} · VERTYX{% if request.membership and request.resolver_match.app_name != 'platform_core' %} | ASSISTÊNCIA{% endif %}</title>
+    <title>{% block title %}VERTYX{% endblock %} · VERTYX{% if seller_experience %} | VENDAS{% elif request.membership and request.resolver_match.app_name != 'platform_core' %} | ASSISTÊNCIA{% endif %}</title>
     <link href="{% static 'vendor/bootstrap.min.css' %}" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
@@ -12,21 +12,24 @@
     <link rel="stylesheet" href="{% static 'css/vertyx.css' %}">
 <meta name="theme-color" content="#006f74"><link rel="manifest" href="{% url 'operacao:manifest' %}">
 {% if technician_experience %}<link rel="stylesheet" href="{% static 'css/technician.css' %}">{% endif %}
+{% if seller_experience or request.resolver_match.url_name == 'seller_management' %}<link rel="stylesheet" href="{% static 'css/seller.css' %}?v=seller-console-6">{% endif %}
 </head>
-<body{% if technician_experience %} class="vx-technician"{% endif %}>
-{% if executive_navigation or technician_navigation %}{% include 'operacao/menu_symbols.html' %}{% endif %}
+<body{% if technician_experience %} class="vx-technician"{% elif seller_experience %} class="vx-seller"{% endif %}>
+{% if executive_navigation or technician_navigation or seller_navigation %}{% include 'operacao/menu_symbols.html' %}{% endif %}
 <a class="vx-skip" href="#conteudo">Pular para o conteúdo</a>
 {% if user.is_authenticated %}
 <nav class="navbar navbar-expand-xl navbar-dark bg-dark vx-nav" aria-label="Navegação principal">
   <div class="container-fluid">
-    <a class="navbar-brand" href="{% if request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}">{% if request.resolver_match.app_name == 'platform_core' %}VERTYX{% else %}VERTYX | ASSISTÊNCIA{% endif %}</a>
+    <a class="navbar-brand" href="{% if seller_experience %}{% url 'operacao:seller_home' %}{% elif request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}">{% if seller_experience %}VERTYX | VENDAS{% elif request.resolver_match.app_name == 'platform_core' %}VERTYX{% else %}VERTYX | ASSISTÊNCIA{% endif %}</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir ou recolher menu principal">
       <span class="navbar-toggler-icon"></span>
     </button>
-    {% if request.membership and request.membership.role != 'TECNICO' and request.membership.role != 'CLIENTE' and request.membership.role != 'PAINEL' %}<a class="btn btn-outline-light btn-sm me-2" href="{% url 'operacao:pesquisa' %}">Pesquisa</a>{% endif %}
+    {% if request.membership and not seller_experience and request.membership.role != 'TECNICO' and request.membership.role != 'CLIENTE' and request.membership.role != 'PAINEL' %}<a class="btn btn-outline-light btn-sm me-2" href="{% url 'operacao:pesquisa' %}">Pesquisa</a>{% endif %}
     <div class="collapse navbar-collapse" id="menuPrincipal">
       <ul class="navbar-nav me-auto flex-wrap">
-        {% if request.membership.role == 'TECNICO' %}
+        {% if seller_experience %}
+        <li class="vx-nav-group"><span>CENTRAL DE VENDAS</span><ul>{% for link in seller_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
+        {% elif request.membership.role == 'TECNICO' %}
         <li class="vx-nav-group"><span>ASSISTÊNCIA EM CAMPO</span><ul>{% for link in technician_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
         {% elif executive_navigation %}<li class="nav-item"><a class="nav-link" href="{% url 'platform_core:home' %}" title="Voltar para VERTYX"><i class="bi bi-arrow-left-circle" aria-hidden="true"></i><span class="vx-nav-label">Voltar para VERTYX</span></a></li><li class="nav-item"><button class="vx-sidebar-toggle" type="button" data-sidebar-toggle aria-label="Recolher menu lateral" aria-expanded="true"><i class="bi bi-layout-sidebar" aria-hidden="true"></i><span class="vx-nav-label">Recolher menu</span></button></li>{% for group in executive_navigation %}<li class="vx-nav-group"><span>{{ group.title }}</span><ul>{% for link in group.links %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}" title="{{ link.label }}" aria-label="{{ link.label }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>{% endfor %}{% else %}
         <li class="nav-item"><a class="nav-link" href="{% url 'platform_core:home' %}">Voltar para VERTYX</a></li>
@@ -68,7 +71,7 @@
 
 <div class="vx-main" id="conteudo">
   {% if user.is_authenticated and contingencia_jornada_contratual %}<div class="alert alert-warning" role="status">Modo de contingência: Jornada Contratual suspensa. Histórico preservado; atendimentos continuam pelo fluxo da OS.</div>{% endif %}
-  {% if user.is_authenticated %}<nav class="vx-breadcrumb" aria-label="Localização">{% if request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
+  {% if user.is_authenticated %}<nav class="vx-breadcrumb" aria-label="Localização">{% if seller_experience %}<a href="{% url 'operacao:seller_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:seller_home' %}">Central de Vendas</a>{% elif request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
   {% for message in messages %}
     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
       {{ message }}
@@ -78,11 +81,13 @@
 
   {% block content %}{% endblock %}
   {% if technician_experience %}<p class="vx-connection" data-connection-status role="status" aria-live="polite">Alterações são confirmadas ao salvar. Sem conexão, nenhum registro é enviado.</p>{% endif %}
+  {% if seller_experience %}<p class="sv-connection" data-connection-status role="status" aria-live="polite">As operações exigem conexão e são confirmadas ao salvar.</p>{% endif %}
 </div>
 
 {% if request.membership.role == 'TECNICO' %}<nav class="vx-bottom" aria-label="Atalhos do técnico">{% for link in technician_navigation %}{% if link.url == '/tecnico/' %}<a href="{{ link.url }}">Atender</a>{% elif link.url == '/planejamento/' %}<a href="{{ link.url }}">Agenda</a>{% elif link.url == '/ordens/' %}<a href="{{ link.url }}">OS</a>{% elif link.url == '/notificacoes/' %}<a href="{{ link.url }}">Alertas</a>{% endif %}{% endfor %}</nav>{% endif %}
 <script src="{% static 'vendor/bootstrap.bundle.min.js' %}"></script>
-<script src="{% static 'js/vertyx.js' %}" defer></script>
+{% if seller_experience %}<nav class="sv-bottom" aria-label="Atalhos do vendedor">{% for link in seller_navigation %}{% if link.url == '/pdv/' %}<a href="{{ link.url }}">PDV</a>{% elif link.url == '/vendedor/vendas/' %}<a href="{{ link.url }}">Vendas</a>{% elif link.url == '/vendedor/meta/' %}<a href="{{ link.url }}">Meta</a>{% elif link.url == '/ponto/' %}<a href="{{ link.url }}">Ponto</a>{% elif link.url == '/vendedor/alertas/' %}<a href="{{ link.url }}">Alertas</a>{% endif %}{% endfor %}</nav>{% endif %}
+<script src="{% static 'js/vertyx.js' %}?v=seller-console-2" defer></script>
 <script src="{% static 'js/checklist-builder.js' %}" defer></script>
 </body>
 </html>

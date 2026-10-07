@@ -279,8 +279,8 @@ class CommercialTests(TestCase):
     def test_vendedor_entrada_pdv(self):
         user,_=self.role('VENDEDOR')
         self.client.post('/login/',{'username':user.username,'password':'only-test-password'})
-        self.assertRedirects(self.client.get('/vertyx/'),'/pdv/')
-        self.assertContains(self.client.get('/vertyx/?organizacoes=1'),'href="/pdv/"')
+        self.assertRedirects(self.client.get('/vertyx/'),'/vendedor/')
+        self.assertContains(self.client.get('/vertyx/?organizacoes=1'),'href="/vendedor/"')
 
     def test_seo_heading_e_escape_conteudo_configurado(self):
         self.plan.descricao='<script>alert("x")</script>';self.plan.save()
