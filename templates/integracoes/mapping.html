@@ -1,0 +1,3 @@
+{% extends 'integracoes/base.html' %}
+{% block migration_title %}Confira as colunas{% endblock %}
+{% block migration_content %}<section class="mig-panel"><h2>Seu arquivo → VERTYX</h2><p>Confira nossas sugestões. Para uma coluna que não deseja trazer, selecione “Não importar esta coluna”. Campos com * são obrigatórios.</p><form method="post">{% csrf_token %}{{ form.non_field_errors }}<div class="mig-mapping"><span>Coluna do seu arquivo</span><span>Campo no VERTYX</span>{% for field in form %}<label for="{{ field.id_for_label }}">{{ field.label }} <span aria-hidden="true">→</span></label><div>{{ field }}{{ field.errors }}</div>{% endfor %}</div><button class="btn btn-primary mt-4" type="submit">Conferir os dados →</button></form></section>{% endblock %}

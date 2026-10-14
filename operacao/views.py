@@ -9,6 +9,7 @@ from django.db.models import F, Q
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 from platform_core.access import effective_role, require_erp
 from platform_core.audit import previous_values, record_write
@@ -26,7 +27,7 @@ RESOURCES = {
     'compra': (m.Compra, forms.CompraForm, 'compras', 'compras', 'Compras', ['id', 'fornecedor', 'deposito', 'status', 'total', 'vencimento']),
     'venda': (m.Venda, forms.VendaForm, 'gestao', 'gestao', 'Vendas e loja', ['id', 'cliente', 'vendedor', 'status', 'total', 'vencimento']),
     'banco': (m.ContaBancaria, forms.ContaBancariaForm, 'financeiro', 'financeiro_escrever', 'Bancos e caixa', ['nome', 'tipo', 'saldo', 'ativo']),
-    'extrato': (m.ExtratoBancario, forms.ExtratoForm, 'financeiro', 'financeiro_escrever', 'Conciliação bancária', ['conta', 'data', 'identificador', 'valor', 'movimento']),
+    'extrato': (m.ExtratoBancario, forms.ExtratoForm, 'financeiro', 'financeiro_escrever', 'Conciliação bancária', ['conta', 'data', 'identificador', 'valor', 'descricao', 'movimento', 'ignorado']),
     'fiscal': (m.DocumentoFiscal, forms.FiscalForm, 'financeiro', 'financeiro_escrever', 'Documentos fiscais', ['tipo', 'cliente', 'status', 'numero', 'ambiente', 'valor']),
     'documento': (m.Documento, forms.DocumentoForm, None, None, 'Central de documentos', ['titulo', 'tipo', 'cliente', 'equipamento', 'criado_em']),
     'portal_acesso': (m.PortalCliente, forms.PortalForm, 'gestao', 'gestao', 'Acessos ao portal', ['usuario', 'cliente', 'ativo']),
@@ -70,7 +71,7 @@ def editable(resource, obj):
         return obj.status == 'RASCUNHO'
     if resource == 'chamado':
         return not obj.ordem_id and obj.status not in ['CANCELADO', 'CONCLUIDO']
-    return resource != 'documento' and (resource != 'extrato' or not obj.movimento_id)
+    return resource != 'documento' and (resource != 'extrato' or (not obj.movimento_id and not obj.ignorado))
 
 def field_label(model, name):
     try:
@@ -83,6 +84,8 @@ def lista(request, resource):
     model, _, read, write, title, cols = config(resource)
     access(request.user, read)
     qs = queryset(request.user, resource)
+    if resource == 'banco' and request.GET.get('tipo') in ['BANCO', 'CAIXA', 'CARTAO']:
+        qs = qs.filter(tipo=request.GET['tipo'])
     if resource in ['compra','venda'] and request.GET.get('status') in ['RASCUNHO','APROVADA','PEDIDO','RECEBIDA','CONFIRMADA','CANCELADA']:
         qs=qs.filter(status=request.GET['status'])
     if resource=='compra' and request.GET.get('cotacoes')=='1':
@@ -99,7 +102,7 @@ def lista(request, resource):
             qs = qs.filter(**{field + '__icontains': search})
     page = Paginator(qs.order_by('-pk'), 25).get_page(request.GET.get('page'))
     rows = [{'cells': [value(obj, col) for col in cols], 'url': reverse('operacao:' + resource + '_detalhe', args=[obj.pk])} for obj in page]
-    return render(request, 'gestao/lista.html', {'titulo': title, 'headers': [field_label(model, col) for col in cols], 'rows': rows, 'page_obj': page, 'query': page_query(request), 'q': search, 'new_url': reverse('operacao:' + resource + '_novo') if permitted(request.user, write) else ''})
+    return render(request, 'fiscal/legacy_list.html' if resource == 'fiscal' else 'gestao/lista.html', {'titulo': title, 'headers': [field_label(model, col) for col in cols], 'rows': rows, 'page_obj': page, 'query': page_query(request), 'q': search, 'resource': resource, 'can_write': permitted(request.user, write), 'new_url': reverse('operacao:' + resource + '_novo') if permitted(request.user, write) else ''})
 
 @login_required
 @require_http_methods(['GET', 'POST'])
@@ -175,6 +178,15 @@ def detalhe(request, resource, pk):
             ctx['recebimentos'] = obj.recebimentos.prefetch_related('itens__item__peca', 'itens__movimentacao')
     if resource == 'banco':
         ctx['movimentos'] = obj.movimentos.all()[:100]
+        if obj.tipo == 'CAIXA':
+            from . import commerce
+            sessions = m.SessaoCaixa.objects.filter(conta=obj).select_related('operador','fechado_por').prefetch_related('eventos__movimento').order_by('-aberto_em')[:50]
+            ctx['caixas'] = []
+            for session in sessions:
+                events = list(session.eventos.all())
+                incoming = sum((event.movimento.valor for event in events if event.movimento.tipo == 'ENTRADA'), g.ZERO)
+                outgoing = sum((event.movimento.valor for event in events if event.movimento.tipo == 'SAIDA'), g.ZERO)
+                ctx['caixas'].append({'sessao': session, 'entradas': incoming, 'saidas': outgoing, 'esperado_atual': commerce.cash_expected(session)})
     if resource == 'deposito':
         ctx['saldos'] = m.SaldoDeposito.objects.filter(deposito=obj).select_related('peca')
     if resource == 'plano':
@@ -183,6 +195,27 @@ def detalhe(request, resource, pk):
     if resource == 'extrato':
         ctx['conciliacao_form'] = forms.ConciliacaoForm(conta=obj.conta)
     return render(request, 'operacao/detalhe.html', ctx)
+
+@login_required
+def financeiro_movimentacoes(request):
+    access(request.user, 'financeiro')
+    from django.utils.dateparse import parse_date
+    start = parse_date(request.GET.get('inicio', '')) if request.GET.get('inicio') else None
+    end = parse_date(request.GET.get('fim', '')) if request.GET.get('fim') else None
+    if request.GET.get('inicio') and not start or request.GET.get('fim') and not end or start and end and end < start:
+        return HttpResponse('Período inválido.', status=400)
+    today = timezone.localdate()
+    start, end = start or today.replace(day=1), end or today
+    movements = list(m.MovimentoCaixa.objects.filter(data__range=(start,end)).select_related('conta','conta_contraparte','usuario','categoria','centro_custo','lancamento'))
+    payments = m.Pagamento.objects.filter(conta__isnull=True, data__range=(start,end)).select_related('lancamento','usuario','lancamento__categoria','lancamento__centro_custo')
+    rows = []
+    for movement in movements:
+        rows.append({'data': movement.data, 'valor': movement.valor if movement.tipo == 'ENTRADA' else -movement.valor, 'origem': movement.get_origem_display(), 'descricao': movement.descricao, 'conta': movement.conta, 'contraparte': movement.conta_contraparte, 'categoria': movement.categoria or (movement.lancamento.categoria if movement.lancamento_id else None), 'centro_custo': movement.centro_custo or (movement.lancamento.centro_custo if movement.lancamento_id else None), 'usuario': movement.usuario, 'documento': movement.documento_ref or (movement.lancamento_id or ''), 'id': movement.pk})
+    for payment in payments:
+        rows.append({'data': payment.data, 'valor': payment.valor if payment.lancamento.tipo == 'RECEBER' else -payment.valor, 'origem': 'Recebimento não bancarizado' if payment.lancamento.tipo == 'RECEBER' else 'Pagamento não bancarizado', 'descricao': payment.lancamento.descricao, 'conta': payment.conta, 'contraparte': None, 'categoria': payment.lancamento.categoria, 'centro_custo': payment.lancamento.centro_custo, 'usuario': payment.usuario, 'documento': str(payment.lancamento_id), 'id': payment.pk})
+    rows.sort(key=lambda item: (item['data'], item['id']), reverse=True)
+    page = Paginator(rows, 50).get_page(request.GET.get('page'))
+    return render(request, 'operacao/finance_movements.html', {'rows': page, 'inicio': start, 'fim': end})
 
 @login_required
 @require_http_methods(['GET', 'POST'])
@@ -291,6 +324,10 @@ def documento_arquivo(request, pk):
     document = get_object_or_404(permissions.documents(request.user), pk=pk)
     if not permissions.document_allowed(request.user, document):
         raise Http404()
+    if document.tipo == 'FISCAL_XML' and document.fiscal_id and document.fiscal.ambiente == 'HOMOLOGACAO' and document.fiscal.tipo == 'NFCE' and document.fiscal.configuracao_fiscal_id and document.fiscal.configuracao_fiscal.motor == 'NFCE_SVRS_HOM':
+        # Signed official XML contains the public X509 certificate. During
+        # this backend-only preparation phase, XML artifacts stay off the UI.
+        return HttpResponse('XML NFC-e de homologação restrito ao backend nesta fase.', status=403)
     try:
         response = FileResponse(document.arquivo.open('rb'), as_attachment=True, filename=document.titulo + '.' + document.arquivo.name.rsplit('.', 1)[-1], content_type=mimetypes.guess_type(document.arquivo.name)[0] or 'application/octet-stream')
     except OSError:
@@ -313,11 +350,11 @@ def financeiro_acao(request, action, pk=None):
         data = form.cleaned_data
         try:
             if action == 'pagar':
-                services.pagar(request.user, pk, data['valor'], data['data'], data['observacao'], data['conta'].pk if data['conta'] else None, data['request_id'])
+                services.pagar(request.user, pk, data['valor'], data['data'], data['observacao'], data['conta'].pk if data['conta'] else None, data['request_id'], desconto=data['desconto'] or 0, juros=data['juros'] or 0, multa=data['multa'] or 0)
             elif action == 'parcelar':
                 services.parcelar(request.user, pk, data['quantidade'], data['primeiro_vencimento'])
             elif action == 'caixa':
-                services.caixa(request.user, data['conta'].pk, data['tipo'], data['valor'], data['data'], data['descricao'], data['request_id'])
+                services.caixa(request.user, data['conta'].pk, data['tipo'], data['valor'], data['data'], data['descricao'], data['request_id'], categoria=data['categoria'], centro_custo=data['centro_custo'])
             elif action == 'transferir':
                 services.transferir_banco(request.user, data['conta'].pk, data['destino'].pk, data['valor'], data['data'], data['request_id'])
             else:
@@ -328,6 +365,39 @@ def financeiro_acao(request, action, pk=None):
             messages.success(request, 'Operação financeira registrada.')
             return redirect('gestao:lancamento_detalhe', pk=pk) if entry else redirect('operacao:banco_lista')
     return render(request, 'operacao/form.html', {'titulo': {'pagar': 'Pagamento / recebimento parcial', 'parcelar': 'Parcelar conta', 'caixa': 'Movimentar caixa', 'transferir': 'Transferir entre contas', 'conciliar': 'Conciliar extrato'}[action], 'form': form, 'back_url': reverse('operacao:banco_lista')}, status=400 if request.method == 'POST' else 200)
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def extrato_importar(request):
+    access(request.user, 'financeiro_escrever')
+    form = forms.ExtratoImportForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            result = services.importar_extrato(request.user, form.cleaned_data['conta'].pk, form.cleaned_data['arquivo'])
+        except ValidationError as exc:
+            form.add_error(None, '; '.join(exc.messages))
+        else:
+            messages.success(request, f"Extrato processado: {result['criados']} novos, {result['duplicados']} duplicados ignorados.")
+            return redirect('operacao:extrato_lista')
+    return render(request, 'operacao/form.html', {'titulo': 'Importar extrato OFX/CSV', 'form': form, 'back_url': reverse('operacao:extrato_lista')}, status=400 if request.method == 'POST' else 200)
+
+@login_required
+@require_POST
+def extrato_acao(request, pk, action):
+    access(request.user, 'financeiro_escrever')
+    row = get_object_or_404(m.ExtratoBancario, pk=pk)
+    try:
+        if action == 'criar-movimento':
+            services.conciliar_criar_movimento(request.user, row.pk)
+        elif action == 'ignorar':
+            services.ignorar_extrato(request.user, row.pk, request.POST.get('motivo', ''))
+        else:
+            raise Http404()
+    except ValidationError as exc:
+        messages.error(request, '; '.join(exc.messages))
+    else:
+        messages.success(request, 'Extrato processado e auditado.')
+    return redirect('operacao:extrato_detalhe', pk=pk)
 
 @login_required
 def sugestoes(request):

@@ -5,6 +5,11 @@ from . import stock_views
 from . import operational_panel
 from . import pdv
 from . import seller
+from . import pdv_offline
+from fiscal import views as fiscal_views
+from fiscal.nfce import views as nfce_views
+from integracoes import views as migration_views
+from contas.views import LoginView
 from . import workforce_views
 from . import overtime_views
 from . import inventory_views
@@ -13,7 +18,49 @@ from . import mobile
 from . import contract_workday_views
 app_name = 'operacao'
 urlpatterns = [
+    path('integracoes/migracao/',migration_views.home,name='migration_home'),
+    path('integracoes/migracao/modelo/<str:kind>/',migration_views.template_file,name='migration_template'),
+    path('integracoes/migracao/enviar/<str:kind>/',migration_views.upload,name='migration_upload'),
+    path('integracoes/migracao/lotes/<uuid:key>/colunas/',migration_views.mapping,name='migration_mapping'),
+    path('integracoes/migracao/lotes/<uuid:key>/conferir/',migration_views.preview,name='migration_preview'),
+    path('integracoes/migracao/lotes/<uuid:key>/linha/<int:number>/',migration_views.edit,name='migration_edit'),
+    path('integracoes/migracao/lotes/<uuid:key>/iniciar/',migration_views.start,name='migration_start'),
+    path('integracoes/migracao/lotes/<uuid:key>/progresso/',migration_views.progress,name='migration_progress'),
+    path('integracoes/migracao/lotes/<uuid:key>/executar/',migration_views.chunk,name='migration_chunk'),
+    path('integracoes/migracao/lotes/<uuid:key>/resultado/',migration_views.result,name='migration_result'),
+    path('integracoes/migracao/lotes/<uuid:key>/relatorio/',migration_views.report,name='migration_report'),
+    path('fiscal/configuracao/', nfce_views.configuracao, name='fiscal_configuracao'),
+    path('fiscal/configuracao/<int:pk>/', nfce_views.configuracao, name='fiscal_configuracao_detalhe'),
+    path('fiscal/nfce/homologacao/', nfce_views.home, name='nfce_home'),
+    path('fiscal/nfce/homologacao/cadastros/<str:kind>/', nfce_views.cadastro, name='nfce_cadastro'),
+    path('fiscal/nfce/homologacao/preparar/', nfce_views.preparar, name='nfce_preparar'),
+    path('fiscal/nfce/homologacao/documentos/<int:pk>/', nfce_views.detalhe, name='nfce_detalhe'),
+    path('fiscal/nfce/homologacao/documentos/<int:pk>/danfe/', nfce_views.danfe, name='nfce_danfe'),
+    path('fiscal/nfce/homologacao/documentos/<int:pk>/<str:operation>/', nfce_views.solicitar, name='nfce_solicitar'),
+    path('fiscal/nfce/homologacao/solicitacoes/<int:pk>/reconciliar/', nfce_views.reconciliar, name='nfce_reconciliar'),
+    path('fiscal/simulacao/', fiscal_views.home, name='fiscal_simulacao'),
+    path('fiscal/simulacao/cadastros/<str:kind>/', fiscal_views.cadastrar, name='fiscal_simulacao_cadastro'),
+    path('fiscal/simulacao/novo/', fiscal_views.novo, name='fiscal_simulacao_novo'),
+    path('fiscal/simulacao/documentos/<int:pk>/', fiscal_views.detalhe, name='fiscal_simulacao_detalhe'),
+    path('fiscal/simulacao/documentos/<int:pk>/<str:operation>/', fiscal_views.solicitar, name='fiscal_simulacao_solicitar'),
+    path('fiscal/simulacao/solicitacoes/<int:pk>/reconciliar/', fiscal_views.reconciliar, name='fiscal_simulacao_reconciliar'),
     path('vendedor/',seller.home,name='seller_home'),
+    path('vendedor/entrar/',LoginView.as_view(),name='seller_login'),
+    path('pdv/entrar/',LoginView.as_view(),name='pdv_login'),
+    path('vendedor/manifest.webmanifest',pwa.seller_manifest,name='seller_manifest'),
+    path('pdv/manifest.webmanifest',pwa.pdv_manifest,name='pdv_manifest_scoped'),
+    path('vendedor/sw.js',pwa.scoped_worker,{'app':'vendedor'},name='seller_worker'),
+    path('pdv/sw.js',pwa.scoped_worker,{'app':'pdv'},name='pdv_worker'),
+    path('vendedor/ponto/',workforce_views.home,name='seller_ponto'),
+    path('vendedor/ponto/horas-extras/',overtime_views.own,name='seller_overtime'),
+    path('vendedor/ponto/espelho/<uuid:public_id>/',workforce_views.mirror,name='seller_mirror'),
+    path('vendedor/vendas/<uuid:public_id>/',seller.sale_detail,name='seller_sale_detail'),
+    path('pdv/historico/',pdv.history,name='pdv_history'),
+    path('pdv/offline/',pdv_offline.page,name='pdv_offline'),
+    path('pdv/offline/operar/',pdv_offline.shell,name='pdv_offline_shell'),
+    path('pdv/offline/preparar/',pdv_offline.prepare,name='pdv_prepare'),
+    path('pdv/sincronizacao/',pdv_offline.synchronize,name='pdv_sync'),
+    path('pdv/offline/contexto/',pdv_offline.context,name='pdv_sync_context'),
     path('vendedor/vendas/',seller.sales,name='seller_sales'),
     path('vendedor/meta/',seller.goal,name='seller_goal'),
     path('vendedor/comissao/',seller.commission,name='seller_commission'),
@@ -45,6 +92,7 @@ urlpatterns = [
     path('pdv/vendas/<uuid:public_id>/comprovante/',pdv.sale,{'receipt':True},name='pdv_receipt'),
     path('pesquisa/', views.pesquisa, name='pesquisa'),
     path('estoque/necessidades/', views.necessidades, name='necessidades'),
+    path('estoque/painel/',stock_views.dashboard,name='stock_dashboard'),
     path('estoque/necessidades/<int:pk>/comprar/', views.necessidade_compra, name='necessidade_compra'),
     path('estoque/necessidades/<int:pk>/resolver/', views.necessidade_resolver, name='necessidade_resolver'),
     path('ordens/<int:pk>/necessidade/', views.os_necessidade, name='os_necessidade'),
@@ -67,6 +115,7 @@ urlpatterns = [
     path('configuracoes/painel-operacional/', operational_panel.config, name='panel_config'),
     path('tecnico/', planning.tecnico, name='tecnico'),
     path('manifest.webmanifest', pwa.manifest, name='manifest'),
+    path('manifest-pdv.webmanifest', pwa.pdv_manifest, name='pdv_manifest'),
     path('sw.js', pwa.worker, name='worker'),
     path('configuracoes/', configuration.configuracao, name='configuracao'),
     path('notificacoes/', configuration.notificacoes, name='notificacoes'),
@@ -91,6 +140,9 @@ urlpatterns = [
     path('financeiro/<int:pk>/pagar/', views.financeiro_acao, {'action': 'pagar'}, name='pagar'),
     path('financeiro/<int:pk>/parcelar/', views.financeiro_acao, {'action': 'parcelar'}, name='parcelar'),
     path('bancos/extrato/<int:pk>/conciliar/', views.financeiro_acao, {'action': 'conciliar'}, name='conciliar'),
+    path('bancos/extrato/importar/', views.extrato_importar, name='extrato_importar'),
+    path('bancos/extrato/<int:pk>/acao/<str:action>/', views.extrato_acao, name='extrato_acao'),
+    path('financeiro/movimentacoes/', views.financeiro_movimentacoes, name='financeiro_movimentacoes'),
 ]
 for resource, prefix in {'conhecimento': 'conhecimento', 'deposito': 'depositos', 'categoria': 'categorias-pecas', 'chamado': 'chamados', 'checklist': 'checklists', 'plano': 'preventivas', 'compra': 'compras', 'venda': 'vendas', 'banco': 'bancos', 'extrato': 'bancos/extrato', 'fiscal': 'fiscal', 'documento': 'documentos', 'portal_acesso': 'portal-acessos'}.items():
     urlpatterns += [

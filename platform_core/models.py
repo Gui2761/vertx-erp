@@ -19,6 +19,9 @@ class Organization(models.Model):
     cnpj = models.CharField('CNPJ', max_length=14, blank=True, default='', validators=[validate_cnpj])
     email = models.EmailField(blank=True)
     telefone = models.CharField(max_length=30, blank=True)
+    endereco = models.CharField('Endereço', max_length=255, blank=True)
+    cidade = models.CharField(max_length=100, blank=True)
+    uf = models.CharField('UF', max_length=2, blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
     # Chave relativa do storage privado; futura personalização sem filesystem.path.
     logo_key = models.CharField('Chave da logomarca no storage privado', max_length=255, blank=True)
@@ -205,3 +208,10 @@ class PermissaoMembership(ConfiguracaoTenant):
             raise ValidationError({'membership': 'Vínculo deve pertencer à mesma organização.'})
         if self.capacidade not in CAPABILITIES:
             raise ValidationError({'capacidade': 'Capacidade desconhecida.'})
+
+
+# SaaS administration is a platform capability, never a tenant membership role.
+from .saas_models import (
+    AdministradorPlataforma, PlanoSaaS, AssinaturaSaaS,
+    HistoricoPlanoSaaS, PrimeiroAcessoSaaS, AuditoriaSaaS,
+)

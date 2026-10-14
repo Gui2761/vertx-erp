@@ -22,7 +22,7 @@ class OvertimeForm(forms.Form):
 def own(request):
     try: employee=w.employee_for(request.user)
     except m.Funcionario.DoesNotExist:
-        return render(request,'operacao/overtime_own.html',{'missing':True,'back_url':reverse('operacao:ponto_home')})
+        return render(request,'operacao/overtime_own.html',{'missing':True,'back_url':reverse('operacao:seller_ponto' if request.path.startswith('/vendedor/') else 'operacao:ponto_home')})
     today=timezone.localdate()
     try: day=date.fromisoformat(request.GET.get('data',today.isoformat()))
     except (ValueError,TypeError): return HttpResponse('Data inválida.',status=400)
@@ -35,12 +35,12 @@ def own(request):
         except ValidationError as exc: form.add_error(None,'; '.join(exc.messages))
         else:
             messages.success(request,'Hora extra solicitada. Aguarde a aprovação; excedente não é aprovação automática.')
-            return redirect(reverse('operacao:ponto_overtime')+'?data='+day.isoformat())
+            return redirect(reverse('operacao:seller_overtime' if request.path.startswith('/vendedor/') else 'operacao:ponto_overtime')+'?data='+day.isoformat())
     if day>today or not 2000<=day.year<=2100:
         day=today
     data,closed=o.day_data(request.user,employee,day)
     if request.method!='POST' and data['extra'] and not data.get('extra_status'): form.initial['minutos']=data['extra']
-    return render(request,'operacao/overtime_own.html',{'employee':employee,'day':day,'data':data,'closed':closed,'form':form,'requests':o.requests_for(request.user).select_related('decisao','decisao__usuario','referencia').order_by('-data','-pk')[:100],'back_url':reverse('operacao:ponto_home')},status=400 if request.method=='POST' else 200)
+    return render(request,'operacao/overtime_own.html',{'employee':employee,'day':day,'data':data,'closed':closed,'form':form,'requests':o.requests_for(request.user).select_related('decisao','decisao__usuario','referencia').order_by('-data','-pk')[:100],'back_url':reverse('operacao:seller_ponto' if request.path.startswith('/vendedor/') else 'operacao:ponto_home')},status=400 if request.method=='POST' else 200)
 
 class ReportFilter(forms.Form):
     inicio=forms.DateField(widget=forms.DateInput(attrs={'type':'date'},format='%Y-%m-%d'))

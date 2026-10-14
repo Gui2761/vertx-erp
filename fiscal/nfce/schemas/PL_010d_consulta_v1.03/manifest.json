@@ -1,0 +1,14 @@
+{
+  "release": "PL_010d_consulta_v1.03",
+  "fonte": "https://www.nfe.fazenda.gov.br/PORTAL/exibirArquivo.aspx?conteudo=%20pBOYTXBtbk=&AspxAutoDetectCookieSupport=1",
+  "escopo": "ENSAIO_LOCAL_SINTETICO",
+  "aplicabilidade_confirmada": false,
+  "pacote": "PL 010d v1.03 \u2014 consulta/protocolo, separado do documento PL 010f",
+  "sha256": {
+    "consSitNFe_v4.00.xsd": "44d816a725553a0c53508be919629c9235b42c5d41c358a05be8fdf61945f5c1",
+    "retConsSitNFe_v4.00.xsd": "8b7188d6fe9e879ca057bfb68600746c7491d2e092e3dc5121a6cd5aa79272d5",
+    "leiauteConsSitNFe_v4.00.xsd": "646e3a6bd26720b12a1322d5d25181504d82175c3650e14a1120dfb65895b618",
+    "tiposBasico_v4.00.xsd": "772619c85723e598840667ca66e7298a250442df47eeb94b397d2a333ce62047",
+    "xmldsig-core-schema_v1.01.xsd": "f56744a5f51c03f027de13f39f869307091781a9ef1d91b1ebe14719ce28e1ac"
+  }
+}

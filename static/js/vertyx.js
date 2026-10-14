@@ -1,4 +1,10 @@
-if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('/sw.js').catch(() => {});
+if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register(location.pathname.startsWith('/pdv/')?'/pdv/sw.js':location.pathname.startsWith('/vendedor/')?'/vendedor/sw.js':'/sw.js').catch(() => {
+  const status=document.querySelector('[data-install-status]');
+  if(status)status.textContent='Não foi possível ativar o service worker. Recarregue com conexão e confira o painel Application do navegador. As vendas continuam exigindo conexão.';
+});
+// Capture the install event before DOMContentLoaded; some browsers emit it early.
+let vertyxInstallPrompt;
+addEventListener('beforeinstallprompt',event=>{event.preventDefault();vertyxInstallPrompt=event;document.querySelectorAll('[data-install]').forEach(button=>button.hidden=false);});
 /* Comportamentos compartilhados; nenhum dado empresarial é guardado em cache. */
 document.addEventListener('DOMContentLoaded',()=>{
   const connection=document.querySelector('[data-connection-status]');
@@ -22,10 +28,23 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(button&&!form.classList.contains('os-geo-form')){button.classList.add('vx-loading');button.setAttribute('aria-busy','true');}
   }));
   document.querySelectorAll('[data-confirm]').forEach(button=>button.addEventListener('click',event=>{if(!confirm(button.dataset.confirm))event.preventDefault();}));
-  let prompt;
   const install=document.querySelector('[data-install]');
-  addEventListener('beforeinstallprompt',event=>{event.preventDefault();prompt=event;if(install)install.hidden=false;});
-  if(install)install.addEventListener('click',async()=>{if(prompt){await prompt.prompt();prompt=null;install.hidden=true;}});
+  if(install){install.hidden=!vertyxInstallPrompt;install.addEventListener('click',async()=>{if(vertyxInstallPrompt){await vertyxInstallPrompt.prompt();vertyxInstallPrompt=null;install.hidden=true;}});}
+  const installStatus=document.querySelector('[data-install-status]');
+  if(installStatus&&!window.isSecureContext)installStatus.textContent='A instalação exige HTTPS ou localhost. Este endereço não é um contexto seguro.';
 });
 // A restored browser page must reauthorize against the current login/tenant.
 addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
+
+// Logout/tenant switching lock the offline identity; pending intents are retained.
+document.addEventListener('submit',async event=>{
+  const form=event.target;
+  if(!globalThis.PDVOutbox||form.dataset.pdvIdentityLocked)return;
+  // A control named "action" shadows HTMLFormElement.action in commerce forms.
+  const action=form.getAttribute('action')||location.pathname;
+  if(action.includes('/logout')||action.includes('/organizacao/')){
+    event.preventDefault();
+    try{await PDVOutbox.state.put('active',null);}catch(_){}
+    form.dataset.pdvIdentityLocked='true';form.requestSubmit();
+  }
+});

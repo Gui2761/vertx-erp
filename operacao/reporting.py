@@ -26,6 +26,7 @@ REPORTS = {
     'estoque_giro': ('Giro / produtos sem movimentação', 'estoque'),
     'contas_vencidas': ('Contas vencidas', 'financeiro'),
     'recebimentos': ('Pagamentos e recebimentos realizados', 'financeiro'),
+    'movimentacao_bancaria': ('Movimentações por conta', 'financeiro'),
     'fluxo_caixa': ('Fluxo de caixa previsto / realizado', 'financeiro'),
     'centros_custo': ('Lançamentos por centro de custo', 'financeiro'),
     'orcamentos_conversao': ('Orçamentos e conversão', 'orcamentos'),
@@ -60,6 +61,24 @@ def financial_dashboard(start, end, filters=None):
         return sum((row.valor for row in payments if row.lancamento.tipo == kind), g.ZERO) + sum((row.valor for row in legacy if row.tipo == kind), g.ZERO)
     today = timezone.localdate()
     result = {'a_receber': balance(pending.filter(tipo='RECEBER')), 'a_pagar':balance(pending.filter(tipo='PAGAR')), 'recebido':realized('RECEBER'), 'pago':realized('PAGAR'), 'vencido_receber':balance(pending.filter(tipo='RECEBER',vencimento__lt=today)), 'vencido_pagar':balance(pending.filter(tipo='PAGAR',vencimento__lt=today))}
+    from .models import ContaBancaria, MovimentoCaixa
+    today_payments = m.Pagamento.objects.filter(data=today).select_related('lancamento')
+    if filters.get('conta'):
+        today_payments = today_payments.filter(conta=filters['conta'])
+    if filters.get('controle'):
+        today_payments = today_payments.filter(conta__isnull=filters['controle'] == 'NAO_BANCARIZADO')
+    manual_today = MovimentoCaixa.objects.filter(data=today).exclude(origem='LANCAMENTO')
+    if filters.get('conta'):
+        manual_today = manual_today.filter(conta=filters['conta'])
+    manual_amounts = manual_today.aggregate(entradas=Sum('valor', filter=Q(tipo='ENTRADA')), saidas=Sum('valor', filter=Q(tipo='SAIDA')))
+    result['entradas_hoje'] = sum((row.valor for row in today_payments if row.lancamento.tipo == 'RECEBER'), g.ZERO) + (manual_amounts['entradas'] or g.ZERO)
+    result['saidas_hoje'] = sum((row.valor for row in today_payments if row.lancamento.tipo == 'PAGAR'), g.ZERO) + (manual_amounts['saidas'] or g.ZERO)
+    result['vencendo_hoje_receber'] = balance(pending.filter(tipo='RECEBER', vencimento=today))
+    result['vencendo_hoje_pagar'] = balance(pending.filter(tipo='PAGAR', vencimento=today))
+    accounts = ContaBancaria.objects.filter(ativo=True)
+    if filters.get('conta'):
+        accounts = accounts.filter(pk=filters['conta'].pk)
+    result['saldo_disponivel_contas'] = sum((account.saldo for account in accounts), g.ZERO)
     result['resultado'] = result['recebido'] - result['pago']
     for kind, key in [('RECEBER','recebido_nao_bancarizado'), ('PAGAR','pago_nao_bancarizado')]:
         result[key] = sum((row.valor for row in payments if row.lancamento.tipo == kind and not row.conta_id),g.ZERO) + sum((row.valor for row in legacy if row.tipo == kind),g.ZERO)
@@ -68,13 +87,21 @@ def financial_dashboard(start, end, filters=None):
         key = date.strftime('%Y-%m')
         row = months.setdefault(key, {'mes':key, 'previsto_RECEBER':g.ZERO, 'previsto_PAGAR':g.ZERO, 'realizado_RECEBER':g.ZERO, 'realizado_PAGAR':g.ZERO})
         row[prefix + '_' + kind] += amount
-    for entry in qs.filter(vencimento__range=(start,end)):
-        add(entry.vencimento,'previsto',entry.tipo,entry.valor)
+    for entry in qs.filter(vencimento__range=(start,end)).prefetch_related('pagamentos','eventos'):
+        add(entry.vencimento,'previsto',entry.tipo,entry.saldo)
     for row in payments:
         add(row.data,'realizado',row.lancamento.tipo,row.valor)
     for entry in legacy:
         add(entry.data_liquidacao,'realizado',entry.tipo,entry.valor)
-    result['fluxo'] = [months[key] for key in sorted(months)]
+    result['fluxo'] = [dict(months[key], realizado_resultado=months[key]['realizado_RECEBER'] - months[key]['realizado_PAGAR']) for key in sorted(months)]
+    forecasts = {}
+    for horizon in (7, 30, 90):
+        limit = today + timezone.timedelta(days=horizon)
+        upcoming = qs.filter(status__in=['PENDENTE','VENCIDO'], vencimento__gte=today, vencimento__lte=limit).prefetch_related('pagamentos','eventos')
+        incoming = sum((entry.saldo for entry in upcoming if entry.tipo == 'RECEBER'), g.ZERO)
+        outgoing = sum((entry.saldo for entry in upcoming if entry.tipo == 'PAGAR'), g.ZERO)
+        forecasts[horizon] = {'entradas': incoming, 'saidas': outgoing, 'saldo_projetado': result['saldo_disponivel_contas'] + incoming - outgoing}
+    result['projecoes'] = forecasts
     return result
 
 def date_filter(qs, data, field):
@@ -165,6 +192,9 @@ def report_data(user, key, data):
             else:
                 rows.append([part.sku,part.descricao,part.lote,part.validade,part.quantidade_atual])
         return {'estoque_atual':['SKU','Peça','Depósito','Saldo','Mínimo'], 'estoque_validade':['SKU','Peça','Lote','Validade','Saldo'], 'estoque_giro':['SKU','Peça','Saldo','Consumo no período','Última movimentação']}[key],rows
+    if key=='movimentacao_bancaria':
+        qs=date_filter(m.MovimentoCaixa.objects.select_related('conta','conta_contraparte','categoria','centro_custo','usuario','lancamento'),data,'data')
+        return ['Data','Conta','Contraparte','Tipo','Descrição','Origem','Categoria','Centro de custo','Documento','Usuário','Valor'], [[row.data,str(row.conta),str(row.conta_contraparte or ''),row.get_tipo_display(),row.descricao,row.get_origem_display(),str(row.categoria or (row.lancamento.categoria if row.lancamento_id else '')),str(row.centro_custo or (row.lancamento.centro_custo if row.lancamento_id else '')),row.documento_ref or (row.lancamento_id or ''),str(row.usuario),row.valor] for row in qs]
     if key=='recebimentos':
         qs=filter_query(m.Pagamento.objects.select_related('lancamento','conta'),data,{'cliente':'lancamento__cliente'},'data')
         return ['Conta','Tipo','Data','Valor','Banco / controle','Usuário'], [[row.lancamento.descricao,row.lancamento.get_tipo_display(),row.data,row.valor,row.controle_caixa,str(row.usuario)] for row in qs]

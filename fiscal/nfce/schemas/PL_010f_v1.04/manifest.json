@@ -1,0 +1,17 @@
+{
+  "release": "PL_010f_v1.04",
+  "fonte": "https://www.nfe.fazenda.gov.br/PORTAL/exibirArquivo.aspx?conteudo=8ITFuBLltXs%3D&AspxAutoDetectCookieSupport=1",
+  "date": "2026-10-09",
+  "zip_sha256": "b8589490a58a09a993a80e6ac4d7ed10f20892061ecfc56719337098d4b95998",
+  "aplicabilidade_confirmada": false,
+  "note": "Official files unmodified. Local model-65 XMLDSig/XSD test only; no SEFAZ approval or issuer configuration.",
+  "sha256": {
+    "DFeTiposBasicos_v1.00.xsd": "173577a4e3a9dc1d0deced85b89b955b6064bb5a4ae5a96f6727d2da8a694d09",
+    "leiauteNFe_v4.00.xsd": "2bace939973916d54184ff3e2740041a932de5d79772f3363504504160f22542",
+    "nfe_v4.00.xsd": "adce3646c13ceb54922ec3142fc1dc45bd4fb839ac35ad583e86c733c07d27df",
+    "tiposBasico_v4.00.xsd": "772619c85723e598840667ca66e7298a250442df47eeb94b397d2a333ce62047",
+    "xmldsig-core-schema_v1.01.xsd": "f56744a5f51c03f027de13f39f869307091781a9ef1d91b1ebe14719ce28e1ac"
+  },
+  "pacote": "PL 010f v1.04 — publicado 31/08/2026",
+  "escopo": "ENSAIO_LOCAL_SINTETICO"
+}

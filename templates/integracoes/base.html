@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/migration-assistant.css' %}">
+<div class="migration-assistant">
+<div class="mig-top"><div><a href="{% url 'operacao:migration_home' %}" class="text-muted">Integrações e Migração</a><h1>{% block migration_title %}Traga seus dados para o VERTYX{% endblock %}</h1></div><span class="mig-step">Etapa {{ step }} de 6</span></div>
+<ol class="mig-steps" aria-label="Etapas da importação">{% for item in steps %}<li class="{% if item.active %}active{% elif item.done %}done{% endif %}" {% if item.active %}aria-current="step"{% endif %}><span>{{ item.number }}</span>{{ item.label }}</li>{% endfor %}</ol>
+{% if lote %}<p class="mig-file"><strong>{{ spec.title }}</strong> · {{ lote.nome_arquivo }} <span>Identificador: {{ lote.public_id }}</span></p>{% endif %}
+{% block migration_content %}{% endblock %}
+</div>
+{% endblock %}

@@ -30,6 +30,8 @@ REPORTS = {
     'contratos_proximos': ('Contratos próximos do vencimento', 'contratos'),
     'receitas': ('Faturamento / receitas por período', 'financeiro'),
     'despesas': ('Despesas por período', 'financeiro'),
+    'receitas_categoria': ('Recebimentos por categoria', 'financeiro'),
+    'despesas_categoria': ('Pagamentos por categoria', 'financeiro'),
 }
 from operacao.reporting import REPORTS as ADDITIONAL_REPORTS
 REPORTS.update(ADDITIONAL_REPORTS)
@@ -49,6 +51,8 @@ def situation(qs, status):
         return qs
     today = timezone.localdate()
     if qs.model is m.Lancamento:
+        if status == 'PARCIAL':
+            return qs.filter(status__in=['PENDENTE', 'VENCIDO'], pagamentos__isnull=False).distinct()
         if status in ['PENDENTE', 'VENCIDO']:
             qs = qs.filter(status__in=['PENDENTE', 'VENCIDO'])
             return qs.filter(vencimento__lt=today) if status == 'VENCIDO' else qs.filter(vencimento__gte=today)
@@ -96,6 +100,17 @@ def legacy_preventivas(data):
 
 
 def report_data(user, key, data):
+    if key in ['receitas_categoria','despesas_categoria']:
+        from operacao.models import Pagamento
+        kind='RECEBER' if key == 'receitas_categoria' else 'PAGAR'
+        payments=Pagamento.objects.filter(lancamento__tipo=kind).select_related('lancamento__categoria','conta','usuario')
+        if data.get('inicio'): payments=payments.filter(data__gte=data['inicio'])
+        if data.get('fim'): payments=payments.filter(data__lte=data['fim'])
+        totals={}
+        for payment in payments:
+            category=str(payment.lancamento.categoria or 'Sem categoria')
+            totals[category]=totals.get(category,m.ZERO)+payment.valor
+        return ['Categoria','Valor efetivamente recebido/pago'], [[name,amount] for name,amount in sorted(totals.items())]
     if key in ADDITIONAL_REPORTS:
         from operacao.reporting import report_data as expanded
         return expanded(user, key, data)

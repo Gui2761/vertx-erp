@@ -17,9 +17,18 @@ def has_erp_access(user, organization=None, code='assistencia'):
     return OrganizationERP.objects.filter(organization=membership.organization, erp__code=code, erp__active=True, enabled=True).exists() and MembershipERP.objects.filter(membership=membership, erp__code=code, erp__active=True, enabled=True).exists()
 
 
-def require_erp(user, organization=None, roles=None):
+def erp_code_for_path(path):
+    """Resolve the product boundary for a request; legacy routes remain Assistance."""
+    if path.startswith('/gestao-publica/'):
+        return 'gestao-publica'
+    if path.startswith('/loja-hospitalar/'):
+        return 'loja-hospitalar'
+    return 'assistencia'
+
+
+def require_erp(user, organization=None, roles=None, code='assistencia'):
     membership = membership_for(user, organization)
-    if membership is None or not has_erp_access(user, organization) or roles is not None and membership.role not in roles:
+    if membership is None or not has_erp_access(user, organization, code=code) or roles is not None and membership.role not in roles:
         raise PermissionDenied('Organização, acesso ao ERP ou permissão insuficiente.')
     return membership
 

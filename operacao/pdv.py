@@ -35,10 +35,10 @@ def products(request,public_id):
 @transaction.atomic
 def home(request):
     require_capability(request.user,'pdv')
-    from .seller_access import is_seller
-    if is_seller(request.user):
+    if request.GET.get('gestao') != '1':
         from .seller import terminal
         return terminal(request)
+    require_capability(request.user,'caixa_supervisor')
     if request.method=='POST':
         try:
             session=c.open_cash(request.user,int(request.POST['conta']),request.POST['contado'],request.POST['request_id'])
@@ -110,7 +110,7 @@ def sale(request,public_id,receipt=False):
             messages.success(request,'Operação registrada.');return redirect('operacao:pdv_sale',public_id=public_id)
         except (ValidationError,ValueError,KeyError,TypeError,ObjectDoesNotExist) as exc: messages.error(request,'; '.join(exc.messages) if isinstance(exc,ValidationError) else 'Revise os dados da operação.')
     from .seller_access import is_seller
-    if is_seller(request.user) and not receipt:
+    if not receipt and (is_seller(request.user) or sale.status=='RASCUNHO'):
         from .seller import sale_context
         return render(request,'operacao/seller_pdv.html',sale_context(request,sale,session))
     return render(request,'operacao/pdv_receipt.html' if receipt else 'operacao/pdv_sale.html',{'sale':sale,'session':session,'items':sale.itens.select_related('peca'),'forms':g.FormaPagamento.objects.filter(ativo=True).exclude(tipo_pdv=''),'contas':m.ContaBancaria.objects.filter(ativo=True) if not is_seller(request.user) else m.ContaBancaria.objects.none(),'can_return':has_capability(request.user,'devolucao'),'request_id':uuid.uuid4(),'back_url':reverse('operacao:pdv_cash',args=[session.public_id]) if session else reverse('operacao:pdv_home')})
@@ -125,3 +125,12 @@ def config(request):
             row=form.save();gs.audit(request.user,'PDV_CONFIGURADO',row,{'campos':form.changed_data})
         return redirect('operacao:pdv_config')
     return render(request,'gestao/form.html',{'titulo':'Configuração PDV','form':form,'back_url':reverse('operacao:pdv_home')})
+
+
+@login_required
+def history(request):
+    require_capability(request.user,'operar_pdv')
+    rows=m.Venda.objects.select_related('cliente','vendedor','sessao_caixa').order_by('-pk')
+    if not has_capability(request.user,'caixa_supervisor'):
+        rows=rows.filter(sessao_caixa__operador=request.user)
+    return render(request,'operacao/pdv_history.html',{'sales':rows[:100]})

@@ -39,7 +39,7 @@ def movimentar(user, peca_id, tipo, quantidade, observacao='', ordem_id=None, re
     quantity = Decimal(quantidade)
     if not quantity.is_finite() or quantity < 0 or quantity == 0 and tipo not in ['AJUSTE','INVENTARIO'] or quantity.as_tuple().exponent < -3:
         raise ValidationError('Quantidade inválida. Use até três casas decimais.')
-    if tipo not in m.Movimentacao.Tipo.values:
+    if tipo not in set(m.Movimentacao.Tipo.values) | {m.Movimentacao.TIPO_PERDA}:
         raise ValidationError('Tipo de movimentação inválido.')
     order = OrdemServico.objects.select_for_update().get(pk=ordem_id) if ordem_id else None
     if order and tipo in ['OS', 'DEVOLUCAO']:
@@ -56,6 +56,8 @@ def movimentar(user, peca_id, tipo, quantidade, observacao='', ordem_id=None, re
         raise ValidationError('OS finalizada é imutável; reabra pelo fluxo auditado.')
     if tipo == 'AJUSTE' and not observacao.strip():
         raise ValidationError('Ajuste exige justificativa.')
+    if tipo == m.Movimentacao.TIPO_PERDA and (not observacao.strip() or not lote_id):
+        raise ValidationError('Perda exige motivo e seleção explícita do lote para rastreabilidade.')
     part = m.Peca.objects.select_for_update().get(pk=peca_id)
     if not part.fracionavel and quantity != quantity.to_integral_value():
         raise ValidationError('Produto não fracionável exige quantidade base inteira.')
@@ -95,7 +97,7 @@ def movimentar(user, peca_id, tipo, quantidade, observacao='', ordem_id=None, re
     ensure_lots(part)
     if tipo == 'AJUSTE' and (origem_id or destino_id):
         raise ValidationError('Ajuste global usa o depósito Principal. Para redistribuir, use transferência.')
-    delta = quantity - part.quantidade_atual if tipo == 'AJUSTE' else m.ZERO if tipo == 'TRANSFER' else -quantity if tipo in ['SAIDA', 'OS'] else quantity
+    delta = quantity - part.quantidade_atual if tipo == 'AJUSTE' else m.ZERO if tipo == 'TRANSFER' else -quantity if tipo in ['SAIDA', 'OS', m.Movimentacao.TIPO_PERDA] else quantity
     if inventory_lot is not None:
         delta=quantity-inventory_lot.quantidade
     balance = part.quantidade_atual + delta

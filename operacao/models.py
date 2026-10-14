@@ -439,6 +439,7 @@ class ContaBancaria(Nomeado):
     banco = models.CharField(max_length=100, blank=True)
     agencia = models.CharField(max_length=30, blank=True)
     numero = models.CharField(max_length=40, blank=True)
+    titular = models.CharField(max_length=150, blank=True)
     tipo = models.CharField(max_length=10, choices=[('BANCO', 'Banco'), ('CAIXA', 'Caixa'), ('CARTAO', 'Cartão')], default='BANCO')
     saldo_inicial = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO)
     permite_saldo_negativo = models.BooleanField(default=False)
@@ -459,9 +460,21 @@ class MovimentoCaixa(RegistroImutavel):
     descricao = models.CharField(max_length=255)
     referencia = models.UUIDField(default=uuid.uuid4, editable=False)
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    origem = models.CharField(max_length=16, default='MANUAL', choices=[('MANUAL','Manual'),('LANCAMENTO','Pagamento/recebimento'),('TRANSFERENCIA','Transferência'),('CONCILIACAO','Conciliação'),('PDV','PDV'),('OUTRO','Outro')])
+    categoria = models.ForeignKey('gestao.CategoriaFinanceira', on_delete=models.PROTECT, null=True, blank=True)
+    centro_custo = models.ForeignKey('gestao.CentroCusto', on_delete=models.PROTECT, null=True, blank=True)
+    lancamento = models.ForeignKey('gestao.Lancamento', on_delete=models.PROTECT, null=True, blank=True, related_name='movimentos_caixa')
+    conta_contraparte = models.ForeignKey('operacao.ContaBancaria', on_delete=models.PROTECT, null=True, blank=True, related_name='transferencias_relacionadas')
+    documento_ref = models.CharField(max_length=150, blank=True)
     class Meta:
         ordering = ['-data', '-pk']
         constraints = [models.UniqueConstraint(fields=['conta', 'referencia'], name='movimento_caixa_referencia')]
+
+    def clean(self):
+        super().clean()
+        expected = 'RECEITA' if self.tipo == 'ENTRADA' else 'DESPESA'
+        if self.categoria_id and self.categoria.natureza not in ['AMBAS', expected]:
+            raise ValidationError({'categoria': 'Natureza da categoria não corresponde à movimentação.'})
 
 class Pagamento(RegistroImutavel):
     @property
@@ -473,6 +486,9 @@ class Pagamento(RegistroImutavel):
         return self.lancamento.origem_financeira
     lancamento = models.ForeignKey('gestao.Lancamento', on_delete=models.PROTECT, related_name='pagamentos')
     valor = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('.01'))])
+    desconto = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)])
+    juros = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)])
+    multa = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)])
     data = models.DateField()
     conta = models.ForeignKey(ContaBancaria, on_delete=models.PROTECT, null=True, blank=True)
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
@@ -495,14 +511,26 @@ class ExtratoBancario(Validado):
     valor = models.DecimalField('Valor assinado: entrada + / saída -', max_digits=14, decimal_places=2)
     descricao = models.CharField(max_length=255)
     movimento = models.OneToOneField(MovimentoCaixa, on_delete=models.PROTECT, null=True, blank=True, editable=False)
+    ignorado = models.BooleanField(default=False)
+    ignorado_em = models.DateTimeField(null=True, blank=True, editable=False)
+    ignorado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, editable=False, related_name='extratos_ignorados')
     class Meta:
         constraints = [models.UniqueConstraint(fields=['conta', 'identificador'], name='extrato_conta_id_unico')]
     def __str__(self):
         return f'{self.data} · {self.descricao}'
 
 class DocumentoFiscal(Validado):
+    estabelecimento = models.ForeignKey('platform_core.FilialEmpresa', on_delete=models.PROTECT, null=True, blank=True)
+    configuracao_fiscal = models.ForeignKey('operacao.ConfiguracaoFiscal', on_delete=models.PROTECT, null=True, blank=True)
+    credencial_fiscal = models.ForeignKey('operacao.CredencialFiscal', on_delete=models.PROTECT, null=True, blank=True, editable=False)
+    serie_fiscal = models.ForeignKey('operacao.SerieFiscal', on_delete=models.PROTECT, null=True, blank=True)
+    regra_fiscal = models.ForeignKey('operacao.RegraTributariaFiscal', on_delete=models.PROTECT, null=True, blank=True, editable=False)
+    modelo = models.CharField(max_length=10, blank=True, editable=False)
+    chave = models.CharField(max_length=80, blank=True, editable=False)
+    snapshot_fiscal = models.JSONField(default=dict, blank=True, editable=False)
+    autorizado_em = models.DateTimeField(null=True, blank=True, editable=False)
     tipo = models.CharField(max_length=5, choices=[('NFSE', 'NFS-e'), ('NFE', 'NF-e'), ('NFCE', 'NFC-e')])
-    cliente = models.ForeignKey('clientes.Cliente', on_delete=models.PROTECT)
+    cliente = models.ForeignKey('clientes.Cliente', on_delete=models.PROTECT, null=True, blank=True)
     lancamento = models.ForeignKey('gestao.Lancamento', on_delete=models.PROTECT, null=True, blank=True)
     ordem = models.ForeignKey('ordens.OrdemServico', on_delete=models.PROTECT, null=True, blank=True)
     venda = models.ForeignKey(Venda, on_delete=models.PROTECT, null=True, blank=True)
@@ -510,7 +538,7 @@ class DocumentoFiscal(Validado):
     serie = models.CharField(max_length=10, blank=True)
     status = models.CharField(max_length=15, default='RASCUNHO', editable=False)
     protocolo = models.CharField(max_length=150, blank=True, editable=False)
-    ambiente = models.CharField(max_length=10, choices=[('SANDBOX', 'Sandbox'), ('PRODUCAO', 'Produção')], default='SANDBOX')
+    ambiente = models.CharField(max_length=12, choices=[('SANDBOX', 'Sandbox legado'), ('SIMULACAO', 'Simulação sem valor fiscal'), ('HOMOLOGACAO', 'Homologação oficial não habilitada'), ('PRODUCAO', 'Produção')], default='SANDBOX')
     municipio = models.CharField(max_length=10, blank=True)
     codigo_servico = models.CharField(max_length=30, blank=True)
     impostos = models.JSONField(default=dict, blank=True, help_text='Valores/classificações fornecidos pelo contador; nenhuma regra fiscal presumida.')
@@ -525,6 +553,12 @@ class DocumentoFiscal(Validado):
         return {'RASCUNHO':'Rascunho','ENVIADA':'Enviada','AUTORIZADA':'Autorizada','REJEITADA':'Rejeitada','CANCELADA':'Cancelada'}.get(self.status,self.status)
     def clean(self):
         super().clean()
+        if self.configuracao_fiscal_id:
+            config = self.configuracao_fiscal
+            if self.estabelecimento_id != config.estabelecimento_id or self.tipo != config.tipo or self.ambiente != config.ambiente:
+                raise ValidationError('Documento e configuração fiscal devem coincidir em estabelecimento, tipo e ambiente.')
+        elif self.cliente_id is None:
+            raise ValidationError('Documento legado exige cliente; consumidor não identificado usa o novo fluxo NFC-e.')
         for origin in [self.lancamento if self.lancamento_id else None, self.ordem if self.ordem_id else None, self.venda if self.venda_id else None]:
             if origin and origin.cliente_id != self.cliente_id:
                 raise ValidationError('Cliente fiscal deve coincidir com a origem.')
@@ -533,6 +567,10 @@ class DocumentoFiscal(Validado):
                 raise ValidationError('Use somente classificações/valores fiscais, nunca segredos.')
     def save(self, *args, **kwargs):
         old = type(self).objects.filter(pk=self.pk).first() if self.pk else None
+        if self.pk and (self.configuracao_fiscal_id or old and old.configuracao_fiscal_id) and not getattr(self, '_service_write', False):
+            raise ValidationError('Documento da fundação fiscal exige serviço auditado; snapshot não pode ser editado silenciosamente.')
+        if old and old.configuracao_fiscal_id and any(getattr(self, field) != getattr(old, field) for field in ['snapshot_fiscal', 'valor', 'tipo', 'ambiente', 'modelo', 'estabelecimento_id', 'configuracao_fiscal_id', 'credencial_fiscal_id', 'serie_fiscal_id', 'regra_fiscal_id', 'venda_id', 'ordem_id', 'cliente_id']):
+            raise ValidationError('Identidade, origem e snapshot fiscal são imutáveis; use evento ou novo fluxo explícito.')
         if (self.status != 'RASCUNHO' or old and old.status != 'RASCUNHO') and not getattr(self, '_service_write', False):
             raise ValidationError('Estado fiscal só pode mudar pelo provedor validado.')
         return super().save(*args, **kwargs)
@@ -700,3 +738,7 @@ from .workforce_models import ReferenciaJornadaPonto, SolicitacaoHoraExtra, Deci
 from .inventory_models import Inventario, ItemInventario, ContagemInventario, AjusteInventario, TransferenciaEstoque, EtapaTransferencia  # noqa: E402,F401
 from .contract_workday_models import ConfiguracaoJornadaContrato, JornadaContrato, EventoJornadaContrato, OrdemJornadaContrato, CorrecaoJornadaContrato, DecisaoJornadaContrato  # noqa: E402,F401
 from .seller_models import MetaVendedor, SolicitacaoDescontoPDV  # noqa: E402,F401
+from .pdv_offline_models import SincronizacaoPDV  # noqa: E402,F401
+from .fiscal_models import PerfilFiscalEstabelecimento, ConfiguracaoFiscal, CredencialFiscal, VinculoCredencialFiscal, SerieFiscal, RegraTributariaFiscal, DetalhesNFSe, DetalhesNFe, DetalhesNFCe, SolicitacaoFiscal, ReservaNumeracaoFiscal, TentativaFiscal, EventoFiscal  # noqa: E402,F401
+from .nfce_models import ConfiguracaoNFCe, TributacaoProdutoNFCe, ArtefatoNFCe, PagamentoFiscalNFCe  # noqa: E402,F401
+from .import_models import LoteImportacao, LinhaImportacao  # noqa: E402,F401

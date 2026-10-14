@@ -18,13 +18,13 @@ RESOURCES = {
     'fornecedor': (m.Fornecedor, forms.FornecedorForm, 'estoque_escrever', 'estoque_escrever', 'Fornecedores', ['nome', 'documento', 'telefone', 'ativo']),
     'orcamento': (m.Orcamento, forms.OrcamentoForm, 'orcamentos', 'orcamentos', 'Orçamentos', ['numero', 'cliente', 'validade', 'situacao', 'total']),
     'contrato': (m.Contrato, forms.ContratoForm, 'contratos', 'contratos', 'Contratos', ['numero', 'cliente', 'data_final', 'situacao', 'valor']),
-    'lancamento': (m.Lancamento, forms.LancamentoForm, 'financeiro', 'financeiro_escrever', 'Lançamentos financeiros', ['descricao', 'tipo', 'cliente', 'vencimento', 'valor', 'situacao']),
-    'categoria_financeira': (m.CategoriaFinanceira, forms.CategoriaFinanceiraForm, 'financeiro', 'financeiro_escrever', 'Categorias financeiras', ['nome', 'ativo']),
+    'lancamento': (m.Lancamento, forms.LancamentoForm, 'financeiro', 'financeiro_escrever', 'Lançamentos financeiros', ['cliente', 'fornecedor', 'descricao', 'vencimento', 'valor', 'desconto_total', 'juros_total', 'multa_total', 'valor_atualizado', 'situacao', 'valor_pago', 'saldo']),
+    'categoria_financeira': (m.CategoriaFinanceira, forms.CategoriaFinanceiraForm, 'financeiro', 'financeiro_escrever', 'Categorias financeiras', ['nome', 'natureza', 'ativo']),
     'centro_custo': (m.CentroCusto, forms.CentroCustoForm, 'financeiro', 'financeiro_escrever', 'Centros de custo', ['nome', 'ativo']),
     'forma_pagamento': (m.FormaPagamento, forms.FormaPagamentoForm, 'financeiro', 'financeiro_escrever', 'Formas de pagamento', ['nome', 'ativo']),
 }
-LABELS = {'numero': 'Número', 'situacao': 'Situação', 'total': 'Total', 'quantidade_atual': 'Saldo atual', 'estoque_minimo': 'Estoque mínimo'}
-SITUATIONS = {'RASCUNHO': 'Rascunho', 'ENVIADO': 'Enviado', 'APROVADO': 'Aprovado', 'RECUSADO': 'Recusado', 'CONVERTIDO': 'Convertido em OS', 'ATIVO': 'Ativo', 'PROXIMO': 'Próximo do vencimento', 'VENCIDO': 'Vencido', 'SUSPENSO': 'Suspenso', 'ENCERRADO': 'Encerrado', 'PENDENTE': 'Pendente', 'LIQUIDADO': 'Pago / recebido', 'CANCELADO': 'Cancelado'}
+LABELS = {'numero': 'Número', 'situacao': 'Situação', 'total': 'Total', 'quantidade_atual': 'Saldo atual', 'estoque_minimo': 'Estoque mínimo', 'desconto_total':'Desconto', 'juros_total':'Juros', 'multa_total':'Multa', 'valor_atualizado':'Valor atualizado', 'valor_pago':'Recebido / pago', 'saldo':'Saldo pendente'}
+SITUATIONS = {'RASCUNHO': 'Rascunho', 'ENVIADO': 'Enviado', 'APROVADO': 'Aprovado', 'RECUSADO': 'Recusado', 'CONVERTIDO': 'Convertido em OS', 'ATIVO': 'Ativo', 'PROXIMO': 'Próximo do vencimento', 'VENCIDO': 'Vencido', 'PARCIAL': 'Parcial', 'PENDENTE': 'Em aberto', 'LIQUIDADO': 'Pago / recebido', 'CANCELADO': 'Cancelado'}
 
 
 def resource_config(resource):
@@ -68,6 +68,8 @@ def lista(request, resource):
     model, _, permission, write, title, columns = resource_config(resource)
     require(request.user, permission)
     qs = model.objects.all()
+    if resource == 'lancamento':
+        qs = qs.select_related('cliente','fornecedor','categoria','centro_custo').prefetch_related('pagamentos','eventos')
     search = request.GET.get('q', '').strip()
     field = 'descricao' if resource in ['peca', 'lancamento'] else 'numero' if resource == 'contrato' else 'cliente__nome_razao_social' if resource == 'orcamento' else 'nome'
     if search:
@@ -184,8 +186,18 @@ def detalhe(request, resource, pk):
     if resource == 'lancamento':
         ctx.update(eventos=obj.eventos.select_related('usuario'), pagamentos=obj.pagamentos.select_related('conta','usuario'), operacao_form=forms.OperacaoFinanceiraForm(), origem=obj.origem_financeira)
     if resource == 'peca':
+        from operacao import models as op, stock
         from operacao.stock import metrics
         ctx['stock'] = metrics(obj)
+        if allowed(request.user, 'estoque_escrever'):
+            balances = []
+            for depot in op.Deposito.objects.filter(ativo=True).order_by('nome'):
+                physical = stock.total(obj.lotes.filter(deposito=depot))
+                valid = stock.total(stock.valid_lots(obj, depot))
+                reserved = stock.total(stock.active_reservations(obj, depot))
+                balances.append({'deposito': depot, 'fisico': physical, 'valido': valid,
+                                 'reservado': reserved, 'disponivel': max(m.ZERO, valid - reserved)})
+            ctx['deposit_balances'] = balances
         moves = obj.movimentacoes.select_related('usuario', 'ordem')
         if not allowed(request.user, 'estoque_escrever'):
             moves = moves.filter(ordem__tecnico__usuario=request.user)
@@ -346,25 +358,40 @@ def financeiro(request):
     if not form.is_valid():
         return render(request, 'gestao/financeiro.html', {'form': form}, status=400)
     today = timezone.localdate()
-    inicio = form.cleaned_data.get('inicio') or today.replace(day=1)
-    fim = form.cleaned_data.get('fim') or today
+    period = form.cleaned_data.get('periodo')
+    if period == 'HOJE': inicio, fim = today, today
+    elif period == '7D': inicio, fim = today - timezone.timedelta(days=6), today
+    elif period == '30D': inicio, fim = today - timezone.timedelta(days=29), today
+    elif period == 'MES': inicio, fim = today.replace(day=1), today
+    elif period == 'MES_ANTERIOR':
+        end_previous = today.replace(day=1) - timezone.timedelta(days=1)
+        inicio, fim = end_previous.replace(day=1), end_previous
+    else:
+        inicio = form.cleaned_data.get('inicio') or today.replace(day=1)
+        fim = form.cleaned_data.get('fim') or today
     if fim < inicio:
         form.add_error(None, 'Período inválido.')
         return render(request, 'gestao/financeiro.html', {'form': form}, status=400)
-    return render(request, 'gestao/financeiro.html', {'form': form, 'totais': reporting.financial_dashboard(inicio, fim, form.cleaned_data), 'inicio': inicio, 'fim': fim, 'can_write': allowed(request.user, 'financeiro_escrever')})
+    from operacao.models import ContaBancaria
+    totals = reporting.financial_dashboard(inicio, fim, form.cleaned_data)
+    totals['saldo_caixa'] = sum((account.saldo for account in ContaBancaria.objects.filter(ativo=True, tipo='CAIXA')), m.ZERO)
+    return render(request, 'gestao/financeiro.html', {'form': form, 'totais': totals, 'inicio': inicio, 'fim': fim, 'can_write': allowed(request.user, 'financeiro_escrever')})
 
 
 @perfis_requeridos(*ROLES['financeiro_escrever'])
 @require_POST
 def financeiro_operacao(request, pk, action):
-    get_object_or_404(m.Lancamento, pk=pk)
-    form = forms.OperacaoFinanceiraForm(request.POST)
+    entry = get_object_or_404(m.Lancamento, pk=pk)
+    form = forms.OperacaoFinanceiraForm(request.POST, initial={'valor': entry.saldo})
     if form.is_valid():
         try:
             if action == 'liquidar':
                 if not form.cleaned_data['data']:
                     raise ValidationError('Informe a data de liquidação.')
-                services.liquidar(request.user, pk, form.cleaned_data['data'], form.cleaned_data['observacao'])
+                from operacao.services import pagar
+                discount, interest, fine = form.cleaned_data['desconto'] or 0, form.cleaned_data['juros'] or 0, form.cleaned_data['multa'] or 0
+                amount = form.cleaned_data['valor'] or (entry.saldo + interest + fine - discount)
+                pagar(request.user, pk, amount, form.cleaned_data['data'], form.cleaned_data['observacao'], form.cleaned_data['conta'].pk if form.cleaned_data['conta'] else None, desconto=discount, juros=interest, multa=fine)
             elif action == 'cancelar':
                 services.cancelar_lancamento(request.user, pk, form.cleaned_data['observacao'])
             else:

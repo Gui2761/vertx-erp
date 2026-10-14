@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Painel do Estoque · VERTYX{% endblock %}
+{% block content %}
+<header class="vx-page-header">
+  <div><p class="vx-eyebrow">VERTYX · Controle operacional</p><h1>Painel do Estoque</h1><p>Posição física, disponibilidade, validade e movimentações da organização ativa.</p></div>
+  <div class="vx-actions"><a class="btn btn-primary" href="{% url 'gestao:peca_lista' %}">Produtos</a><a class="btn btn-outline-primary" href="{% url 'operacao:stock_entry' %}">Entrada por lote</a><a class="btn btn-outline-primary" href="{% url 'operacao:stock_lots' %}">Lotes e validades</a></div>
+</header>
+<section class="vx-kpi-grid stock-kpi-grid mb-4" aria-label="Indicadores do estoque">
+  <article class="card"><span class="text-muted">Produtos ativos</span><strong class="vx-metric">{{ summary.produtos }}</strong></article>
+  <article class="card"><span class="text-muted">Com estoque físico</span><strong class="vx-metric">{{ summary.com_estoque }}</strong></article>
+  <article class="card"><span class="text-muted">Sem estoque</span><strong class="vx-metric">{{ summary.sem_estoque }}</strong></article>
+  <article class="card"><span class="text-muted">Abaixo do mínimo</span><strong class="vx-metric">{{ summary.estoque_baixo }}</strong></article>
+  <article class="card"><span class="text-muted">Lotes vencendo em até 90 dias</span><strong class="vx-metric">{{ summary.lotes_vencendo }}</strong></article>
+  <article class="card"><span class="text-muted">Valor estimado por custo de lote</span><strong class="vx-metric">R$ {{ summary.valor|floatformat:2 }}</strong></article>
+</section>
+<section class="card card-body mb-4">
+  <h2 class="h5">Filtrar posição</h2>
+  <form method="get" class="vx-stock-filters">
+    <label>Depósito<select name="deposito" class="form-select"><option value="">Todos</option>{% for row in depositos %}<option value="{{ row.pk }}" {% if filters.deposito == row.pk|stringformat:'s' %}selected{% endif %}>{{ row.nome }}</option>{% endfor %}</select></label>
+    <label>Categoria<select name="categoria" class="form-select"><option value="">Todas</option>{% for row in categorias %}<option value="{{ row.pk }}" {% if filters.categoria == row.pk|stringformat:'s' %}selected{% endif %}>{{ row.nome }}</option>{% endfor %}</select></label>
+    <label>Fornecedor<select name="fornecedor" class="form-select"><option value="">Todos</option>{% for row in fornecedores %}<option value="{{ row.pk }}" {% if filters.fornecedor == row.pk|stringformat:'s' %}selected{% endif %}>{{ row.nome }}</option>{% endfor %}</select></label>
+    <label>Situação<select name="situacao" class="form-select"><option value="">Todas</option>{% for key,label in situation_choices %}<option value="{{ key }}" {% if filters.situacao == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label>Lote<input class="form-control" name="lote" value="{{ filters.lote }}" placeholder="Número ou parte do lote"></label>
+    <label>Validade a partir de<input class="form-control" type="date" name="validade_de" value="{{ filters.validade_de }}"></label>
+    <label>Validade até<input class="form-control" type="date" name="validade_ate" value="{{ filters.validade_ate }}"></label>
+    <div class="vx-actions"><button class="btn btn-primary">Aplicar filtros</button><a class="btn btn-outline-secondary" href="{% url 'operacao:stock_dashboard' %}">Limpar</a></div>
+  </form>
+</section>
+<section class="card mb-4">
+  <div class="card-header d-flex flex-wrap justify-content-between gap-2"><span>Produtos e disponibilidade</span><span class="small text-muted">Disponibilidade considera lotes válidos e reservas.</span></div>
+  <div class="table-responsive"><table class="table table-striped align-middle"><thead><tr><th>Produto / SKU</th><th>Depósito</th><th>Físico</th><th>Válido</th><th>Reservado</th><th>Disponível</th><th>Mínimo / ideal</th><th>Situação</th><th></th></tr></thead><tbody>
+  {% for row in page_obj %}<tr><td><a href="{% url 'gestao:peca_detalhe' row.peca.pk %}">{{ row.peca.descricao }}</a><small class="d-block text-muted">{{ row.peca.sku }}</small></td><td>{% if filters.deposito %}{% for depot in depositos %}{% if filters.deposito == depot.pk|stringformat:'s' %}{{ depot.nome }}{% endif %}{% endfor %}{% else %}Todos{% endif %}</td><td>{{ row.stock.fisico|floatformat:3 }}</td><td>{{ row.stock.valido|floatformat:3 }}</td><td>{{ row.stock.reservado|floatformat:3 }}</td><td><strong>{{ row.stock.disponivel|floatformat:3 }}</strong></td><td>{{ row.stock.minimo|floatformat:3 }} / {{ row.stock.ideal|floatformat:3 }}</td><td><span class="badge {% if row.stock.situacao == 'ZERADO' %}bg-danger{% elif row.stock.situacao == 'ESTOQUE BAIXO' %}bg-warning text-dark{% endif %}">{{ row.stock.situacao }}</span></td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'gestao:peca_detalhe' row.peca.pk %}">Abrir</a></td></tr>{% empty %}<tr><td colspan="9" class="vx-empty">Nenhum produto encontrado com esses filtros.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% include 'operacao/stock_pagination.html' %}
+<section class="card">
+  <div class="card-header">Movimentações recentes</div>
+  <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Data</th><th>Tipo</th><th>Produto</th><th>Quantidade</th><th>Origem</th><th>Destino</th><th>Usuário</th><th>Motivo</th></tr></thead><tbody>
+  {% for row in movimentos %}<tr><td>{{ row.movement.criado_em|date:'d/m/Y H:i' }}</td><td>{{ row.movement.get_tipo_display }}</td><td>{{ row.movement.peca.sku }} · {{ row.movement.peca.descricao }}</td><td>{{ row.quantity|floatformat:3 }}</td><td>{{ row.movement.origem|default:'—' }}</td><td>{{ row.movement.destino|default:'—' }}</td><td>{{ row.movement.usuario }}</td><td>{{ row.movement.observacao|default:'—' }}</td></tr>{% empty %}<tr><td colspan="8" class="vx-empty">Ainda não há movimentações registradas.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+<style>
+.vx-stock-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:end}.vx-stock-filters>label{min-width:0}.vx-stock-filters .vx-actions{grid-column:span 2}.stock-kpi-grid .card{min-width:0}
+@media(min-width:1200px){.stock-kpi-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.stock-kpi-grid .vx-metric{font-size:1.25rem;white-space:nowrap}}
+@media(min-width:768px) and (max-width:1199px){.stock-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:767px){.vx-stock-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.vx-stock-filters .vx-actions{grid-column:1/-1}.vx-stock-filters .vx-actions .btn{flex:1}}
+@media(max-width:380px){.vx-stock-filters{grid-template-columns:1fr}}
+</style>
+{% endblock %}

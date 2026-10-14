@@ -1,0 +1,3 @@
+{% extends 'integracoes/base.html' %}
+{% block migration_title %}Conferir linha {{ row.numero }}{% endblock %}
+{% block migration_content %}<section class="mig-panel">{% for problem in row.problemas %}<p class="text-danger">{{ problem }}</p>{% endfor %}<p>Corrija os campos ou escolha ignorar. A alteração nesta tela só atualiza a prévia.</p><form method="post">{% csrf_token %}{{ form.non_field_errors }}<div class="mig-form-grid">{% for field in form %}<div><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div><button class="btn btn-primary mt-4">Salvar correção e conferir</button> <a href="{% url 'operacao:migration_preview' lote.public_id %}" class="btn btn-link">Voltar</a></form></section>{% endblock %}

@@ -1,0 +1,5 @@
+{% extends 'platform_core/saas/base.html' %}{% block title %}Novo cliente · VERTYX Admin{% endblock %}{% block content %}
+<section class="page-heading"><div><p class="eyebrow">NOVO CLIENTE · ETAPA 1 DE 2</p><h1>Dados da empresa</h1><p>Comece pelo cadastro jurídico e pelos dados de contato.</p></div><a class="btn-quiet" href="{% url 'platform_core:saas_clients' %}">Cancelar</a></section>
+<div class="stepper"><span class="step current"><i>1</i> Empresa</span><span class="step"><i>2</i> Plano e administrador</span></div>
+<form method="post" class="panel form-panel">{% csrf_token %}{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}<div class="form-grid">{% for field in form %}<div class="field {% if field.name == 'endereco' %}field-wide{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</div>{% endfor %}</div><div class="form-actions"><button class="btn-primary">Continuar →</button></div></form>
+{% endblock %}

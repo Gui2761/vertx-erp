@@ -5,6 +5,7 @@ from django import forms
 from django.utils import timezone
 from platform_core.context import current_organization
 from gestao.forms import Estilizado
+from gestao.models import CategoriaFinanceira, CentroCusto
 from contas.models import Usuario
 from equipamentos.models import Equipamento
 from . import models as m
@@ -57,7 +58,7 @@ class ItemCompraForm(ItemCompraBaseForm):
         return data
 CotacaoCompraForm = model_form(m.CotacaoCompra, ['fornecedor', 'valor', 'validade', 'prazo', 'observacoes'])
 ItemVendaForm = model_form(m.ItemVenda, ['peca', 'quantidade', 'valor_unitario', 'desconto'])
-ContaBancariaForm = model_form(m.ContaBancaria, ['nome', 'banco', 'agencia', 'numero', 'tipo', 'saldo_inicial', 'permite_saldo_negativo', 'ativo'])
+ContaBancariaForm = model_form(m.ContaBancaria, ['nome', 'banco', 'agencia', 'numero', 'titular', 'tipo', 'saldo_inicial', 'permite_saldo_negativo', 'ativo'])
 ExtratoForm = model_form(m.ExtratoBancario, ['conta', 'identificador', 'data', 'valor', 'descricao'])
 FiscalForm = model_form(m.DocumentoFiscal, ['tipo', 'cliente', 'lancamento', 'ordem', 'venda', 'serie', 'ambiente', 'municipio', 'codigo_servico', 'impostos', 'retencoes', 'descricao', 'valor'])
 
@@ -192,6 +193,9 @@ class PortalForm(Estilizado):
 
 class PagamentoForm(forms.Form):
     valor = forms.DecimalField(max_digits=14, decimal_places=2, min_value=Decimal('.01'))
+    desconto = forms.DecimalField(required=False, initial=Decimal('0.00'), max_digits=14, decimal_places=2, min_value=0)
+    juros = forms.DecimalField(required=False, initial=Decimal('0.00'), max_digits=14, decimal_places=2, min_value=0)
+    multa = forms.DecimalField(required=False, initial=Decimal('0.00'), max_digits=14, decimal_places=2, min_value=0)
     data = forms.DateField(initial=timezone.localdate, widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
     conta = forms.ModelChoiceField(queryset=m.ContaBancaria.objects.none(), required=False, help_text='Sem conta: pagamento não bancarizado, registrado no financeiro e identificado no histórico/relatório; não altera saldo bancário.')
     observacao = forms.CharField(required=False, widget=forms.Textarea)
@@ -203,9 +207,15 @@ class PagamentoForm(forms.Form):
 class CaixaForm(PagamentoForm):
     tipo = forms.ChoiceField(choices=[('ENTRADA', 'Entrada'), ('SAIDA', 'Saída')])
     descricao = forms.CharField(max_length=255)
+    categoria = forms.ModelChoiceField(queryset=CategoriaFinanceira.objects.none(), required=False)
+    centro_custo = forms.ModelChoiceField(queryset=CentroCusto.objects.none(), required=False)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['categoria'].queryset = CategoriaFinanceira.objects.filter(ativo=True)
+        self.fields['centro_custo'].queryset = CentroCusto.objects.filter(ativo=True)
         self.fields['conta'].required = True
+        for name in ['desconto','juros','multa']:
+            self.fields.pop(name)
 
 class TransferenciaForm(PagamentoForm):
     destino = forms.ModelChoiceField(queryset=m.ContaBancaria.objects.none())
@@ -213,6 +223,8 @@ class TransferenciaForm(PagamentoForm):
         super().__init__(*args, **kwargs)
         self.fields['conta'].required = True
         self.fields['destino'].queryset = m.ContaBancaria.objects.filter(ativo=True)
+        for name in ['desconto','juros','multa']:
+            self.fields.pop(name)
 
 class ParcelasForm(forms.Form):
     quantidade = forms.IntegerField(min_value=2, max_value=60)
@@ -223,5 +235,20 @@ class ConciliacaoForm(forms.Form):
     def __init__(self, *args, conta, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['movimento'].queryset = m.MovimentoCaixa.objects.filter(conta=conta, extratobancario__isnull=True)
+
+class ExtratoImportForm(forms.Form):
+    conta = forms.ModelChoiceField(queryset=m.ContaBancaria.objects.none())
+    arquivo = forms.FileField(help_text='OFX ou CSV, até 10 MB. O arquivo é processado localmente e não é armazenado.')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['conta'].queryset = m.ContaBancaria.objects.filter(ativo=True)
+    def clean_arquivo(self):
+        upload = self.cleaned_data['arquivo']
+        suffix = PurePosixPath(upload.name).suffix.lower()
+        if upload.size > 10 * 1024 * 1024:
+            raise forms.ValidationError('O arquivo excede 10 MB.')
+        if suffix not in ['.ofx', '.csv']:
+            raise forms.ValidationError('Envie um arquivo OFX ou CSV.')
+        return upload
 
 ConfiguracaoForm = model_form(m.Configuracao, ['endereco', 'prefixo_os', 'prefixo_orcamento', 'prefixo_contrato', 'digitos_numero', 'prazo_financeiro_dias', 'juros_mensal_percentual', 'multa_percentual', 'municipio_fiscal', 'codigo_servico', 'ambiente_fiscal', 'provedor_fiscal'])

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Fundação fiscal{% endblock %}
+{% block content %}
+<div class="alert alert-warning"><strong>SIMULAÇÃO LOCAL — SEM VALOR FISCAL</strong><br>Sem certificado, CSC, SEFAZ ou prefeitura. Nenhuma emissão oficial está habilitada.</div>
+<h1>Fundação fiscal</h1><p>{{ request.organization }} · Configuração e documentos exclusivos desta organização.</p>
+{% if not enabled %}<div class="alert alert-info">A execução simulada está desabilitada neste ambiente.</div>{% endif %}
+<div class="d-flex flex-wrap gap-2 mb-4"><a class="btn btn-primary" href="{% url 'operacao:fiscal_simulacao_novo' %}">Preparar documento simulado</a><a class="btn btn-outline-secondary" href="{% url 'operacao:fiscal_lista' %}">Documentos anteriores</a>
+{% for key in cadastros %}<a class="btn btn-outline-secondary" href="{% url 'operacao:fiscal_simulacao_cadastro' key %}">Cadastrar {{ key }}</a>{% endfor %}</div>
+<h2>Configurações</h2><ul>{% for config in configuracoes %}<li>{{ config }} · {% if config.habilitada %}Habilitada para simulação{% else %}Desabilitada{% endif %}</li>{% empty %}<li>Nenhuma configuração. Cadastre o perfil e configuração de um estabelecimento já existente.</li>{% endfor %}</ul>
+<h2>Séries</h2><ul>{% for serie in series %}<li>{{ serie }} · próximo número simulado: {{ serie.proximo_numero }}</li>{% empty %}<li>Nenhuma série.</li>{% endfor %}</ul>
+<h2>Documentos simulados</h2><div class="table-responsive"><table class="table"><thead><tr><th>Documento</th><th>Estabelecimento</th><th>Estado simulado</th><th>Valor</th></tr></thead><tbody>{% for doc in docs %}<tr><td><a href="{% url 'operacao:fiscal_simulacao_detalhe' doc.pk %}">{{ doc }}</a></td><td>{{ doc.estabelecimento }}</td><td>{{ doc.get_status_display }}</td><td>R$ {{ doc.valor|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="4">Nenhum documento preparado.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

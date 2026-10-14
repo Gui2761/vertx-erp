@@ -15,8 +15,29 @@ def payload(document):
         products = [{'sku': row.peca.sku, 'descricao': row.peca.descricao, 'ncm': row.peca.ncm, 'cfop': row.peca.cfop, 'cst_csosn': row.peca.cst_csosn, 'quantidade': str(row.quantidade), 'valor_unitario': str(row.valor_unitario), 'desconto': str(row.desconto)} for row in document.venda.itens.select_related('peca')]
     return {'tipo': document.tipo, 'ambiente': document.ambiente, 'emitente': {'cnpj': org.cnpj, 'razao_social': org.razao_social}, 'destinatario': {'documento': customer.cpf_cnpj, 'nome': customer.nome_razao_social, 'inscricao_estadual': customer.inscricao_estadual, 'inscricao_municipal': customer.inscricao_municipal}, 'serie': document.serie, 'municipio': document.municipio, 'codigo_servico': document.codigo_servico, 'descricao': document.descricao, 'valor': str(document.valor), 'impostos': document.impostos, 'retencoes': document.retencoes, 'produtos': products}
 
-@transaction.atomic
 def executar(user, pk, action, reason=''):
+    # New documents MUST use the isolated simulation pipeline, not legacy adapters.
+    doc = DocumentoFiscal.objects.get(pk=pk)
+    if doc.configuracao_fiscal_id:
+        from .foundation import solicitar, processar, permissao
+        import uuid
+        operation = 'CANCELAR' if action == 'cancelar' else 'EMITIR'
+        permissao(user, 'fiscal_cancelar' if operation == 'CANCELAR' else 'fiscal_emitir')
+        if action == 'consultar':
+            req = doc.solicitacoes_fiscais.order_by('-pk').first()
+        elif action in ('emitir', 'cancelar'):
+            req = solicitar(user, pk, uuid.uuid4(), operacao=operation, motivo=reason)
+        else:
+            raise ValidationError('Operação fiscal inválida.')
+        if req:
+            processar(user, req.pk)
+        doc.refresh_from_db()
+        return doc
+    return _executar_legado(user, pk, action, reason)
+
+@transaction.atomic
+def _executar_legado(user, pk, action, reason=''):
+    require(user, 'fiscal_cancelar' if action == 'cancelar' else 'fiscal_emitir')
     require(user, 'financeiro_escrever')
     doc = DocumentoFiscal.objects.select_for_update().get(pk=pk)
     config = Configuracao.objects.first()

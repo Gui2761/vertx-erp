@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from django import forms
 from django.utils import timezone
 from platform_core.forms import TenantModelForm
@@ -110,9 +111,18 @@ class LancamentoForm(Estilizado):
 
 
 class CategoriaFinanceiraForm(Estilizado):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Preserve compatibility with existing category forms and records that
+        # predate nature-based classification.
+        self.fields['natureza'].required = False
+
+    def clean_natureza(self):
+        return self.cleaned_data.get('natureza') or getattr(self.instance, 'natureza', None) or 'AMBAS'
+
     class Meta:
         model = m.CategoriaFinanceira
-        fields = ['nome', 'ativo']
+        fields = ['nome', 'natureza', 'ativo']
 
 
 class CentroCustoForm(Estilizado):
@@ -143,7 +153,7 @@ class MovimentoForm(forms.Form):
     request_id = forms.UUIDField(initial=uuid.uuid4, widget=forms.HiddenInput)
     origem = forms.ModelChoiceField(queryset=None, required=False, label='Depósito de origem')
     destino = forms.ModelChoiceField(queryset=None, required=False, label='Depósito de destino')
-    lote = forms.ModelChoiceField(queryset=None,required=False,label='Lote específico',help_text='Deixe vazio para FEFO. Descarte de vencido exige lote e ajuste justificado. Entradas com validade usam a tela Entrada por lote.')
+    lote = forms.ModelChoiceField(queryset=None,required=False,label='Lote específico',help_text='Deixe vazio para aplicar FEFO. Perda/descarte exige motivo e lote explícito; entradas com validade usam a tela Entrada por lote.')
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
@@ -176,7 +186,17 @@ class TecnicoForm(forms.Form):
 
 class OperacaoFinanceiraForm(forms.Form):
     data = forms.DateField(label='Data de pagamento/recebimento', required=False, initial=timezone.localdate, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'))
+    valor = forms.DecimalField(label='Valor pago/recebido', required=False, max_digits=14, decimal_places=2, min_value=Decimal('.01'))
+    desconto = forms.DecimalField(required=False, initial=Decimal('0.00'), max_digits=14, decimal_places=2, min_value=0)
+    juros = forms.DecimalField(required=False, initial=Decimal('0.00'), max_digits=14, decimal_places=2, min_value=0)
+    multa = forms.DecimalField(required=False, initial=Decimal('0.00'), max_digits=14, decimal_places=2, min_value=0)
+    conta = forms.ModelChoiceField(label='Conta de recebimento/pagamento', queryset=__import__('operacao.models', fromlist=['ContaBancaria']).ContaBancaria.objects.none(), required=False)
     observacao = forms.CharField(label='Observação / justificativa', required=False, widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from operacao.models import ContaBancaria
+        self.fields['conta'].queryset = ContaBancaria.objects.filter(ativo=True)
 
 
 class FiltrosForm(forms.Form):
@@ -210,6 +230,7 @@ class FiltrosForm(forms.Form):
 
 
 class FinanceiroFiltrosForm(FiltrosForm):
+    periodo = forms.ChoiceField(label='Período', required=False, choices=[('', 'Personalizado'), ('HOJE', 'Hoje'), ('7D', '7 dias'), ('30D', '30 dias'), ('MES', 'Mês atual'), ('MES_ANTERIOR', 'Mês anterior')])
     origem = forms.ChoiceField(required=False, choices=[('', 'Todas as origens'), ('OS', 'OS'), ('CONTRATO', 'Contrato'), ('ORCAMENTO', 'Orçamento'), ('VENDA', 'Venda'), ('COMPRA', 'Compra'), ('DEVOLUCAO', 'Devolução de venda'), ('MANUAL', 'Manual')])
     conta = forms.ModelChoiceField(label='Conta bancária / caixa', queryset=m.Lancamento.objects.none(), required=False)
     controle = forms.ChoiceField(required=False, choices=[('', 'Todos os pagamentos'), ('BANCARIZADO', 'Com conta bancária / caixa'), ('NAO_BANCARIZADO', 'Não bancarizados')])
@@ -219,6 +240,8 @@ class FinanceiroFiltrosForm(FiltrosForm):
         for name in ['cliente', 'unidade', 'tecnico', 'equipamento', 'status', 'contrato', 'tipo_atendimento']:
             self.fields.pop(name)
         self.fields['conta'].queryset = ContaBancaria.objects.all()
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
     def clean(self):
         data = super().clean()
         if data.get('conta') and data.get('controle') == 'NAO_BANCARIZADO':

@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="alert alert-warning"><strong>SIMULAÇÃO LOCAL — SEM VALOR FISCAL.</strong> Não informe certificados, senhas, CSC ou tokens. A referência de simulação é gerada pelo backend e não representa um certificado.</div>
+<h1>{{ titulo }}</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Registrar em simulação</button> <a href="{% url 'operacao:fiscal_simulacao' %}">Voltar à fundação fiscal</a></form>
+{% endblock %}

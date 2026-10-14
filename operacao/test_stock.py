@@ -85,6 +85,20 @@ class StockTests(Dados,TestCase):
             self.assertFalse(g.Lancamento.objects.exists())
             self.invariant()
 
+    def test_perda_exige_motivo_lote_explicito_e_registra_custo_auditavel(self):
+        with tenant_context(self.a):
+            lot = self.entry(5, -1, 'VENCIDO-PERDA')
+            with self.assertRaises(ValidationError):
+                gs.movimentar(self.admin, self.part.pk, 'PERDA', 1, 'Descarte vencido', origem_id=self.depot.pk)
+            with self.assertRaises(ValidationError):
+                gs.movimentar(self.admin, self.part.pk, 'PERDA', 1, '', origem_id=self.depot.pk, lote_id=lot.pk)
+            movement = gs.movimentar(self.admin, self.part.pk, 'PERDA', 2, 'Descarte vencido documentado', origem_id=self.depot.pk, lote_id=lot.pk)
+            lot.refresh_from_db()
+            self.assertEqual((lot.quantidade, movement.variacao, movement.custo_total), (Decimal('3'), Decimal('-2'), Decimal('25.00')))
+            self.assertEqual(movement.get_tipo_display(), 'Perda / descarte')
+            self.assertEqual(m.MovimentacaoLote.objects.get(movimentacao=movement).custo_total, Decimal('25.00'))
+            self.invariant()
+
     def test_lote_valido_na_data_limite(self):
         with tenant_context(self.a):
             lot=self.entry(1,0)
@@ -430,6 +444,33 @@ class StockTests(Dados,TestCase):
         self.assertContains(response,self.part.sku)
         self.assertContains(response,'Disponível válido')
         self.assertContains(response,'Em compra')
+
+    def test_painel_estoque_indicadores_filtros_e_isolamento_tenant(self):
+        with tenant_context(self.a):
+            lot = self.entry(4, 7, 'PAINEL-A')
+            response = self.client.get(reverse('operacao:stock_dashboard'), {'lote': 'PAINEL-A'})
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, 'Painel do Estoque')
+            self.assertContains(response, self.part.sku)
+            self.assertNotContains(response, 'Peça gestao-b')
+            self.assertEqual(response.context['summary']['produtos'], 1)
+            self.assertEqual(response.context['page_obj'].object_list[0]['stock']['disponivel'], Decimal('4'))
+            response = self.client.get(reverse('operacao:stock_dashboard'), {'lote': 'PAINEL-A', 'validade_ate': (self.today + timezone.timedelta(days=7)).isoformat()})
+            self.assertEqual(response.context['page_obj'].object_list[0]['stock']['fisico'], Decimal('4'))
+            destination = m.Deposito.objects.create(nome='Painel · destino sintético')
+            gs.movimentar(self.admin, self.part.pk, 'TRANSFER', 2, 'Transferência para teste do painel', origem_id=self.depot.pk, destino_id=destination.pk)
+            response = self.client.get(reverse('operacao:stock_dashboard'))
+            self.assertEqual(response.context['movimentos'][0]['quantity'], Decimal('2'))
+            response = self.client.get(reverse('gestao:peca_detalhe', args=[self.part.pk]))
+            self.assertContains(response, 'Saldo por depósito')
+            self.assertContains(response, 'Saldo antes')
+            self.assertContains(response, 'Movimentação')
+            self.assertContains(response, 'Transferência 2,000')
+            self.assertEqual(sum((row['fisico'] for row in response.context['deposit_balances']), Decimal('0')), Decimal('4'))
+        response = self.client.get(reverse('operacao:stock_dashboard'), {'organization_id': self.b.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.part.sku)
+        self.assertNotContains(response, 'Peça gestao-b')
 
     def test_entrada_nao_ignora_lote_selecionado_incompativel(self):
         with tenant_context(self.a):

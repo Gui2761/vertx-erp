@@ -24,9 +24,12 @@ class SellerData(CommerceData):
         self.seller=self.operator
         membership=OrganizationMembership.objects.get(organization=self.a,user=self.seller)
         membership.role='VENDEDOR';membership.save()
+        with tenant_context(self.a):
+            PermissaoMembership.objects.create(membership=membership,capacidade='operar_pdv',permitido=True)
         self.seller.set_password('synthetic-seller-test-only');self.seller.save()
         self.other=self.user('other-seller',self.a,'VENDEDOR')
         with tenant_context(self.a):
+            PermissaoMembership.objects.create(membership=OrganizationMembership.objects.get(user=self.other,organization=self.a),capacidade='operar_pdv',permitido=True)
             self.other_cash=m.ContaBancaria.objects.create(nome='Outro caixa',tipo='CAIXA')
             self.other_session=c.open_cash(self.other,self.other_cash.pk,0,uuid.uuid4())
             self.other_sale=c.new_sale(self.other,self.other_session.public_id,self.depot.pk)
@@ -43,10 +46,10 @@ class SellerPWATests(SellerData,TestCase):
         response=self.client.post('/login/?next=/financeiro/',{'username':self.seller.username,'password':'synthetic-seller-test-only'})
         self.assertRedirects(response,'/vendedor/')
 
-    def test_pdv_role_login_also_uses_seller_home(self):
+    def test_pdv_role_login_uses_cash_home(self):
         row=OrganizationMembership.objects.get(user=self.seller,organization=self.a);row.role='PDV';row.save()
         self.client.logout()
-        self.assertRedirects(self.client.post('/contas/login/',{'username':self.seller.username,'password':'synthetic-seller-test-only'}),'/vendedor/')
+        self.assertRedirects(self.client.post('/contas/login/',{'username':self.seller.username,'password':'synthetic-seller-test-only'}),'/pdv/')
 
     def test_platform_home_and_selection_land_in_sales(self):
         self.assertRedirects(self.client.get('/vertyx/'),'/vendedor/')
@@ -55,7 +58,7 @@ class SellerPWATests(SellerData,TestCase):
     def test_menu_server_html_contains_only_sales_and_self_service(self):
         response=self.client.get('/vendedor/');self.assertEqual(response.status_code,200)
         html=response.content.decode();menu=html.split('id="menuPrincipal">')[1].split('</div>')[0]
-        for label in ['Central de Vendas','Abrir PDV','Minhas vendas','Minha meta','Minha comissão','Meu ponto','Hora extra','Alertas','Sair']:
+        for label in ['VERTYX VENDEDOR','Minha rotina','Minhas vendas','Minha meta','Minha comissão','Meu ponto','Hora extra','Notificações','Sair']:
             self.assertIn(label,menu)
         for text in ['Financeiro','Estoque','Compras','Contratos','Usuários','Configurações','RH','Voltar para VERTYX','disabled','display:none']:
             self.assertNotIn(text,menu)
@@ -205,7 +208,9 @@ class SellerPWATests(SellerData,TestCase):
             self.assertEqual((result.total,result.conta.saldo,item.custo_total),(20,0,Decimal('9.58000')))
             self.assertEqual(result.pagamentos_pdv.get(forma=self.cash_method).troco,2)
             self.assertEqual([l['id'] for l in result.snapshot['itens'][0]['lotes']],[early.pk,late.pk])
-        self.assertContains(self.client.get(f'/pdv/vendas/{sale.public_id}/comprovante/'),'Comprovante não fiscal')
+        receipt=self.client.get(f'/pdv/vendas/{sale.public_id}/comprovante/')
+        for text in ['Comprovante não fiscal','Pagamentos','Valor recebido','Troco',str(sale.public_id),self.cash_method.nome,self.pix.nome,'R$ 8,00','R$ 12,00','R$ 2,00']:
+            self.assertContains(receipt,text)
 
     def test_duplicate_finalize_does_not_duplicate_stock_payment(self):
         with tenant_context(self.a):
@@ -286,7 +291,7 @@ class SellerPWATests(SellerData,TestCase):
 
     def test_bottom_navigation_is_authorized_and_touch_styles_are_present(self):
         response=self.client.get('/vendedor/');html=response.content.decode();bottom=re.search(r'<nav class="sv-bottom".*?</nav>',html,re.S).group()
-        for url in ['/pdv/','/vendedor/vendas/','/vendedor/meta/','/ponto/','/vendedor/alertas/']:
+        for url in ['/vendedor/','/vendedor/vendas/','/vendedor/meta/','/vendedor/ponto/','/vendedor/alertas/']:
             self.assertIn(f'href="{url}"',bottom);self.assertEqual(self.client.get(url).status_code,200)
 
     def test_switch_organization_recomputes_experience(self):
@@ -294,13 +299,14 @@ class SellerPWATests(SellerData,TestCase):
         self.assertRedirects(self.client.post(reverse('platform_core:select_organization'),{'organization':self.b.public_id}),'/tecnico/',fetch_redirect_response=False)
         response=self.client.get('/tecnico/');self.assertNotContains(response,'sv-bottom');self.assertNotContains(response,'Central de Vendas')
 
-    def test_disabled_pdv_module_denies_central(self):
+    def test_disabled_pdv_module_denies_cash_preserves_central(self):
         with tenant_context(self.a): ModuloOrganizacao.objects.create(codigo='pdv',habilitado=False)
-        self.assertEqual(self.client.get('/vendedor/').status_code,403)
+        self.assertEqual(self.client.get('/vendedor/').status_code,200)
+        self.assertEqual(self.client.get('/pdv/').status_code,403)
 
     def test_admin_gestor_technician_original_experiences_preserved(self):
         for user in [self.admin,self.users['GESTOR']]:
-            self.client.force_login(user);self.assertEqual(self.client.get('/assistencia/').status_code,200);self.assertContains(self.client.get('/pdv/'),'PDV · Caixas')
+            self.client.force_login(user);self.assertEqual(self.client.get('/assistencia/').status_code,200);self.assertTemplateUsed(self.client.get('/pdv/'),'operacao/seller_terminal.html');self.assertContains(self.client.get('/pdv/?gestao=1'),'PDV · Caixas')
         self.client.force_login(self.users['TECNICO']);self.assertContains(self.client.get('/tecnico/'),'Meus atendimentos');self.assertEqual(self.client.get('/vendedor/').status_code,403)
 
     def test_invalid_cash_post_never_renders_administrative_cash(self):
@@ -404,13 +410,29 @@ class SellerMigrationTests(SellerData,TransactionTestCase):
             self.incoming(3);sale,item=self.sale();self.paid(sale)
         executor=MigrationExecutor(connection);latest=executor.loader.graph.leaf_nodes()
         models=[Organization,OrganizationMembership,Usuario,Cliente,OrdemServico,g.Peca,m.SaldoDeposito,m.LoteEstoque,m.Venda,m.ItemVenda,g.Lancamento,m.Pagamento,m.Documento,m.Funcionario,m.JornadaTrabalho,m.MarcacaoPonto]
-        def snapshot():
-            return {model._meta.label:list(model._base_manager.order_by('pk').values()) for model in models}
+        def snapshot(columns_by_table):
+            result={}
+            with connection.cursor() as cursor:
+                existing=set(connection.introspection.table_names())
+                for model in models:
+                    table=model._meta.db_table
+                    if table not in existing:
+                        continue
+                    columns=columns_by_table.get(table,())
+                    fields=[field.attname for field in model._meta.concrete_fields if field.column in columns]
+                    result[model._meta.label]=list(model._base_manager.order_by('pk').values(*fields))
+            return result
         try:
             executor.migrate([('operacao','0016_hora_extra_aprovacao')])
-            before=snapshot()
+            columns_by_table={}
+            with connection.cursor() as cursor:
+                existing=set(connection.introspection.table_names())
+                for model in models:
+                    if model._meta.db_table in existing:
+                        columns_by_table[model._meta.db_table]=[column.name for column in connection.introspection.get_table_description(cursor,model._meta.db_table)]
+            before=snapshot(columns_by_table)
             MigrationExecutor(connection).migrate(latest)
-            self.assertEqual(snapshot(),before)
+            self.assertEqual(snapshot(columns_by_table),before)
             self.assertIn('operacao_metavendedor',connection.introspection.table_names())
             self.assertIn('operacao_solicitacaodescontopdv',connection.introspection.table_names())
         finally:

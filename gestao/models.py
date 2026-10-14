@@ -154,11 +154,14 @@ class Movimentacao(RegistroImutavel):
     class Tipo(models.TextChoices):
         ENTRADA = 'ENTRADA', 'Entrada'
         SAIDA = 'SAIDA', 'Saída'
+        PERDA = 'PERDA', 'Perda / descarte'
         AJUSTE = 'AJUSTE', 'Ajuste de saldo'
         DEVOLUCAO = 'DEVOLUCAO', 'Devolução'
         OS = 'OS', 'Utilização em OS'
         TRANSFERENCIA = 'TRANSFER', 'Transferência entre depósitos'
         INVENTARIO = 'INVENTARIO', 'Ajuste aprovado de inventário'
+
+    TIPO_PERDA = Tipo.PERDA
 
     peca = models.ForeignKey(Peca, on_delete=models.PROTECT, related_name='movimentacoes')
     origem = models.ForeignKey('operacao.Deposito', on_delete=models.PROTECT, null=True, blank=True, related_name='movimentos_saida')
@@ -182,6 +185,15 @@ class Movimentacao(RegistroImutavel):
 
     def __str__(self):
         return f'{self.get_tipo_display()} · {self.peca.sku} · {self.quantidade}'
+
+    def get_tipo_display(self):
+        if self.tipo == self.TIPO_PERDA:
+            return 'Perda / descarte'
+        return dict(self._meta.get_field('tipo').choices).get(self.tipo, self.tipo)
+
+    @property
+    def saldo_antes(self):
+        return self.saldo_apos - self.variacao
 
     @property
     def valor_custo(self):
@@ -423,11 +435,11 @@ class CadastroFinanceiro(Validado):
 
 
 class CategoriaFinanceira(CadastroFinanceiro):
-    pass
+    natureza = models.CharField(max_length=10, choices=[('RECEITA', 'Receita'), ('DESPESA', 'Despesa'), ('AMBAS', 'Receita e despesa')], default='AMBAS')
 
 
 class CentroCusto(CadastroFinanceiro):
-    tipo=models.CharField(max_length=20,default='OUTRO',choices=[('ADMINISTRATIVO','Administrativo'),('COMERCIAL','Comercial'),('ASSISTENCIA','Assistência'),('OPERACIONAL','Operacional'),('OUTRO','Outro')])
+    tipo=models.CharField(max_length=20,default='OUTRO',choices=[('ADMINISTRATIVO','Administrativo'),('LOJA','Loja'),('ASSISTENCIA','Assistência'),('COMERCIAL','Comercial'),('FINANCEIRO','Financeiro'),('OPERACIONAL','Operacional'),('OUTRO','Outro')])
 
 
 class FormaPagamento(CadastroFinanceiro):
@@ -473,6 +485,8 @@ class Lancamento(Validado):
     def situacao(self):
         if self.status in ['LIQUIDADO', 'CANCELADO']:
             return self.status
+        if self.status in ['PENDENTE', 'VENCIDO'] and self.saldo < self.valor and self.saldo > ZERO:
+            return 'PARCIAL'
         return 'VENCIDO' if self.vencimento < timezone.localdate() else 'PENDENTE'
 
     @property
@@ -482,7 +496,39 @@ class Lancamento(Validado):
         cache=getattr(self,'_prefetched_objects_cache',{})
         abatement=sum((event.valor for event in cache['eventos'] if event.tipo=='ABATIMENTO'),ZERO) if 'eventos' in cache else self.eventos.filter(tipo='ABATIMENTO').aggregate(total=Sum('valor'))['total'] or ZERO
         paid=sum((payment.valor for payment in cache['pagamentos']),ZERO) if 'pagamentos' in cache else self.pagamentos.aggregate(total=Sum('valor'))['total'] or ZERO
-        return self.valor - paid - abatement
+        if 'pagamentos' in cache:
+            interest = sum((payment.juros for payment in cache['pagamentos']), ZERO)
+            fine = sum((payment.multa for payment in cache['pagamentos']), ZERO)
+            discount = sum((payment.desconto for payment in cache['pagamentos']), ZERO)
+        else:
+            adjustments = self.pagamentos.aggregate(juros=Sum('juros'), multa=Sum('multa'), desconto=Sum('desconto'))
+            interest, fine, discount = adjustments['juros'] or ZERO, adjustments['multa'] or ZERO, adjustments['desconto'] or ZERO
+        charges = interest + fine - discount
+        return max(ZERO, self.valor + charges - paid - abatement)
+
+    @property
+    def valor_pago(self):
+        cache=getattr(self,'_prefetched_objects_cache',{})
+        return sum((payment.valor for payment in cache['pagamentos']), ZERO) if 'pagamentos' in cache else self.pagamentos.aggregate(total=Sum('valor'))['total'] or ZERO
+
+    def _ajustes(self):
+        cache=getattr(self,'_prefetched_objects_cache',{})
+        if 'pagamentos' in cache:
+            return tuple(sum((getattr(payment, field) for payment in cache['pagamentos']), ZERO) for field in ('desconto','juros','multa'))
+        result=self.pagamentos.aggregate(desconto=Sum('desconto'), juros=Sum('juros'), multa=Sum('multa'))
+        return tuple(result[key] or ZERO for key in ('desconto','juros','multa'))
+
+    @property
+    def desconto_total(self): return self._ajustes()[0]
+
+    @property
+    def juros_total(self): return self._ajustes()[1]
+
+    @property
+    def multa_total(self): return self._ajustes()[2]
+
+    @property
+    def valor_atualizado(self): return self.valor + self.juros_total + self.multa_total - self.desconto_total
 
     @property
     def raiz_financeira(self):
@@ -495,6 +541,9 @@ class Lancamento(Validado):
 
     def clean(self):
         super().clean()
+        natureza_esperada = {'RECEBER': 'RECEITA', 'PAGAR': 'DESPESA'}.get(self.tipo)
+        if self.categoria_id and self.categoria.natureza not in ['AMBAS', natureza_esperada]:
+            raise ValidationError({'categoria': 'Natureza da categoria não corresponde ao tipo do lançamento.'})
         if self.origem_raiz_id:
             root = self.origem_raiz
             if root.pk == self.pk or root.origem_raiz_id or root.tipo != self.tipo or root.cliente_id != self.cliente_id or root.fornecedor_id != self.fornecedor_id:

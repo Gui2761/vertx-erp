@@ -191,7 +191,7 @@ class EmployeeCentralTests(EmployeeFixture, TestCase):
             self.client.logout()
             self.client.post('/login/', {'username': user.username, 'password': self.password})
             if role in ['VENDEDOR', 'PDV']:
-                self.assertRedirects(self.client.get('/vertyx/'), '/vendedor/', fetch_redirect_response=False)
+                self.assertRedirects(self.client.get('/vertyx/'), '/pdv/' if role=='PDV' else '/vendedor/', fetch_redirect_response=False)
                 self.assertEqual(self.client.get('/financeiro/').status_code, 403)
                 self.assertEqual(self.client.get('/contas/usuarios/').status_code, 403)
             else:

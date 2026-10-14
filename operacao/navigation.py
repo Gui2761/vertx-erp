@@ -1,14 +1,32 @@
 ICON_ALIASES = {'calendar3':'calendar','calendar-check':'calendar','clipboard2-pulse':'document','telephone':'health','file-earmark-text':'document','file-earmark-ruled':'document','bag':'cart','people':'users','box-seam':'stock','arrow-left-right':'arrows','hourglass-split':'calendar','buildings':'stock','list-check':'document','bookmark-check':'document','cart-check':'cart','chat-square-text':'document','truck':'cart','box-arrow-in-down':'stock','person-vcard':'users','cash-stack':'bank','arrow-down-circle':'arrows','arrow-up-circle':'arrows','graph-up':'chart','file-earmark-check':'document','heart-pulse':'health','person-gear':'users','folder':'document','person-lock':'users','bar-chart':'chart','gear':'settings','sliders':'settings','person-check':'users'}
 
 def menu(request):
+    result=_menu(request)
+    if getattr(request,'resolver_match',None) and request.resolver_match.url_name=='seller_login':
+        result['seller_experience']=True
+    if getattr(request,'resolver_match',None) and request.resolver_match.url_name=='pdv_login':
+        result['pdv_experience']=True
+    match=getattr(request,'resolver_match',None)
+    from platform_core.modules import has_capability
+    result['pdv_experience']=result.get('pdv_experience',False) or bool(match and match.namespace=='operacao' and match.url_name in {'pdv_home','pdv_sale','pdv_cash','pdv_receipt','pdv_products'} and request.user.is_authenticated and has_capability(request.user,'pdv'))
+    return result
+
+
+def _menu(request):
     membership=getattr(request,'membership',None)
     match=getattr(request,'resolver_match',None)
     from .planning_services import can_tv
     panel_access=bool(membership and can_tv(request.user))
-    if membership and membership.role in {'VENDEDOR','PDV'}:
+    if membership and (membership.role in {'VENDEDOR','PDV'} or request.path.startswith('/pdv/') or request.path.startswith('/vendedor/') and not request.path.startswith('/vendedor/gestao/')):
         from platform_core.modules import has_capability, module_enabled, module_for_path
-        links=[('Central de Vendas','/vendedor/','grid','pdv'),('Abrir PDV','/pdv/','cart','pdv'),('Minhas vendas','/vendedor/vendas/','document','pdv'),('Minha meta','/vendedor/meta/','chart','pdv'),('Minha comissão','/vendedor/comissao/','chart','pdv'),('Meu ponto','/ponto/','users','ponto'),('Hora extra','/ponto/horas-extras/','calendar','ponto'),('Alertas','/vendedor/alertas/','bell','pdv')]
-        return {'seller_experience':True,'can_operational_panel':False,'seller_navigation':[{'label':label,'url':url,'icon':icon} for label,url,icon,cap in links if has_capability(request.user,cap) and module_enabled(module_for_path(url))]}
+        if request.path.startswith('/pdv/') and has_capability(request.user,'operar_pdv'):
+            links=[('Caixa','/pdv/','cart'),('Histórico de vendas','/pdv/historico/','document'),('Offline / sincronização','/pdv/offline/','arrows')]
+            if has_capability(request.user,'caixa_supervisor'):
+                links.append(('Gestão de caixas','/pdv/?gestao=1','bank'))
+            return {'pdv_experience':True,'can_operational_panel':False,'pdv_navigation':[{'label':label,'url':url,'icon':icon} for label,url,icon in links]}
+        if membership.role in {'VENDEDOR','PDV'} or request.path.startswith('/vendedor/'):
+            links=[('Minha rotina','/vendedor/','grid','central_vendedor'),('Minhas vendas','/vendedor/vendas/','document','central_vendedor'),('Minha meta','/vendedor/meta/','chart','central_vendedor'),('Minha comissão','/vendedor/comissao/','chart','central_vendedor'),('Meu ponto','/vendedor/ponto/','users','ponto'),('Hora extra','/vendedor/ponto/horas-extras/','calendar','ponto'),('Notificações','/vendedor/alertas/','bell','central_vendedor')]
+            return {'seller_experience':True,'can_operational_panel':False,'seller_navigation':[{'label':label,'url':url,'icon':icon} for label,url,icon,cap in links if has_capability(request.user,cap) and module_enabled(module_for_path(url))]}
     if membership and membership.role == 'TECNICO':
         from platform_core.access import has_erp_access
         from platform_core.modules import has_capability, module_enabled, module_for_path
@@ -39,15 +57,15 @@ def menu(request):
         if panel_access:
             links.append({'label':'Painel operacional','url':'/painel-operacional/','icon':'grid'})
         return {'can_operational_panel':panel_access,'executive_navigation':[{'title':'ASSISTÊNCIA','links':links}]}
-    if not membership or membership.role not in ['ADMIN','GESTOR'] or match and match.app_name=='platform_core':
+    if not membership or membership.role not in ['ADMIN','GESTOR']:
         return {'can_operational_panel':panel_access}
     groups=[
         ('INÍCIO',[('Painel','/assistencia/','grid')]),
         ('ASSISTÊNCIA',[('Planejamento','/planejamento/','calendar3'),('Ordens de Serviço','/ordens/','clipboard2-pulse'),('Chamados','/chamados/','telephone'),('Base de conhecimento','/conhecimento/','document'),('Preventivas','/preventivas/','calendar-check'),('Contratos','/contratos/','file-earmark-text')]),
         ('COMERCIAL',[('Orçamentos','/orcamentos/','file-earmark-ruled'),('Vendas e loja','/vendas/','bag'),('Clientes','/clientes/','people')]),
-        ('ESTOQUE',[('Peças e Estoque','/estoque/','box-seam'),('Movimentações','/estoque/movimentar/','arrow-left-right'),('Lotes / Validades','/estoque/lotes/','hourglass-split'),('Depósitos','/depositos/','buildings'),('Inventário','/relatorios/estoque_atual/','list-check'),('Reservas','/estoque/reservas/','bookmark-check'),('Peças necessárias para OS','/estoque/necessidades/','stock')]),
+        ('ESTOQUE',[('Painel do estoque','/estoque/painel/','box-seam'),('Produtos','/estoque/','box-seam'),('Movimentações','/estoque/movimentar/','arrow-left-right'),('Lotes / Validades','/estoque/lotes/','hourglass-split'),('Depósitos','/depositos/','buildings'),('Inventário','/inventarios/','list-check'),('Reservas','/estoque/reservas/','bookmark-check'),('Transferências','/transferencias/','arrows'),('Peças necessárias para OS','/estoque/necessidades/','stock')]),
         ('COMPRAS',[('Necessidade de Compra','/estoque/relatorios/','cart-check'),('Compras','/compras/','cart'),('Cotações','/compras/?cotacoes=1','chat-square-text'),('Pedidos','/compras/?status=PEDIDO','truck'),('Recebimentos','/compras/?status=PEDIDO','box-arrow-in-down'),('Fornecedores','/estoque/fornecedores/','person-vcard')]),
-        ('FINANCEIRO',[('Financeiro','/financeiro/','cash-stack'),('Contas a receber','/financeiro/lancamentos/?tipo=RECEBER','arrow-down-circle'),('Contas a Pagar','/financeiro/lancamentos/?tipo=PAGAR','arrow-up-circle'),('Caixa / Bancos','/bancos/','bank'),('Fluxo de Caixa','/relatorios/fluxo_caixa/','graph-up'),('Fiscal','/fiscal/','file-earmark-check')]),
+        ('FINANCEIRO',[('Dashboard','/financeiro/','cash-stack'),('Contas a receber','/financeiro/lancamentos/?tipo=RECEBER','arrow-down-circle'),('Contas a pagar','/financeiro/lancamentos/?tipo=PAGAR','arrow-up-circle'),('Caixa','/bancos/?tipo=CAIXA','bank'),('Bancos','/bancos/?tipo=BANCO','bank'),('Movimentações','/financeiro/movimentacoes/','arrows'),('Conciliação','/bancos/extrato/','arrows'),('Categorias','/financeiro/categorias/','document'),('Centros de custo','/financeiro/centros-custo/','document'),('Relatórios','/relatorios/','chart'),('Fiscal','/fiscal/','file-earmark-check')]),
         ('CADASTROS',[('Clientes e Unidades','/clientes/','people'),('Equipamentos','/equipamentos/','heart-pulse'),('Técnicos','/contas/tecnicos/','person-gear'),('Documentos','/documentos/','folder'),('Acessos ao portal','/portal-acessos/','person-lock')]),
         ('RELATÓRIOS',[('Relatórios','/relatorios/','bar-chart')]),
         ('CONFIGURAÇÕES',[('Notificações','/notificacoes/','bell')])]
@@ -61,6 +79,25 @@ def menu(request):
     groups[2][1].append(('Gestão dos vendedores','/vendedor/gestao/','chart'))
     groups[3][1].extend([('Contagem de inventário','/inventarios/','document'),('Transferências por etapas','/transferencias/','arrows')])
     groups.insert(-1,('RH / PONTO',[('Funcionários','/rh/funcionarios/','users'),('Jornadas','/rh/jornadas/','calendar'),('Escalas e folgas','/rh/escalas/','calendar'),('Meu ponto','/ponto/','users'),('Ajustes de ponto','/ponto/ajustes/','document')]))
+    by_title=dict(groups)
+    from platform_core.modules import has_capability as import_capability
+    if membership.role == 'ADMIN' and import_capability(request.user, 'fiscal_configurar'):
+        by_title['FINANCEIRO'].append(('Fiscal · Configuração fiscal', '/fiscal/configuracao/', 'file-earmark-check'))
+    if import_capability(request.user,'migracao'):
+        by_title['CONFIGURAÇÕES'].append(('Integrações e Migração','/integracoes/migracao/','arrows'))
+    by_title['COMERCIAL']=[('Central do PDV','/pdv/','cart') if url=='/pdv/' else (label,url,icon) for label,url,icon in by_title['COMERCIAL']]
+    by_title['RH / PONTO'].extend([('Hora extra','/rh/horas-extras/','calendar'),('Minhas solicitações de hora extra','/ponto/horas-extras/','calendar')])
+    groups=[
+        ('Financeiro',by_title['FINANCEIRO']),
+        ('PDV',[item for item in by_title['COMERCIAL'] if item[1] == '/pdv/']),
+        ('Vendas',[item for item in by_title['COMERCIAL'] if item[1] != '/pdv/']),
+        ('Estoque',by_title['ESTOQUE']),
+        ('Compras',by_title['COMPRAS']),
+        ('RH',by_title['RH / PONTO']),
+        ('Relatórios',by_title['RELATÓRIOS']),
+        ('Configurações',by_title['CONFIGURAÇÕES']+by_title['CADASTROS']),
+        ('Operacional',by_title['INÍCIO']+by_title['ASSISTÊNCIA']),
+    ]
     from platform_core.modules import module_for_path,module_enabled
     groups=[(title,[(label,url,icon) for label,url,icon in links if module_enabled(module_for_path(url))]) for title,links in groups]
-    return {'can_operational_panel':panel_access,'executive_navigation':[{'title':title,'links':[{'label':label,'url':url,'icon':ICON_ALIASES.get(icon,icon)} for label,url,icon in links]} for title,links in groups]}
+    return {'administrative_navigation':True,'can_operational_panel':panel_access,'executive_navigation':[{'title':title,'links':[{'label':label,'url':url,'icon':ICON_ALIASES.get(icon,icon)} for label,url,icon in links]} for title,links in groups]}

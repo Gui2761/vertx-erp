@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "platform_core",
     "gestao",
     "operacao",
+    "rh_municipal",
     "commercial",
 ]
 

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Configuração fiscal{% endblock %}
+{% block content %}
+<style>
+.fc-wrap{max-width:1120px;margin:auto}.fc-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px}.fc-card{background:white;border:1px solid #dce6e7;border-radius:14px;padding:24px;margin-bottom:20px}.fc-card h2{font-size:1.3rem}.fc-card dl{display:grid;grid-template-columns:180px minmax(0,1fr);gap:8px}.fc-card dd{margin:0;overflow-wrap:anywhere}.fc-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.fc-field label{display:block;font-weight:600;margin-bottom:5px}.fc-field:has(input[type=checkbox]){grid-column:1/-1}.fc-field input[type=checkbox]{width:20px;height:20px;margin-right:8px;vertical-align:middle}.fc-field input[type=checkbox]+label{display:inline}.fc-check{list-style:none;padding:0}.fc-check li{padding:10px 0;border-bottom:1px solid #edf1f2}.fc-pending{color:#875900}.fc-confirmed{color:#00736f}.fc-block{background:#fff4dc;border:1px solid #edd199;padding:18px;border-radius:12px}.fc-wrap small{display:block;color:#596772}.fc-actions{display:flex;flex-wrap:wrap;gap:12px}.fc-actions button{min-height:46px}.fc-field .errorlist{color:#a52a2a;padding-left:20px}.fc-wrap form{min-width:0}
+@media(max-width:800px){.fc-grid,.fc-fields{grid-template-columns:minmax(0,1fr)}.fc-card{padding:18px}.fc-card dl{grid-template-columns:1fr;gap:2px}.fc-card dd{margin-bottom:10px}.fc-actions button{width:100%}.fc-wrap h1{font-size:1.65rem}}
+</style>
+<div class="fc-wrap">
+<p class="text-muted">Fiscal › Configuração fiscal</p>
+<h1>Configuração fiscal</h1>
+<p>Preparação da NFC-e · {{ request.organization.display_name }} · Homologação local</p>
+<div class="fc-block mb-4" role="status"><strong>EMISSÃO BLOQUEADA</strong><br>Esta etapa prepara parâmetros públicos. Não provisiona certificado, não transmite à SEFAZ e não representa produção.</div>
+{% if not config %}<div class="fc-card">Não há proposta documental nesta organização. Nenhum dado de outro tenant está disponível.</div>{% else %}
+{% with d=config.proposta_documental.dados %}
+<div class="fc-grid"><div>
+<section class="fc-card" aria-label="Dados da empresa"><h2>{{ d.nome_fantasia }} · Dados da empresa</h2><p><strong>Fonte: documentação cadastral</strong> · Confirmado documentalmente</p>
+<dl><dt>Razão social</dt><dd>{{ d.razao_social }} <small class="fc-confirmed">Confirmado documentalmente</small></dd>
+<dt>Nome fantasia</dt><dd>{{ d.nome_fantasia }} <small class="fc-confirmed">Confirmado documentalmente</small></dd>
+<dt>CNPJ</dt><dd>{{ d.cnpj }} <small class="fc-confirmed">Confirmado documentalmente · emitente não editável</small></dd>
+<dt>IE / IM</dt><dd>{{ d.ie }} / {{ d.im }} <small>Documental; divergências anteriores preservadas abaixo</small></dd>
+<dt>Natureza jurídica</dt><dd>{{ d.natureza_juridica }}</dd><dt>Porte</dt><dd>{{ d.porte }}</dd>
+<dt>Endereço proposto</dt><dd>{{ d.logradouro }}, {{ d.numero }}, {{ d.complemento }} · {{ d.bairro }} · CEP {{ d.cep }}<small class="fc-pending">Proposto — documentação de 2026; confirmação necessária</small></dd>
+<dt>Município / UF</dt><dd>{{ d.municipio }} / {{ d.uf }} <small>Fonte documental; IBGE pendente de confirmação</small></dd>
+<dt>CNAE proposto</dt><dd>{{ d.cnae_principal }} <small>Não determina tributação automaticamente</small></dd></dl></section>
+<section class="fc-card" aria-label="Divergências documentais"><h2>⚠️ Divergência documental — confirmação necessária</h2>
+{% for item in config.proposta_documental.divergencias %}<p><strong>{{ item.campo }}</strong><br>Documentos anteriores: {{ item.anterior }}<br>Proposta documental: {{ item.proposta }}</p>{% endfor %}
+<small>O histórico documental permanece preservado mesmo após confirmação explícita. Não há resolução automática.</small></section>
+<section class="fc-card" aria-label="Pendências do responsável fiscal"><h2>Confirmação do responsável fiscal / contador</h2>
+<p>Dados informados são propostas até confirmação expressa. Nenhuma tributação é inferida do CNAE ou do Simples Nacional.</p>
+<dl>{% for label,value,confirmed in responsavel_checklist %}<dt>{{ label }}</dt><dd>{% if value != None and value != '' %}{{ value }} · {% endif %}<span class="{% if confirmed %}fc-confirmed{% else %}fc-pending{% endif %}">{% if confirmed %}Confirmado nesta preparação local{% else %}Pendente de confirmação{% endif %}</span></dd>{% endfor %}</dl></section>
+<form method="post" action="{% url 'operacao:fiscal_configuracao_detalhe' config.pk %}">{% csrf_token %}{{ form.revisao }}
+{% if form.errors %}<div class="alert alert-danger" role="alert">Preparação não salva. Confira os campos e as confirmações.{{ form.non_field_errors }}</div>{% endif %}
+{% for title, fields in sections %}<section class="fc-card"><h2>{{ title }}</h2>
+{% if title == 'Regime tributário' %}<p><strong>Simples Nacional: {% if d.simples_nacional %}Sim{% else %}Não{% endif %} — confirmado documentalmente</strong></p><p>CRT: {{ config.preparacao_fiscal.crt|default:'Pendente de confirmação' }}. Nenhuma opção é selecionada automaticamente.</p>{% endif %}
+{% if title == 'Estabelecimento fiscal' %}<dl><dt>CNPJ / nome</dt><dd>{{ d.cnpj }} · {{ d.nome_fantasia }}</dd><dt>Situação</dt><dd>{% if config.configuracao_confirmada_id %}Confirmado explicitamente nesta cópia local · emissão bloqueada{% else %}Provisório documental — não homologado{% endif %}</dd></dl><p>Endereço, município, UF e IBGE são os campos acima. O registro provisório permanecerá inativo e preservado.</p>{% endif %}
+{% if title == 'NFC-e — Modelo 65' %}<p><strong>Ambiente: HOMOLOGAÇÃO</strong> · Produção bloqueada</p><p>ID/CSC: Pendente de análise/provisionamento seguro, quando aplicável. Nenhum CSC é recebido neste formulário.</p><small>Série e próximo número são propostas explícitas para validação posterior. Não reservam numeração. URLs e release XSD informados não equivalem a validação técnica.</small>{% endif %}
+{% if title == 'Produto para homologação' %}<p>Tributação pendente de definição pelo responsável fiscal.</p>{% endif %}
+<div class="fc-fields">{% for field in fields %}<div class="fc-field">{% if field.field.widget.input_type == 'checkbox' %}{{ field }}{{ field.label_tag }}{% else %}{{ field.label_tag }}{{ field }}{% endif %}{{ field.errors }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endfor %}</div>
+{% if title == 'Produto para homologação' %}{% if product_fields %}<dl class="mt-3">{% for label,value in product_fields %}<dt>{{ label }}</dt><dd>{{ value|default:'Pendente' }}</dd>{% endfor %}</dl>{% else %}<p class="mt-3">Produto: Pendente de seleção. Nenhum produto ou tributação é criado.</p>{% endif %}<p>PIS / COFINS / demais tributos: Pendente de validação da regra versionada.</p>{% endif %}
+</section>{% endfor %}
+<section class="fc-card"><h2>Cofre e certificado digital</h2><p><strong>COFRE NÃO PROVISIONADO</strong></p><p>Certificado: <strong>Não provisionado</strong></p><p>O certificado digital será vinculado posteriormente através do cofre seguro.</p><p>Tenant + Estabelecimento + Ambiente + CNPJ emitente</p><small>A referência será opaca (cofre://UUID). Não há upload, senha, PFX ou CSC nesta tela. Uma referência cadastrada não comprova provisionamento. O backend exigirá titular, validade, fingerprint, cadeia ICP-Brasil e verificação de revogação. Nenhum certificado é entregue ao navegador.</small></section>
+<section class="fc-card" aria-label="Validação técnica separada"><h2>Validação técnica · laboratório separado</h2>
+<p>XMLDSig: ensaio criptográfico com certificado sintético. Não valida o A1 real da TECNOLMED.</p>
+<p>XSD: pacote oficial PL 010f v1.04, documento 4.00, arquivo nfe_v4.00.xsd. Validação local do XML integral assinado; aplicabilidade no primeiro envio precisa ser reconfirmada.</p>
+<p>Namespace: <code style="overflow-wrap:anywhere">http://www.portalfiscal.inf.br/nfe</code></p>
+<p>QR versão 3 normal: chave | 3 | 2. Sem CSC nesse leiaute; não é contingência fiscal.</p>
+<p>Adaptador SVRS: SOAP 1.2 de homologação preparado. WSDL oficial pinado e mTLS específico ainda dependem de provisionamento. Assinatura XML e identidade de transporte são validadas separadamente.</p>
+<p>Endpoint de autorização: <code style="overflow-wrap:anywhere">https://nfce-homologacao.svrs.rs.gov.br/ws/NfeAutorizacao/NFeAutorizacao4.asmx</code></p>
+<p>Após timeout: consulta por chave/recibo, sem nova venda ou numeração. Cancelamento exige regras/prazo confirmados e reconciliação do evento.</p>
+<dl><dt>QR / consulta · HOMOLOGAÇÃO SE</dt><dd class="fc-pending">URL e aceitação: PENDENTES de confirmação oficial</dd><dt>QR / consulta · PRODUÇÃO SE</dt><dd>Não configurados · ambiente bloqueado</dd></dl>
+<p>O ensaio pode chegar a <strong>PRONTO PARA HOMOLOGAÇÃO OFICIAL</strong>, somente para dados sintéticos. Isso não significa AUTORIZADO PELA SEFAZ nem habilita a emissão desta empresa.</p>
+<small>Fontes: <a href="https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=k%2FIuuaW4YiY%3D" target="_blank" rel="noopener">Manual oficial DANFE / QR 6.0</a>; <a href="https://nfce.encat.org/desenvolvedor/qrcode/" target="_blank" rel="noopener">ENCAT · URLs por UF</a>. Nenhum endpoint foi instalado por suposição.</small></section>
+<div class="fc-actions mb-4"><button class="btn btn-primary" name="acao" value="salvar">Salvar preparação</button><button class="btn btn-outline-primary" name="acao" value="confirmar" {% if config.configuracao_confirmada_id %}disabled{% endif %}>Confirmar estabelecimento fiscal</button></div>
+<small>Confirmação exige dados cadastrais, endereço, município/IBGE, CNAE/divergências e tipo preenchidos e confirmados. Parâmetros posteriores são guardados em novas versões; o estabelecimento confirmado não é editado silenciosamente.</small>
+</form></div>
+<aside><section class="fc-card" aria-label="Checklist fiscal"><h2>Pronto para homologação?</h2><p>{{ pending_count }} pendências obrigatórias</p><ul class="fc-check">{% for label,done in checklist %}<li class="{% if done %}fc-confirmed{% else %}fc-pending{% endif %}">{% if done %}✓{% else %}☐{% endif %} {{ label }}<small>{% if done %}Confirmado nesta preparação local{% else %}Pendente de confirmação{% endif %}</small></li>{% endfor %}</ul><div class="fc-block"><strong>EMISSÃO BLOQUEADA</strong></div><button class="btn btn-secondary w-100 mt-3" disabled aria-disabled="true">Emitir NFC-e</button><small class="mt-2">Esta fase não habilita emissão, mesmo por URL direta. Cofre, tributação e validações oficiais exigem a próxima etapa autorizada.</small></section></aside></div>
+{% endwith %}{% endif %}</div>
+{% endblock %}

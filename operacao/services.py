@@ -53,6 +53,8 @@ def salvar_chamado(user, form, request_id=None, portal=False):
     call.save()
     upload = form.cleaned_data.get('anexo')
     if upload:
+        from platform_core.saas_services import verificar_limite
+        verificar_limite(call.organization, 'armazenamento_mb', incremento=upload.size)
         raw = upload.read(); upload.seek(0)
         document = m.Documento(titulo=f'Anexo {call.numero}', tipo='IMAGEM' if upload.name.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')) else 'PDF', categoria='TECNICO', arquivo=upload, cliente=call.cliente, unidade=call.unidade, equipamento=call.equipamento, chamado=call, enviado_por=user, disponivel_portal=portal, sha256=hashlib.sha256(raw).hexdigest())
         document.save()
@@ -497,6 +499,8 @@ def venda_confirmar(user, pk):
         return sale
     if sale.status != 'RASCUNHO' or not sale.itens.exists() or sale.total <= 0:
         raise ValidationError('Venda exige itens, total positivo e rascunho.')
+    from platform_core.saas_services import verificar_limite
+    verificar_limite(sale.organization, 'vendas_mes')
     for item in sale.itens.select_related('peca').order_by('peca_id'):
         movement = gs.movimentar(user, item.peca_id, 'SAIDA', item.quantidade, str(sale), origem_id=sale.deposito_id, venda_id=sale.pk)
         item.custo_total = movement.valor_custo
@@ -509,7 +513,7 @@ def venda_confirmar(user, pk):
     return sale
 
 @transaction.atomic
-def caixa(user, conta_id, tipo, valor, date, description, reference=None):
+def caixa(user, conta_id, tipo, valor, date, description, reference=None, *, origem='MANUAL', categoria=None, centro_custo=None, lancamento=None, conta_contraparte=None, documento_ref=''):
     from .commerce_scope import _authorized
     if not _authorized(user,'cash',account_id=conta_id):
         require(user, 'financeiro_escrever')
@@ -525,7 +529,7 @@ def caixa(user, conta_id, tipo, valor, date, description, reference=None):
         return existing
     if tipo == 'SAIDA' and not account.permite_saldo_negativo and amount > account.saldo:
         raise ValidationError('Saldo bancário insuficiente; limite negativo não habilitado.')
-    movement = gs.write(m.MovimentoCaixa(conta=account, tipo=tipo, valor=amount, data=date, descricao=description, referencia=ref, usuario=user))
+    movement = gs.write(m.MovimentoCaixa(conta=account, tipo=tipo, valor=amount, data=date, descricao=description, referencia=ref, usuario=user, origem=origem, categoria=categoria, centro_custo=centro_custo, lancamento=lancamento, conta_contraparte=conta_contraparte, documento_ref=documento_ref[:150]))
     gs.audit(user, 'CAIXA_MOVIMENTADO', movement, {'tipo': tipo, 'valor': str(amount)})
     return movement
 
@@ -535,42 +539,46 @@ def transferir_banco(user, origem, destino, amount, date, reference):
     if origem == destino:
         raise ValidationError('Contas de origem/destino devem ser diferentes.')
     list(m.ContaBancaria.objects.select_for_update().filter(pk__in=[origem, destino]).order_by('pk'))
-    caixa(user, origem, 'SAIDA', amount, date, 'Transferência entre contas', reference)
-    caixa(user, destino, 'ENTRADA', amount, date, 'Transferência entre contas', reference)
+    caixa(user, origem, 'SAIDA', amount, date, 'Transferência entre contas', reference, origem='TRANSFERENCIA', conta_contraparte=m.ContaBancaria.objects.get(pk=destino))
+    caixa(user, destino, 'ENTRADA', amount, date, 'Transferência entre contas', reference, origem='TRANSFERENCIA', conta_contraparte=m.ContaBancaria.objects.get(pk=origem))
 
 @transaction.atomic
-def pagar(user, pk, amount, date, observation='', account_id=None, request_id=None):
+def pagar(user, pk, amount, date, observation='', account_id=None, request_id=None, *, desconto=0, juros=0, multa=0):
     from .commerce_scope import _authorized
     if not _authorized(user,'payment',entry_id=pk):
         require(user, 'financeiro_escrever')
     entry = g.Lancamento.objects.select_for_update().get(pk=pk)
     token = request_id or uuid.uuid4()
+    amount = positive(amount)
+    discount, interest, fine = (Decimal(value or 0).quantize(Decimal('.01')) for value in (desconto, juros, multa))
+    if min(discount, interest, fine) < 0:
+        raise ValidationError('Desconto, juros e multa não podem ser negativos.')
     previous = m.Pagamento.objects.filter(request_id=token).first()
     if previous:
-        if (previous.lancamento_id, previous.valor, previous.data, previous.conta_id) != (pk, Decimal(amount), date, account_id):
+        if (previous.lancamento_id, previous.valor, previous.data, previous.conta_id, previous.desconto, previous.juros, previous.multa) != (pk, amount, date, account_id, discount, interest, fine):
             raise ValidationError('Identificador de pagamento já usado com outros dados.')
         return previous
-    amount = positive(amount)
-    if entry.status not in ['PENDENTE', 'VENCIDO'] or amount > entry.saldo or date > timezone.localdate() or date < entry.data_emissao:
+    saldo_ajustado = entry.saldo + interest + fine - discount
+    if saldo_ajustado < 0 or entry.status not in ['PENDENTE', 'VENCIDO'] or amount > saldo_ajustado or date > timezone.localdate() or date < entry.data_emissao:
         raise ValidationError('Revise estado, saldo pendente e data do pagamento.')
     try:
         with transaction.atomic():
             if account_id:
                 account = m.ContaBancaria.objects.get(pk=account_id, ativo=True)
-                caixa(user, account.pk, 'ENTRADA' if entry.tipo == 'RECEBER' else 'SAIDA', amount, date, entry.descricao, token)
+                caixa(user, account.pk, 'ENTRADA' if entry.tipo == 'RECEBER' else 'SAIDA', amount, date, entry.descricao, token, origem='LANCAMENTO', categoria=entry.categoria, centro_custo=entry.centro_custo, lancamento=entry, documento_ref=str(entry.pk))
             else:
                 account = None
-            payment = gs.write(m.Pagamento(lancamento=entry, valor=amount, data=date, conta=account, usuario=user, observacoes=observation, request_id=token))
+            payment = gs.write(m.Pagamento(lancamento=entry, valor=amount, desconto=discount, juros=interest, multa=fine, data=date, conta=account, usuario=user, observacoes=observation, request_id=token))
     except IntegrityError:
         previous = m.Pagamento.objects.filter(request_id=token).first()
-        if previous and (previous.lancamento_id, previous.valor, previous.data, previous.conta_id) == (pk, amount, date, account_id):
+        if previous and (previous.lancamento_id, previous.valor, previous.data, previous.conta_id, previous.desconto, previous.juros, previous.multa) == (pk, amount, date, account_id, discount, interest, fine):
             return previous
         raise ValidationError('Identificador de pagamento disputado por outra operação; nenhuma baixa foi realizada.') from None
     gs.write(g.EventoFinanceiro(lancamento=entry, tipo='LIQUIDACAO', valor=amount, data=date, usuario=user, observacao=observation))
     if entry.saldo == 0:
         entry.status, entry.data_liquidacao = 'LIQUIDADO', date
         gs.write(entry)
-    gs.audit(user, 'LANCAMENTO_LIQUIDADO' if entry.status == 'LIQUIDADO' else 'PAGAMENTO_PARCIAL', entry, {'valor': str(amount), 'saldo': str(entry.saldo), 'data': date.isoformat(), 'pagamento':payment.pk, 'request_id':str(token), 'conta':account_id, 'controle_caixa':'BANCARIZADO' if account_id else 'NAO_BANCARIZADO', 'origem_raiz':entry.raiz_financeira.pk})
+    gs.audit(user, 'LANCAMENTO_LIQUIDADO' if entry.status == 'LIQUIDADO' else 'PAGAMENTO_PARCIAL', entry, {'valor': str(amount), 'desconto': str(discount), 'juros': str(interest), 'multa': str(fine), 'saldo': str(entry.saldo), 'data': date.isoformat(), 'pagamento':payment.pk, 'request_id':str(token), 'conta':account_id, 'controle_caixa':'BANCARIZADO' if account_id else 'NAO_BANCARIZADO', 'origem_raiz':entry.raiz_financeira.pk})
     return payment
 
 @transaction.atomic
@@ -602,6 +610,8 @@ def parcelar(user, pk, quantity, first_date):
 def conciliar(user, pk, movement_id):
     require(user, 'financeiro_escrever')
     row = m.ExtratoBancario.objects.select_for_update().get(pk=pk)
+    if row.ignorado:
+        raise ValidationError('Um lançamento ignorado não pode ser conciliado.')
     movement = m.MovimentoCaixa.objects.get(pk=movement_id, conta=row.conta)
     expected = movement.valor if movement.tipo == 'ENTRADA' else -movement.valor
     if row.movimento_id or expected != row.valor or movement.data != row.data:
@@ -609,6 +619,59 @@ def conciliar(user, pk, movement_id):
     row.movimento = movement
     row.save()
     gs.audit(user, 'EXTRATO_CONCILIADO', row, {'movimento': movement.pk})
+
+@transaction.atomic
+def conciliar_criar_movimento(user, pk):
+    require(user, 'financeiro_escrever')
+    row = m.ExtratoBancario.objects.select_for_update().select_related('conta').get(pk=pk)
+    if row.movimento_id or row.ignorado:
+        raise ValidationError('Extrato já processado ou ignorado.')
+    if row.data > timezone.localdate():
+        raise ValidationError('Movimento com data futura exige revisão antes de afetar o saldo.')
+    reference = uuid.uuid5(uuid.NAMESPACE_URL, f'vertyx-extrato:{row.organization_id}:{row.conta_id}:{row.identificador}')
+    movement = caixa(user, row.conta_id, 'ENTRADA' if row.valor > 0 else 'SAIDA', abs(row.valor), row.data, row.descricao, reference, origem='CONCILIACAO', documento_ref=row.identificador)
+    row.movimento = movement
+    row.save()
+    gs.audit(user, 'EXTRATO_MOVIMENTO_CRIADO', row, {'movimento': movement.pk, 'valor': str(row.valor)})
+    return movement
+
+@transaction.atomic
+def ignorar_extrato(user, pk, motivo=''):
+    require(user, 'financeiro_escrever')
+    row = m.ExtratoBancario.objects.select_for_update().get(pk=pk)
+    if row.movimento_id:
+        raise ValidationError('Extrato já conciliado não pode ser ignorado.')
+    if row.ignorado:
+        return row
+    row.ignorado, row.ignorado_em, row.ignorado_por = True, timezone.now(), user
+    row.save()
+    gs.audit(user, 'EXTRATO_IGNORADO', row, {'motivo': motivo.strip()[:500]})
+    return row
+
+@transaction.atomic
+def importar_extrato(user, account_id, upload):
+    require(user, 'financeiro_escrever')
+    account = m.ContaBancaria.objects.get(pk=account_id, ativo=True)
+    from .finance_import import parse_statement
+    try:
+        rows = parse_statement(upload)
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise ValidationError(str(exc)) from None
+    created, skipped = 0, 0
+    for item in rows:
+        if m.ExtratoBancario.objects.filter(conta=account, identificador=item['identificador']).exists():
+            skipped += 1
+            continue
+        try:
+            with transaction.atomic():
+                row = m.ExtratoBancario(conta=account, **item)
+                row.save()
+        except IntegrityError:
+            skipped += 1
+            continue
+        created += 1
+    gs.audit(user, 'EXTRATO_IMPORTADO', account, {'criados': created, 'duplicados': skipped, 'formato': upload.name.rsplit('.', 1)[-1].lower()})
+    return {'criados': created, 'duplicados': skipped, 'total': len(rows)}
 
 @transaction.atomic
 def documento_salvar(user, form):
@@ -619,6 +682,8 @@ def documento_salvar(user, form):
     if not document_allowed(user, document, writing=True):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied('Documento fora da função/OS atribuída.')
+    from platform_core.saas_services import verificar_limite
+    verificar_limite(document.organization, 'armazenamento_mb', incremento=document.arquivo.size)
     document.sha256 = hashlib.sha256(document.arquivo.read()).hexdigest()
     document.arquivo.seek(0)
     document.save()

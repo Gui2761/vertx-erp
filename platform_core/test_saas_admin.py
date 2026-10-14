@@ -1,0 +1,385 @@
+from datetime import timedelta
+from unittest.mock import patch
+
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+
+from .context import tenant_context
+from .models import (
+    ConfiguracaoEmpresa, ModuloOrganizacao, Organization,
+    OrganizationMembership, PermissaoMembership,
+)
+from .saas_models import (
+    AdministradorPlataforma, AssinaturaSaaS, AuditoriaSaaS,
+    HistoricoPlanoSaaS, PlanoSaaS, PrimeiroAcessoSaaS,
+)
+from .saas_services import alterar_plano, alterar_status_cliente, criar_cliente, metricas_uso, reemitir_primeiro_acesso, verificar_limite
+
+
+class SaaSAdminTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.platform = User.objects.create_user(
+            username='platform-admin', email='platform@example.test', password='SafePass!2371',
+        )
+        AdministradorPlataforma.objects.create(user=self.platform, created_by=self.platform)
+        self.plan = PlanoSaaS.objects.create(
+            slug='essencial', nome='Essencial', preco='80.00',
+            modulos=['assistencia', 'estoque', 'pdv'],
+            limites={'usuarios': 5, 'filiais': 2, 'armazenamento_mb': 500,
+                     'vendas_mes': None, 'ordens_mes': None},
+        )
+        self.actor = self.platform
+
+    def company(self, cnpj='39966868000186'):
+        return {
+            'razao_social': 'Empresa de Homologação Ltda.',
+            'nome_fantasia': 'Empresa Homologação', 'cnpj': cnpj,
+            'email': 'empresa@example.test', 'telefone': '+55 11 99999-1234',
+            'endereco': 'Rua de Teste, 100', 'cidade': 'São Paulo', 'uf': 'SP',
+        }
+
+    def admin_data(self, email='admin-cliente@example.test'):
+        return {'nome': 'Ana Administradora', 'email': email, 'whatsapp': '+55 11 98888-1234'}
+
+    def make_tenant(self, *, cnpj='39966868000186', email='admin-cliente@example.test'):
+        return criar_cliente(actor=self.actor, company=self.company(cnpj), admin=self.admin_data(email), plan_id=self.plan.pk)
+
+    def test_onboarding_atomico_cria_tenant_admin_plano_modulos_e_token_digest(self):
+        result = self.make_tenant()
+        org, user = result['organization'], result['user']
+        self.assertEqual(result['subscription'].status, AssinaturaSaaS.Status.IMPLANTACAO)
+        self.assertEqual(result['membership'].role, 'ADMIN')
+        self.assertFalse(user.has_usable_password())
+        self.assertTrue(OrganizationMembership.objects.filter(pk=result['membership'].pk, organization=org, user=user).exists())
+        self.assertEqual(AssinaturaSaaS.objects.get(organization=org).plano, self.plan)
+        self.assertEqual(set(ModuloOrganizacao.all_objects.filter(organization=org, habilitado=True).values_list('codigo', flat=True)), {'assistencia', 'estoque', 'pdv'})
+        token_row = PrimeiroAcessoSaaS.objects.get(pk=result['token_id'])
+        self.assertNotIn(result['token'], token_row.token_digest)
+        self.assertEqual(token_row.token_digest, PrimeiroAcessoSaaS.digest(result['token']))
+        self.assertEqual(AuditoriaSaaS.objects.filter(organization=org).count(), 4)
+        with tenant_context(org):
+            config = ConfiguracaoEmpresa.objects.get(organization=org)
+            self.assertEqual(config.limites, {'usuarios': 5, 'filiais': 2, 'armazenamento_mb': 500})
+
+    def test_onboarding_transacao_reverte_tudo_se_modulos_falham(self):
+        before_orgs = Organization.objects.count()
+        before_users = get_user_model().objects.count()
+        with patch('platform_core.saas_services.aplicar_modulos', side_effect=ValidationError('falha sintética')):
+            with self.assertRaises(ValidationError):
+                self.make_tenant()
+        self.assertEqual(Organization.objects.count(), before_orgs)
+        self.assertEqual(get_user_model().objects.count(), before_users)
+        self.assertFalse(AssinaturaSaaS.objects.exists())
+        self.assertFalse(PrimeiroAcessoSaaS.objects.exists())
+
+    def test_primeiro_acesso_token_unico_define_senha_sem_exibir_ou_armazenar_token(self):
+        result = self.make_tenant()
+        token = result['token']
+        url = reverse('platform_core:saas_first_access', args=[token])
+        self.assertEqual(self.client.get(url).status_code, 200)
+        response = self.client.post(url, {'new_password1': 'Client!Pass9342', 'new_password2': 'Client!Pass9342'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Acesso configurado')
+        result['user'].refresh_from_db()
+        self.assertTrue(result['user'].check_password('Client!Pass9342'))
+        row = PrimeiroAcessoSaaS.objects.get(pk=result['token_id'])
+        self.assertIsNotNone(row.usado_em)
+        self.assertEqual(self.client.post(url, {'new_password1': 'Another!Pass9342', 'new_password2': 'Another!Pass9342'}).status_code, 410)
+        self.assertNotContains(response, token)
+
+    def test_primeiro_acesso_expirado_nao_define_senha(self):
+        result = self.make_tenant()
+        row = PrimeiroAcessoSaaS.objects.get(pk=result['token_id'])
+        row.expira_em = timezone.now() - timedelta(seconds=1)
+        row.save(update_fields=['expira_em'])
+        response = self.client.post(reverse('platform_core:saas_first_access', args=[result['token']]), {
+            'new_password1': 'Client!Pass9342', 'new_password2': 'Client!Pass9342',
+        })
+        self.assertEqual(response.status_code, 410)
+        result['user'].refresh_from_db()
+        self.assertFalse(result['user'].has_usable_password())
+
+    def test_cliente_tenant_admin_nao_acessa_rotas_saas(self):
+        result = self.make_tenant()
+        self.client.force_login(result['user'])
+        for url in [reverse('platform_core:saas_home'), reverse('platform_core:saas_clients'), reverse('platform_core:saas_plans')]:
+            self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertEqual(self.client.get(reverse('platform_core:saas_home')).headers['Cache-Control'], 'private, no-store')
+
+    def test_dashboard_clientes_planos_pwa_e_service_worker_renderizam(self):
+        self.client.force_login(self.platform)
+        for name in ['saas_home', 'saas_clients', 'saas_plans', 'saas_new_client']:
+            response = self.client.get(reverse(f'platform_core:{name}'))
+            self.assertEqual(response.status_code, 200, name)
+            self.assertContains(response, 'VERTYX Admin')
+        manifest = self.client.get(reverse('platform_core:saas_manifest'))
+        self.assertEqual(manifest.status_code, 200)
+        self.assertEqual(manifest.json()['start_url'], '/saas/')
+        self.assertEqual(manifest.json()['scope'], '/saas/')
+        self.assertEqual(manifest.json()['name'], 'VERTYX Admin')
+        worker = self.client.get(reverse('platform_core:saas_sw'))
+        self.assertEqual(worker.status_code, 200)
+        self.assertEqual(worker['Service-Worker-Allowed'], '/saas/')
+        self.assertNotContains(worker, 'caches.open')
+        from django.contrib.staticfiles import finders
+        css = open(finders.find('css/saas-admin.css'), encoding='utf-8').read()
+        base = open('templates/platform_core/saas/base.html', encoding='utf-8').read()
+        self.assertIn('@media(max-width:640px)', css)
+        self.assertIn('name="viewport"', base)
+
+    def test_assistente_visual_de_criacao_entrega_link_whatsapp_sem_senha(self):
+        self.client.force_login(self.platform)
+        step1 = self.client.post(reverse('platform_core:saas_new_client'), self.company())
+        self.assertRedirects(step1, reverse('platform_core:saas_new_client_step2'))
+        step2 = self.client.post(reverse('platform_core:saas_new_client_step2'), {
+            'plano': self.plan.pk,
+            'admin-nome': 'Ana Administradora', 'admin-email': 'novo-admin@example.test',
+            'admin-whatsapp': '+55 11 98888-1234',
+        })
+        self.assertEqual(step2.status_code, 302)
+        detail = self.client.get(step2.url)
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, 'CLIENTE CRIADO COM SUCESSO')
+        self.assertContains(detail, 'Enviar acesso pelo WhatsApp')
+        self.assertContains(detail, 'defina sua própria senha')
+        self.assertNotContains(detail, 'password=')
+        access = detail.context['created_access']
+        self.assertIn('/primeiro-acesso/', access['url'])
+        response = self.client.post(reverse('platform_core:saas_share_access', args=[Organization.objects.get(cnpj='39966868000186').public_id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith('https://api.whatsapp.com/send?text='))
+        self.assertFalse(self.client.session.get('saas_pending_access'))
+        self.assertTrue(AuditoriaSaaS.objects.filter(action='LINK_WHATSAPP_ABERTO', details__confirmado_envio=False).exists())
+
+    def test_alteracao_plano_registra_historico_sincroniza_modulos_e_preserva_permissoes_individuais(self):
+        result = self.make_tenant()
+        membership = result['membership']
+        with tenant_context(result['organization']):
+            permission = PermissaoMembership.objects.create(
+                organization=result['organization'], membership=membership,
+                capacidade='operar_pdv', permitido=True,
+            )
+        next_plan = PlanoSaaS.objects.create(
+            slug='profissional', nome='Profissional', preco='249.00',
+            modulos=['assistencia', 'rh'], limites={'usuarios': 10, 'filiais': 3},
+        )
+        subscription = alterar_plano(actor=self.actor, organization=result['organization'], plan_id=next_plan.pk, reason='homologação')
+        self.assertEqual(subscription.plano, next_plan)
+        self.assertEqual(HistoricoPlanoSaaS.objects.filter(assinatura=subscription).count(), 1)
+        permission.refresh_from_db()
+        self.assertTrue(permission.permitido)
+        with tenant_context(result['organization']):
+            modules = dict(ModuloOrganizacao.objects.values_list('codigo', 'habilitado'))
+            config = ConfiguracaoEmpresa.objects.get(organization=result['organization'])
+        self.assertTrue(modules['rh'])
+        self.assertFalse(modules['pdv'])
+        self.assertEqual(config.limites, {'usuarios': 10, 'filiais': 3})
+
+    def test_suspensao_reativacao_preserva_dados_e_audita(self):
+        result = self.make_tenant()
+        org = result['organization']
+        alterar_status_cliente(actor=self.actor, organization=org, activate=False)
+        org.refresh_from_db()
+        self.assertEqual(org.status, Organization.Status.SUSPENDED)
+        self.assertTrue(OrganizationMembership.objects.filter(pk=result['membership'].pk).exists())
+        self.assertTrue(AssinaturaSaaS.objects.filter(organization=org).exists())
+        alterar_status_cliente(actor=self.actor, organization=org, activate=True)
+        org.refresh_from_db()
+        self.assertEqual(org.status, Organization.Status.ACTIVE)
+        self.assertEqual(AuditoriaSaaS.objects.filter(organization=org, action__in=['CLIENTE_SUSPENSO', 'CLIENTE_REATIVADO']).count(), 2)
+
+    def test_cliente_em_implantacao_so_conta_ativo_apos_ativacao_explicita(self):
+        self.client.force_login(self.platform)
+        dashboard = self.client.get(reverse('platform_core:saas_home'))
+        active_before = dashboard.context['counts']['ativas']
+        result = self.make_tenant()
+        dashboard = self.client.get(reverse('platform_core:saas_home'))
+        self.assertEqual(dashboard.context['counts']['ativas'], active_before)
+        self.assertEqual(dashboard.context['counts']['implantacao'], 1)
+        detail_url = reverse('platform_core:saas_client_detail', args=[result['organization'].public_id])
+        detail = self.client.get(detail_url)
+        self.assertContains(detail, 'Concluir implantação e ativar')
+        response = self.client.post(
+            reverse('platform_core:saas_client_status', args=[result['organization'].public_id, 'ativar']),
+            {'confirmar': 'sim'},
+        )
+        self.assertEqual(response.status_code, 302)
+        result['subscription'].refresh_from_db()
+        self.assertEqual(result['subscription'].status, AssinaturaSaaS.Status.ACTIVE)
+        dashboard = self.client.get(reverse('platform_core:saas_home'))
+        self.assertEqual(dashboard.context['counts']['ativas'], active_before + 1)
+        self.assertEqual(dashboard.context['counts']['implantacao'], 0)
+
+    def test_limite_usuarios_e_filiais_e_aplicado_sem_limites_falsos(self):
+        result = self.make_tenant()
+        org = result['organization']
+        for index in range(4):
+            user = get_user_model().objects.create_user(username=f'member-{index}', password='unused')
+            OrganizationMembership.objects.create(organization=org, user=user, role='TECNICO')
+        with self.assertRaises(ValidationError):
+            verificar_limite(org, 'usuarios')
+        verificar_limite(org, 'vendas_mes')  # Plano sem limite configurado não inventa bloqueio.
+
+    def test_reemissao_rotaciona_token_audita_ids_e_nunca_persiste_segredo(self):
+        result = self.make_tenant()
+        org = result['organization']
+        old = PrimeiroAcessoSaaS.objects.get(pk=result['token_id'])
+        self.client.force_login(self.platform)
+        response = self.client.post(reverse('platform_core:saas_reissue_access', args=[org.public_id]))
+        self.assertRedirects(response, reverse('platform_core:saas_client_detail', args=[org.public_id]))
+        old.refresh_from_db()
+        self.assertIsNotNone(old.usado_em)
+        pending = self.client.session['saas_pending_access'][str(org.public_id)]
+        new = PrimeiroAcessoSaaS.objects.get(pk=pending['token_id'])
+        self.assertNotEqual(new.token_digest, old.token_digest)
+        self.assertEqual(new.token_digest, PrimeiroAcessoSaaS.digest(pending['token']))
+        self.assertLess(abs((new.expira_em - new.criado_em) - timedelta(hours=48)), timedelta(seconds=1))
+        audit = AuditoriaSaaS.objects.get(action='PRIMEIRO_ACESSO_REEMITIDO', organization=org)
+        self.assertEqual(audit.actor, self.platform)
+        self.assertEqual(audit.details['token_anterior_invalidado_id'], old.pk)
+        self.assertEqual(audit.details['novo_acesso_id'], new.pk)
+        self.assertNotIn(pending['token'], str(audit.details))
+        self.assertNotIn(pending['token'], new.token_digest)
+        self.assertEqual(self.client.get(reverse('platform_core:saas_first_access', args=[result['token']])).status_code, 410)
+        self.assertEqual(self.client.get(reverse('platform_core:saas_first_access', args=[pending['token']])).status_code, 200)
+        detail = self.client.get(reverse('platform_core:saas_client_detail', args=[org.public_id]))
+        self.assertContains(detail, 'Reemitir acesso')
+        self.assertContains(detail, 'Enviar acesso pelo WhatsApp')
+        self.assertNotContains(detail, 'Senha provisória')
+
+    def test_reemissao_nao_permite_resetar_conta_ja_ativada_e_admin_tenant_nao_pode(self):
+        result = self.make_tenant()
+        result['user'].set_password('Own!Password9342')
+        result['user'].save()
+        self.client.force_login(self.platform)
+        with self.assertRaises(ValidationError):
+            reemitir_primeiro_acesso(actor=self.platform, organization=result['organization'])
+        self.client.force_login(result['user'])
+        response = self.client.post(reverse('platform_core:saas_reissue_access', args=[result['organization'].public_id]))
+        self.assertEqual(response.status_code, 403)
+
+    def test_criacao_de_usuario_bloqueia_no_tenant_da_sessao_ignorando_organization_id_adulterado(self):
+        first = self.make_tenant()
+        second = self.make_tenant(cnpj='11222333000181', email='admin-two@example.test')
+        first['subscription'].plano.limites = {'usuarios': 1}
+        first['subscription'].plano.save()
+        self.client.force_login(first['user'])
+        response = self.client.post(reverse('contas:usuario_create'), {
+            'username': 'must-not-exist', 'first_name': 'Novo', 'last_name': 'Usuário',
+            'email': 'new-member@example.test', 'perfil': 'TECNICO', 'telefone': '',
+            'password1': 'Strong!Password8912', 'password2': 'Strong!Password8912',
+            'organization_id': second['organization'].pk,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Limite de usuários do plano atingido.')
+        self.assertFalse(get_user_model().objects.filter(username='must-not-exist').exists())
+        self.assertEqual(OrganizationMembership.objects.filter(organization=first['organization']).count(), 1)
+        self.assertEqual(OrganizationMembership.objects.filter(organization=second['organization']).count(), 1)
+
+    def test_formulario_da_empresa_nao_expoe_plano_ou_limites_para_adulteracao_tenant(self):
+        from .company import EmpresaForm
+        form = EmpresaForm({'plano': 'ENTERPRISE', 'limites': '{"usuarios":999999}'})
+        self.assertNotIn('plano', form.fields)
+        self.assertNotIn('limites', form.fields)
+
+    def test_dashboard_mostra_metricas_reais_e_armazenamento_por_prefixo_do_tenant(self):
+        from django.core.files.base import ContentFile
+        from ordens.storage import private_storage
+        first = self.make_tenant()
+        second = self.make_tenant(cnpj='11222333000181', email='admin-two@example.test')
+        user = get_user_model().objects.create_user(username='active-extra', password='unused')
+        OrganizationMembership.objects.create(organization=first['organization'], user=user, role='TECNICO')
+        with tenant_context(first['organization']):
+            from .models import FilialEmpresa
+            FilialEmpresa.objects.create(codigo='FIL-1', nome='Filial 1')
+        key_a = private_storage.save(f'organizations/{first["organization"].public_id}/tenant-test/a.bin', ContentFile(b'1234567'))
+        key_b = private_storage.save(f'organizations/{second["organization"].public_id}/tenant-test/b.bin', ContentFile(b'1234567890'))
+        try:
+            metrics_a = metricas_uso(first['organization'])
+            metrics_b = metricas_uso(second['organization'])
+            self.assertEqual(metrics_a['usuarios']['used'], 2)
+            self.assertEqual(metrics_a['filiais']['used'], 1)
+            self.assertEqual(metrics_a['armazenamento_mb']['used'], 7)
+            self.assertEqual(metrics_b['armazenamento_mb']['used'], 10)
+            self.client.force_login(self.platform)
+            dashboard = self.client.get(reverse('platform_core:saas_home'))
+            self.assertContains(dashboard, '2 / 5')
+            self.assertContains(dashboard, '1 / 2')
+            detail = self.client.get(reverse('platform_core:saas_client_detail', args=[first['organization'].public_id]))
+            self.assertEqual(detail.context['quota_usage']['armazenamento_mb']['used'], 7)
+        finally:
+            private_storage.delete(key_a)
+            private_storage.delete(key_b)
+
+    def test_bloqueio_de_storage_acima_do_limite_sem_apagar_arquivos(self):
+        from django.core.exceptions import ValidationError
+        result = self.make_tenant()
+        self.plan.limites = {'usuarios': 5, 'filiais': 2, 'armazenamento_mb': 1}
+        self.plan.save()
+        with patch('platform_core.saas_services._storage_usage_bytes', return_value=1024 * 1024):
+            with self.assertRaisesMessage(ValidationError, 'Limite de armazenamento do plano atingido.'):
+                verificar_limite(result['organization'], 'armazenamento_mb', incremento=1)
+            self.assertEqual(PrimeiroAcessoSaaS.objects.filter(organization=result['organization']).count(), 1)
+
+    def test_plano_abaixo_do_consumo_exibe_aviso_preserva_dados_e_bloqueia_novos(self):
+        result = self.make_tenant()
+        extra = get_user_model().objects.create_user(username='preserved-member', password='unused')
+        OrganizationMembership.objects.create(organization=result['organization'], user=extra, role='TECNICO')
+        lower = PlanoSaaS.objects.create(slug='limite-menor', nome='Limite menor', modulos=['assistencia'],
+                                         limites={'usuarios': 1, 'filiais': 0, 'armazenamento_mb': 1})
+        self.client.force_login(self.platform)
+        url = reverse('platform_core:saas_client_change_plan', args=[result['organization'].public_id])
+        response = self.client.post(url, {'plano': lower.pk, 'motivo': 'teste limite inferior'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'O cliente possui utilização acima do limite do novo plano.')
+        result['subscription'].refresh_from_db()
+        self.assertEqual(result['subscription'].plano, self.plan)
+        response = self.client.post(url, {'plano': lower.pk, 'motivo': 'teste limite inferior', 'confirmar_limites': 'sim'})
+        self.assertRedirects(response, reverse('platform_core:saas_client_detail', args=[result['organization'].public_id]))
+        result['subscription'].refresh_from_db()
+        self.assertEqual(result['subscription'].plano, lower)
+        self.assertTrue(OrganizationMembership.objects.filter(pk=extra.memberships.get(organization=result['organization']).pk).exists())
+        self.assertEqual(HistoricoPlanoSaaS.objects.filter(assinatura=result['subscription']).count(), 1)
+        with self.assertRaisesMessage(ValidationError, 'Limite de usuários do plano atingido.'):
+            verificar_limite(result['organization'], 'usuarios')
+
+    def test_plano_zero_usuarios_e_token_digest_invalido_sao_rejeitados(self):
+        with self.assertRaises(ValidationError):
+            PlanoSaaS.objects.create(slug='zero', nome='Inválido', limites={'usuarios': 0})
+        result = self.make_tenant()
+        row = PrimeiroAcessoSaaS.objects.get(pk=result['token_id'])
+        row.token_digest = result['token']
+        with self.assertRaises(ValidationError):
+            row.full_clean()
+
+    def test_tela_de_planos_configura_preco_modulos_e_limites_sem_mudar_catalogo_comercial(self):
+        self.client.force_login(self.platform)
+        response = self.client.get(reverse('platform_core:saas_plan_create'))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(reverse('platform_core:saas_plan_create'), {
+            'slug': 'enterprise-local', 'nome': 'Enterprise Local', 'descricao': 'Plano de homologação',
+            'preco': '399.00', 'periodicidade': 'MENSAL', 'ativo': 'on',
+            'modulos': ['assistencia', 'fiscal'], 'limite_usuarios': '25',
+            'limite_filiais': '4', 'limite_armazenamento_mb': '2048',
+            'limite_vendas_mes': '', 'limite_ordens_mes': '',
+        })
+        self.assertRedirects(response, reverse('platform_core:saas_plans'))
+        plan = PlanoSaaS.objects.get(slug='enterprise-local')
+        self.assertEqual(plan.preco, 399)
+        self.assertEqual(set(plan.modulos), {'assistencia', 'fiscal'})
+        self.assertEqual(plan.limites['usuarios'], 25)
+        self.assertIsNone(plan.limites['vendas_mes'])
+        self.assertTrue(AuditoriaSaaS.objects.filter(action='PLANO_CRIADO').exists())
+
+    def test_admin_saas_nao_precisa_ser_admin_de_tenant_e_usuario_comum_nao_tem_capacidade(self):
+        self.client.force_login(self.platform)
+        self.assertEqual(self.client.get(reverse('platform_core:saas_home')).status_code, 200)
+        tenant_admin = get_user_model().objects.create_user(username='tenant-admin', password='Tenant!1234')
+        org = Organization.objects.create(slug='tenant-admin-org', razao_social='Cliente Tenant Ltda.')
+        OrganizationMembership.objects.create(user=tenant_admin, organization=org, role='ADMIN')
+        self.client.force_login(tenant_admin)
+        self.assertEqual(self.client.get(reverse('platform_core:saas_home')).status_code, 403)

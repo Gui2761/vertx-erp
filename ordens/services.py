@@ -164,6 +164,8 @@ def aplicar_modelo_checklist(ordem):
 @transaction.atomic
 def criar(user, form):
     autorizar(user, administrativo=True)
+    from platform_core.saas_services import verificar_limite
+    verificar_limite(current_organization(), 'ordens_mes')
     from operacao.planning_services import lock_planning, validate_conflicts
     lock_planning()
     ordem = form.save(commit=False)
@@ -244,6 +246,8 @@ def adicionar_foto(user, pk, data):
     if ordem.status != Status.EXECUCAO:
         raise ValidationError('Fotos só podem ser adicionadas durante o atendimento.')
     arquivo = data['arquivo']
+    from platform_core.saas_services import verificar_limite
+    verificar_limite(ordem.organization, 'armazenamento_mb', incremento=arquivo.size)
     raw = arquivo.read()
     arquivo.seek(0)
     foto = Foto.objects.create(ordem=ordem, usuario=user, arquivo=arquivo, descricao=data['descricao'], categoria=data.get('categoria', ''), sha256=hashlib.sha256(raw).hexdigest())

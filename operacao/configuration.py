@@ -2,6 +2,7 @@ import uuid
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_http_methods, require_POST
@@ -35,6 +36,12 @@ def configuracao(request):
         before_company, before_params = previous_values(company), previous_values(params)
         logo = company.cleaned_data.get('logo')
         if logo:
+            from platform_core.saas_services import verificar_limite
+            try:
+                verificar_limite(request.organization, 'armazenamento_mb', incremento=logo.size)
+            except ValidationError as exc:
+                company.add_error('logo', '; '.join(exc.messages))
+                return render(request, 'operacao/configuracao.html', {'company': company, 'params': params}, status=400)
             extension = {'PNG': 'png', 'JPEG': 'jpg', 'WEBP': 'webp'}[logo.image.format]
             logo.seek(0)
             try:

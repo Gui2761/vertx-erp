@@ -1,17 +1,122 @@
+from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Q, F, Sum, DecimalField, ExpressionWrapper
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
+from django.utils.dateparse import parse_date
 from platform_core.access import require_erp
 from platform_core.audit import record_write, previous_values
 from gestao import models as g, services as gs, reporting
 from gestao.permissions import require, allowed
 from . import models as m, stock, stock_forms as forms
+
+
+@login_required
+def dashboard(request):
+    """Resumo do estoque da organização ativa, com filtros sobre os produtos."""
+    require(request.user, 'estoque')
+    from django.utils import timezone
+
+    today = timezone.localdate()
+    config = m.Configuracao.objects.first() or m.Configuracao()
+    parts = list(g.Peca.objects.filter(ativo=True).select_related('categoria', 'fornecedor').order_by('sku'))
+    measures = {part.pk: stock.metrics(part, config, today) for part in parts}
+    lots = m.LoteEstoque.objects.filter(quantidade__gt=0).select_related('peca', 'deposito', 'fornecedor')
+    movements = g.Movimentacao.objects.select_related('peca', 'origem', 'destino', 'usuario').order_by('-criado_em', '-pk')
+
+    # KPIs organizacionais não mudam com os filtros da tabela.
+    low = sum(1 for data in measures.values() if data['disponivel'] > 0 and data['disponivel'] <= data['minimo'])
+    zero = sum(1 for data in measures.values() if data['fisico'] <= 0)
+    near_cutoff = today + timezone.timedelta(days=max(config.dias_alerta_validade))
+    near_lots = lots.filter(validade__gte=today, validade__lte=near_cutoff)
+    value_expr = ExpressionWrapper(F('quantidade') * F('custo_unitario'), output_field=DecimalField(max_digits=30, decimal_places=5))
+    value = lots.aggregate(total=Sum(value_expr))['total'] or Decimal('0')
+
+    depot_id = request.GET.get('deposito', '').strip()
+    category_id = request.GET.get('categoria', '').strip()
+    supplier_id = request.GET.get('fornecedor', '').strip()
+    situation = request.GET.get('situacao', '').strip().upper()
+    lot_query = request.GET.get('lote', '').strip()
+    validity_from = parse_date(request.GET.get('validade_de', '') or '')
+    validity_to = parse_date(request.GET.get('validade_ate', '') or '')
+
+    scoped_depots = m.Deposito.objects.filter(ativo=True)
+    if depot_id and scoped_depots.filter(pk=depot_id).exists():
+        lots = lots.filter(deposito_id=depot_id)
+        movements = movements.filter(Q(origem_id=depot_id) | Q(destino_id=depot_id))
+    else:
+        depot_id = ''
+    if category_id and m.CategoriaPeca.objects.filter(pk=category_id).exists():
+        parts = [part for part in parts if str(part.categoria_id or '') == category_id]
+    else:
+        category_id = ''
+    if supplier_id and g.Fornecedor.objects.filter(pk=supplier_id).exists():
+        parts = [part for part in parts if str(part.fornecedor_id or '') == supplier_id]
+    else:
+        supplier_id = ''
+    if lot_query:
+        lots = lots.filter(numero__icontains=lot_query)
+    if validity_from:
+        lots = lots.filter(validade__gte=validity_from)
+    if validity_to:
+        lots = lots.filter(validade__lte=validity_to)
+    if lot_query or validity_from or validity_to:
+        matching_ids = set(lots.values_list('peca_id', flat=True))
+        parts = [part for part in parts if part.pk in matching_ids]
+        movements = movements.filter(peca_id__in=matching_ids)
+
+    rows = []
+    depot = scoped_depots.filter(pk=depot_id).first() if depot_id else None
+    for part in parts:
+        data = measures[part.pk]
+        if depot or lot_query or validity_from or validity_to:
+            selected_lots = lots.filter(peca=part)
+            selected_ids = set(selected_lots.values_list('pk', flat=True))
+            valid_lot_rows = stock.valid_lots(part, depot, today)
+            if lot_query or validity_from or validity_to:
+                valid_lot_rows = valid_lot_rows.filter(pk__in=selected_ids)
+            valid_qty = stock.total(valid_lot_rows)
+            physical_qty = stock.total(selected_lots)
+            held = stock.lot_holds(part, depot)
+            reserved_qty = sum((quantity for lot_id, quantity in held.items() if lot_id in set(valid_lot_rows.values_list('pk', flat=True))), Decimal('0'))
+            available_qty = max(Decimal('0'), valid_qty - reserved_qty)
+            situation_label = 'ZERADO' if available_qty == 0 else 'ESTOQUE BAIXO' if available_qty <= part.estoque_minimo else 'NORMAL'
+            data = {**data, 'fisico': physical_qty,
+                    'valido': valid_qty, 'reservado': reserved_qty,
+                    'disponivel': available_qty, 'situacao': situation_label}
+        if situation == 'ZERADO' and data['disponivel'] > 0:
+            continue
+        if situation == 'BAIXO' and not (data['disponivel'] > 0 and data['disponivel'] <= data['minimo']):
+            continue
+        if situation == 'VENCIDO' and not lots.filter(peca=part, validade__lt=today).exists():
+            continue
+        if situation == 'VENCENDO' and not lots.filter(peca=part, validade__gte=today, validade__lte=near_cutoff).exists():
+            continue
+        if situation == 'EXCESSO' and (not part.estoque_maximo or data['disponivel'] <= part.estoque_maximo):
+            continue
+        if situation == 'NORMAL' and data['situacao'] != 'NORMAL':
+            continue
+        rows.append({'peca': part, 'stock': data})
+
+    movement_rows = [{'movement': row, 'quantity': row.quantidade if row.tipo == 'TRANSFER' else row.variacao} for row in movements[:10]]
+    return render(request, 'operacao/stock_dashboard.html', {
+        'summary': {'produtos': len(measures), 'com_estoque': sum(1 for row in measures.values() if row['fisico'] > 0),
+                    'sem_estoque': zero, 'estoque_baixo': low, 'lotes_vencendo': near_lots.count(), 'valor': value},
+        'page_obj': Paginator(rows, 25).get_page(request.GET.get('page')),
+        'depositos': scoped_depots.order_by('nome'), 'categorias': m.CategoriaPeca.objects.order_by('nome'),
+        'fornecedores': g.Fornecedor.objects.filter(ativo=True).order_by('nome'),
+        'movimentos': movement_rows, 'today': today, 'validity_end': near_cutoff,
+        'situation_choices': [('ZERADO','Sem estoque disponível'),('BAIXO','Abaixo do mínimo'),('NORMAL','Normal'),('VENCIDO','Possui lote vencido'),('VENCENDO','Possui lote vencendo'),('EXCESSO','Acima do ideal/máximo')],
+        'filters': {'deposito': depot_id, 'categoria': category_id, 'fornecedor': supplier_id,
+                    'situacao': situation, 'lote': lot_query,
+                    'validade_de': request.GET.get('validade_de', ''), 'validade_ate': request.GET.get('validade_ate', '')},
+    })
 
 @login_required
 def lots(request):

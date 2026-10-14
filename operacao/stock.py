@@ -195,7 +195,7 @@ def outgoing_allocation(part, movement, lot_id=None, sale_id=None):
         except m.LoteEstoque.DoesNotExist:
             raise ValidationError('Lote não corresponde ao produto/depósito de origem.')
         expired_disposal = bool(lot.validade and lot.validade < timezone.localdate())
-        if expired_disposal and movement.tipo not in ['AJUSTE','TRANSFER']:
+        if expired_disposal and movement.tipo not in ['AJUSTE','TRANSFER',g.Movimentacao.TIPO_PERDA]:
             raise ValidationError('Lote vencido não pode ser utilizado ou vendido.')
         qs = m.LoteEstoque.objects.filter(pk=lot_id)
     own = own_reservations(part, source, movement.ordem_id, sale_id)

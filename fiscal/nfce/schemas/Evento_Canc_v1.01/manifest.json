@@ -1,0 +1,17 @@
+{
+  "release": "Evento_Canc_v1.01",
+  "fonte": "https://www.nfe.fazenda.gov.br/PORTAL/exibirArquivo.aspx?conteudo=Ig8Y9i6kgOc%3D&AspxAutoDetectCookieSupport=1",
+  "escopo": "ENSAIO_LOCAL_SINTETICO",
+  "aplicabilidade_confirmada": false,
+  "zip_sha256": "85fab8cd554119f74e5fac67383b91710421e116815bda58b605c515cf2bad23",
+  "sha256": {
+    "e110111_v1.00.xsd": "56fcdad336b281a9de5e7aae27850bc2c5bd7714e267c891e1b4d0dc227c65da",
+    "envEventoCancNFe_v1.00.xsd": "d3f1550b1c3fa6974690cc27e5b74a55fbec3dd11ecdd2992fbcd248b015d534",
+    "eventoCancNFe_v1.00.xsd": "3e5a2840a42f1f66bbbcb21066dcde6aa90407c1ef05456ad9ac38456d96982d",
+    "leiauteEventoCancNFe_v1.00.xsd": "02bb13b0b6fc18c9da34231ce79559d3a854e103b0884ae0f2bfc18d8bad2b09",
+    "procEventoCancNFe_v1.00.xsd": "7e85da1583df86aee753400286d4aad48160846090cd6ecd2c1400fed4afaa69",
+    "retEnvEventoCancNFe_v1.00.xsd": "a0a81bf59c9c166f4061f52f8d74cd7aa21bdc1bd8c9b0e0b8bc44d0df34e665",
+    "tiposBasico_v1.03.xsd": "1456f384d8eeab66648ba079b231a95376938afdd7f3cb288a33b7eb2768c7dd",
+    "xmldsig-core-schema_v1.01.xsd": "8ce2a385b593c85acf09cb03521f9e730dad2b2e6a5d02cc6f5b688ca94ce230"
+  }
+}

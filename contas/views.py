@@ -31,7 +31,18 @@ class LoginView(auth_views.LoginView):
             from platform_core.access import has_erp_access
             if has_erp_access(self.request.user, membership.organization):
                 return str(reverse_lazy('operacao:tecnico'))
-        if membership and membership.role in {'VENDEDOR','PDV'}:
+        match=self.request.resolver_match
+        if membership and match and match.url_name in {'pdv_login','seller_login'}:
+            from platform_core.context import tenant_context
+            from platform_core.modules import has_capability
+            with tenant_context(membership.organization):
+                if match.url_name=='pdv_login' and has_capability(self.request.user,'operar_pdv'):
+                    return str(reverse_lazy('operacao:pdv_home'))
+                if match.url_name=='seller_login' and has_capability(self.request.user,'central_vendedor'):
+                    return str(reverse_lazy('operacao:seller_home'))
+        if membership and membership.role=='PDV':
+            return str(reverse_lazy('operacao:pdv_home'))
+        if membership and membership.role == 'VENDEDOR':
             from platform_core.access import has_erp_access
             if has_erp_access(self.request.user, membership.organization):
                 return str(reverse_lazy('operacao:seller_home'))
@@ -69,6 +80,13 @@ class UsuarioCreateView(LoginRequiredMixin, PerfilRequeridoMixin, generic.Create
 
     @transaction.atomic
     def form_valid(self, form):
+        from platform_core.saas_services import verificar_limite
+        from django.core.exceptions import ValidationError
+        try:
+            verificar_limite(self.request.organization, 'usuarios')
+        except ValidationError as exc:
+            form.add_error(None, '; '.join(exc.messages))
+            return self.form_invalid(form)
         self.object = form.save()
         membership = OrganizationMembership.objects.create(organization=self.request.organization, user=self.object, role=form.cleaned_data['perfil'])
         erp = ERPCatalog.objects.get(code='assistencia')

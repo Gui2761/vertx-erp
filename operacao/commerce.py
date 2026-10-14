@@ -311,6 +311,8 @@ def finalize(user,public_id,payments,request_id):
         if sale.finalizacao_id!=key or sale.finalizacao_dados!=rows: raise ValidationError('Venda já finalizada com outra operação.')
         return sale
     draft(sale,session)
+    from platform_core.saas_services import verificar_limite
+    verificar_limite(current_organization(), 'vendas_mes')
     items=list(sale.itens.select_related('peca').order_by('peca_id','pk'))
     from .seller_services import validate_discount
     validate_discount(user,sale)

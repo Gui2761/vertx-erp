@@ -52,37 +52,47 @@ def date_range(request):
 
 @login_required
 def home(request):
-    require_capability(request.user,'pdv')
+    require_capability(request.user,'central_vendedor')
     return render(request,'operacao/seller_home.html',s.indicators(request.user))
 
 @login_required
 def sales(request):
-    require_capability(request.user,'pdv')
+    require_capability(request.user,'central_vendedor')
     try: start,end=date_range(request)
     except ValidationError as exc:
         messages.error(request,'; '.join(exc.messages));start=end=timezone.localdate()
     rows=s.own_sales(request.user).filter(Q(finalizada_em__date__range=(start,end))|Q(finalizada_em__isnull=True,criado_em__date__range=(start,end))).order_by('-pk')
     return render(request,'operacao/seller_sales.html',{'sales':rows[:100],'start':start,'end':end,'period':request.GET.get('periodo','hoje')})
 
+
+@login_required
+def sale_detail(request,public_id):
+    require_capability(request.user,'central_vendedor')
+    if request.method!='GET':
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['GET'])
+    sale=get_object_or_404(s.own_sales(request.user),public_id=public_id)
+    return render(request,'operacao/seller_sale_readonly.html',{'sale':sale,'items':sale.itens.select_related('peca')})
+
 @login_required
 def goal(request):
-    require_capability(request.user,'pdv')
+    require_capability(request.user,'central_vendedor')
     return render(request,'operacao/seller_goal.html',s.indicators(request.user))
 
 @login_required
 def commission(request):
-    require_capability(request.user,'pdv')
+    require_capability(request.user,'central_vendedor')
     # No percentage, accrual or payout is fabricated. Rule configuration is later.
     return render(request,'operacao/seller_commission.html',s.indicators(request.user))
 
 @login_required
 def alerts(request):
-    require_capability(request.user,'pdv')
+    require_capability(request.user,'central_vendedor')
     return render(request,'operacao/seller_alerts.html',{'notices':m.Notificacao.objects.filter(usuario=request.user)[:100]})
 
 @login_required
 def notice_read(request,pk):
-    require_capability(request.user,'pdv')
+    require_capability(request.user,'central_vendedor')
     if request.method!='POST':
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(['POST'])
@@ -122,7 +132,7 @@ def terminal(request):
         except (ValidationError,ValueError,KeyError,ObjectDoesNotExist) as exc:
             messages.error(request,'; '.join(exc.messages) if isinstance(exc,ValidationError) else 'Revise os dados da operação.')
     sessions=m.SessaoCaixa.objects.filter(operador=request.user,fechado_em__isnull=True).select_related('conta')
-    return render(request,'operacao/seller_terminal.html',{'sessions':sessions,'contas':m.ContaBancaria.objects.filter(ativo=True,tipo='CAIXA'),'depositos':m.Deposito.objects.filter(ativo=True),'request_id':uuid.uuid4(),'drafts':s.own_sales(request.user).filter(status='RASCUNHO',sessao_caixa__fechado_em__isnull=True).order_by('-pk')[:10]})
+    return render(request,'operacao/seller_terminal.html',{'sessions':sessions,'contas':m.ContaBancaria.objects.filter(ativo=True,tipo='CAIXA'),'depositos':m.Deposito.objects.filter(ativo=True),'request_id':uuid.uuid4(),'drafts':m.Venda.objects.filter(sessao_caixa__operador=request.user,status='RASCUNHO',sessao_caixa__fechado_em__isnull=True).order_by('-pk')[:10],'cash_supervisor':has_capability(request.user,'caixa_supervisor')})
 
 def sale_context(request,sale,session):
     query=request.GET.get('q','').strip()[:100]
@@ -136,7 +146,7 @@ def sale_context(request,sale,session):
     customers=Cliente.objects.filter(ativo=True).filter(Q(nome_razao_social__icontains=customer_q)|Q(cpf_cnpj__icontains=customer_q))[:20] if customer_q else Cliente.objects.none()
     config=m.ConfiguracaoPDV.objects.first() or m.ConfiguracaoPDV()
     items=list(sale.itens.select_related('peca'))
-    sold=s.own_sales(request.user).filter(sessao_caixa=session,status__in=['FINALIZADA','PARCIALMENTE_DEVOLVIDA','DEVOLVIDA'])
+    sold=m.Venda.objects.filter(sessao_caixa=session,status__in=['FINALIZADA','PARCIALMENTE_DEVOLVIDA','DEVOLVIDA'])
     events=session.eventos.select_related('movimento') if session else []
     summary={'sold':sum((s.net_sale(row) for row in sold),c.ZERO),'methods':m.PagamentoVenda.objects.filter(venda__in=sold).values('forma__nome').annotate(total=Sum('valor')),'supplies':sum((row.movimento.valor for row in events if row.tipo=='SUPRIMENTO'),c.ZERO),'withdrawals':sum((row.movimento.valor for row in events if row.tipo in ['SANGRIA','RETIRADA']),c.ZERO),'expected':c.cash_expected(session) if session else c.ZERO}
     return {'sale':sale,'session':session,'items':items,'products':products,'q':query,'customers':customers,'customer_q':customer_q,'forms':g.FormaPagamento.objects.filter(ativo=True).exclude(tipo_pdv=''),'request_id':uuid.uuid4(),'discount_limit':config.limite_desconto_percentual,'gross':sum(((i.quantidade*i.valor_unitario).quantize(c.CENT) for i in items),c.ZERO),'items_discount':sum((i.desconto for i in items),c.ZERO),'total_discount':sum((i.desconto for i in items),c.ZERO)+sale.desconto_global,'cash_summary':summary,'discount_requests':sale.solicitacoes_desconto.order_by('-pk')[:5],'can_customer':has_capability(request.user,'pdv_cliente_cadastrar')}

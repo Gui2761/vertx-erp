@@ -81,7 +81,7 @@ def home(request):
             elif request.POST.get('action')=='marcar':
                 w.mark(request.user,request.POST['tipo'],request.POST['request_id'],origin=request.POST.get('origem','WEB'),device=request.META.get('HTTP_USER_AGENT','')[:160],session=request.session.session_key or '',ip=request.META.get('REMOTE_ADDR') or None,latitude=request.POST.get('latitude') or None,longitude=request.POST.get('longitude') or None,geo_consent=request.POST.get('geo_consentimento')=='on')
             else: raise ValidationError('Operação inválida.')
-            messages.success(request,'Registro salvo.');return redirect('operacao:ponto_home')
+            messages.success(request,'Registro salvo.');return redirect('operacao:seller_ponto' if request.path.startswith('/vendedor/') else 'operacao:ponto_home')
         except (ValidationError,ValueError,KeyError,ObjectDoesNotExist) as exc:
             messages.error(request,'; '.join(exc.messages) if isinstance(exc,ValidationError) else 'Revise os dados informados.')
     now=timezone.localdate()
@@ -106,7 +106,7 @@ def mirror(request,public_id):
     if export in ('pdf','xlsx'):
         content=reporting.pdf_bytes('Espelho interno de ponto',current_organization(),headers,rows,details=[('Funcionário',data.get('funcionario_nome',str(data['funcionario']))),('Saldo da competência (min)',str(data['saldo_banco_minutos'])),('Fechado',str(data.get('fechado',False))),('Regra interna',data['ressalva']),('Horas extras','Excedente não é aprovação. Fechamentos anteriores mantêm a política histórica.')]) if export=='pdf' else reporting.xlsx_bytes(headers,rows,numeric_columns=tuple(range(2,11)))
         response=HttpResponse(content,content_type='application/pdf' if export=='pdf' else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');response['Content-Disposition']=f'attachment; filename="espelho-{data["ano"]}-{data["mes"]}.{export}"';return response
-    return render(request,'operacao/ponto_mirror.html',{'data':data,'back_url':reverse('operacao:ponto_home'),'headers':headers,'rows':rows})
+    return render(request,'operacao/ponto_mirror.html',{'data':data,'back_url':reverse('operacao:seller_ponto' if request.path.startswith('/vendedor/') else 'operacao:ponto_home'),'headers':headers,'rows':rows})
 
 @login_required
 def adjustments(request):

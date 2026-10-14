@@ -13,7 +13,9 @@ from .context import current_organization
 class EmpresaForm(TenantModelForm):
     class Meta:
         model = ConfiguracaoEmpresa
-        fields = ['inscricao_estadual', 'inscricao_municipal', 'regime_tributario', 'crt', 'natureza_operacao', 'codigo_servico', 'iss_informativo', 'retencoes_informativas', 'plano', 'limites']
+        # Commercial plan and quotas are platform-controlled SaaS entitlements.
+        # Tenant administrators cannot raise them through the company settings API.
+        fields = ['inscricao_estadual', 'inscricao_municipal', 'regime_tributario', 'crt', 'natureza_operacao', 'codigo_servico', 'iss_informativo', 'retencoes_informativas']
 
 class FilialForm(TenantModelForm):
     class Meta:
@@ -65,6 +67,9 @@ def configuration(request, kind='empresa', public_id=None):
                         row.habilitado=enabled; row.save()
                     audit(request.user,'MODULOS_CONFIGURADOS',current_organization(),{'antes':before,'depois':form.cleaned_data})
                 else:
+                    if kind == 'filial' and not instance.pk:
+                        from .saas_services import verificar_limite
+                        verificar_limite(current_organization(), 'filiais')
                     if kind=='permissao':
                         prior=model.objects.filter(membership=form.cleaned_data['membership'],capacidade=form.cleaned_data['capacidade']).first()
                         if prior:

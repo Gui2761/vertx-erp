@@ -16,7 +16,7 @@ from .seller_access import is_seller
 ZERO = Decimal('0')
 
 def own_sales(user):
-    require_capability(user, 'pdv')
+    require_capability(user, 'central_vendedor')
     return m.Venda.objects.filter(vendedor=user).select_related('cliente').prefetch_related('itens','devolucoes','pagamentos_pdv__forma')
 
 def net_sale(sale):

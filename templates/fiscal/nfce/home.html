@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}NFC-e · Homologação local{% endblock %}
+{% block content %}
+{% include 'fiscal/nfce/banner.html' %}
+<h1>NFC-e de homologação</h1><p>{{ request.organization }} · identidade fiscal e documentos exclusivos desta organização.</p>
+{% if request.membership.role == 'ADMIN' %}<p><a class="btn btn-primary" href="{% url 'operacao:fiscal_configuracao' %}">Configuração fiscal</a></p>{% endif %}
+{% for config in proposals %}
+{% with p=config.proposta_documental d=config.proposta_documental.dados %}
+<section class="card mb-4" aria-label="Cadastro fiscal documental">
+<div class="card-body">
+<h2>{{ d.nome_fantasia }}</h2>
+<div class="alert alert-warning"><strong>PROPOSTA DOCUMENTAL · AMBIENTE LOCAL DE HOMOLOGAÇÃO</strong><br>Estabelecimento provisório inativo. Emissão bloqueada enquanto houver pendências. Este cadastro não representa produção nem homologação oficial na SEFAZ.</div>
+<h3>Dados cadastrais</h3>
+<dl class="row">
+<dt class="col-sm-4">CNPJ</dt><dd class="col-sm-8">{{ d.cnpj }}</dd>
+<dt class="col-sm-4">Razão social</dt><dd class="col-sm-8">{{ d.razao_social }}</dd>
+<dt class="col-sm-4">Inscrição Estadual</dt><dd class="col-sm-8">{{ d.ie }}</dd>
+<dt class="col-sm-4">Inscrição Municipal</dt><dd class="col-sm-8">{{ d.im }}</dd>
+<dt class="col-sm-4">Endereço proposto (2026)</dt><dd class="col-sm-8">{{ d.logradouro }}, {{ d.numero }}, {{ d.complemento }}, {{ d.bairro }} · CEP {{ d.cep }}</dd>
+<dt class="col-sm-4">Município / UF</dt><dd class="col-sm-8">{{ d.municipio }} / {{ d.uf }}</dd>
+<dt class="col-sm-4">CNAE proposto (2026)</dt><dd class="col-sm-8">{{ d.cnae_principal }} · Pendente de confirmação</dd>
+<dt class="col-sm-4">Natureza jurídica / porte</dt><dd class="col-sm-8">{{ d.natureza_juridica }} / {{ d.porte }}</dd>
+</dl>
+<h3>Situação fiscal</h3>
+<p>Simples Nacional: <strong>{% if d.simples_nacional %}Sim{% else %}Não{% endif %}</strong> · informação documental, sem derivação de tributação.</p>
+<p>CRT: <strong>Pendente de confirmação</strong><br>Enquadramento fiscal definitivo: <strong>Pendente</strong><br>Código IBGE: <strong>Pendente</strong><br>Credenciamento NFC-e: <strong>Pendente</strong><br>Estabelecimento fiscal definitivo: <strong>Pendente</strong></p>
+<h3>NFC-e</h3>
+<p>Ambiente: <strong>HOMOLOGAÇÃO</strong><br>Série: <strong>Pendente</strong><br>Próximo número: <strong>Pendente</strong><br>Certificado A1 / CSC: <strong>Não configurados</strong><br>Referência segura futura: <code>cofre://UUID</code> · nenhum certificado carregado.</p>
+<p>Produto fiscal, NCM, CEST, CFOP, CST/CSOSN e demais regras tributárias: <strong>Pendentes</strong>. Não inferidos do CNAE.</p>
+<h3>Divergências · confirmação necessária</h3>
+<div class="table-responsive"><table class="table"><thead><tr><th>Campo</th><th>Documento anterior</th><th>Proposta documental</th></tr></thead><tbody>{% for item in p.divergencias %}<tr><td>{{ item.campo }}</td><td>{{ item.anterior }}</td><td>{{ item.proposta }} · Pendente</td></tr>{% empty %}<tr><td colspan="3">Nenhuma divergência informada.</td></tr>{% endfor %}</tbody></table></div>
+<p>Fontes: {% for fonte in p.fontes %}{{ fonte }}{% if not forloop.last %}; {% endif %}{% endfor %}.</p>
+<button type="button" class="btn btn-secondary" disabled>Emissão bloqueada · cadastro pendente</button>
+</div></section>
+{% endwith %}
+{% empty %}
+<div class="d-flex flex-wrap gap-2 mb-4"><a class="btn btn-primary" href="{% url 'operacao:nfce_preparar' %}">Preparar venda finalizada</a><a class="btn btn-outline-secondary" href="{% url 'operacao:fiscal_simulacao' %}">Simulador da Fase 1</a></div>
+{% endfor %}
+<h2>Prontidão do cadastro</h2><div class="table-responsive"><table class="table"><thead><tr><th>Dado fiscal</th><th>Situação</th></tr></thead><tbody>{% for label,present in readiness %}<tr><td>{{ label }}</td><td>{% if present %}Cadastrado — requer validação fiscal{% else %}<strong class="text-danger">Pendente · não presumido</strong>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+<h2>Configuração do laboratório</h2><p>Somente banco local separado. Cadastros versionados e auditados; propostas documentais não habilitam emissão.</p><div class="d-flex flex-wrap gap-2 mb-4">{% for kind in cadastros %}<a class="btn btn-outline-secondary" href="{% url 'operacao:nfce_cadastro' kind %}">{{ kind|capfirst }}</a>{% endfor %}</div>
+<h2>Operações NFC-e</h2><div class="table-responsive"><table class="table"><thead><tr><th>Documento</th><th>Venda</th><th>Estado fiscal</th><th>Total</th></tr></thead><tbody>{% for doc in docs %}<tr><td><a href="{% url 'operacao:nfce_detalhe' doc.pk %}">{{ doc }}</a></td><td>{{ doc.venda }}</td><td>{{ doc.status }}</td><td>R$ {{ doc.valor|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="4">Nenhuma NFC-e preparada. Nenhuma emissão será criada automaticamente.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

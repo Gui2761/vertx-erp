@@ -233,7 +233,7 @@ class CommercialTests(TestCase):
     def test_anonimo_nao_acessa_dados_internos(self):
         for url in ['/clientes/','/equipamentos/','/ordens/','/financeiro/','/tecnico/','/pdv/']:
             self.assertEqual(self.client.get(url).status_code,302)
-            self.assertIn('/contas/login/',self.client.get(url)['Location'])
+            self.assertIn('/pdv/entrar/' if url=='/pdv/' else '/contas/login/',self.client.get(url)['Location'])
 
     def test_nenhum_tenant_cliente_lead_exposto_no_catalogo(self):
         user,a=self.role('ADMIN')
