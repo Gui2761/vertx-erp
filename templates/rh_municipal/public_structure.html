@@ -1,0 +1,86 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Estrutura municipal{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div><span class="gp-eyebrow">PREFEITURA · ORGANIZAÇÃO</span><h1>Estrutura municipal</h1><p>Ative e organize somente as secretarias necessárias. Departamentos, setores, unidades e acessos continuam vinculados à Prefeitura e ao escopo de cada usuário.</p></div>
+</section>
+
+<section class="gp-panel gp-structure-filter">
+  <form method="get" class="gp-filter-form">
+    <input type="hidden" name="tipo" value="{{ kind }}">
+    <label class="gp-field"><span>Pesquisar na estrutura</span><input class="gp-input" type="search" name="q" value="{{ search_query }}" placeholder="Secretaria, departamento, código..."></label>
+    {% if can_manage_catalog %}<label class="gp-field"><span>Situação</span><select class="gp-select" name="status"><option value="ativos" {% if status_filter == 'ativos' %}selected{% endif %}>Ativos</option><option value="inativos" {% if status_filter == 'inativos' %}selected{% endif %}>Inativos</option><option value="todos" {% if status_filter == 'todos' %}selected{% endif %}>Todos</option></select></label>{% endif %}
+    <button class="gp-button gp-button-light" type="submit">Filtrar</button>
+  </form>
+</section>
+
+<section class="gp-card-grid gp-structure-metrics" aria-label="Indicadores da estrutura municipal">
+  <article class="gp-metric"><span class="gp-metric-icon blue">▦</span><span class="gp-metric-label">Secretarias ativas</span><strong>{{ active_secretaries_count }}</strong><small>de {{ secretaries|length }} cadastradas</small></article>
+  <article class="gp-metric"><span class="gp-metric-icon teal">▤</span><span class="gp-metric-label">Departamentos</span><strong>{{ departments|length }}</strong><small>em secretarias ativas</small></article>
+  <article class="gp-metric"><span class="gp-metric-icon violet">⌖</span><span class="gp-metric-label">Unidades</span><strong>{{ units|length }}</strong><small>em estruturas ativas</small></article>
+  <article class="gp-metric"><span class="gp-metric-icon amber">♙</span><span class="gp-metric-label">Profissionais vinculados</span><strong>{{ professionals_count }}</strong><small>com estrutura ativa</small></article>
+</section>
+
+{% if can_manage_catalog and missing_catalog_count %}
+<section class="gp-panel gp-catalog-callout">
+  <div><span class="gp-eyebrow">CONFIGURAÇÃO INICIAL</span><h2>Comece pelo catálogo municipal</h2><p>Adicionar o catálogo cria somente as secretarias padrão, todas desativadas. Nenhuma será ativada, e cadastros já existentes serão preservados.</p></div>
+  <form method="post" action="?tipo=secretaria" onsubmit="return confirm('Adicionar as secretarias padrão que ainda faltam? Elas serão criadas desativadas.');">
+    {% csrf_token %}<input type="hidden" name="tipo" value="secretaria"><input type="hidden" name="acao" value="catalogo_inicial">
+    <button type="submit" class="gp-button">Adicionar catálogo inicial <span class="gp-count">{{ missing_catalog_count }}</span></button>
+  </form>
+</section>
+{% endif %}
+
+{% if can_manage_structure and available_kinds %}
+<section class="gp-panel gp-structure-create">
+  <div class="gp-panel-head"><div><span class="gp-eyebrow">NOVO REGISTRO</span><h2>Adicionar à estrutura</h2></div><span class="gp-level">Escopo validado no servidor</span></div>
+  <nav class="gp-kind-tabs" aria-label="Tipo de estrutura">{% for item in available_kinds %}<a class="gp-kind-tab {% if kind == item %}active{% endif %}" href="?tipo={{ item }}">{{ item|title }}</a>{% endfor %}</nav>
+  <form method="post" class="gp-form">
+    {% csrf_token %}<input type="hidden" name="tipo" value="{{ kind }}">
+    {% if form.non_field_errors %}<div class="gp-error">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="gp-form-grid">{% for field in form %}<label class="gp-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endfor %}</div>
+    <div class="gp-actions"><button type="submit" class="gp-button">Salvar {{ kind }}</button></div>
+  </form>
+</section>
+{% endif %}
+
+<section class="gp-panel gp-secretary-panel">
+  <div class="gp-panel-head"><div><span class="gp-eyebrow">NÍVEL 1 · PREFEITURA</span><h2>Secretarias</h2><p class="gp-muted">O catálogo pertence a esta Prefeitura. Desativar mantém cadastros, responsáveis e histórico.</p></div><span class="gp-count">{{ secretaries|length }}</span></div>
+  <div class="gp-secretary-grid">
+    {% for row in secretaries %}
+    <article class="gp-secretary-card {% if not row.item.ativo %}is-inactive{% endif %}">
+      <div class="gp-secretary-title"><span class="gp-tree-marker">S</span><div><h3>{{ row.item.nome }}</h3><small>{{ row.item.codigo }} · {{ row.department_count }} departamento(s)</small></div><span class="gp-status {% if not row.item.ativo %}muted{% endif %}">{% if row.item.ativo %}Ativa{% else %}Desativada{% endif %}</span></div>
+      {% if row.item.descricao %}<p class="gp-secretary-description">{{ row.item.descricao }}</p>{% endif %}{% if row.item.responsavel_id %}<p class="gp-secretary-description"><strong>Responsável:</strong> {{ row.item.responsavel.nome }}</p>{% endif %}
+      {% if can_manage_catalog %}
+      <details class="gp-secretary-edit"><summary>Editar secretaria</summary>
+        <form method="post" class="gp-form gp-secretary-edit-form">
+          {% csrf_token %}<input type="hidden" name="tipo" value="secretaria"><input type="hidden" name="acao" value="renomear_secretaria"><input type="hidden" name="secretaria_id" value="{{ row.item.pk }}">
+          {% if row.edit_form.non_field_errors %}<div class="gp-error">{{ row.edit_form.non_field_errors }}</div>{% endif %}
+          <div class="gp-form-grid">{% for field in row.edit_form %}<label class="gp-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endfor %}</div>
+          <div class="gp-actions"><button type="submit" class="gp-button gp-button-light">Salvar alterações</button></div>
+        </form>
+      </details>
+      <div class="gp-secretary-actions">
+        {% if row.item.ativo %}<a class="gp-button gp-button-light" href="?tipo=departamento&amp;secretaria_id={{ row.item.pk }}">Adicionar departamento</a>{% endif %}
+        {% if can_view_access %}<a class="gp-text-link" href="{% url 'rh_municipal_public:accesses' %}?secretaria_id={{ row.item.pk }}">Configurar responsáveis</a>{% endif %}
+        <form method="post" onsubmit="return confirm('{% if row.item.ativo %}Desativar{% else %}Ativar{% endif %} {{ row.item.nome }}? Os registros vinculados serão preservados.');">
+          {% csrf_token %}<input type="hidden" name="tipo" value="secretaria"><input type="hidden" name="acao" value="alternar_secretaria"><input type="hidden" name="secretaria_id" value="{{ row.item.pk }}"><input type="hidden" name="ativo" value="{% if row.item.ativo %}false{% else %}true{% endif %}">
+          <button type="submit" class="gp-icon-button {% if row.item.ativo %}danger{% endif %}">{% if row.item.ativo %}Desativar{% else %}Ativar{% endif %}</button>
+        </form>
+      </div>
+      {% endif %}
+    </article>
+    {% empty %}<div class="gp-empty-inline">Nenhuma secretaria está disponível neste escopo.</div>{% endfor %}
+  </div>
+</section>
+
+<div class="gp-content-grid gp-structure-grid">
+  <section class="gp-panel"><div class="gp-panel-head"><div><span class="gp-eyebrow">NÍVEIS 2–4</span><h2>Departamentos, setores e unidades</h2></div></div><div class="gp-structure-list">
+    {% for row in departments %}<article class="gp-structure-row"><span class="gp-tree-marker">D</span><div class="gp-structure-row-content"><strong>{{ row.item.nome }}</strong><small>{{ row.item.secretaria.nome }} · {{ row.item.codigo }}{% if row.item.responsavel_id %} · Responsável: {{ row.item.responsavel.nome }}{% endif %}</small><details class="gp-secretary-edit"><summary>Editar departamento</summary><form method="post" class="gp-form gp-secretary-edit-form">{% csrf_token %}<input type="hidden" name="tipo" value="departamento"><input type="hidden" name="acao" value="editar_item"><input type="hidden" name="item_tipo" value="departamento"><input type="hidden" name="item_id" value="{{ row.item.pk }}"><div class="gp-form-grid">{% for field in row.edit_form %}<label class="gp-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endfor %}</div><div class="gp-actions"><button class="gp-button gp-button-light" type="submit">Salvar</button></div></form></details></div><span class="gp-status {% if not row.item.ativo %}muted{% endif %}">{% if row.item.ativo %}Ativo{% else %}Inativo{% endif %}</span>{% if can_manage_structure %}<form method="post" onsubmit="return confirm('{% if row.item.ativo %}Desativar{% else %}Ativar{% endif %} este departamento? O histórico será preservado.');">{% csrf_token %}<input type="hidden" name="tipo" value="departamento"><input type="hidden" name="acao" value="alternar_item"><input type="hidden" name="item_tipo" value="departamento"><input type="hidden" name="item_id" value="{{ row.item.pk }}"><input type="hidden" name="ativo" value="{% if row.item.ativo %}false{% else %}true{% endif %}"><button class="gp-icon-button" type="submit">{% if row.item.ativo %}Desativar{% else %}Ativar{% endif %}</button></form>{% endif %}</article>{% endfor %}
+    {% for row in sectors %}<article class="gp-structure-row gp-nested-1"><span class="gp-tree-marker">S</span><div class="gp-structure-row-content"><strong>{{ row.item.nome }}</strong><small>{{ row.item.departamento.secretaria.nome }} / {{ row.item.departamento.nome }} · {{ row.item.codigo }}{% if row.item.responsavel_id %} · Responsável: {{ row.item.responsavel.nome }}{% endif %}</small><details class="gp-secretary-edit"><summary>Editar setor</summary><form method="post" class="gp-form gp-secretary-edit-form">{% csrf_token %}<input type="hidden" name="tipo" value="setor"><input type="hidden" name="acao" value="editar_item"><input type="hidden" name="item_tipo" value="setor"><input type="hidden" name="item_id" value="{{ row.item.pk }}"><div class="gp-form-grid">{% for field in row.edit_form %}<label class="gp-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endfor %}</div><div class="gp-actions"><button class="gp-button gp-button-light" type="submit">Salvar</button></div></form></details></div><span class="gp-status {% if not row.item.ativo %}muted{% endif %}">{% if row.item.ativo %}Ativo{% else %}Inativo{% endif %}</span>{% if can_manage_structure %}<form method="post" onsubmit="return confirm('{% if row.item.ativo %}Desativar{% else %}Ativar{% endif %} este setor? O histórico será preservado.');">{% csrf_token %}<input type="hidden" name="tipo" value="setor"><input type="hidden" name="acao" value="alternar_item"><input type="hidden" name="item_tipo" value="setor"><input type="hidden" name="item_id" value="{{ row.item.pk }}"><input type="hidden" name="ativo" value="{% if row.item.ativo %}false{% else %}true{% endif %}"><button class="gp-icon-button" type="submit">{% if row.item.ativo %}Desativar{% else %}Ativar{% endif %}</button></form>{% endif %}</article>{% endfor %}
+    {% for row in units %}<article class="gp-structure-row gp-nested-2"><span class="gp-tree-marker">U</span><div class="gp-structure-row-content"><strong>{{ row.item.nome }}</strong><small>{{ row.item.setor.departamento.secretaria.nome }} / {{ row.item.setor.departamento.nome }} / {{ row.item.setor.nome }} · {{ row.item.codigo }}{% if row.item.responsavel_id %} · Responsável: {{ row.item.responsavel.nome }}{% endif %}</small><details class="gp-secretary-edit"><summary>Editar unidade</summary><form method="post" class="gp-form gp-secretary-edit-form">{% csrf_token %}<input type="hidden" name="tipo" value="unidade"><input type="hidden" name="acao" value="editar_item"><input type="hidden" name="item_tipo" value="unidade"><input type="hidden" name="item_id" value="{{ row.item.pk }}"><div class="gp-form-grid">{% for field in row.edit_form %}<label class="gp-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endfor %}</div><div class="gp-actions"><button class="gp-button gp-button-light" type="submit">Salvar</button></div></form></details></div><span class="gp-status {% if not row.item.ativo %}muted{% endif %}">{% if row.item.ativo %}Ativo{% else %}Inativo{% endif %}</span>{% if can_manage_structure %}<form method="post" onsubmit="return confirm('{% if row.item.ativo %}Desativar{% else %}Ativar{% endif %} esta unidade? O histórico será preservado.');">{% csrf_token %}<input type="hidden" name="tipo" value="unidade"><input type="hidden" name="acao" value="alternar_item"><input type="hidden" name="item_tipo" value="unidade"><input type="hidden" name="item_id" value="{{ row.item.pk }}"><input type="hidden" name="ativo" value="{% if row.item.ativo %}false{% else %}true{% endif %}"><button class="gp-icon-button" type="submit">{% if row.item.ativo %}Desativar{% else %}Ativar{% endif %}</button></form>{% endif %}</article>{% endfor %}
+    {% if not departments and not sectors and not units %}<div class="gp-empty-inline">Ative uma secretaria para começar a cadastrar departamentos, setores e unidades.</div>{% endif %}
+  </div></section>
+  <section class="gp-panel"><div class="gp-panel-head"><div><span class="gp-eyebrow">USUÁRIOS E ESCOPO</span><h2>Responsáveis e permissões</h2></div></div><p class="gp-muted">Os acessos individuais são configurados por secretaria, departamento, setor ou unidade. A ativação de uma secretaria não habilita módulos contratados.</p>{% if can_view_access %}<a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:accesses' %}">Abrir acessos e permissões</a>{% endif %}</section>
+</div>
+{% endblock %}

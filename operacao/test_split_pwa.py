@@ -65,6 +65,15 @@ class SplitPWATests(SplitPWAData,TestCase):
         self.assertContains(response,'href="/pdv/manifest.webmanifest"')
         self.assertContains(response,'href="/pdv/offline/"')
         self.assertNotContains(response,'href="/vendedor/"')
+    def test_cash_and_offline_screens_use_configured_depot_without_operator_picker(self):
+        terminal=self.client.get('/pdv/')
+        self.assertEqual(terminal.status_code,200)
+        self.assertContains(terminal,self.depot.nome)
+        self.assertNotContains(terminal,'name="deposito"')
+        offline_page=self.client.get('/pdv/offline/')
+        self.assertEqual(offline_page.status_code,200)
+        self.assertContains(offline_page,self.depot.nome)
+        self.assertNotContains(offline_page,'id="po-depot"')
     def test_cash_capacity_does_not_depend_on_personal_seller_central(self):
         with tenant_context(self.a):
             member=OrganizationMembership.objects.get(user=self.operator,organization=self.a)
@@ -87,6 +96,28 @@ class SplitPWATests(SplitPWAData,TestCase):
             self.assertEqual(worker.status_code,200);self.assertEqual(worker['Service-Worker-Allowed'],f'/{app}/')
             self.assertNotIn("cache.put",worker.content.decode())
         self.assertEqual(self.client.get('/manifest.webmanifest').json()['id'],'/tecnico/')
+
+    def test_technician_installation_has_independent_scope_and_never_caches_private_pages(self):
+        self.client.logout()
+        manifest=self.client.get('/tecnico/manifest.webmanifest')
+        self.assertEqual(manifest.status_code,200)
+        data=manifest.json()
+        self.assertEqual((data['id'],data['scope'],data['start_url'],data['name']),
+                         ('/tecnico/','/tecnico/','/tecnico/','VERTYX Técnico'))
+        worker=self.client.get('/tecnico/sw.js')
+        self.assertEqual(worker.status_code,200)
+        self.assertEqual(worker['Service-Worker-Allowed'],'/tecnico/')
+        source=worker.content.decode()
+        self.assertIn("url.pathname.startsWith('/tecnico/')",source)
+        self.assertNotIn('cache.put',source)
+        self.assertNotIn('caches.put',source)
+        technician=self.user('split-technician-pwa',self.a,'TECNICO')
+        self.client.force_login(technician)
+        home=self.client.get('/tecnico/')
+        self.assertEqual(home.status_code,200)
+        self.assertContains(home,'href="/tecnico/manifest.webmanifest"')
+        self.assertEqual(self.client.get('/tecnico/manifest.webmanifest').status_code,200)
+        self.assertEqual(self.client.get('/tecnico/sw.js').status_code,200)
     def test_scoped_login_enters_expected_app_without_separate_accounts(self):
         self.operator.set_password('synthetic-split');self.operator.save()
         self.client.logout()
@@ -94,6 +125,24 @@ class SplitPWATests(SplitPWAData,TestCase):
         self.assertRedirects(self.client.post('/pdv/entrar/',{'username':self.operator.username,'password':'synthetic-split'}),'/pdv/')
         self.client.logout()
         self.assertRedirects(self.client.post('/vendedor/entrar/',{'username':self.operator.username,'password':'synthetic-split'}),'/vendedor/')
+    def test_scoped_login_never_redirects_to_the_other_pwa_without_its_capability(self):
+        self.seller.set_password('synthetic-seller');self.seller.save()
+        self.operator.set_password('synthetic-split');self.operator.save()
+        self.client.logout()
+        # This VENDEDOR has the seller experience but has no independent
+        # operar_pdv grant. Entering the PDV login cannot route into Vendedor.
+        response=self.client.post('/pdv/entrar/',{'username':self.seller.username,'password':'synthetic-seller'})
+        self.assertRedirects(response,'/vertyx/',fetch_redirect_response=False)
+        self.assertEqual(self.client.get('/pdv/').status_code,403)
+        # Likewise, revoke the seller capability from the PDV operator: the
+        # Seller PWA entry point must not silently fall back to the cash PWA.
+        with tenant_context(self.a):
+            member=OrganizationMembership.objects.get(user=self.operator,organization=self.a)
+            PermissaoMembership.objects.update_or_create(membership=member,capacidade='central_vendedor',defaults={'permitido':False})
+        self.client.logout()
+        response=self.client.post('/vendedor/entrar/',{'username':self.operator.username,'password':'synthetic-split'})
+        self.assertRedirects(response,'/vertyx/',fetch_redirect_response=False)
+        self.assertEqual(self.client.get('/vendedor/').status_code,403)
     def test_vendor_own_sale_read_only_without_cash_permission(self):
         with tenant_context(self.a):sale=c.new_sale(self.admin,self.session.public_id,self.depot.pk,seller_id=self.seller.pk)
         self.client.force_login(self.seller);url=f'/vendedor/vendas/{sale.public_id}/'
@@ -103,7 +152,7 @@ class SplitPWATests(SplitPWAData,TestCase):
         self.client.force_login(self.admin_b);self.assertEqual(self.client.get(url).status_code,404)
     def test_impact_command_is_read_only_and_reports_vendor_cash_history(self):
         with tenant_context(self.a):
-            self.grant();cash=m.ContaBancaria.objects.create(nome='Caixa vendedor sintético',tipo='CAIXA');session=c.open_cash(self.seller,cash.pk,0,uuid.uuid4())
+            self.grant();cash=m.ContaBancaria.objects.create(nome='Caixa vendedor sintético',tipo='CAIXA',deposito_padrao=self.depot);session=c.open_cash(self.seller,cash.pk,0,uuid.uuid4())
             before=list(m.SessaoCaixa.objects.values());perms=list(PermissaoMembership.objects.values())
         output=StringIO();call_command('auditar_operadores_pdv',organization=self.a.slug,stdout=output)
         data=json.loads(output.getvalue());self.assertEqual(data['vendedores_afetados'][0]['usuario'],self.seller.username)
@@ -204,6 +253,7 @@ class OfflineConcurrencyTests(SplitPWAData,TransactionTestCase):
         self.assertEqual(ids[0],ids[1])
         with tenant_context(self.a):self.assertEqual((m.Venda.objects.count(),m.SincronizacaoPDV.objects.count(),m.Pagamento.objects.count()),(1,1,1))
 
+@skipUnless(connection.vendor=='postgresql','Migration preservation requires PostgreSQL')
 class OfflineMigrationPreservationTests(SplitPWAData,TransactionTestCase):
     def test_0018_adds_only_sync_receipt_without_changing_existing_tables_or_rows(self):
         from django.db.migrations.executor import MigrationExecutor

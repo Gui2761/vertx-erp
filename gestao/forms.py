@@ -3,6 +3,7 @@ from decimal import Decimal
 from django import forms
 from django.utils import timezone
 from platform_core.forms import TenantModelForm
+from platform_core.context import current_organization
 from clientes.models import Cliente, Unidade
 from equipamentos.models import Equipamento
 from contas.models import Tecnico
@@ -139,6 +140,23 @@ class CentroCustoForm(Estilizado):
 
 
 class FormaPagamentoForm(Estilizado):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from operacao.models import ContaBancaria
+        organization = current_organization()
+        self.fields['conta_pdv'].queryset = ContaBancaria.objects.filter(organization=organization, ativo=True) if organization else ContaBancaria.objects.none()
+
+    def clean(self):
+        cleaned = super().clean()
+        kind = cleaned.get('tipo_pdv')
+        account = cleaned.get('conta_pdv')
+        active = cleaned.get('ativo')
+        if active and kind in {'PIX', 'DEBITO', 'CREDITO', 'TRANSFERENCIA', 'OUTRO'} and not account:
+            self.add_error('conta_pdv', 'Associe uma conta ativa da organização para registrar o recebimento no financeiro.')
+        if account and not account.ativo:
+            self.add_error('conta_pdv', 'Selecione uma conta ativa da organização.')
+        return cleaned
+
     class Meta:
         model = m.FormaPagamento
         fields = ['nome', 'tipo_pdv', 'conta_pdv', 'ativo']

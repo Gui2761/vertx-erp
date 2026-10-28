@@ -9,7 +9,8 @@ from gestao import models as g
 from gestao.tests import Dados
 from ordens import services as os_services
 from platform_core.context import tenant_context
-from platform_core.saas_models import AssinaturaSaaS, PlanoSaaS
+from platform_core.models import ERPCatalog, ERPProductModule
+from platform_core.saas_models import AssinaturaSaaS, ContratoSaaS, ItemContratoSaaS, PlanoProdutoModulo, PlanoSaaS
 from platform_core.saas_services import uso_quota, verificar_limite
 
 from . import models as m, services
@@ -22,10 +23,48 @@ class SaaSQuotaOperationalTests(Dados, TestCase):
     def plan_for(self, organization, limits):
         plan = PlanoSaaS.objects.create(
             slug=f'quota-{organization.slug}', nome='Plano de quota',
-            modulos=['assistencia', 'estoque', 'pdv'], limites=limits,
+            modulos=['assistencia', 'estoque', 'pdv', 'contratos'], limites=limits,
         )
         AssinaturaSaaS.objects.create(organization=organization, plano=plan)
         return plan
+
+    def test_multi_erp_contract_snapshot_enforces_quota_without_reading_legacy_plan(self):
+        erp = ERPCatalog.objects.get(code='assistencia')
+        module = ERPProductModule.objects.get(erp=erp, code='pdv')
+        plan = PlanoSaaS.objects.create(
+            slug=f'contract-quota-{self.a.slug}', nome='Contrato com limite', erp=erp,
+            modulos=['pdv'], limites={'usuarios': 1},
+        )
+        PlanoProdutoModulo.objects.get_or_create(plano=plan, modulo=module)
+        contract = ContratoSaaS.objects.create(
+            organization=self.a, status=ContratoSaaS.Status.ATIVO,
+            inicio_em=timezone.localdate(),
+        )
+        ItemContratoSaaS.objects.create(
+            contrato=contract, erp=erp, plano=plan, modulos_snapshot=['pdv'],
+            limites_snapshot={'usuarios': 1}, periodicidade_snapshot='MENSAL',
+        )
+        with tenant_context(self.a):
+            self.assertGreaterEqual(uso_quota(self.a, 'usuarios'), 1)
+            with self.assertRaisesMessage(ValidationError, 'Limite de usuários do plano atingido.'):
+                verificar_limite(self.a, 'usuarios', erp_code='assistencia')
+        self.assertEqual(AssinaturaSaaS.objects.filter(organization=self.a).count(), 0)
+
+    def test_suspended_contract_cannot_fall_back_to_unrestricted_legacy_quota(self):
+        erp = ERPCatalog.objects.get(code='assistencia')
+        module = ERPProductModule.objects.get(erp=erp, code='pdv')
+        plan = PlanoSaaS.objects.create(
+            slug=f'suspended-contract-{self.a.slug}', nome='Contrato suspenso', erp=erp,
+            modulos=['pdv'], limites={},
+        )
+        PlanoProdutoModulo.objects.get_or_create(plano=plan, modulo=module)
+        contract = ContratoSaaS.objects.create(organization=self.a, status=ContratoSaaS.Status.SUSPENSO)
+        ItemContratoSaaS.objects.create(
+            contrato=contract, erp=erp, plano=plan, modulos_snapshot=['pdv'],
+            limites_snapshot={'vendas_mes': 100}, periodicidade_snapshot='MENSAL',
+        )
+        with self.assertRaisesMessage(ValidationError, 'Não há contrato vigente para este produto; a operação foi bloqueada.'):
+            verificar_limite(self.a, 'vendas_mes', erp_code='assistencia')
 
     def test_medicao_os_e_vendas_usa_registros_oficiais_do_tenant_e_do_mes(self):
         self.plan_for(self.a, {'vendas_mes': 1, 'ordens_mes': 1})

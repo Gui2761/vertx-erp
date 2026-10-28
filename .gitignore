@@ -10,3 +10,12 @@ db.sqlite3
 /tmp/
 validation.sqlite3
 audit_baseline.sqlite3
+/backups/
+/output/
+/test_*.sqlite3
+/test_*.sqlite3-*
+/validation_settings_*.py
+/RELATORIO_*.md
+/VALIDACAO_*.json
+*.log
+*.tmp

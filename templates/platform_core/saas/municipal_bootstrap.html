@@ -1,0 +1,73 @@
+{% extends 'platform_core/saas/base.html' %}
+{% block title %}Bootstrap Gestão Pública · VERTYX Admin{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'platform_core:saas_home' %}">← Visão geral</a>
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">ADMINISTRAÇÃO INTERNA · GESTÃO PÚBLICA</p>
+    <h1>Primeiro acesso da Prefeitura</h1>
+    <p>Conceda o acesso municipal inicial somente depois de confirmar os vínculos de produto e contrato.</p>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-heading"><div><h2>1. Selecione a organização</h2><span>Esta ação fica restrita à administração da plataforma.</span></div></div>
+  <form method="get" class="search-bar">
+    <label class="visually-hidden" for="bootstrap-organization">Organização</label>
+    <select id="bootstrap-organization" name="organization" required>
+      <option value="">Selecione uma organização</option>
+      {% for item in organizations %}<option value="{{ item.pk }}" {% if organization.pk == item.pk %}selected{% endif %}>{{ item.display_name }} · {{ item.slug }}</option>{% endfor %}
+    </select>
+    <button class="btn-secondary" type="submit">Verificar acesso</button>
+  </form>
+</section>
+
+{% if organization %}
+  <section class="panel">
+    <div class="panel-heading"><div><h2>{{ organization.display_name }}</h2><span>{{ organization.razao_social }} · {{ organization.slug }}</span></div><span class="pill pill-blue">Organization #{{ organization.pk }}</span></div>
+    <div class="metric-grid bootstrap-gates">
+      <article class="metric-card"><span>Produto na organização</span><strong class="{% if readiness.product_enabled %}gate-ok{% else %}gate-pending{% endif %}">{% if readiness.product_enabled %}Habilitado{% else %}Pendente{% endif %}</strong><small>OrganizationERP + catálogo ativo</small></article>
+      <article class="metric-card"><span>Módulo contratado</span><strong class="{% if readiness.contract_enabled %}gate-ok{% else %}gate-pending{% endif %}">{% if readiness.contract_enabled %}Habilitado{% else %}Pendente{% endif %}</strong><small>Plano SaaS / configuração do tenant</small></article>
+      <article class="metric-card"><span>Memberships elegíveis</span><strong>{{ readiness.enabled_memberships }}</strong><small>Vínculo ativo no produto Gestão Pública</small></article>
+      <article class="metric-card"><span>Acessos municipais existentes</span><strong>{{ existing_accesses|length }}</strong><small>Histórico preservado; sem duplicação</small></article>
+    </div>
+    {% if not readiness.product_enabled %}
+      <div class="notice-card alert-warning"><span class="notice-icon">!</span><div><strong>Produto Gestão Pública ainda não habilitado</strong><p>Habilite o OrganizationERP desta organização na administração SaaS. Nenhum acesso municipal será concedido enquanto este requisito estiver pendente.</p></div></div>
+    {% elif not readiness.contract_enabled %}
+      <div class="notice-card alert-warning"><span class="notice-icon">!</span><div><strong>Gestão Pública não consta como módulo contratado/ativo</strong><p>Revise o PlanoSaaS e a configuração de módulos desta organização. O bootstrap não altera plano, módulos ou dados do tenant.</p></div></div>
+    {% elif not readiness.enabled_memberships %}
+      <div class="notice-card alert-warning"><span class="notice-icon">!</span><div><strong>Nenhum membership elegível</strong><p>Ative o acesso MembershipERP Gestão Pública para um usuário existente desta organização antes de conceder o papel municipal.</p></div></div>
+    {% endif %}
+  </section>
+
+  {% if existing_accesses %}
+    <section class="panel">
+      <div class="panel-heading"><div><h2>Acessos municipais já cadastrados</h2><span>O bootstrap não cria outro acesso para um membership que já possua registro.</span></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Usuário</th><th>Papel</th><th>Escopo</th><th>Status</th><th>Atribuído por</th></tr></thead><tbody>
+        {% for access in existing_accesses %}<tr><td><strong>{{ access.membership.user.get_full_name|default:access.membership.user.email|default:access.membership.user.username }}</strong><small>{{ access.membership.user.email }}</small></td><td>{{ access.get_papel_display }}</td><td>{{ access.get_escopo_display }}</td><td>{% if access.ativo %}Ativo{% else %}Inativo{% endif %}</td><td>{{ access.atribuido_por.get_full_name|default:access.atribuido_por.username }}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </section>
+  {% endif %}
+
+  <section class="panel form-panel">
+    <div class="panel-heading"><div><h2>2. Conceder Administrador da Prefeitura</h2><span>Será usado um usuário/membership já existente; nenhuma senha ou conta será criada aqui.</span></div></div>
+    <div class="safe-note"><strong>O papel é municipal e explícito.</strong> Membership com role ADMIN, sozinho, não recebe privilégios de Prefeitura. A concessão exige produto, contrato, membership ativo e não duplicidade.</div>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.organization }}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="form-grid">
+        <div class="field field-wide"><label for="{{ form.membership.id_for_label }}">{{ form.membership.label }}</label>{{ form.membership }}<small>Somente memberships ativos da organização selecionada são listados. O backend valida novamente o vínculo de produto.</small>{% for error in form.membership.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</div>
+        <div class="field"><label>Papel municipal</label><input value="Administrador da Prefeitura" readonly></div>
+        <div class="field"><label>Escopo</label><input value="Prefeitura" readonly></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" {% if not readiness.ready or not readiness.enabled_memberships or existing_accesses %}disabled title="Revise os requisitos acima antes de conceder."{% endif %}>Conceder primeiro acesso</button>
+      </div>
+    </form>
+  </section>
+{% endif %}
+<style>
+.bootstrap-gates{grid-template-columns:repeat(4,minmax(0,1fr));margin:0}.bootstrap-gates .metric-card{min-height:126px}.bootstrap-gates strong{font-size:22px;line-height:1.15}.gate-ok{color:#13794d!important}.gate-pending{color:#a65a00!important}.alert-warning{background:#fff7e8;border-color:#f2dfb7}.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.btn-primary:disabled{opacity:.52;cursor:not-allowed;transform:none;box-shadow:none}@media(max-width:900px){.bootstrap-gates{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){.bootstrap-gates{grid-template-columns:1fr 1fr}.search-bar{display:grid;grid-template-columns:1fr}.bootstrap-gates .metric-card{min-height:108px}}
+</style>
+{% endblock %}

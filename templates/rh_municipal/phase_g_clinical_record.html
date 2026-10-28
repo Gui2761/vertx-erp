@@ -1,0 +1,55 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Prontuário clínico · VERTYX Saúde{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div><div class="gp-eyebrow">VERTYX · SAÚDE SUS · ACESSO AUDITADO</div>
+    <h1>Prontuário clínico</h1>
+    <p>{{ appointment.cidadao.nome }} · {{ appointment.unidade_saude.unidade.nome }} · {{ appointment.get_status_display }}</p>
+  </div>
+  <div class="gp-head-actions"><a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_registry' 'atendimentos' %}">Voltar aos atendimentos</a></div>
+</section>
+
+{% if form.non_field_errors %}<div class="gp-error">{{ form.non_field_errors }}</div>{% endif %}
+
+{% if viewed_content != None %}
+<section class="gp-panel" aria-live="polite">
+  <div class="gp-eyebrow">CONTEÚDO DESCRIPTO APÓS AUDITORIA</div>
+  <h2>Evolução clínica</h2>
+  <div class="gp-record">{{ viewed_content|linebreaksbr }}</div>
+</section>
+{% endif %}
+
+<section class="gp-content-grid gp-admin-grid">
+  <article class="gp-panel gp-form-panel">
+    <div class="gp-eyebrow">REGISTRO CIFRADO</div><h2>Nova evolução</h2>
+    {% if not health_encryption_ready %}
+      <div class="gp-error">O registro está bloqueado até que a chave de cifragem seja provisionada neste ambiente.</div>
+    {% elif appointment.status != 'EM_ATENDIMENTO' %}
+      <div class="gp-info">A evolução só pode ser registrada durante um atendimento em andamento.</div>
+    {% else %}
+      <p class="gp-muted">O conteúdo é cifrado antes de ser persistido. Não inclua dados que não sejam necessários ao atendimento.</p>
+      <form method="post" class="gp-form" autocomplete="off">
+        {% csrf_token %}<input type="hidden" name="action" value="create">
+        <label class="gp-field" for="id_content"><span>Texto da evolução</span>{{ form.content }}{% for error in form.content.errors %}<small class="gp-field-error">{{ error }}</small>{% endfor %}</label>
+        <button class="gp-button" type="submit">Registrar evolução</button>
+      </form>
+    {% endif %}
+  </article>
+
+  <article class="gp-panel">
+    <div class="gp-eyebrow">HISTÓRICO PROTEGIDO</div><h2>{{ entries|length }} evolução(ões)</h2>
+    <p class="gp-muted">O texto não é carregado nesta página. Cada consulta precisa de justificativa e fica registrada na auditoria.</p>
+    {% for entry in entries %}
+      <div class="gp-record">
+        <strong>{{ entry.criada_em|date:'d/m/Y H:i' }}</strong>
+        <span> · {{ entry.autor.get_full_name|default:entry.autor.username }}</span>
+        <form method="post" class="gp-form" autocomplete="off">
+          {% csrf_token %}<input type="hidden" name="action" value="read"><input type="hidden" name="entry_id" value="{{ entry.pk }}">
+          <label class="gp-field"><span>Justificativa de consulta</span><input class="gp-input" name="justification" maxlength="300" required autocomplete="off"></label>
+          <button class="gp-button gp-button-light" type="submit">Consultar evolução</button>
+        </form>
+      </div>
+    {% empty %}<div class="gp-empty-inline">Nenhuma evolução registrada.</div>{% endfor %}
+  </article>
+</section>
+{% endblock %}

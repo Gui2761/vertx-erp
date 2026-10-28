@@ -10,49 +10,140 @@ from platform_core.context import current_organization
 from platform_core.models import OrganizationMembership, MembershipERP, ERPCatalog, PlatformAudit
 from platform_core.audit import previous_values, record_write
 
-from .forms import TecnicoForm, UsuarioCreationForm, UsuarioEdicaoForm
+from .forms import EmailOrUsernameAuthenticationForm, TecnicoForm, UsuarioCreationForm, UsuarioEdicaoForm
 from .models import Tecnico, Usuario
 from .permissions import PerfilRequeridoMixin
 
 
 class LoginView(auth_views.LoginView):
     template_name = "registration/login.html"
+    form_class = EmailOrUsernameAuthenticationForm
 
     def get_success_url(self):
-        # Authentication happens after OrganizationMiddleware: select from the
-        # newly authenticated account, never from the previous request's role.
+        from platform_core.saas_models import AdministradorPlataforma
+        if self.request.user.is_authenticated and self.request.user.is_active and AdministradorPlataforma.objects.filter(
+            user=self.request.user, active=True,
+        ).exists():
+            return '/vertyx/saas/'
+        # The post-login destination is derived from active product grants, not
+        # from the tenant role alone. A multi-product membership must choose.
         memberships = self.request.user.memberships.filter(status='ATIVO', organization__status='ATIVA').select_related('organization')
         selected = self.request.session.get('organization_id')
         membership = memberships.filter(organization_id=selected).first() if isinstance(selected, int) else None
         if membership is None:
             candidates = list(memberships[:2])
-            membership = candidates[0] if len(candidates) == 1 else None
-        if membership and membership.role == 'TECNICO':
-            from platform_core.access import has_erp_access
-            if has_erp_access(self.request.user, membership.organization):
-                return str(reverse_lazy('operacao:tecnico'))
-        match=self.request.resolver_match
-        if membership and match and match.url_name in {'pdv_login','seller_login'}:
-            from platform_core.context import tenant_context
-            from platform_core.modules import has_capability
-            with tenant_context(membership.organization):
-                if match.url_name=='pdv_login' and has_capability(self.request.user,'operar_pdv'):
-                    return str(reverse_lazy('operacao:pdv_home'))
-                if match.url_name=='seller_login' and has_capability(self.request.user,'central_vendedor'):
-                    return str(reverse_lazy('operacao:seller_home'))
-        if membership and membership.role=='PDV':
-            return str(reverse_lazy('operacao:pdv_home'))
-        if membership and membership.role == 'VENDEDOR':
-            from platform_core.access import has_erp_access
-            if has_erp_access(self.request.user, membership.organization):
-                return str(reverse_lazy('operacao:seller_home'))
-        if membership is None and memberships.filter(role__in=['VENDEDOR','PDV']).exists():
-            return str(reverse_lazy('platform_core:home')) + '?organizacoes=1'
+            if len(candidates) > 1:
+                return '/vertyx/?organizacoes=1'
+            membership = candidates[0] if candidates else None
+        if membership:
+            products = list(ERPCatalog.objects.filter(
+                active=True,
+                organizationerp__organization=membership.organization,
+                organizationerp__enabled=True,
+                membershiperp__membership=membership,
+                membershiperp__enabled=True,
+            ).distinct().values_list('code', flat=True))
+            # Installed PWAs have independent entry points. Keep the user in
+            # the experience from which authentication started, and evaluate
+            # that experience's capability separately. A permission to run
+            # the cash register must never redirect the Seller PWA into PDV,
+            # or vice versa.
+            route_name = getattr(getattr(self.request, 'resolver_match', None), 'url_name', None)
+            if route_name in {'seller_login', 'pdv_login'}:
+                from platform_core.context import tenant_context
+                from platform_core.modules import has_capability
+                capability = 'central_vendedor' if route_name == 'seller_login' else 'operar_pdv'
+                target = 'operacao:seller_home' if route_name == 'seller_login' else 'operacao:pdv_home'
+                with tenant_context(membership.organization):
+                    allowed = 'assistencia' in products and has_capability(self.request.user, capability)
+                if allowed:
+                    self.request.session['organization_id'] = membership.organization_id
+                    return str(reverse_lazy(target))
+                # Do not silently fall through to the other installed app if
+                # this user is not entitled to the requested PWA.
+                return '/vertyx/'
+            if len(products) > 1:
+                self.request.session['organization_id'] = membership.organization_id
+                return '/vertyx/'
+            product = products[0] if products else None
+            if product == 'gestao-publica':
+                # Municipal authorization remains independent from generic
+                # ADMIN/GESTOR roles and checks its own scope and permission.
+                from platform_core.context import tenant_context
+                from rh_municipal.public_services import has_municipal_permission
+                with tenant_context(membership.organization):
+                    can_open_municipal_home = has_municipal_permission(
+                        self.request.user, 'dashboard.view',
+                    )
+                if can_open_municipal_home:
+                    self.request.session['organization_id'] = membership.organization_id
+                    return '/gestao-publica/'
+                return '/vertyx/'
+            if product == 'assistencia' and membership.role == 'TECNICO':
+                from platform_core.access import has_erp_access
+                if has_erp_access(self.request.user, membership.organization, code=product):
+                    return str(reverse_lazy('operacao:tecnico'))
+            if product == 'assistencia' and membership.role in {'ADMIN', 'GESTOR'}:
+                return '/assistencia/'
+            if product == 'assistencia':
+                from platform_core.context import tenant_context
+                from platform_core.modules import has_capability
+                with tenant_context(membership.organization):
+                    if membership.role == 'PDV' and has_capability(self.request.user, 'operar_pdv'):
+                        return str(reverse_lazy('operacao:pdv_home'))
+                    if membership.role == 'VENDEDOR' and has_capability(self.request.user, 'central_vendedor'):
+                        return str(reverse_lazy('operacao:seller_home'))
+            if product:
+                return '/vertyx/'
+        if membership is None and memberships.exists():
+            return '/vertyx/?organizacoes=1'
         return super().get_success_url()
 
 
 class LogoutView(auth_views.LogoutView):
+    # The normal navigation posts here; GET is intentionally rejected by
+    # Django's LogoutView so logout cannot be triggered by a cross-site link.
     pass
+
+
+class MunicipalLoginView(LoginView):
+    """Authenticate only users with effective Gestão Pública access."""
+    template_name = "rh_municipal/public_login.html"
+
+    def get_success_url(self):
+        return str(reverse_lazy("rh_municipal_public:home"))
+
+    def form_valid(self, form):
+        from platform_core.context import tenant_context
+        from platform_core.models import OrganizationMembership
+        from rh_municipal.public_services import has_municipal_permission
+
+        user = form.get_user()
+        memberships = OrganizationMembership.objects.filter(
+            user=user,
+            status=OrganizationMembership.Status.ACTIVE,
+            organization__status="ATIVA",
+        ).select_related("organization")
+        eligible = []
+        for membership in memberships:
+            with tenant_context(membership.organization):
+                if has_municipal_permission(user, "dashboard.view"):
+                    eligible.append(membership)
+
+        selected_id = self.request.session.get("organization_id")
+        selected = next((row for row in eligible if row.organization_id == selected_id), None)
+        if selected is None and len(eligible) == 1:
+            selected = eligible[0]
+        if selected is None:
+            if len(eligible) > 1:
+                message = "Sua conta possui acesso a mais de uma Prefeitura. Selecione a organização correta antes de entrar."
+            else:
+                message = "Esta conta não possui acesso ativo ao ERP Gestão Pública. Solicite acesso ao administrador da Prefeitura."
+            form.add_error(None, message)
+            return self.form_invalid(form)
+
+        self.request.session["organization_id"] = selected.organization_id
+        return super().form_valid(form)
 
 
 class UsuarioListView(LoginRequiredMixin, PerfilRequeridoMixin, generic.ListView):

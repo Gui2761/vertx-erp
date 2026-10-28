@@ -7,7 +7,7 @@ def menu(request):
     if getattr(request,'resolver_match',None) and request.resolver_match.url_name=='pdv_login':
         result['pdv_experience']=True
     match=getattr(request,'resolver_match',None)
-    from platform_core.modules import has_capability
+    from platform_core.modules import has_capability, module_enabled
     result['pdv_experience']=result.get('pdv_experience',False) or bool(match and match.namespace=='operacao' and match.url_name in {'pdv_home','pdv_sale','pdv_cash','pdv_receipt','pdv_products'} and request.user.is_authenticated and has_capability(request.user,'pdv'))
     return result
 
@@ -15,14 +15,23 @@ def menu(request):
 def _menu(request):
     membership=getattr(request,'membership',None)
     match=getattr(request,'resolver_match',None)
+    from platform_core.modules import has_capability, module_enabled, module_for_path
     from .planning_services import can_tv
     panel_access=bool(membership and can_tv(request.user))
     if membership and (membership.role in {'VENDEDOR','PDV'} or request.path.startswith('/pdv/') or request.path.startswith('/vendedor/') and not request.path.startswith('/vendedor/gestao/')):
-        from platform_core.modules import has_capability, module_enabled, module_for_path
         if request.path.startswith('/pdv/') and has_capability(request.user,'operar_pdv'):
-            links=[('Caixa','/pdv/','cart'),('Histórico de vendas','/pdv/historico/','document'),('Offline / sincronização','/pdv/offline/','arrows')]
-            if has_capability(request.user,'caixa_supervisor'):
-                links.append(('Gestão de caixas','/pdv/?gestao=1','bank'))
+            if membership.role in {'ADMIN', 'GESTOR'}:
+                links=[('Central do PDV','/pdv/','cart'),('Caixas','/pdv/?gestao=1','bank')]
+                if membership.role == 'ADMIN' and has_capability(request.user,'config_empresa'):
+                    links.append(('Operadores','/vertyx/empresa/permissoes/','users'))
+                if has_capability(request.user,'caixa_supervisor'):
+                    links.extend([('Movimentações','/pdv/movimentacoes/','arrows'),('Histórico de vendas','/pdv/historico/','document')])
+                if has_capability(request.user,'config_empresa'):
+                    links.append(('Configurações','/pdv/configuracao/','settings'))
+            else:
+                links=[('Caixa','/pdv/','cart'),('Histórico de vendas','/pdv/historico/','document'),('Offline / sincronização','/pdv/offline/','arrows')]
+                if has_capability(request.user,'caixa_supervisor'):
+                    links.append(('Gestão de caixas','/pdv/?gestao=1','bank'))
             return {'pdv_experience':True,'can_operational_panel':False,'pdv_navigation':[{'label':label,'url':url,'icon':icon} for label,url,icon in links]}
         if membership.role in {'VENDEDOR','PDV'} or request.path.startswith('/vendedor/'):
             links=[('Minha rotina','/vendedor/','grid','central_vendedor'),('Minhas vendas','/vendedor/vendas/','document','central_vendedor'),('Minha meta','/vendedor/meta/','chart','central_vendedor'),('Minha comissão','/vendedor/comissao/','chart','central_vendedor'),('Meu ponto','/vendedor/ponto/','users','ponto'),('Hora extra','/vendedor/ponto/horas-extras/','calendar','ponto'),('Notificações','/vendedor/alertas/','bell','central_vendedor')]
@@ -74,7 +83,15 @@ def _menu(request):
     if membership.role=='ADMIN':
         groups[-1][1].extend([('Configurações','/configuracoes/','gear'),('Estoque e Compras','/configuracoes/estoque-compras/','sliders'),('Painel operacional · Configuração','/configuracoes/painel-operacional/','sliders'),('Usuários','/contas/usuarios/','person-check')])
         groups[-1][1].append(('Empresa e módulos','/vertyx/empresa/','settings'))
-    groups[0][1].append(('Gestão executiva','/gestao/executiva/','chart'))
+    if module_enabled('relatorios_completos') and has_capability(request.user, 'executivo'):
+        groups[0][1].append(('Gestão executiva','/gestao/executiva/','chart'))
+    pdv_links=[('Central do PDV','/pdv/','cart'),('Caixas','/pdv/?gestao=1','bank')]
+    if membership.role == 'ADMIN' and has_capability(request.user,'config_empresa'):
+        pdv_links.append(('Operadores','/vertyx/empresa/permissoes/','users'))
+    if has_capability(request.user,'caixa_supervisor'):
+        pdv_links.extend([('Movimentações','/pdv/movimentacoes/','arrows'),('Histórico de vendas','/pdv/historico/','document')])
+    if has_capability(request.user,'config_empresa'):
+        pdv_links.append(('Configurações','/pdv/configuracao/','settings'))
     groups[2][1].append(('PDV','/pdv/','cart'))
     groups[2][1].append(('Gestão dos vendedores','/vendedor/gestao/','chart'))
     groups[3][1].extend([('Contagem de inventário','/inventarios/','document'),('Transferências por etapas','/transferencias/','arrows')])
@@ -89,7 +106,7 @@ def _menu(request):
     by_title['RH / PONTO'].extend([('Hora extra','/rh/horas-extras/','calendar'),('Minhas solicitações de hora extra','/ponto/horas-extras/','calendar')])
     groups=[
         ('Financeiro',by_title['FINANCEIRO']),
-        ('PDV',[item for item in by_title['COMERCIAL'] if item[1] == '/pdv/']),
+        ('PDV',pdv_links),
         ('Vendas',[item for item in by_title['COMERCIAL'] if item[1] != '/pdv/']),
         ('Estoque',by_title['ESTOQUE']),
         ('Compras',by_title['COMPRAS']),

@@ -29,6 +29,10 @@ def save_employee(actor, form, journey_form=None):
     existing = m.Funcionario.objects.select_for_update().get(pk=form.instance.pk) if form.instance.pk else None
     before = snapshot(existing, form._meta.fields) if existing else {}
     if data['conta_modo'] == 'NOVA' and existing is None:
+        # This is a second membership-creation route besides the Accounts UI.
+        # Keep the organization row locked until the user and membership save.
+        from platform_core.saas_services import verificar_limite
+        verificar_limite(current_organization(), 'usuarios', erp_code='assistencia')
         # Never mutate another company's existing identity or password.
         user = Usuario(username=data['username'], first_name=data['nome'][:150],
                        telefone=data.get('telefone', ''), email=data.get('email', ''), perfil=data['perfil'])

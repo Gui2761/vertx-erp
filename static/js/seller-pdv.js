@@ -39,6 +39,10 @@
       const received=row.querySelector('.recebido');
       received.disabled=kind!=='DINHEIRO';
       if(received.disabled) received.value='';
+      const installments=row.querySelector('.parcelas');
+      const installmentControl=row.querySelector('.parcelas-control');
+      if(installmentControl) installmentControl.hidden=kind!=='CREDITO';
+      if(installments) installments.disabled=kind!=='CREDITO';
       if(kind==='DINHEIRO') troco+=Math.max(0,cents(received.value)-cents(row.querySelector('.valor').value));
     });
     if(change)change.textContent='Troco: '+currency(troco);

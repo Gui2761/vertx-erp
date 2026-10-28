@@ -47,8 +47,34 @@ class IntegrationTests(CommerceData,TestCase):
             branch=FilialEmpresa.objects.create(codigo='F1',nome='Filial própria')
             filtered=executive.indicators(self.admin,self.today,self.today,branch.pk)
             self.assertEqual(filtered['vendas_liquidas'],0);self.assertIsNone(filtered['os_no_periodo'])
-        self.assertEqual(self.client.get(reverse('operacao:executive')).status_code,200)
+        self.client.force_login(self.admin)
+        session=self.client.session;session['organization_id']=self.a.pk;session.save()
+        dashboard_response=self.client.get(reverse('operacao:executive'))
+        # The basic SaaS fixture includes the standard dashboard charts but
+        # not the separate advanced-indicators endpoint.
+        self.assertEqual(dashboard_response.status_code,403)
         self.assertEqual(self.client.get(reverse('core:painel')).status_code,200)
+
+    def test_sales_chart_uses_only_the_active_organization(self):
+        with tenant_context(self.a):
+            self.incoming(2)
+            sale, _item = self.sale(2)
+            self.paid(sale)
+            chart_a = executive.sales_chart(self.today, self.today, '7')
+        with tenant_context(self.b):
+            chart_b = executive.sales_chart(self.today, self.today, '7')
+        self.assertEqual(sum((row['vendas'] for row in chart_b), Decimal('0')), Decimal('0'))
+        self.assertGreater(sum((row['vendas'] for row in chart_a), Decimal('0')), Decimal('0'))
+
+    def test_analytics_filters_are_limited_by_plan_level(self):
+        basic = executive.PeriodForm({'periodo':'MES','grafico':'3M'}, analytics_level='BASICO')
+        self.assertFalse(basic.is_valid())
+        professional = executive.PeriodForm({'periodo':'PERSONALIZADO','inicio':'2026-01-01',
+                                             'fim':'2026-06-30','grafico':'6M'}, analytics_level='AVANCADO')
+        self.assertTrue(professional.is_valid(), professional.errors)
+        enterprise = executive.PeriodForm({'periodo':'PERSONALIZADO','inicio':'2025-10-22',
+                                           'fim':'2026-10-22','grafico':'12M'}, analytics_level='COMPLETO')
+        self.assertTrue(enterprise.is_valid(), enterprise.errors)
 
     def test_permission_admin_updates_override_without_duplicate_and_pdv_cannot(self):
         with tenant_context(self.a): member=OrganizationMembership.objects.get(user=self.operator,organization=self.a)

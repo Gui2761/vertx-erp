@@ -441,6 +441,7 @@ class ContaBancaria(Nomeado):
     numero = models.CharField(max_length=40, blank=True)
     titular = models.CharField(max_length=150, blank=True)
     tipo = models.CharField(max_length=10, choices=[('BANCO', 'Banco'), ('CAIXA', 'Caixa'), ('CARTAO', 'Cartão')], default='BANCO')
+    deposito_padrao = models.ForeignKey('operacao.Deposito', on_delete=models.PROTECT, null=True, blank=True, related_name='caixas_padrao')
     saldo_inicial = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO)
     permite_saldo_negativo = models.BooleanField(default=False)
     @property

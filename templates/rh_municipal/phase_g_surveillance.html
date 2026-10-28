@@ -1,0 +1,68 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Vigilância municipal · VERTYX Saúde{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div><div class="gp-eyebrow">VERTYX · SAÚDE SUS</div><h1>Vigilância Sanitária e Epidemiológica</h1><p>{{ subtitle }}</p></div>
+  <div class="gp-head-actions"><a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_home' %}">Voltar à Saúde</a></div>
+</section>
+
+<div class="gp-info">Esta área é de registro interno. Agravos são referências locais, sem validação de protocolo oficial. Não há integração com SINAN, e-SUS, CNES ou transmissão externa.</div>
+
+{% if can_sanitary_manage %}
+<section class="gp-content-grid gp-admin-grid">
+  <article class="gp-panel gp-form-panel">
+    <div class="gp-eyebrow">CADASTRO SANITÁRIO</div><h2>Novo estabelecimento</h2>
+    <form method="post" class="gp-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="establishment">{{ establishment_form.request_id }}
+      {% if establishment_form.non_field_errors %}<div class="gp-error">{{ establishment_form.non_field_errors }}</div>{% endif %}
+      <div class="gp-form-grid">{% for field in establishment_form %}{% if field.name != 'request_id' %}<label class="gp-field" for="{{ field.id_for_label }}"><span>{{ field.label }}{% if field.field.required %} <b>*</b>{% endif %}</span>{{ field }}{% for error in field.errors %}<small class="gp-field-error">{{ error }}</small>{% endfor %}</label>{% endif %}{% endfor %}</div>
+      <button class="gp-button" type="submit">Cadastrar estabelecimento</button>
+    </form>
+  </article>
+  <article class="gp-panel gp-form-panel">
+    <div class="gp-eyebrow">INSPEÇÃO</div><h2>Registrar inspeção</h2>
+    <p class="gp-muted">As observações ficam cifradas e não são exibidas na listagem.</p>
+    <form method="post" class="gp-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="inspection">{{ inspection_form.request_id }}
+      {% if inspection_form.non_field_errors %}<div class="gp-error">{{ inspection_form.non_field_errors }}</div>{% endif %}
+      <div class="gp-form-grid">{% for field in inspection_form %}{% if field.name != 'request_id' %}<label class="gp-field" for="{{ field.id_for_label }}"><span>{{ field.label }}{% if field.field.required %} <b>*</b>{% endif %}</span>{{ field }}{% for error in field.errors %}<small class="gp-field-error">{{ error }}</small>{% endfor %}</label>{% endif %}{% endfor %}</div>
+      <button class="gp-button" type="submit">Salvar inspeção</button>
+    </form>
+  </article>
+</section>
+{% endif %}
+
+{% if can_epidemiology_manage %}
+<section class="gp-content-grid">
+  <article class="gp-panel gp-form-panel">
+    <div class="gp-eyebrow">REGISTRO RESTRITO</div><h2>Nova notificação epidemiológica</h2>
+    <p class="gp-muted">Dados pessoais e detalhes são restritos e cifrados. Não use este formulário como substituto de sistemas ou protocolos oficiais.</p>
+    <form method="post" class="gp-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="notification">{{ notification_form.request_id }}
+      {% if notification_form.non_field_errors %}<div class="gp-error">{{ notification_form.non_field_errors }}</div>{% endif %}
+      <div class="gp-form-grid">{% for field in notification_form %}{% if field.name != 'request_id' %}<label class="gp-field" for="{{ field.id_for_label }}"><span>{{ field.label }}{% if field.field.required %} <b>*</b>{% endif %}</span>{{ field }}{% for error in field.errors %}<small class="gp-field-error">{{ error }}</small>{% endfor %}</label>{% endif %}{% endfor %}</div>
+      <button class="gp-button" type="submit">Registrar notificação restrita</button>
+    </form>
+  </article>
+  <article class="gp-panel"><div class="gp-eyebrow">TRIAGEM MUNICIPAL</div><h2>Notificações</h2>
+    <p class="gp-muted">A lista não exibe cidadão nem detalhes cifrados.</p>
+    {% if notifications %}<div class="gp-table-wrap"><table class="gp-table"><thead><tr><th>Data</th><th>Referência local</th><th>Situação</th><th>Ação</th></tr></thead><tbody>
+      {% for item in notifications %}<tr><td>{{ item.notificada_em|date:'d/m/Y' }}</td><td>{{ item.codigo_agravo|default:item.descricao_agravo }}</td><td>{{ item.get_situacao_display }}</td><td>
+        {% if can_epidemiology_manage and item.situacao != 'ENCERRADA' %}<form method="post" class="gp-form">{% csrf_token %}<input type="hidden" name="action" value="notification_transition"><input type="hidden" name="notification_id" value="{{ item.pk }}">
+          <div class="gp-form-grid">{% for field in transition_form %}<label class="gp-field" for="{{ field.id_for_label }}"><span>{{ field.label }}</span>{{ field }}</label>{% endfor %}</div>
+          <button class="gp-button gp-button-light" type="submit">Atualizar situação</button></form>{% else %}—{% endif %}
+      </td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="gp-empty-inline">Nenhuma notificação neste escopo.</div>{% endif %}
+  </article>
+</section>
+{% endif %}
+
+{% if can_sanitary_view %}
+<section class="gp-content-grid">
+  <article class="gp-panel"><div class="gp-panel-head"><div><div class="gp-eyebrow">ESTABELECIMENTOS</div><h2>{{ establishments|length }} registro(s) recentes</h2></div></div>
+    {% if establishments %}<div class="gp-table-wrap"><table class="gp-table"><thead><tr><th>Estabelecimento</th><th>Atividade</th><th>Unidade responsável</th><th>Situação</th></tr></thead><tbody>{% for item in establishments %}<tr><td>{{ item.razao_social }}</td><td>{{ item.atividade|default:'—' }}</td><td>{% if item.unidade %}{{ item.unidade.nome }}{% else %}—{% endif %}</td><td>{{ item.get_situacao_display }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="gp-empty-inline">Nenhum estabelecimento neste escopo.</div>{% endif %}
+  </article>
+  <article class="gp-panel"><div class="gp-panel-head"><div><div class="gp-eyebrow">HISTÓRICO DE INSPEÇÕES</div><h2>{{ inspections|length }} inspeção(ões)</h2></div></div>
+    {% if inspections %}<div class="gp-table-wrap"><table class="gp-table"><thead><tr><th>Data</th><th>Estabelecimento</th><th>Responsável</th><th>Resultado</th><th>Retorno</th></tr></thead><tbody>{% for item in inspections %}<tr><td>{{ item.realizada_em|date:'d/m/Y H:i' }}</td><td>{{ item.estabelecimento.razao_social }}</td><td>{{ item.realizada_por.servidor.nome }}</td><td>{{ item.get_resultado_display }}</td><td>{{ item.prazo_retorno|date:'d/m/Y'|default:'—' }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="gp-empty-inline">Nenhuma inspeção neste escopo.</div>{% endif %}
+    <p class="gp-muted">As observações não são incluídas no histórico resumido.</p>
+  </article>
+</section>
+{% endif %}
+{% endblock %}

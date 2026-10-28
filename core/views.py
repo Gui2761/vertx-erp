@@ -64,14 +64,17 @@ class PainelView(LoginRequiredMixin, TemplateView):
 
         from operacao.dashboard import indicators
         ctx.update(indicators(self.request.user))
-        if allowed(self.request.user,'contratos'):
+        from platform_core.modules import module_enabled
+        if allowed(self.request.user, 'executivo') and module_enabled('relatorios_basicos'):
             from operacao.executive import PeriodForm, context
+            from platform_core.modules import analytics_level
+            level = analytics_level()
             query = self.request.GET.copy()
             if not query.get('periodo'):
                 query['periodo'] = 'MES'
             if not query.get('grafico'):
                 query['grafico'] = '30'
-            form = PeriodForm(query)
+            form = PeriodForm(query, analytics_level=level)
             if form.is_valid():
                 ctx.update(context(self.request,form,orders))
             else:

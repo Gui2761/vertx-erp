@@ -21,6 +21,7 @@ class Perfil(models.TextChoices):
     COMPRAS = 'COMPRAS', 'Compras'
     RH = 'RH', 'Recursos humanos'
     PAINEL_TV = 'PAINEL_TV', 'Painel TV somente leitura'
+    SERVIDOR_PUBLICO = 'SERVIDOR_PUBLICO', 'Servidor público (acesso municipal)'
 
 
 class Usuario(AbstractUser):

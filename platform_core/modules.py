@@ -2,7 +2,84 @@
 from django.core.exceptions import PermissionDenied
 from .access import membership_for, has_erp_access
 from .context import current_organization
-from .models import ModuloOrganizacao, PermissaoMembership
+from .models import (
+    ERPProductModule, ItemContratoSaaS, ModuloOrganizacao,
+    OrganizationERP, MembershipERP, PermissaoMembership,
+)
+
+
+def active_contract_items(organization, erp_code=None, *, today=None):
+    """Return only contract lines valid today; callers must fail closed on conflicts."""
+    from django.db.models import Q
+    from django.utils import timezone
+    today = today or timezone.localdate()
+    rows = ItemContratoSaaS.objects.filter(
+        contrato__organization=organization, contrato__status='ATIVO', ativo=True,
+        erp__active=True,
+    ).filter(
+        Q(contrato__inicio_em__isnull=True) | Q(contrato__inicio_em__lte=today),
+    ).filter(
+        Q(contrato__fim_em__isnull=True) | Q(contrato__fim_em__gte=today),
+    )
+    if erp_code:
+        rows = rows.filter(erp__code=erp_code)
+    return rows.select_related('erp', 'plano', 'contrato')
+
+REPORTING_RANK = {'BASICO': 1, 'AVANCADO': 2, 'COMPLETO': 3}
+STRICT_PUBLIC_MODULES = {
+    'estrutura_municipal', 'usuarios_municipais', 'acessos_municipais',
+    'convites_municipais', 'planejamento_publico', 'orcamento_publico',
+    'contabilidade_pub', 'tesouraria_publica',
+    'compras_publicas', 'licitacoes_publicas',
+    'registro_precos', 'contratos_publicos', 'ponto_digital',
+    'patrimonio', 'almoxarifado', 'frotas',
+    'processo_digital', 'transparencia', 'ouvidoria', 'esic',
+    'tributos_municipais', 'gestao_territorial', 'nfse_municipal',
+    'saude_sus',
+    'educacao_municipal',
+    'controle_interno',
+}
+
+
+def analytics_level(organization=None, erp_code=None):
+    """Return analytics depth for one contracted ERP; legacy callers may omit it."""
+    organization = organization or current_organization()
+    if organization is None:
+        return None
+    from .saas_models import AssinaturaSaaS
+    if erp_code:
+        from django.db.models import Q
+        from django.utils import timezone
+        from .models import ItemContratoSaaS
+        today = timezone.localdate()
+        active_lines = list(active_contract_items(organization, erp_code, today=today)[:2])
+        if len(active_lines) > 1:
+            # Conflicting active contracts must never accidentally expose richer analytics.
+            return 'BASICO'
+        if active_lines:
+            return active_lines[0].nivel_indicadores_snapshot
+        # Once a product was moved to contract control, an expired, suspended,
+        # or inactive line must not fall back to an unrelated legacy plan.
+        if ItemContratoSaaS.objects.filter(
+            contrato__organization=organization, erp__code=erp_code,
+            contrato__status__in=['ATIVO', 'SUSPENSO', 'ENCERRADO'],
+        ).exists():
+            return 'BASICO'
+    subscription = (AssinaturaSaaS.objects.filter(organization=organization)
+                    .select_related('plano').first())
+    if subscription:
+        plan = subscription.plano
+        if erp_code and plan.erp_id and plan.erp.code != erp_code:
+            return 'BASICO'
+        if erp_code and plan.erp_id is None and erp_code != 'assistencia':
+            return 'BASICO'
+        return plan.nivel_indicadores
+    return 'COMPLETO'
+
+
+def analytics_at_least(level, organization=None, erp_code=None):
+    current = analytics_level(organization, erp_code=erp_code)
+    return current is not None and REPORTING_RANK.get(current, 0) >= REPORTING_RANK[level]
 
 CAPABILITIES = {
     'migracao': ('', ('ADMIN', 'GESTOR')),
@@ -42,10 +119,119 @@ CAPABILITIES = {
 def module_enabled(code):
     if not code:
         return True
-    if current_organization() is None:
+    organization = current_organization()
+    if organization is None:
         return False
-    # No flag means legacy access, not an invented commercial subscription.
-    return not ModuloOrganizacao.objects.filter(codigo=code, habilitado=False).exists()
+    from .saas_models import AssinaturaSaaS
+    subscription = AssinaturaSaaS.objects.filter(organization=organization).select_related('plano').first()
+    if subscription is not None:
+        from .saas_models import CORE_SAAS_MODULES
+        core = set(CORE_SAAS_MODULES)
+        plan_codes = set(subscription.plano.modulos or ()) | core
+        implications = {
+            'estoque_basico': {'estoque_completo', 'estoque'},
+            'estoque_completo': {'estoque'},
+            'estoque': {'estoque_basico', 'estoque_completo'},
+            'financeiro_basico': {'financeiro_completo', 'financeiro'},
+            'financeiro_completo': {'financeiro'},
+            'financeiro': {'financeiro_basico', 'financeiro_completo'},
+            'rh_asst_basico': {'rh_asst_completo', 'rh', 'ponto'},
+            'rh_asst_completo': {'rh'},
+            'rh': {'rh_asst_basico', 'rh_asst_completo', 'ponto'},
+            'ponto': {'rh_asst_basico', 'rh_asst_completo'},
+            'documentos_basicos': {'documentos_completos', 'documentos'},
+            'documentos_completos': {'documentos'},
+            'documentos': {'documentos_basicos', 'documentos_completos'},
+            'relatorios_basicos': {'relatorios_completos'},
+        }
+        entitled = code in plan_codes or bool(implications.get(code, set()) & plan_codes)
+        if not entitled:
+            return False
+        # The tenant settings table may contain an old false row from before
+        # the core policy. Plan-level core availability is no longer optional.
+        if code in core:
+            return True
+        # Tenant-level module settings may restrict a contracted feature, but
+        # can never grant a feature omitted from the subscription.
+        row = ModuloOrganizacao.objects.filter(organization=organization, codigo=code).first()
+        return row.habilitado if row else True
+    # No SaaS subscription and no disabled flag means legacy access, preserving
+    # installations predating the commercial-plan entitlement model.
+    return not ModuloOrganizacao.objects.filter(organization=organization, codigo=code, habilitado=False).exists()
+
+
+def product_module_enabled(user, erp_code, module_code, organization=None):
+    """Fail-closed check for product -> membership -> module entitlement.
+
+    Legacy tenant plans remain compatible for the two already operational
+    verticals. New product plans/contracts must explicitly include the module.
+    This function deliberately does not infer entitlement from a role or price.
+    """
+    organization = organization or current_organization()
+    membership = membership_for(user, organization)
+    if membership is None:
+        return False
+    product_granted = OrganizationERP.objects.filter(
+        organization=organization, erp__code=erp_code, erp__active=True, enabled=True,
+    ).exists()
+    member_granted = MembershipERP.objects.filter(
+        membership=membership, erp__code=erp_code, erp__active=True, enabled=True,
+    ).exists()
+    if not (product_granted and member_granted):
+        return False
+
+    module = ERPProductModule.objects.filter(
+        erp__code=erp_code, erp__active=True, code=module_code, active=True,
+    ).first()
+    if module is None:
+        return False
+
+    items = active_contract_items(organization, erp_code)
+    active_items = list(items[:2])
+    if len(active_items) > 1:
+        # Until a contract-version precedence rule is activated, conflicting
+        # active lines fail closed instead of guessing which plan wins.
+        return False
+    item = active_items[0] if active_items else None
+    if item is None and ItemContratoSaaS.objects.filter(
+        contrato__organization=organization, erp__code=erp_code,
+        contrato__status__in=['ATIVO', 'SUSPENSO', 'ENCERRADO'],
+    ).exists():
+        return False
+    if item:
+        # A contract snapshot is authoritative, including an intentionally
+        # empty list; later plan edits cannot silently expand that contract.
+        available = module_code in item.modulos_snapshot
+    else:
+        from .saas_models import AssinaturaSaaS
+        subscription = AssinaturaSaaS.objects.filter(organization=organization).select_related('plano', 'plano__erp').first()
+        if subscription:
+            plan = subscription.plano
+            if plan.erp_id:
+                if plan.erp.code != erp_code:
+                    return False
+                plan_modules = set(plan.modulos_produto.values_list('modulo__code', flat=True))
+                available = module_code in plan_modules
+            else:
+                # Compatibility only for existing products; a legacy plan is
+                # never silently reused to grant a future vertical.
+                available = (
+                    erp_code in {'assistencia', 'gestao-publica'}
+                    and not (erp_code == 'gestao-publica' and module_code in STRICT_PUBLIC_MODULES)
+                    and module_enabled(module_code,)
+                )
+        else:
+            # Installations predating SaaS subscriptions keep explicit product
+            # grants and organization-level module overrides.
+            available = not (
+                erp_code == 'gestao-publica' and module_code in STRICT_PUBLIC_MODULES
+            ) and not ModuloOrganizacao.objects.filter(
+                organization=organization, codigo=module_code, habilitado=False,
+            ).exists()
+    if not available:
+        return False
+    row = ModuloOrganizacao.objects.filter(organization=organization, codigo=module_code).first()
+    return True if row is None else row.habilitado
 
 def has_capability(user, code, roles=None):
     membership = membership_for(user)
@@ -93,10 +279,92 @@ def require_capability(user, code, roles=None):
         raise PermissionDenied('Módulo ou capacidade não autorizada nesta organização.')
     return membership_for(user)
 
-def module_for_path(path):
+def required_modules_for_path(path, resolver_match=None):
+    """Return all plan entitlements required by a route, from most specific to general."""
+    name = getattr(resolver_match, 'url_name', '') or ''
+    municipal_modules = (
+        ('/gestao-publica/tributos/', 'tributos_municipais'),
+        ('/gestao-publica/territorio/', 'gestao_territorial'),
+        ('/gestao-publica/nfse/', 'nfse_municipal'),
+        ('/gestao-publica/saude/', 'saude_sus'),
+        ('/gestao-publica/processos/', 'processo_digital'),
+        ('/gestao-publica/transparencia/', 'transparencia'),
+        ('/gestao-publica/ouvidoria/', 'ouvidoria'),
+        ('/gestao-publica/esic/', 'esic'),
+        ('/gestao-publica/publico/', None),
+        ('/gestao-publica/compras/', 'compras_publicas'),
+        ('/gestao-publica/licitacoes/', 'licitacoes_publicas'),
+        ('/gestao-publica/registro-precos/', 'registro_precos'),
+        ('/gestao-publica/contratos/', 'contratos_publicos'),
+        ('/gestao-publica/ponto/', 'ponto_digital'),
+        ('/gestao-publica/ponto-digital/', 'ponto_digital'),
+        ('/gestao-publica/patrimonio/', 'patrimonio'),
+        ('/gestao-publica/almoxarifado/', 'almoxarifado'),
+        ('/gestao-publica/frotas/', 'frotas'),
+        ('/gestao-publica/rh-municipal/', 'rh_municipal'),
+        ('/gestao-publica/planejamento/', 'planejamento_publico'),
+        ('/gestao-publica/orcamento/', 'orcamento_publico'),
+        ('/gestao-publica/contabilidade/', 'contabilidade_pub'),
+        ('/gestao-publica/tesouraria/', 'tesouraria_publica'),
+    )
+    for prefix, module in municipal_modules:
+        if path.startswith(prefix):
+            return ('gestao_publica', module) if module else ('gestao_publica',)
+    if path.startswith('/gestao-publica/rh/'):
+        return ('gestao_publica', 'rh_municipal')
     if path.startswith('/gestao-publica/'):
-        return ''  # The ERP catalog and Municipal RH grants are the authority.
+        return ('gestao_publica',)
     if path.startswith('/vendedor/'):
-        return ''
-    mapping = [('/estoque/fornecedores/', 'compras'), ('/configuracoes/estoque', 'estoque'), ('/pdv/', 'pdv'), ('/vendas/', 'pdv'), ('/estoque/', 'estoque'), ('/depositos/', 'estoque'), ('/inventarios/', 'estoque'), ('/transferencias/', 'estoque'), ('/compras/', 'compras'), ('/financeiro/', 'financeiro'), ('/bancos/', 'financeiro'), ('/ponto/', 'ponto'), ('/rh/', 'rh'), ('/portal/', 'portal'), ('/contratos/', 'contratos'), ('/fiscal/', 'fiscal'), ('/documentos/', 'documentos'), ('/ordens/', 'assistencia'), ('/chamados/', 'assistencia'), ('/preventivas/', 'assistencia'), ('/planejamento/', 'assistencia'), ('/tecnico/', 'assistencia'), ('/equipamentos/', 'assistencia'), ('/painel-operacional/', 'assistencia')]
-    return next((code for prefix,code in mapping if path.startswith(prefix)), '')
+        return ('pwa_vendedor',)
+    if path.startswith('/gestao/executiva/'):
+        return ('relatorios_completos',)
+    if path.startswith('/clientes/'):
+        return ('clientes',)
+    if path.startswith('/tecnico/'):
+        return ('assistencia', 'pwa_tecnico')
+    if path.startswith('/estoque/fornecedores/'):
+        return ('compras',)
+    if path.startswith(('/inventarios/', '/transferencias/', '/estoque/lotes/',
+                        '/estoque/reservas/', '/estoque/necessidades/',
+                        '/estoque/ocorrencias/')):
+        return ('estoque_completo',)
+    if path.startswith('/estoque/relatorios/'):
+        return ('estoque_basico', 'relatorios_basicos')
+    if path.startswith(('/configuracoes/estoque', '/depositos/')):
+        return ('estoque_basico',)
+    if path.startswith('/estoque/'):
+        return ('produtos', 'estoque_basico')
+    if path.startswith(('/pdv/', '/vendas/')):
+        return ('pdv',)
+    if path.startswith('/compras/'):
+        return ('compras',)
+    if path.startswith('/bancos/'):
+        return ('financeiro_completo',)
+    if path.startswith('/financeiro/'):
+        if path.startswith('/financeiro/movimentacoes/'):
+            return ('financeiro_basico', 'relatorios_basicos')
+        return ('financeiro_basico',)
+    if path.startswith(('/rh/', '/ponto/')):
+        if any(marker in path for marker in ('horas-extras', '/ajustes/', '/fechamento/')):
+            return ('rh_asst_completo',)
+        return ('rh_asst_basico',)
+    if path.startswith('/documentos/'):
+        if name in {'documento_novo', 'documento_editar', 'documento_acao'}:
+            return ('documentos_completos',)
+        return ('documentos_basicos',)
+    if path.startswith('/relatorios/'):
+        return ('relatorios_completos' if path.rstrip('/') != '/relatorios' else 'relatorios_basicos',)
+    mapping = [('/portal/', 'portal'), ('/contratos/', 'contratos'), ('/fiscal/', 'fiscal'),
+               ('/contas/', 'assistencia'),
+               ('/ordens/', 'assistencia'), ('/chamados/', 'assistencia'),
+               ('/preventivas/', 'assistencia'), ('/planejamento/', 'assistencia'),
+               ('/equipamentos/', 'assistencia'), ('/painel-operacional/', 'assistencia')]
+    code = next((module for prefix, module in mapping if path.startswith(prefix)), '')
+    # Compatibility for integrations that still expect the former single-key API.
+    return (code,) if code else ()
+
+
+def module_for_path(path):
+    """Backward-compatible single-key lookup; middleware uses all requirements."""
+    required = required_modules_for_path(path)
+    return required[0] if required else ''

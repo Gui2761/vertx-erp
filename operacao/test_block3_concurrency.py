@@ -21,7 +21,7 @@ class CommerceConcurrencyTests(CommerceData,TransactionTestCase):
     def test_two_cash_sessions_compete_for_last_item(self):
         with tenant_context(self.a):
             self.incoming(1);first,item=self.sale()
-            account=m.ContaBancaria.objects.create(nome='Segundo caixa',tipo='CAIXA');second_session=c.open_cash(self.operator,account.pk,0,uuid.uuid4())
+            account=m.ContaBancaria.objects.create(nome='Segundo caixa',tipo='CAIXA',deposito_padrao=self.depot);second_session=c.open_cash(self.operator,account.pk,0,uuid.uuid4())
             second=c.new_sale(self.operator,second_session.public_id,self.depot.pk);c.add_item(self.operator,second.public_id,self.part.sku,1)
             sales=[first,second]
         results=self.race(lambda index:self.paid(sales[index]))
@@ -32,7 +32,7 @@ class CommerceConcurrencyTests(CommerceData,TransactionTestCase):
         with tenant_context(self.a):
             self.incoming(1);m.ConfiguracaoPDV.objects.create(reservar_rascunho=True)
             first=c.new_sale(self.operator,self.session.public_id,self.depot.pk)
-            account=m.ContaBancaria.objects.create(nome='Reserva caixa B',tipo='CAIXA');other=c.open_cash(self.operator,account.pk,0,uuid.uuid4());second=c.new_sale(self.operator,other.public_id,self.depot.pk)
+            account=m.ContaBancaria.objects.create(nome='Reserva caixa B',tipo='CAIXA',deposito_padrao=self.depot);other=c.open_cash(self.operator,account.pk,0,uuid.uuid4());second=c.new_sale(self.operator,other.public_id,self.depot.pk)
             sales=[first,second]
         self.assertCountEqual(self.race(lambda index:c.add_item(self.operator,sales[index].public_id,self.part.sku,1)),['OK','BLOQUEADO'])
         with tenant_context(self.a): self.assertEqual(m.ReservaEstoque.objects.filter(status='ATIVA').count(),1)

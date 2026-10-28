@@ -30,6 +30,7 @@ class PermissaoForm(TenantModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['membership'].queryset = OrganizationMembership.objects.filter(organization=current_organization(), status='ATIVO').select_related('user', 'organization')
+        self.fields['capacidade'].help_text = 'A permissão operar_pdv é individual e separada do perfil VENDEDOR; conceda-a somente a quem poderá operar o caixa.'
 
 class ModulosForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -69,7 +70,7 @@ def configuration(request, kind='empresa', public_id=None):
                 else:
                     if kind == 'filial' and not instance.pk:
                         from .saas_services import verificar_limite
-                        verificar_limite(current_organization(), 'filiais')
+                        verificar_limite(current_organization(), 'filiais', erp_code='assistencia')
                     if kind=='permissao':
                         prior=model.objects.filter(membership=form.cleaned_data['membership'],capacidade=form.cleaned_data['capacidade']).first()
                         if prior:

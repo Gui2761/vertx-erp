@@ -26,7 +26,7 @@ RESOURCES = {
     'plano': (m.PlanoPreventivo, forms.PlanoForm, 'operacional', 'gestao', 'Planos preventivos', ['nome', 'cliente', 'periodicidade', 'proxima_execucao', 'ultima_execucao', 'ativo']),
     'compra': (m.Compra, forms.CompraForm, 'compras', 'compras', 'Compras', ['id', 'fornecedor', 'deposito', 'status', 'total', 'vencimento']),
     'venda': (m.Venda, forms.VendaForm, 'gestao', 'gestao', 'Vendas e loja', ['id', 'cliente', 'vendedor', 'status', 'total', 'vencimento']),
-    'banco': (m.ContaBancaria, forms.ContaBancariaForm, 'financeiro', 'financeiro_escrever', 'Bancos e caixa', ['nome', 'tipo', 'saldo', 'ativo']),
+    'banco': (m.ContaBancaria, forms.ContaBancariaForm, 'financeiro', 'financeiro_escrever', 'Bancos e caixa', ['nome', 'tipo', 'deposito_padrao', 'saldo', 'ativo']),
     'extrato': (m.ExtratoBancario, forms.ExtratoForm, 'financeiro', 'financeiro_escrever', 'Conciliação bancária', ['conta', 'data', 'identificador', 'valor', 'descricao', 'movimento', 'ignorado']),
     'fiscal': (m.DocumentoFiscal, forms.FiscalForm, 'financeiro', 'financeiro_escrever', 'Documentos fiscais', ['tipo', 'cliente', 'status', 'numero', 'ambiente', 'valor']),
     'documento': (m.Documento, forms.DocumentoForm, None, None, 'Central de documentos', ['titulo', 'tipo', 'cliente', 'equipamento', 'criado_em']),

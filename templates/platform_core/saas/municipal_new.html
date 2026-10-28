@@ -1,0 +1,27 @@
+{% extends 'platform_core/saas/base.html' %}
+{% block title %}Nova Prefeitura · VERTYX Admin{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'platform_core:saas_home' %}">← Visão geral</a>
+<section class="page-heading"><div><p class="eyebrow">ADMINISTRAÇÃO INTERNA · GESTÃO PÚBLICA</p><h1>Nova Prefeitura</h1><p>Provisionamento municipal sob proposta, separado dos clientes empresariais e sem plano comercial fictício.</p></div></section>
+
+{% if pending_access and created %}
+<section class="panel">
+  <div class="panel-heading"><div><h2>{{ created.display_name }} foi criada</h2><span>Organization #{{ created.pk }} · produto Gestão Pública habilitado</span></div><span class="pill pill-blue">Acesso inicial</span></div>
+  <div class="notice-card"><span class="notice-icon">✓</span><div><strong>{{ pending_access.user.get_full_name|default:pending_access.user.email }}</strong><p>Membership municipal ativo · Administrador da Prefeitura · Escopo Prefeitura. A senha permanece não definida.</p></div></div>
+  <div class="field field-wide"><label for="municipal-first-access">Link de primeiro acesso — uso único, válido até {{ pending_access.expires|date:'d/m/Y H:i' }}</label><input id="municipal-first-access" type="url" value="{{ pending_access.url }}" readonly autocomplete="off"><small>Compartilhe diretamente com o administrador. O token não é salvo em texto puro no banco e não deve ser publicado em chamados ou relatórios.</small></div>
+  <div class="form-actions"><button class="btn-primary" type="button" id="copy-first-access">Copiar link</button><a class="btn-secondary" href="{% url 'platform_core:saas_municipal_bootstrap' %}?organization={{ created.pk }}">Abrir bootstrap</a></div>
+</section>
+<script>document.getElementById('copy-first-access')?.addEventListener('click',async()=>{const input=document.getElementById('municipal-first-access');try{await navigator.clipboard.writeText(input.value);document.getElementById('copy-first-access').textContent='Link copiado';}catch{input.select();document.execCommand('copy');}});</script>
+{% else %}
+<section class="panel"><div class="panel-heading"><div><h2>Cadastro inicial</h2><span>Somente dados informados; os identificadores fiscais e endereço ficam pendentes.</span></div></div>
+  <div class="safe-note"><strong>Separação de acesso:</strong> o usuário terá membership <code>SERVIDOR_PUBLICO</code> e acesso municipal explícito. Não será criado ADMIN geral da organização, assinatura comercial, secretaria ou outro usuário.</div>
+  <form method="post" novalidate>{% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="form-grid">
+      {% for field in form %}<div class="field {% if field.name == 'razao_social' or field.name == 'administrador_email' %}field-wide{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</div>{% endfor %}
+    </div>
+    <div class="form-actions"><button class="btn-primary" type="submit">Criar Prefeitura e acesso inicial</button></div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

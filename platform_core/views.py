@@ -3,6 +3,7 @@ from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from .models import OrganizationMembership, ERPCatalog, PlatformAudit
+from .access import erp_code_for_path as _product_route_code
 
 
 @login_required
@@ -26,32 +27,51 @@ def home(request):
         for erp in catalog:
             if erp.code == 'assistencia':
                 role = request.membership.role
+                from .context import tenant_context
+                from .modules import has_capability
+                with tenant_context(request.organization):
+                    seller_allowed = has_capability(request.user, 'central_vendedor')
+                    cashier_allowed = has_capability(request.user, 'operar_pdv')
                 if role in {'TECNICO', 'CLIENTE', 'VENDEDOR', 'PDV', 'PAINEL', 'PLANEJADOR', 'ATENDIMENTO'}:
                     if role == 'TECNICO':
                         url, label = '/tecnico/', 'Acessar meus atendimentos'
                     elif role == 'CLIENTE':
                         url, label = '/portal/', 'Acessar meu portal'
                     elif role in {'VENDEDOR', 'PDV'}:
-                        url, label = '/vendedor/', 'Acessar minhas vendas'
+                        if role == 'VENDEDOR' and seller_allowed:
+                            url, label = '/vendedor/', 'Acessar minhas vendas'
+                        elif role == 'PDV' and cashier_allowed:
+                            url, label = '/pdv/', 'Abrir o caixa'
+                        else:
+                            url, label = '', 'Acesso operacional não atribuído.'
                     elif role == 'PAINEL':
                         url, label = '/painel-operacional/', 'Abrir painel operacional'
                     else:
                         url, label = '/planejamento/', 'Abrir planejamento'
                 else:
                     url, label = '/assistencia/', 'Entrar no ERP Assistência'
-                erps.append({'name': 'VERTYX Assistência', 'description': erp.description, 'url': url, 'label': label, 'enabled': True})
+                erps.append({'name': 'VERTYX Assistência Técnica', 'description': erp.description, 'url': url, 'label': label, 'enabled': bool(url)})
             elif erp.code == 'gestao-publica':
-                from rh_municipal.services import roles_for
-                allowed = bool(roles_for(request.user))
+                from rh_municipal.public_services import has_municipal_permission
+                allowed = has_municipal_permission(request.user, 'dashboard.view')
                 erps.append({
-                    'name': 'VERTYX Gestão Pública · RH Municipal',
+                    'name': 'VERTYX Gestão Pública',
                     'description': erp.description or 'Gestão de servidores e estrutura municipal.',
-                    'url': '/gestao-publica/rh/', 'label': 'Acessar RH Municipal' if allowed else 'Acesso municipal ainda não atribuído.',
+                    'url': '/gestao-publica/' if allowed else '',
+                    'label': 'Acessar Gestão Pública' if allowed else 'Acesso municipal ainda não atribuído.',
                     'enabled': allowed,
                 })
+            elif erp.operational and erp.entry_path and _product_route_code(erp.entry_path) == erp.code:
+                erps.append({'name': erp.name, 'description': erp.description, 'url': erp.entry_path, 'label': f'Entrar em {erp.name}', 'enabled': True})
             else:
                 erps.append({'name': erp.name, 'description': erp.description, 'url': '', 'label': 'Produto ainda não disponível neste ambiente.', 'enabled': False})
-    return render(request, 'platform_core/home.html', {'memberships': memberships, 'erps': erps})
+    if not request.GET.get('organizacoes') and len(erps) == 1 and erps[0]['enabled'] and erps[0]['url']:
+        return redirect(erps[0]['url'])
+    return render(request, 'platform_core/home.html', {
+        'memberships': memberships,
+        'erps': erps,
+        'show_organization_selector': memberships.count() > 1,
+    })
 
 
 @login_required

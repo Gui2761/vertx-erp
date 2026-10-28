@@ -21,7 +21,7 @@ RESOURCES = {
     'lancamento': (m.Lancamento, forms.LancamentoForm, 'financeiro', 'financeiro_escrever', 'Lançamentos financeiros', ['cliente', 'fornecedor', 'descricao', 'vencimento', 'valor', 'desconto_total', 'juros_total', 'multa_total', 'valor_atualizado', 'situacao', 'valor_pago', 'saldo']),
     'categoria_financeira': (m.CategoriaFinanceira, forms.CategoriaFinanceiraForm, 'financeiro', 'financeiro_escrever', 'Categorias financeiras', ['nome', 'natureza', 'ativo']),
     'centro_custo': (m.CentroCusto, forms.CentroCustoForm, 'financeiro', 'financeiro_escrever', 'Centros de custo', ['nome', 'ativo']),
-    'forma_pagamento': (m.FormaPagamento, forms.FormaPagamentoForm, 'financeiro', 'financeiro_escrever', 'Formas de pagamento', ['nome', 'ativo']),
+    'forma_pagamento': (m.FormaPagamento, forms.FormaPagamentoForm, 'financeiro', 'financeiro_escrever', 'Formas de pagamento', ['nome', 'tipo_pdv', 'conta_pdv', 'ativo']),
 }
 LABELS = {'numero': 'Número', 'situacao': 'Situação', 'total': 'Total', 'quantidade_atual': 'Saldo atual', 'estoque_minimo': 'Estoque mínimo', 'desconto_total':'Desconto', 'juros_total':'Juros', 'multa_total':'Multa', 'valor_atualizado':'Valor atualizado', 'valor_pago':'Recebido / pago', 'saldo':'Saldo pendente'}
 SITUATIONS = {'RASCUNHO': 'Rascunho', 'ENVIADO': 'Enviado', 'APROVADO': 'Aprovado', 'RECUSADO': 'Recusado', 'CONVERTIDO': 'Convertido em OS', 'ATIVO': 'Ativo', 'PROXIMO': 'Próximo do vencimento', 'VENCIDO': 'Vencido', 'PARCIAL': 'Parcial', 'PENDENTE': 'Em aberto', 'LIQUIDADO': 'Pago / recebido', 'CANCELADO': 'Cancelado'}

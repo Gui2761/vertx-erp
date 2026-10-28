@@ -1,12 +1,14 @@
 from datetime import timedelta
+import hmac
+import ipaddress
 from urllib.parse import quote
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import SetPasswordForm
-from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import IntegrityError, connection, transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -14,19 +16,29 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from .models import Organization, OrganizationMembership, ModuloOrganizacao
+from .models import (
+    ERPProductModule, ERPProductResource, ERPCatalog, MembershipERP, ModuloOrganizacao, Organization,
+    OrganizationERP, OrganizationMembership,
+)
+from .context import tenant_context
 from .saas_models import (
     AdministradorPlataforma, AssinaturaSaaS, AuditoriaSaaS,
-    HistoricoPlanoSaaS, PlanoSaaS, PrimeiroAcessoSaaS,
+    ContratoSaaS, HistoricoPlanoSaaS, ItemContratoSaaS, PlanoSaaS,
+    PrimeiroAcessoSaaS,
 )
 from .saas_forms import (
-    AdminInicialForm, AlterarPlanoForm, DadosEmpresaForm,
+    AdminInicialForm, AlterarPlanoForm, BootstrapPrefeituraForm, ContratoSaaSForm,
+    DadosEmpresaForm, ERPCatalogForm, ERPProductModuleForm, ERPProductResourceForm,
+    PrimeiroAdministradorPlataformaForm,
+    NovaPrefeituraHomologacaoForm,
     EditarClienteForm, PlanoSaaSForm,
 )
 from .saas_services import (
     alterar_plano, alterar_status_cliente, atualizar_cliente,
+    alterar_status_contrato,
     criar_cliente, mrr_amount, plano_snapshot, registrar, verificar_limite,
-    metricas_uso, reemitir_primeiro_acesso, uso_quota,
+    bootstrap_administrador_prefeitura, metricas_uso, metricas_uso_por_produto, reemitir_primeiro_acesso,
+    uso_quota, criar_prefeitura_homologacao,
 )
 
 
@@ -45,10 +57,26 @@ def _guard(request):
     return None
 
 
+def _guard_bootstrap(request):
+    """Bootstrap is a platform operation, never a tenant membership action."""
+    if not request.user.is_authenticated:
+        return redirect(f"{reverse('contas:login')}?next={quote(request.get_full_path())}")
+    if not request.user.is_active or not (
+        request.user.is_superuser or _platform_admin(request.user)
+    ):
+        response = HttpResponseForbidden('Somente a administração interna VERTYX pode conceder o primeiro acesso municipal.')
+        response['Cache-Control'] = 'private, no-store'
+        response['Referrer-Policy'] = 'no-referrer'
+        return response
+    return None
+
+
 def _render(request, template, context=None, status=200):
     response = render(request, template, context or {}, status=status)
     response['Cache-Control'] = 'private, no-store'
-    response['Referrer-Policy'] = 'no-referrer'
+    # `origin` redacts paths (including one-time access tokens) while keeping
+    # same-origin POST requests' Origin header valid for Django CSRF checks.
+    response['Referrer-Policy'] = 'origin'
     response['X-Content-Type-Options'] = 'nosniff'
     return response
 
@@ -94,6 +122,100 @@ self.addEventListener('fetch',event=>{
     return response
 
 
+PLATFORM_BOOTSTRAP_ADVISORY_LOCK = 0x5652545958424F4F
+
+
+def _has_active_platform_admin():
+    return AdministradorPlataforma.objects.filter(active=True, user__is_active=True).exists()
+
+
+def _bootstrap_request_is_authorized(request):
+    """Fail closed: local loopback in DEBUG, otherwise an operator-held secret."""
+    configured_token = getattr(settings, 'PLATFORM_BOOTSTRAP_TOKEN', '')
+    if configured_token:
+        return True  # POST is checked separately so errors can be shown safely.
+    if not settings.DEBUG:
+        return False
+    try:
+        return ipaddress.ip_address(request.META.get('REMOTE_ADDR', '')).is_loopback
+    except ValueError:
+        return False
+
+
+@require_http_methods(['GET', 'POST'])
+def bootstrap_primeiro_administrador(request):
+    """One-time, guarded enrollment for the first platform administrator."""
+    if _has_active_platform_admin():
+        return _render(request, 'platform_core/saas/first_platform_admin_closed.html', status=410)
+    # A signed-in tenant account is never an authority to bootstrap the
+    # platform, even if it happens to browse the setup URL on localhost.
+    if request.user.is_authenticated:
+        return HttpResponseForbidden('Saia da conta da organização antes da configuração inicial da plataforma.')
+    if not _bootstrap_request_is_authorized(request):
+        # Do not disclose whether the empty bootstrap is available remotely.
+        return HttpResponse(status=404, headers={
+            'Cache-Control': 'private, no-store',
+            'Referrer-Policy': 'no-referrer',
+            'X-Content-Type-Options': 'nosniff',
+        })
+
+    form = PrimeiroAdministradorPlataformaForm(request.POST or None)
+    if request.method == 'POST':
+        token_configured = bool(getattr(settings, 'PLATFORM_BOOTSTRAP_TOKEN', ''))
+        if token_configured and not hmac.compare_digest(
+            request.POST.get('chave_bootstrap', ''), settings.PLATFORM_BOOTSTRAP_TOKEN,
+        ):
+            form.add_error('chave_bootstrap', 'Chave de ativação inválida.')
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # PostgreSQL transaction advisory lock serializes first-time
+                    # enrollment even while the platform-admin table is empty.
+                    if connection.vendor == 'postgresql':
+                        with connection.cursor() as cursor:
+                            cursor.execute('SELECT pg_advisory_xact_lock(%s)', [PLATFORM_BOOTSTRAP_ADVISORY_LOCK])
+                    if _has_active_platform_admin():
+                        return _render(request, 'platform_core/saas/first_platform_admin_closed.html', status=410)
+                    User = get_user_model()
+                    name_parts = form.cleaned_data['nome'].strip().split()
+                    user = User(
+                        username=form.cleaned_data['username'],
+                        email=form.cleaned_data['email'],
+                        first_name=name_parts[0][:150] if name_parts else '',
+                        last_name=' '.join(name_parts[1:])[:150],
+                        is_active=True,
+                        is_staff=False,
+                        is_superuser=False,
+                    )
+                    user.set_password(form.cleaned_data['senha'])
+                    user.save()
+                    AdministradorPlataforma.objects.create(
+                        user=user, created_by=user, active=True,
+                    )
+                    AuditoriaSaaS.objects.create(
+                        actor=user,
+                        action='BOOTSTRAP_PRIMEIRO_ADMINISTRADOR_PLATAFORMA',
+                        record=f'administrador-plataforma:{user.pk}',
+                        details={'user_id': user.pk},
+                    )
+            except IntegrityError:
+                form.add_error(None, 'Não foi possível concluir o primeiro acesso. Recarregue a página e revise os dados.')
+            else:
+                return redirect('platform_core:saas_first_admin_complete')
+
+    return _render(request, 'platform_core/saas/first_platform_admin_bootstrap.html', {
+        'form': form,
+        'requires_bootstrap_token': bool(getattr(settings, 'PLATFORM_BOOTSTRAP_TOKEN', '')),
+    })
+
+
+@require_GET
+def primeiro_administrador_concluido(request):
+    if _has_active_platform_admin():
+        return _render(request, 'platform_core/saas/first_platform_admin_complete.html')
+    return _render(request, 'platform_core/saas/first_platform_admin_closed.html', status=410)
+
+
 @require_http_methods(['GET', 'POST'])
 def primeiro_acesso(request, token):
     digest = PrimeiroAcessoSaaS.digest(token)
@@ -117,8 +239,12 @@ def primeiro_acesso(request, token):
             locked.save(update_fields=['usado_em'])
             registrar(None, 'PRIMEIRO_ACESSO_CONCLUIDO', f'primeiro-acesso:{locked.pk}', organization=locked.organization,
                       details={'user_id': user.pk})
+        pending=request.session.get('public_saas_pending_access')
+        if pending and pending.get('token_id')==row.pk:
+            request.session.pop('public_saas_pending_access',None)
         return _render(request, 'platform_core/saas/first_access_complete.html', {'email': row.user.email})
-    return _render(request, 'platform_core/saas/first_access.html', {'form': form, 'organization': row.organization})
+    return _render(request, 'platform_core/saas/first_access.html',
+                   {'form': form, 'organization': row.organization})
 
 
 @require_GET
@@ -158,6 +284,125 @@ def inicio(request):
         'near_limit': near_limit[:8], 'financeiro_saas_preparado': True,
         'usage_rows': usage_rows,
     })
+
+
+@require_http_methods(['GET', 'POST'])
+def bootstrap_gestao_publica(request):
+    denied = _guard_bootstrap(request)
+    if denied:
+        return denied
+
+    organization_id = request.POST.get('organization') if request.method == 'POST' else request.GET.get('organization')
+    form = BootstrapPrefeituraForm(
+        request.POST or None,
+        organization_id=organization_id,
+        initial={'organization': organization_id} if request.method == 'GET' and organization_id else None,
+    )
+    organization = form.organization
+    readiness = None
+    if organization:
+        erp = ERPCatalog.objects.filter(code='gestao-publica', active=True).first()
+        product_enabled = bool(erp and OrganizationERP.objects.filter(
+            organization=organization, erp=erp, enabled=True,
+        ).exists())
+        from .modules import module_enabled
+        with tenant_context(organization):
+            contract_enabled = module_enabled('gestao_publica')
+        enabled_memberships = MembershipERP.objects.filter(
+            membership__organization=organization,
+            membership__status=OrganizationMembership.Status.ACTIVE,
+            membership__user__is_active=True,
+            erp__code='gestao-publica', erp__active=True, enabled=True,
+        ).count()
+        readiness = {
+            'product_enabled': product_enabled,
+            'contract_enabled': contract_enabled,
+            'enabled_memberships': enabled_memberships,
+            'ready': product_enabled and contract_enabled,
+        }
+
+    if request.method == 'POST' and form.is_valid():
+        try:
+            access = bootstrap_administrador_prefeitura(
+                actor=request.user,
+                organization_id=form.cleaned_data['organization'].pk,
+                membership_id=form.cleaned_data['membership'].pk,
+            )
+        except (ValidationError, PermissionDenied) as exc:
+            if isinstance(exc, PermissionDenied):
+                return HttpResponseForbidden(str(exc))
+            messages.error(request, '; '.join(exc.messages))
+        else:
+            messages.success(request, f"Primeiro acesso concedido para {access.membership.user.get_full_name() or access.membership.user.email} com escopo Prefeitura.")
+            return redirect(f"{reverse('platform_core:saas_municipal_bootstrap')}?organization={access.membership.organization_id}")
+
+    organizations = Organization.objects.filter(status=Organization.Status.ACTIVE).order_by('razao_social', 'pk')
+    existing_accesses = []
+    if organization:
+        from rh_municipal.models import AcessoMunicipal
+        existing_accesses = list(AcessoMunicipal.all_objects.filter(
+            membership__organization=organization,
+        ).select_related('membership__user').order_by('membership__user__email')[:25])
+    return _render(request, 'platform_core/saas/municipal_bootstrap.html', {
+        'form': form, 'organization': organization, 'readiness': readiness,
+        'organizations': organizations, 'existing_accesses': existing_accesses,
+    }, status=400 if request.method == 'POST' and form.errors else 200)
+
+
+@require_http_methods(['GET', 'POST'])
+def nova_prefeitura_homologacao(request):
+    denied = _guard_bootstrap(request)
+    if denied:
+        return denied
+    form = NovaPrefeituraHomologacaoForm(request.POST or None)
+    created = None
+    pending = None
+    public_id = request.GET.get('criada', '')
+    if public_id:
+        try:
+            organization = Organization.objects.get(public_id=public_id)
+        except (Organization.DoesNotExist, ValueError):
+            organization = None
+        if organization:
+            candidate = request.session.get('saas_pending_access', {}).get(str(organization.public_id))
+            if candidate and timezone.now().timestamp() - candidate.get('created_at', 0) < 1200:
+                token_row = PrimeiroAcessoSaaS.objects.filter(
+                    pk=candidate.get('token_id'), organization=organization,
+                    user_id=candidate.get('user_id'), usado_em__isnull=True,
+                    expira_em__gt=timezone.now(),
+                ).select_related('user').first()
+                if token_row:
+                    created = organization
+                    pending = {
+                        'user': token_row.user,
+                        'expires': token_row.expira_em,
+                        'url': request.build_absolute_uri(reverse(
+                            'platform_core:saas_first_access', args=[candidate['token']],
+                        )),
+                    }
+    if request.method == 'POST' and form.is_valid():
+        try:
+            result = criar_prefeitura_homologacao(
+                actor=request.user,
+                razao_social=form.cleaned_data['razao_social'],
+                nome_fantasia=form.cleaned_data['nome_fantasia'],
+                administrador_nome=form.cleaned_data['administrador_nome'],
+                administrador_email=form.cleaned_data['administrador_email'],
+            )
+        except (ValidationError, IntegrityError) as exc:
+            _audit_redirect_error(request, exc, form)
+        else:
+            access_by_org = request.session.get('saas_pending_access', {})
+            access_by_org[str(result['organization'].public_id)] = {
+                'token': result['token'], 'token_id': result['token_id'],
+                'created_at': timezone.now().timestamp(), 'user_id': result['user'].pk,
+            }
+            request.session['saas_pending_access'] = access_by_org
+            messages.success(request, 'Prefeitura criada com acesso municipal explícito. Nenhuma senha foi definida.')
+            return redirect(f"{reverse('platform_core:saas_municipal_new')}?criada={result['organization'].public_id}")
+    return _render(request, 'platform_core/saas/municipal_new.html', {
+        'form': form, 'created': created, 'pending_access': pending,
+    }, status=400 if request.method == 'POST' and form.errors else 200)
 
 
 @require_GET
@@ -260,11 +505,13 @@ def cliente_detalhe(request, public_id):
                        and initial_access.user.memberships.filter(
                            organization=organization, role='ADMIN', status='ATIVO').exists())
     quota_usage = metricas_uso(organization)
+    product_quota_usage = metricas_uso_por_produto(organization)
     return _render(request, 'platform_core/saas/client_detail.html', {
         'organization': organization, 'subscription': subscription,
         'admin': admins[0] if admins else None, 'modules': modules,
         'audits': audits, 'created_access': success, 'can_reissue_access': can_reissue,
         'quota_usage': quota_usage,
+        'product_quota_usage': product_quota_usage,
     })
 
 
@@ -427,8 +674,130 @@ def planos(request):
     denied = _guard(request)
     if denied:
         return denied
-    rows = PlanoSaaS.objects.annotate(clientes=Count('assinaturas')).order_by('nome')
+    rows = PlanoSaaS.objects.select_related('plano_comercial', 'erp').prefetch_related('modulos_produto__modulo__erp').annotate(clientes=Count('assinaturas')).order_by('nome')
     return _render(request, 'platform_core/saas/plans.html', {'plans': rows, 'module_labels': dict(ModuloOrganizacao._meta.get_field('codigo').choices)})
+
+
+@require_GET
+def catalogo_produtos(request):
+    denied = _guard(request)
+    if denied:
+        return denied
+    products = ERPCatalog.objects.prefetch_related('modules__resources').order_by('name', 'pk')
+    return _render(request, 'platform_core/saas/catalog.html', {'products': products})
+
+
+@require_http_methods(['GET', 'POST'])
+def produto_form(request, pk=None):
+    denied = _guard(request)
+    if denied:
+        return denied
+    instance = get_object_or_404(ERPCatalog, pk=pk) if pk else ERPCatalog()
+    form = ERPCatalogForm(request.POST or None, instance=instance)
+    if request.method == 'POST' and form.is_valid():
+        creating = instance.pk is None
+        try:
+            product = form.save()
+            registrar(request.user, 'ERP_CATALOGO_CRIADO' if creating else 'ERP_CATALOGO_EDITADO',
+                      f'erp:{product.pk}', details={'codigo': product.code, 'campos': form.changed_data})
+        except (ValidationError, IntegrityError) as exc:
+            _audit_redirect_error(request, exc, form)
+        else:
+            messages.success(request, 'Produto do catálogo salvo. Vínculos com organizações não foram alterados.')
+            return redirect('platform_core:saas_catalog')
+    return _render(request, 'platform_core/saas/form.html', {
+        'form': form, 'title': 'Novo produto ERP' if not pk else 'Editar produto ERP',
+        'back': reverse('platform_core:saas_catalog'),
+    }, status=400 if request.method == 'POST' and form.errors else 200)
+
+
+@require_http_methods(['GET', 'POST'])
+def modulo_produto_form(request, product_pk=None, pk=None):
+    denied = _guard(request)
+    if denied:
+        return denied
+    module = get_object_or_404(ERPProductModule.objects.select_related('erp'), pk=pk) if pk else None
+    product = get_object_or_404(ERPCatalog, pk=product_pk) if product_pk else (module.erp if module else None)
+    form = ERPProductModuleForm(request.POST or None, instance=module, product=product)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            saved = form.save()
+            registrar(request.user, 'ERP_MODULO_CATALOGO_SALVO', f'modulo:{saved.pk}',
+                      details={'produto': saved.erp.code, 'codigo': saved.code})
+        except (ValidationError, IntegrityError) as exc:
+            _audit_redirect_error(request, exc, form)
+        else:
+            messages.success(request, 'Módulo do produto salvo.')
+            return redirect('platform_core:saas_catalog')
+    return _render(request, 'platform_core/saas/form.html', {
+        'form': form, 'title': 'Novo módulo do produto' if module is None else 'Editar módulo do produto',
+        'back': reverse('platform_core:saas_catalog'),
+    }, status=400 if request.method == 'POST' and form.errors else 200)
+
+
+@require_http_methods(['GET', 'POST'])
+def recurso_produto_form(request, module_pk=None, pk=None):
+    denied = _guard(request)
+    if denied:
+        return denied
+    resource = get_object_or_404(ERPProductResource.objects.select_related('module__erp'), pk=pk) if pk else None
+    module = get_object_or_404(ERPProductModule.objects.select_related('erp'), pk=module_pk) if module_pk else (resource.module if resource else None)
+    form = ERPProductResourceForm(request.POST or None, instance=resource, product=module.erp if module else None, module=module)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            saved = form.save()
+            registrar(request.user, 'ERP_RECURSO_CATALOGO_SALVO', f'recurso:{saved.pk}',
+                      details={'produto': saved.module.erp.code, 'modulo': saved.module.code, 'codigo': saved.code})
+        except (ValidationError, IntegrityError) as exc:
+            _audit_redirect_error(request, exc, form)
+        else:
+            messages.success(request, 'Recurso do módulo salvo.')
+            return redirect('platform_core:saas_catalog')
+    return _render(request, 'platform_core/saas/form.html', {
+        'form': form, 'title': 'Novo recurso' if resource is None else 'Editar recurso',
+        'back': reverse('platform_core:saas_catalog'),
+    }, status=400 if request.method == 'POST' and form.errors else 200)
+
+
+@require_http_methods(['GET', 'POST'])
+def contratos(request):
+    denied = _guard(request)
+    if denied:
+        return denied
+    form = ContratoSaaSForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            contract = form.save(actor=request.user)
+            registrar(request.user, 'CONTRATO_SAAS_RASCUNHO_CRIADO', f'contrato:{contract.pk}',
+                      organization=contract.organization,
+                      details={'itens': list(contract.itens.values_list('erp__code', 'plano__slug'))})
+        except (ValidationError, IntegrityError) as exc:
+            _audit_redirect_error(request, exc, form)
+        else:
+            messages.success(request, 'Rascunho comercial criado. Ele não habilita produtos nem acessos até a ativação autorizada.')
+            return redirect('platform_core:saas_contracts')
+    rows = ContratoSaaS.objects.select_related('organization', 'criado_por').prefetch_related('itens__erp', 'itens__plano').order_by('-criado_em', '-pk')
+    return _render(request, 'platform_core/saas/contracts.html', {
+        'form': form, 'contracts': rows,
+    }, status=400 if request.method == 'POST' and form.errors else 200)
+
+
+@require_POST
+def contrato_status(request, pk, action):
+    denied = _guard(request)
+    if denied:
+        return denied
+    if request.POST.get('confirmar') != 'sim':
+        messages.error(request, 'Confirme a operação de contrato para continuar.')
+        return redirect('platform_core:saas_contracts')
+    try:
+        contract = alterar_status_contrato(actor=request.user, contract_id=pk, action=action)
+    except (ValidationError, IntegrityError) as exc:
+        messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else 'O contrato mudou em outra operação; recarregue a tela.')
+    else:
+        label = 'ativado' if action == 'ativar' else 'suspenso'
+        messages.success(request, f'Contrato #{contract.pk} {label}. Nenhuma permissão individual foi concedida ou removida.')
+    return redirect('platform_core:saas_contracts')
 
 
 @require_http_methods(['GET', 'POST'])
@@ -437,24 +806,27 @@ def plano_form(request, pk=None):
     if denied:
         return denied
     instance = get_object_or_404(PlanoSaaS, pk=pk) if pk else PlanoSaaS()
-    linked = instance.assinaturas.count() if instance.pk else 0
+    linked = (instance.assinaturas.count() + instance.itens_contrato_saas.filter(ativo=True).count()) if instance.pk else 0
     creating = instance.pk is None
     form = PlanoSaaSForm(request.POST or None, instance=instance)
     if request.method == 'POST' and form.is_valid():
         try:
             candidate = form.save(commit=False)
             if linked and instance.pk:
-                protected = ('preco', 'periodicidade', 'modulos', 'limites')
-                if any(getattr(candidate, key) != getattr(instance, key) for key in protected):
+                protected = ('erp_id', 'preco', 'periodicidade', 'modulos', 'limites', 'plano_comercial', 'nivel_indicadores')
+                old_product_modules = sorted(instance.modulos_produto.values_list('modulo_id', flat=True))
+                new_product_modules = sorted(form.cleaned_data.get('modulos_produto').values_list('pk', flat=True))
+                if any(getattr(candidate, key) != getattr(instance, key) for key in protected) or old_product_modules != new_product_modules:
                     raise ValidationError('Este plano já possui clientes. Para preservar os contratos atuais, crie uma nova versão do plano.')
             before = plano_snapshot(instance) if instance.pk else {}
             candidate.save()
+            form.save_product_modules(candidate)
             registrar(request.user, 'PLANO_CRIADO' if creating else 'PLANO_EDITADO', f'plano:{candidate.pk}',
                       details={'anterior': before, 'posterior': plano_snapshot(candidate)})
         except (ValidationError, IntegrityError) as exc:
             _audit_redirect_error(request, exc, form)
         else:
-            messages.success(request, 'Plano salvo. Planos são distintos do catálogo público de marketing.')
+            messages.success(request, 'Plano salvo. A contratação pública só fica ativa quando o vínculo e o preço são compatíveis.')
             return redirect('platform_core:saas_plans')
     return _render(request, 'platform_core/saas/form.html', {
         'form': form, 'title': 'Novo plano' if not pk else 'Editar plano',

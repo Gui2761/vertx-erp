@@ -37,7 +37,14 @@ def open_cash(user,account_id,counted,request_id):
     require_capability(user,'pdv')
     if not module_enabled('financeiro'): raise PermissionDenied('Financeiro desabilitado.')
     amount=money(counted,True); key=token(request_id)
-    account=m.ContaBancaria.objects.select_for_update().get(pk=account_id,ativo=True,tipo='CAIXA')
+    try:
+        account=m.ContaBancaria.objects.select_for_update(of=('self',)).select_related('deposito_padrao').get(pk=account_id,ativo=True,tipo='CAIXA')
+    except m.ContaBancaria.DoesNotExist:
+        # Do not reveal whether an out-of-tenant ID exists; make stale or
+        # unavailable selections actionable for the operator.
+        raise ValidationError('O caixa selecionado não está disponível nesta organização. Atualize a página e confira o cadastro do caixa.') from None
+    if not account.deposito_padrao_id or not account.deposito_padrao.ativo or account.deposito_padrao.organization_id!=current_organization().pk:
+        raise ValidationError('Configure um depósito padrão ativo no cadastro do caixa antes de abrir a sessão.')
     old=m.SessaoCaixa.objects.filter(abertura_id=key).first()
     if old:
         if (old.conta_id,old.operador_id,old.saldo_abertura)!=(account.pk,user.pk,amount): raise ValidationError('Token de abertura reutilizado com outros dados.')
@@ -67,6 +74,9 @@ def close_cash(user,public_id,counted,reason=''):
 @transaction.atomic
 def cash_operation(user,public_id,kind,amount,reason,request_id):
     session=own_session(user,public_id)
+    account=m.ContaBancaria.objects.select_for_update(of=('self',)).select_related('deposito_padrao').get(pk=session.conta_id)
+    if not account.deposito_padrao_id or not account.deposito_padrao.ativo or account.deposito_padrao.organization_id!=current_organization().pk:
+        raise ValidationError('Configure um depósito padrão ativo no caixa antes de movimentá-lo.')
     require_capability(user,'caixa_supervisor')
     if kind not in ('SUPRIMENTO','SANGRIA','RETIRADA','AJUSTE_ENTRADA','AJUSTE_SAIDA') or not reason.strip(): raise ValidationError('Operação/motivo inválidos.')
     direction='ENTRADA' if kind in ('SUPRIMENTO','AJUSTE_ENTRADA') else 'SAIDA'
@@ -81,18 +91,25 @@ def cash_operation(user,public_id,kind,amount,reason,request_id):
     return event
 
 @transaction.atomic
-def new_sale(user,session_id,depot_id,customer_id=None,seller_id=None,branch_id=None,center_id=None,request_id=None):
+def new_sale(user,session_id,depot_id=None,customer_id=None,seller_id=None,branch_id=None,center_id=None,request_id=None):
     session=own_session(user,session_id)
+    account=m.ContaBancaria.objects.select_related('deposito_padrao').get(pk=session.conta_id)
+    depot=account.deposito_padrao
+    if not depot or not depot.ativo or depot.organization_id!=current_organization().pk:
+        raise ValidationError('O caixa não possui depósito padrão ativo configurado.')
+    # Compatibility for internal callers during migration: any supplied depot must
+    # match the account configuration; the browser never chooses this value.
+    if depot_id not in (None, '') and int(depot_id)!=depot.pk:
+        raise ValidationError('O depósito da venda é definido pelo caixa e não pode ser alterado pelo operador.')
     from .seller_access import is_seller
     if is_seller(user) and seller_id and int(seller_id)!=user.pk:
         raise PermissionDenied('Vendedor não pode atribuir vendas a outra pessoa.')
     key=token(request_id) if request_id else uuid.uuid4()
-    intent={'caixa':session.pk,'deposito':int(depot_id),'cliente':int(customer_id) if customer_id else None,'vendedor':int(seller_id or user.pk),'filial':int(branch_id) if branch_id else None,'centro':int(center_id) if center_id else None,'usuario':user.pk}
+    intent={'caixa':session.pk,'deposito':depot.pk,'cliente':int(customer_id) if customer_id else None,'vendedor':int(seller_id or user.pk),'filial':int(branch_id) if branch_id else None,'centro':int(center_id) if center_id else None,'usuario':user.pk}
     prior=m.Venda.objects.filter(criacao_id=key).first()
     if prior:
         if prior.dados_criacao!=intent: raise ValidationError('Token de abertura de venda reutilizado com outros dados.')
         return prior
-    depot=m.Deposito.objects.get(pk=depot_id,ativo=True)
     from clientes.models import Cliente
     from contas.models import Usuario
     from platform_core.models import FilialEmpresa
@@ -129,7 +146,7 @@ def sale_state(user,public_id,state,reason=''):
     return sale
 
 @transaction.atomic
-def quote_to_sale(user,quote_id,session_id,depot_id):
+def quote_to_sale(user,quote_id,session_id,depot_id=None):
     session=own_session(user,session_id)
     quote=g.Orcamento.objects.select_for_update().get(pk=quote_id)
     prior=m.Venda.objects.filter(orcamento_origem=quote).first()
@@ -166,13 +183,14 @@ def return_sale(user,public_id,rows,reason,request_id,account_id=None,settle=Fal
     for row in selection:
         item=sale.itens.get(pk=row['item']);qty=Decimal(row['quantidade'])
         previous=item.devolucoes.aggregate(quantity=Sum('quantidade'),value=Sum('valor'))
-        used=previous['quantity'] or ZERO;paid=previous['value'] or ZERO
+        used=previous['quantity'] or ZERO;paid=(previous['value'] or ZERO).quantize(CENT,rounding=ROUND_HALF_UP)
         if used+qty>item.quantidade or not item.movimento_id: raise ValidationError('Quantidade excede a venda ou movimento original indisponível.')
         net=Decimal(snapshot[item.pk]['valor_liquido'])
-        value=((used+qty)*net/item.quantidade).quantize(CENT,rounding=ROUND_HALF_UP)-paid
+        value=(((used+qty)*net/item.quantidade).quantize(CENT,rounding=ROUND_HALF_UP)-paid).quantize(CENT,rounding=ROUND_HALF_UP)
         planned.append((item,qty,value));total+=value
     list(g.Peca.objects.select_for_update().filter(pk__in=[item.peca_id for item,_,_ in planned]).order_by('pk'))
-    abatement=min(total,entry.saldo);refund=total-abatement
+    total=total.quantize(CENT,rounding=ROUND_HALF_UP)
+    abatement=min(total,entry.saldo.quantize(CENT,rounding=ROUND_HALF_UP));refund=(total-abatement).quantize(CENT,rounding=ROUND_HALF_UP)
     replacement=m.Venda.objects.get(public_id=exchange_id) if exchange_id else None
     if replacement and replacement.pk==sale.pk: raise ValidationError('Troca deve apontar para uma nova venda.')
     refund_entry=gs.write(g.Lancamento(tipo='PAGAR',descricao=f'Devolução {sale}',cliente=sale.cliente,centro_custo=sale.centro_custo,valor=refund,vencimento=timezone.localdate(),criado_por=user)) if refund else None
@@ -296,11 +314,35 @@ def normalize_payments(rows):
     if not isinstance(rows,list) or not 1<=len(rows)<=20: raise ValidationError('Informe de 1 a 20 pagamentos.')
     result=[]
     for row in rows:
-        form=g.FormaPagamento.objects.get(pk=int(row['forma']),ativo=True)
+        try:
+            form=g.FormaPagamento.objects.get(pk=int(row['forma']),ativo=True)
+        except (g.FormaPagamento.DoesNotExist,TypeError,ValueError,KeyError):
+            raise ValidationError('A forma de pagamento selecionada não está ativa nesta organização.') from None
         if not form.tipo_pdv: raise ValidationError('Forma precisa ser configurada para o PDV.')
+        if form.tipo_pdv in {'PIX','DEBITO','CREDITO','TRANSFERENCIA','OUTRO'}:
+            organization = current_organization()
+            if not form.conta_pdv_id or not organization:
+                raise ValidationError('Configure uma conta financeira ativa desta organização nesta forma de pagamento antes de utilizá-la.')
+            try:
+                account = m.ContaBancaria.objects.get(pk=form.conta_pdv_id, ativo=True)
+            except (m.ContaBancaria.DoesNotExist, PermissionDenied):
+                # A forma pode ter sido gravada de maneira inconsistente por um
+                # caminho legado. A consulta tenant-scoped deve continuar
+                # negando a conta estrangeira, com erro de validação previsível.
+                raise ValidationError('Configure uma conta financeira ativa desta organização nesta forma de pagamento antes de utilizá-la.') from None
+            if account.organization_id != organization.pk:
+                raise ValidationError('Configure uma conta financeira ativa desta organização nesta forma de pagamento antes de utilizá-la.')
         value=money(row['valor']);received=money(row.get('recebido',value))
         if received<value or received!=value and form.tipo_pdv!='DINHEIRO': raise ValidationError('Troco permitido somente para dinheiro.')
-        result.append({'forma':form.pk,'valor':str(value),'recebido':str(received)})
+        normalized={'forma':form.pk,'valor':str(value),'recebido':str(received)}
+        if form.tipo_pdv=='CREDITO':
+            try: installments=int(row.get('parcelas',1))
+            except (TypeError,ValueError): raise ValidationError('Informe parcelas inteiras de 1 a 12 para cartão de crédito.') from None
+            if not 1<=installments<=12: raise ValidationError('Cartão de crédito aceita de 1 a 12 parcelas.')
+            if installments>1: normalized['parcelas']=installments
+        elif row.get('parcelas') not in (None,'',1,'1'):
+            raise ValidationError('Parcelamento está disponível somente para cartão de crédito.')
+        result.append(normalized)
     return result
 
 @transaction.atomic
@@ -312,7 +354,7 @@ def finalize(user,public_id,payments,request_id):
         return sale
     draft(sale,session)
     from platform_core.saas_services import verificar_limite
-    verificar_limite(current_organization(), 'vendas_mes')
+    verificar_limite(current_organization(), 'vendas_mes', erp_code='assistencia')
     items=list(sale.itens.select_related('peca').order_by('peca_id','pk'))
     from .seller_services import validate_discount
     validate_discount(user,sale)
@@ -357,7 +399,7 @@ def finalize(user,public_id,payments,request_id):
             if account_id==session.conta_id:
                 move=m.MovimentoCaixa.objects.get(conta_id=account_id,referencia=payment.request_id)
                 gs.write(m.EventoCaixa(sessao=session,movimento=move,tipo='VENDA'))
-        gs.write(m.PagamentoVenda(venda=sale,forma=form,valor=amount,recebido=received,troco=received-amount,pagamento=payment))
+        gs.write(m.PagamentoVenda(venda=sale,forma=form,valor=amount,recebido=received,troco=received-amount,pagamento=payment,parcelas=row.get('parcelas',1)))
     sale.status='FINALIZADA';sale.finalizacao_id=key;sale.finalizacao_dados=rows;sale.finalizada_em=timezone.now()
     sale.snapshot={'numero':str(sale),'organization':str(current_organization().display_name),'cliente':str(sale.cliente) if sale.cliente_id else 'Consumidor não identificado','vendedor':str(sale.vendedor),'total':str(total),'desconto_global':str(sale.desconto_global),'acrescimo':str(sale.acrescimo),'itens':allocated,'pagamentos':rows,'saldo_pendente':str(entry.saldo),'finalizada_em':timezone.now().isoformat(),'fiscal':'Comprovante não fiscal'}
     gs.write(sale);gs.audit(user,'VENDA_FINALIZADA',sale,{'total':str(total),'lancamento':entry.pk,'caixa':session.pk,'request_id':str(key)})

@@ -54,7 +54,7 @@ def salvar_chamado(user, form, request_id=None, portal=False):
     upload = form.cleaned_data.get('anexo')
     if upload:
         from platform_core.saas_services import verificar_limite
-        verificar_limite(call.organization, 'armazenamento_mb', incremento=upload.size)
+        verificar_limite(call.organization, 'armazenamento_mb', incremento=upload.size, erp_code='assistencia')
         raw = upload.read(); upload.seek(0)
         document = m.Documento(titulo=f'Anexo {call.numero}', tipo='IMAGEM' if upload.name.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')) else 'PDF', categoria='TECNICO', arquivo=upload, cliente=call.cliente, unidade=call.unidade, equipamento=call.equipamento, chamado=call, enviado_por=user, disponivel_portal=portal, sha256=hashlib.sha256(raw).hexdigest())
         document.save()
@@ -500,7 +500,7 @@ def venda_confirmar(user, pk):
     if sale.status != 'RASCUNHO' or not sale.itens.exists() or sale.total <= 0:
         raise ValidationError('Venda exige itens, total positivo e rascunho.')
     from platform_core.saas_services import verificar_limite
-    verificar_limite(sale.organization, 'vendas_mes')
+    verificar_limite(sale.organization, 'vendas_mes', erp_code='assistencia')
     for item in sale.itens.select_related('peca').order_by('peca_id'):
         movement = gs.movimentar(user, item.peca_id, 'SAIDA', item.quantidade, str(sale), origem_id=sale.deposito_id, venda_id=sale.pk)
         item.custo_total = movement.valor_custo
@@ -683,7 +683,7 @@ def documento_salvar(user, form):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied('Documento fora da função/OS atribuída.')
     from platform_core.saas_services import verificar_limite
-    verificar_limite(document.organization, 'armazenamento_mb', incremento=document.arquivo.size)
+    verificar_limite(document.organization, 'armazenamento_mb', incremento=document.arquivo.size, erp_code='assistencia')
     document.sha256 = hashlib.sha256(document.arquivo.read()).hexdigest()
     document.arquivo.seek(0)
     document.save()

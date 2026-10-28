@@ -1,0 +1,37 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}{{ config.title }}{% endblock %}
+{% block content %}
+<section class="gp-page-head gp-module-head">
+  <div><span class="gp-eyebrow">{{ config.eyebrow }}</span><h1>{{ config.title }}</h1><p>{{ config.intro }}</p></div>
+  <div class="gp-head-actions"><span class="gp-level">Módulo contratado e autorizado</span></div>
+</section>
+
+{% if form %}
+<section class="gp-panel gp-phase-form-panel">
+  <div class="gp-panel-head"><div><span class="gp-eyebrow">NOVO REGISTRO · RASCUNHO/PREPARAÇÃO</span><h2>{{ form_title }}</h2></div><a class="gp-button gp-button-light" href="{{ home_url }}">Voltar</a></div>
+  <div class="gp-info">Esta fundação estrutura dados municipais e registra auditoria. Regras legais, contabilização oficial e execução financeira dependem de parametrização e homologação próprias.</div>
+  <form method="post" class="gp-form">{% csrf_token %}<input type="hidden" name="acao" value="{{ selected_action }}">
+    {% if form.non_field_errors %}<div class="gp-error">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="gp-form-grid">{% for field in form %}<label class="gp-field"><span>{{ field.label }}</span>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</label>{% endfor %}</div>
+    <div class="gp-actions"><button class="gp-button" type="submit">Salvar rascunho</button></div>
+  </form>
+</section>
+{% elif can_manage_module %}
+<section class="gp-panel gp-phase-actions">
+  <div class="gp-panel-head"><div><span class="gp-eyebrow">CONFIGURAÇÃO</span><h2>Estruture o módulo</h2></div><span class="gp-level">Gravação auditada</span></div>
+  <div class="gp-phase-action-grid">{% for action in form_actions %}<a class="gp-phase-action" href="{{ action.url }}"><span>＋</span><strong>{{ action.title }}</strong><small>Criar registro preparatório</small></a>{% endfor %}</div>
+</section>
+{% endif %}
+
+<section class="gp-phase-sections" aria-label="Registros do módulo">
+  {% for section in sections %}
+  <article class="gp-panel gp-phase-section">
+    <div class="gp-panel-head"><div><span class="gp-eyebrow">CADASTROS</span><h2>{{ section.title }}</h2></div><span class="gp-count">{{ section.total }} recentes</span></div>
+    <div class="gp-table-wrap"><table class="gp-table gp-phase-table"><thead><tr><th>Identificação</th><th>Detalhes</th><th>Situação / referência</th></tr></thead><tbody>
+      {% for row in section.rows %}<tr><td><strong>{{ row.cells.0 }}</strong></td><td>{{ row.cells.1 }}</td><td>{{ row.cells.2 }}</td></tr>{% empty %}<tr><td colspan="3"><div class="gp-empty-cell">Nenhum registro neste escopo. {% if can_manage_module %}Use as ações de configuração acima para iniciar.{% else %}Solicite acesso ao administrador da Prefeitura.{% endif %}</div></td></tr>{% endfor %}
+    </tbody></table></div>
+  </article>
+  {% endfor %}
+</section>
+<div class="gp-info gp-foundation-note"><strong>Fase de fundação:</strong> este módulo ainda não executa empenhos oficiais, contabilização, pagamentos bancários ou integração com SIAFIC/TCE. Parâmetros legais e classificações precisam ser definidos e homologados para cada Prefeitura.</div>
+{% endblock %}

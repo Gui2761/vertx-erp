@@ -1,0 +1,67 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Farmácia municipal · VERTYX Saúde{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div><div class="gp-eyebrow">VERTYX · SAÚDE SUS</div><h1>Farmácia municipal</h1>
+    <p>{{ subtitle }}</p></div>
+  <div class="gp-head-actions"><a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_home' %}">Voltar à Saúde</a></div>
+</section>
+
+<section class="gp-card-grid" aria-label="Resumo do estoque de medicamentos">
+  <article class="gp-metric"><span class="gp-metric-label">Medicamentos ativos no escopo</span><strong class="gp-count">{{ summary.medicines }}</strong></article>
+  <article class="gp-metric"><span class="gp-metric-label">Lotes no escopo</span><strong class="gp-count">{{ summary.lots }}</strong></article>
+  <article class="gp-metric"><span class="gp-metric-label">Lotes vencidos com saldo</span><strong class="gp-count">{{ summary.expired }}</strong></article>
+  <article class="gp-metric"><span class="gp-metric-label">Itens no mínimo configurado</span><strong class="gp-count">{{ summary.low_stock }}</strong></article>
+</section>
+
+<section class="gp-content-grid gp-admin-grid">
+  {% if can_manage_catalog %}
+  <article class="gp-panel gp-form-panel">
+    <div class="gp-eyebrow">CATÁLOGO MUNICIPAL</div><h2>Novo medicamento</h2>
+    <p class="gp-muted">O catálogo é compartilhado apenas dentro desta Prefeitura. A administração exige escopo Prefeitura.</p>
+    <form method="post" class="gp-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="medication">
+      {% if medication_form.non_field_errors %}<div class="gp-error">{{ medication_form.non_field_errors }}</div>{% endif %}
+      <div class="gp-form-grid">{% for field in medication_form %}
+        {% if field.field.widget.input_type == 'checkbox' %}<label class="gp-toggle" for="{{ field.id_for_label }}">{{ field }}<span>{{ field.label }}</span></label>
+        {% else %}<label class="gp-field" for="{{ field.id_for_label }}"><span>{{ field.label }}{% if field.field.required %} <b>*</b>{% endif %}</span>{{ field }}{% for error in field.errors %}<small class="gp-field-error">{{ error }}</small>{% endfor %}</label>{% endif %}
+      {% endfor %}</div><button class="gp-button" type="submit">Cadastrar medicamento</button>
+    </form>
+  </article>
+  {% endif %}
+
+  {% if can_manage_stock %}
+  <article class="gp-panel gp-form-panel">
+    <div class="gp-eyebrow">ENTRADA DE ESTOQUE</div><h2>Receber lote</h2>
+    <p class="gp-muted">Cada lote só pode ser cadastrado uma vez por medicamento e unidade. Reenvio duplicado não soma saldo.</p>
+    <form method="post" class="gp-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="lot">
+      {% if lot_form.non_field_errors %}<div class="gp-error">{{ lot_form.non_field_errors }}</div>{% endif %}
+      <div class="gp-form-grid">{% for field in lot_form %}<label class="gp-field" for="{{ field.id_for_label }}"><span>{{ field.label }}{% if field.field.required %} <b>*</b>{% endif %}</span>{{ field }}{% for error in field.errors %}<small class="gp-field-error">{{ error }}</small>{% endfor %}</label>{% endfor %}</div>
+      <button class="gp-button" type="submit">Registrar lote</button>
+    </form>
+  </article>
+  {% endif %}
+
+  {% if can_dispense %}
+  <article class="gp-panel gp-form-panel">
+    <div class="gp-eyebrow">ATENDIMENTO AO CIDADÃO</div><h2>Dispensar medicamento</h2>
+    <p class="gp-muted">A baixa prioriza os lotes com vencimento mais próximo (FEFO), ignora vencidos e não permite saldo negativo. Esta tela não substitui validação clínica de receita.</p>
+    <form method="post" class="gp-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="dispense">{{ dispensation_form.request_id }}
+      {% if dispensation_form.non_field_errors %}<div class="gp-error">{{ dispensation_form.non_field_errors }}</div>{% endif %}
+      <div class="gp-form-grid">{% for field in dispensation_form %}{% if field.name != 'request_id' %}<label class="gp-field" for="{{ field.id_for_label }}"><span>{{ field.label }}{% if field.field.required %} <b>*</b>{% endif %}</span>{{ field }}{% for error in field.errors %}<small class="gp-field-error">{{ error }}</small>{% endfor %}</label>{% endif %}{% endfor %}</div>
+      <button class="gp-button" type="submit">Confirmar dispensação</button>
+    </form>
+  </article>
+  {% endif %}
+</section>
+
+<section class="gp-content-grid">
+  <article class="gp-panel"><div class="gp-panel-head"><div><div class="gp-eyebrow">ESTOQUE CONSOLIDADO NO SEU ESCOPO</div><h2>{{ medicine_rows|length }} medicamento(s)</h2></div></div>
+    {% if medicine_rows %}<div class="gp-table-wrap"><table class="gp-table"><thead><tr><th>Código</th><th>Medicamento</th><th>Apresentação</th><th>Saldo total</th><th>Lotes</th></tr></thead><tbody>{% for row in medicine_rows %}<tr>{% for value in row %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="gp-empty-inline">Nenhum medicamento no escopo disponível.</div>{% endif %}
+  </article>
+  <article class="gp-panel"><div class="gp-panel-head"><div><div class="gp-eyebrow">RASTREABILIDADE</div><h2>{{ lot_rows|length }} lote(s) recente(s)</h2></div></div>
+    {% if lot_rows %}<div class="gp-table-wrap"><table class="gp-table"><thead><tr><th>Medicamento</th><th>Unidade</th><th>Lote</th><th>Validade</th><th>Saldo</th></tr></thead><tbody>{% for row in lot_rows %}<tr>{% for value in row %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="gp-empty-inline">Nenhum lote registrado no escopo disponível.</div>{% endif %}
+  </article>
+</section>
+{% endblock %}

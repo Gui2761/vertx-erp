@@ -54,6 +54,6 @@ def route_allowed(match):
             'plano_lista', 'plano_detalhe', 'documento_lista', 'documento_detalhe',
             'documento_novo', 'documento_arquivo', 'notificacoes', 'notificacao_lida',
             'os_acao', 'os_necessidade', 'necessidades', 'ponto_home', 'ponto_mirror', 'ponto_overtime',
-            'manifest', 'worker',
+            'manifest', 'worker', 'technician_manifest', 'technician_worker',
         }
     return name in {'health', 'legacy_media'}

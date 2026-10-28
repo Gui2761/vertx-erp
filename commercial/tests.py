@@ -7,7 +7,11 @@ from django.core.exceptions import ValidationError
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse, resolve
 from platform_core.context import tenant_context
-from platform_core.models import Organization, OrganizationMembership, OrganizationERP, MembershipERP, ERPCatalog
+from platform_core.models import (
+    ERPProductModule, Organization, OrganizationMembership, OrganizationERP,
+    MembershipERP, ERPCatalog,
+)
+from platform_core.saas_models import CORE_SAAS_MODULES, PlanoSaaS
 from contas.models import Usuario
 from clientes.models import Cliente
 from .catalog import DEFAULT_PLANS, DEFAULT_RESOURCES
@@ -20,6 +24,18 @@ class CommercialTests(TestCase):
         for values in DEFAULT_PLANS:
             PlanoComercial.objects.update_or_create(slug=values['slug'], defaults={**values, 'recursos':deepcopy(DEFAULT_RESOURCES)})
         self.plan=PlanoComercial.objects.get(slug='profissional')
+        # Commercial offers and SaaS entitlements are separate catalogs. These
+        # tests explicitly configure the public professional offer they need.
+        PlanoSaaS.objects.update_or_create(
+            slug='profissional', defaults={
+                'nome':'Profissional', 'plano_comercial':self.plan,
+                'preco':self.plan.preco, 'periodicidade':'MENSAL',
+                'publico_ativo':True, 'ativo':True,
+                'modulos':list(CORE_SAAS_MODULES),
+                'limites':{'usuarios':10,'filiais':3,'armazenamento_mb':None,
+                           'vendas_mes':None,'ordens_mes':None},
+            },
+        )
 
     def payload(self, client=None, **changes):
         response=(client or self.client).get('/demonstracao/?plano=profissional')
@@ -30,6 +46,15 @@ class CommercialTests(TestCase):
     def role(self,role,slug='commercial-a'):
         org,_=Organization.objects.get_or_create(slug=slug,defaults={'razao_social':'ORGANIZAÇÃO PRIVADA '+slug})
         erp,_=ERPCatalog.objects.get_or_create(code='assistencia',defaults={'name':'Assistência de teste'})
+        for code, name in (
+            ('assistencia','Assistência'),
+            ('pwa_tecnico','PWA Técnico'),
+            ('pwa_vendedor','PWA Vendedor'),
+        ):
+            ERPProductModule.objects.get_or_create(
+                erp=erp, code=code,
+                defaults={'name':name,'active':True,'sort_order':0},
+            )
         OrganizationERP.objects.get_or_create(organization=org,erp=erp)
         user=Usuario.objects.create_user(username='marketing-'+role+'-'+slug,password='only-test-password',perfil='ADMIN' if role=='VENDEDOR' else role)
         membership=OrganizationMembership.objects.create(user=user,organization=org,role=role)
@@ -44,18 +69,49 @@ class CommercialTests(TestCase):
         self.assertNotContains(response,'/static/js/vertyx.js')
         self.assertNotContains(response,'serviceWorker.register')
 
+    def test_vitrine_geral_apresenta_produtos_sem_expor_administracao(self):
+        response=self.client.get('/')
+        self.assertEqual(response.status_code,200)
+        for label in (
+            'Tecnologia para transformar a gestão.',
+            'ERP EMPRESARIAL',
+            'ERP GESTÃO PÚBLICA',
+            'APLICATIVOS E PWA',
+            'Assistência Técnica, PDV, vendas, estoque, financeiro, contratos e ordens de serviço',
+            'Conhecer Gestão Pública',
+            'Uma plataforma.',
+        ):
+            with self.subTest(label=label):self.assertContains(response,label)
+        self.assertContains(response,'href="/gestao-publica/"')
+        for private_path in ('/vertyx/saas/','/vertyx/saas/bootstrap-inicial/','/admin/'):
+            with self.subTest(path=private_path):self.assertNotContains(response,private_path)
+        for url in ('/gestao-publica/','/gestao-publica/login/'):
+            with self.subTest(url=url):self.assertEqual(self.client.get(url).status_code,200)
+
     def test_quatro_planos_precos_destaque_e_limites_indefinidos(self):
         response=self.client.get('/planos/')
         self.assertEqual(len(response.context['plans']),4)
         self.assertEqual([p['price'] for p in response.context['plans']],['149','249','399',''])
         self.assertEqual([p['plan'].slug for p in response.context['plans'] if p['plan'].destaque],['profissional'])
         self.assertContains(response,'MAIS ESCOLHIDO',count=1)
-        self.assertContains(response,'a definir na proposta')
+        self.assertContains(response,'A definir na proposta')
         self.assertContains(response,'Fale conosco')
         self.assertNotContains(response,'Ilimitado')
 
+    def test_catalogo_comercial_mantem_o_nucleo_operacional_incluido_em_todos_os_planos(self):
+        response=self.client.get('/planos/')
+        for plan in PlanoComercial.objects.filter(ativo=True):
+            for key in ('clientes','produtos','estoque','pdv','financeiro','fiscal'):
+                with self.subTest(plan=plan.slug,feature=key):
+                    self.assertEqual(plan.recursos.get(key),'INCLUIDO')
+        self.assertContains(response,'Fiscal / NF')
+        self.assertContains(response,'emissão ou transmissão de documentos fiscais depende de configuração tributária')
+
     def test_preco_nome_limites_configuraveis(self):
-        self.plan.preco=Decimal('179.90');self.plan.nome='Plano configurado';self.plan.limite_usuarios=8;self.plan.save()
+        from platform_core.saas_models import PlanoSaaS
+        self.plan.preco=Decimal('179.90');self.plan.nome='Plano configurado';self.plan.save()
+        saas=PlanoSaaS.objects.get(plano_comercial=self.plan,publico_ativo=True)
+        saas.preco=self.plan.preco;saas.limites={**saas.limites,'usuarios':8};saas.save()
         response=self.client.get('/planos/')
         self.assertContains(response,'179,90')
         self.assertContains(response,'Plano configurado')
@@ -73,8 +129,9 @@ class CommercialTests(TestCase):
         self.plan.recursos={'estoque':'INCLUIDO','fiscal':'FUTURO','gateway':'FUTURO'};self.plan.save()
         response=self.client.get('/planos/')
         self.assertContains(response,'Incluído')
-        for promise in ['NF-e','NFS-e','NFC-e','Emissão fiscal','gateway','certificado A1']:
+        for promise in ['NF-e','NFS-e','NFC-e','Emissão fiscal','certificado A1']:
             self.assertNotContains(response,promise)
+        self.assertContains(response,'não realiza cobrança nem integra cartão, PIX ou gateway')
 
     def test_recurso_desconhecido_ou_estado_invalido_rejeitado(self):
         for resources in [{'x':'INCLUIDO'},{'erp':'SIM'},[]]:
@@ -116,8 +173,13 @@ class CommercialTests(TestCase):
     def test_links_planos_formulario_e_login_existente(self):
         response=self.client.get('/planos/')
         for card in response.context['plans']:
-            form=self.client.get(card['cta']).context['form']
-            self.assertEqual(form.initial['plano'],card['plan'])
+            target=self.client.get(card['cta'])
+            if card['contracting_available']:
+                self.assertEqual(target.status_code,200)
+                self.assertEqual(target.context['plan'].plano_comercial,card['plan'])
+            else:
+                self.assertEqual(target.status_code,200)
+                self.assertEqual(target.context['form'].initial['plano'],card['plan'])
         self.assertContains(response,'href="/login/"')
         self.assertTemplateUsed(self.client.get('/login/'),'registration/login.html')
         self.assertTemplateUsed(self.client.get('/contas/login/'),'registration/login.html')
@@ -131,12 +193,14 @@ class CommercialTests(TestCase):
             self.assertNotIn('Location',response)
             html=response.content.decode()
             menu=html.split('<nav id="public-menu"',1)[1].split('</nav>',1)[0]
-            labels=['Funcionalidades','Soluções','Planos e preços','Recursos','Suporte','ENTRAR NO VERTYX','Solicitar demonstração']
+            labels=['Planos e preços','Sobre nós','Entrar','Solicitar demonstração']
             positions=[menu.index(label) for label in labels]
             self.assertEqual(positions,sorted(positions))
+            self.assertNotIn('Soluções',menu)
+            self.assertNotIn('solutions-dropdown',menu)
+            self.assertNotIn('ERP Gestão Pública',menu)
             self.assertEqual(menu.count('href="/login/"'),1)
             self.assertIn('class="button button-quiet header-login"',menu)
-            self.assertIn('class="login-label-desktop">Acessar VERTYX',menu)
             self.assertContains(self.client.get('/login/'),'name="username"')
             self.assertContains(self.client.get('/login/'),'name="password"')
         self.assertIs(resolve('/login/').func.view_class,LoginView)
@@ -146,7 +210,7 @@ class CommercialTests(TestCase):
     def test_tecnico01_login_do_menu_usa_membership_e_preserva_isolamento(self):
         user,org=self.role('TECNICO','commercial-mobile-login')
         user.username='tecnico01';user.perfil='ADMIN';user.save()
-        self.assertContains(self.client.get('/'),'ENTRAR NO VERTYX')
+        self.assertContains(self.client.get('/'),'Entrar')
         response=self.client.post('/login/',{'username':'tecnico01','password':'only-test-password','next':'/assistencia/'},follow=True)
         self.assertEqual(response.redirect_chain[0],('/tecnico/',302))
         self.assertContains(response,'Meus atendimentos')
@@ -264,7 +328,9 @@ class CommercialTests(TestCase):
         for role in ['ADMIN','GESTOR']:
             user,_=self.role(role)
             self.assertEqual(self.client.post('/login/',{'username':user.username,'password':'only-test-password'}).status_code,302)
-            self.assertRedirects(self.client.get('/'),'/vertyx/')
+            # Anonymous visitors see the commercial root; authenticated users
+            # keep the established ERP entry redirect.
+            self.assertRedirects(self.client.get('/'),'/vertyx/',fetch_redirect_response=False)
             self.assertEqual(self.client.get('/assistencia/').status_code,200)
             self.client.logout()
 

@@ -6,9 +6,10 @@ import uuid
 from contas.models import Usuario
 from platform_core.context import tenant_context
 from platform_core.models import (
-    ERPCatalog, MembershipERP, Organization, OrganizationERP,
+    ERPProductModule, ERPCatalog, MembershipERP, Organization, OrganizationERP,
     OrganizationMembership,
 )
+from platform_core.saas_models import AssinaturaSaaS, PlanoProdutoModulo, PlanoSaaS
 from operacao.models import Funcionario, JornadaTrabalho
 
 from .models import (
@@ -72,6 +73,35 @@ class MunicipalFixtures(TestCase):
 
 
 class MunicipalIsolationTests(MunicipalFixtures):
+    def setUp(self):
+        super().setUp()
+        # Legacy RH Municipal routes require their own contracted module in
+        # addition to the Gestão Pública product and the user's AcessoRH.
+        modules = [
+            ERPProductModule.objects.get_or_create(
+                erp=self.publico,
+                code=code,
+                defaults={'name': label, 'active': True},
+            )[0]
+            for code, label in (
+                ('gestao_publica', 'Gestão Pública'),
+                ('rh_municipal', 'RH Municipal'),
+            )
+        ]
+        plan = PlanoSaaS.objects.create(
+            slug=f'municipal-isolation-{uuid.uuid4().hex[:10]}',
+            nome='Plano sintético RH Municipal',
+            erp=self.publico,
+            modulos=[],
+        )
+        for module in modules:
+            PlanoProdutoModulo.objects.create(plano=plan, modulo=module)
+        AssinaturaSaaS.objects.create(
+            organization=self.c,
+            plano=plan,
+            status=AssinaturaSaaS.Status.ACTIVE,
+        )
+
     def test_three_vertical_lab_is_separated(self):
         self.assertEqual(Funcionario.all_objects.filter(organization=self.a, matricula='AST-001').count(), 1)
         with tenant_context(self.c):

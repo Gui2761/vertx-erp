@@ -1,0 +1,12 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Cadastro de cidadão · Saúde SUS{% endblock %}
+{% block content %}
+<section class="gp-page-head"><div><div class="gp-eyebrow">SAÚDE SUS · CADASTRO RESTRITO</div><h1>Novo cidadão/paciente</h1><p>Cadastro municipal protegido e limitado ao escopo do seu acesso.</p></div><a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_home' %}">Voltar</a></section>
+<form class="gp-form-panel gp-form" method="post" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="gp-error">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="gp-form-grid">{% for field in form %}<div class="gp-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<span class="gp-field-error">{{ error }}</span>{% endfor %}</div>{% endfor %}</div>
+  <div class="gp-foundation-note">CPF/CNS são armazenados apenas nesta Prefeitura. Integração ao Cadastro Nacional ainda não está habilitada.</div>
+  <div class="gp-actions"><button class="gp-button" type="submit">Salvar cadastro</button><a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_home' %}">Cancelar</a></div>
+</form>
+{% endblock %}

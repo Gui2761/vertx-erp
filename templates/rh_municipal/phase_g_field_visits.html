@@ -1,0 +1,36 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Visitas ACS/ACE · VERTYX Saúde{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div><div class="gp-eyebrow">VERTYX · SAÚDE SUS · TERRITÓRIO</div><h1>Visitas ACS/ACE</h1>
+    <p>{{ subtitle }}</p></div>
+  <div class="gp-head-actions"><a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_home' %}">Voltar à Saúde</a></div>
+</section>
+
+<section class="gp-content-grid">
+  {% if can_manage_field %}
+  <article class="gp-panel gp-form-panel">
+    <div class="gp-eyebrow">REGISTRO DE CAMPO</div><h2>Registrar visita</h2>
+    <p class="gp-muted">A visita fica vinculada ao agente e ao escopo da unidade. O conteúdo do registro é cifrado, auditado e não é incluído nas listagens.</p>
+    <div class="gp-info">Este formulário exige conexão com o servidor. A fila offline e o envio posterior ainda não estão implementados para Saúde SUS.</div>
+    <form method="post" class="gp-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="record_visit">{{ form.request_id }}
+      {% if form.non_field_errors %}<div class="gp-error">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="gp-form-grid">
+        {% for field in form %}{% if field.name != 'request_id' %}
+          <label class="gp-field" for="{{ field.id_for_label }}"><span>{{ field.label }}{% if field.field.required %} <b>*</b>{% endif %}</span>{{ field }}{% for error in field.errors %}<small class="gp-field-error">{{ error }}</small>{% endfor %}</label>
+        {% endif %}{% endfor %}
+      </div>
+      <button class="gp-button" type="submit">Salvar visita</button>
+    </form>
+  </article>
+  {% endif %}
+
+  <article class="gp-panel">
+    <div class="gp-panel-head"><div><div class="gp-eyebrow">SEU ESCOPO AUTORIZADO</div><h2>{{ visit_count }} visita(s) recente(s)</h2></div></div>
+    {% if visits %}<div class="gp-table-wrap"><table class="gp-table"><thead><tr><th>Data</th><th>Tipo</th><th>Agente</th><th>Unidade</th><th>Referência</th><th>Status</th></tr></thead><tbody>
+      {% for visit in visits %}<tr><td>{{ visit.realizada_em|date:'d/m/Y H:i' }}</td><td>{{ visit.get_tipo_display }}</td><td>{{ visit.agente.servidor.nome }}</td><td>{{ visit.agente.unidade_saude.unidade.nome }}</td><td>{% if visit.familia %}Família {{ visit.familia.codigo }}{% elif visit.cidadao %}Cidadão acompanhado{% elif visit.imovel %}Imóvel {{ visit.imovel.inscricao }}{% else %}—{% endif %}</td><td>{{ visit.get_status_display }}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="gp-empty-inline">Nenhuma visita registrada neste escopo.</div>{% endif %}
+    <p class="gp-muted">Por proteção de dados, as observações não são exibidas nesta tela de listagem.</p>
+  </article>
+</section>
+{% endblock %}

@@ -9,6 +9,7 @@ from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
 from django.urls import reverse
+from platform_core.context import current_organization
 from platform_core.modules import require_capability, has_capability
 from gestao import models as g, services as gs
 from gestao.forms import Estilizado
@@ -46,7 +47,19 @@ def home(request):
         else: return redirect('operacao:pdv_cash',public_id=session.public_id)
     sessions=m.SessaoCaixa.objects.select_related('conta','operador').order_by('-aberto_em')
     if not has_capability(request.user,'caixa_supervisor'): sessions=sessions.filter(operador=request.user)
-    return render(request,'operacao/pdv_home.html',{'sessions':sessions[:50],'contas':m.ContaBancaria.objects.filter(ativo=True,tipo='CAIXA'),'request_id':uuid.uuid4(),'back_url':reverse('platform_core:home')})
+    org_id=current_organization().pk
+    cash_accounts=m.ContaBancaria.objects.filter(ativo=True,tipo='CAIXA',deposito_padrao__ativo=True,deposito_padrao__organization_id=org_id).select_related('deposito_padrao')
+    unconfigured_cash_accounts=m.ContaBancaria.objects.filter(ativo=True,tipo='CAIXA').exclude(deposito_padrao__ativo=True,deposito_padrao__organization_id=org_id)
+    deposits=m.Deposito.objects.filter(ativo=True)
+    return render(request,'operacao/pdv_home.html',{
+        'sessions':sessions[:50], 'contas':cash_accounts, 'depositos':deposits,
+        'setup_needed':not cash_accounts.exists(), 'setup_missing_deposit':not deposits.exists(),
+        'unconfigured_cash_accounts':unconfigured_cash_accounts,
+        'can_configure_operators':has_capability(request.user,'config_empresa'),
+        'can_manage_cash_accounts':has_capability(request.user,'financeiro_escrever'),
+        'can_manage_deposits':has_capability(request.user,'compras'),
+        'request_id':uuid.uuid4(), 'back_url':reverse('platform_core:home'),
+    })
 
 @login_required
 @transaction.atomic
@@ -60,7 +73,7 @@ def cash(request,public_id):
         try:
             action=request.POST.get('action')
             if action=='venda':
-                sale=c.new_sale(request.user,public_id,int(request.POST['deposito']),request.POST.get('cliente') or None,request.POST.get('vendedor') or None,request.POST.get('filial') or None,request.POST.get('centro_custo') or None,request.POST.get('request_id'))
+                sale=c.new_sale(request.user,public_id,customer_id=request.POST.get('cliente') or None,seller_id=request.POST.get('vendedor') or None,branch_id=request.POST.get('filial') or None,center_id=request.POST.get('centro_custo') or None,request_id=request.POST.get('request_id'))
                 return redirect('operacao:pdv_sale',public_id=sale.public_id)
             if action=='fechar': c.close_cash(request.user,public_id,request.POST['contado'],request.POST.get('motivo',''))
             elif action=='movimento': c.cash_operation(request.user,public_id,request.POST['tipo'],request.POST['valor'],request.POST.get('motivo',''),request.POST['request_id'])
@@ -68,7 +81,7 @@ def cash(request,public_id):
                 if is_seller(request.user):
                     from django.core.exceptions import PermissionDenied
                     raise PermissionDenied('Conversão de orçamento exige gestor.')
-                sale=c.quote_to_sale(request.user,int(request.POST['orcamento']),public_id,int(request.POST['deposito']))
+                sale=c.quote_to_sale(request.user,int(request.POST['orcamento']),public_id)
                 return redirect('operacao:pdv_sale',public_id=sale.public_id)
             else: raise ValidationError('Operação inválida.')
             messages.success(request,'Operação registrada.');return redirect('operacao:pdv_cash',public_id=public_id)
@@ -78,7 +91,10 @@ def cash(request,public_id):
     from contas.models import Usuario
     from platform_core.context import current_organization
     from platform_core.models import FilialEmpresa
-    return render(request,'operacao/pdv_cash.html',{'session':session,'expected':c.cash_expected(session),'events':session.eventos.select_related('movimento'),'sales':session.venda_set.select_related('cliente','vendedor'),'depositos':m.Deposito.objects.filter(ativo=True),'clientes':Cliente.objects.filter(ativo=True),'vendedores':Usuario.objects.filter(is_active=True,memberships__organization=current_organization(),memberships__status='ATIVO').distinct(),'filiais':FilialEmpresa.objects.filter(ativo=True),'centros':g.CentroCusto.objects.filter(ativo=True),'quotes':g.Orcamento.objects.filter(status='APROVADO'),'supervisor':has_capability(request.user,'caixa_supervisor'),'request_id':uuid.uuid4(),'back_url':reverse('operacao:pdv_home')})
+    deposito_padrao=session.conta.deposito_padrao
+    if deposito_padrao and deposito_padrao.organization_id!=current_organization().pk:
+        deposito_padrao=None
+    return render(request,'operacao/pdv_cash.html',{'session':session,'expected':c.cash_expected(session),'events':session.eventos.select_related('movimento'),'sales':session.venda_set.select_related('cliente','vendedor'),'deposito_padrao':deposito_padrao,'can_configure_cash':has_capability(request.user,'financeiro_escrever'),'clientes':Cliente.objects.filter(ativo=True),'vendedores':Usuario.objects.filter(is_active=True,memberships__organization=current_organization(),memberships__status='ATIVO').distinct(),'filiais':FilialEmpresa.objects.filter(ativo=True),'centros':g.CentroCusto.objects.filter(ativo=True),'quotes':g.Orcamento.objects.filter(status='APROVADO'),'supervisor':has_capability(request.user,'caixa_supervisor'),'request_id':uuid.uuid4(),'back_url':reverse('operacao:pdv_home')})
 
 @login_required
 @transaction.atomic
@@ -134,3 +150,25 @@ def history(request):
     if not has_capability(request.user,'caixa_supervisor'):
         rows=rows.filter(sessao_caixa__operador=request.user)
     return render(request,'operacao/pdv_history.html',{'sales':rows[:100]})
+
+
+@login_required
+def movements(request):
+    """Read-only PDV view over the organization's official cash movements."""
+    require_capability(request.user,'caixa_supervisor')
+    from django.core.paginator import Paginator
+    from django.utils.dateparse import parse_date
+    from django.utils import timezone
+    from django.db.models import Q
+
+    start=parse_date(request.GET.get('inicio','')) if request.GET.get('inicio') else None
+    end=parse_date(request.GET.get('fim','')) if request.GET.get('fim') else None
+    if request.GET.get('inicio') and not start or request.GET.get('fim') and not end or start and end and end < start:
+        return render(request,'operacao/pdv_movements.html',{'erro_periodo':True},status=400)
+    today=timezone.localdate()
+    start,end=start or today.replace(day=1),end or today
+    rows=m.MovimentoCaixa.objects.filter(data__range=(start,end)).filter(
+        Q(origem='PDV') | Q(eventocaixa__isnull=False) | Q(lancamento__venda_origem__isnull=False)
+    ).select_related('conta','usuario').distinct().order_by('-data','-pk')
+    page=Paginator(rows,50).get_page(request.GET.get('page'))
+    return render(request,'operacao/pdv_movements.html',{'rows':page,'inicio':start,'fim':end})

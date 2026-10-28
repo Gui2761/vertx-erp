@@ -24,7 +24,7 @@ def identity(request):
 @login_required
 def page(request):
     require_capability(request.user,'operar_pdv')
-    return render(request,'operacao/pdv_offline.html',{'sessions':m.SessaoCaixa.objects.filter(operador=request.user,fechado_em__isnull=True).select_related('conta'),'depositos':m.Deposito.objects.filter(ativo=True)})
+    return render(request,'operacao/pdv_offline.html',{'sessions':m.SessaoCaixa.objects.filter(operador=request.user,fechado_em__isnull=True,conta__deposito_padrao__ativo=True,conta__deposito_padrao__organization_id=current_organization().pk).select_related('conta','conta__deposito_padrao')})
 
 @login_required
 @require_GET
@@ -49,9 +49,15 @@ def prepare(request):
         session=c.own_session(request.user,request.GET.get('caixa'))
         if session.operador_id!=request.user.pk:
             raise PermissionDenied('Prepare o dispositivo com o operador do caixa.')
-        depot=m.Deposito.objects.get(pk=request.GET.get('deposito'),ativo=True)
+        account=m.ContaBancaria.objects.select_related('deposito_padrao').get(pk=session.conta_id,ativo=True,tipo='CAIXA')
+        depot=account.deposito_padrao
+        if not depot or not depot.ativo or depot.organization_id!=current_organization().pk:
+            raise ValidationError('O caixa não possui depósito padrão ativo configurado.')
+        supplied=request.GET.get('deposito')
+        if supplied and str(depot.pk)!=str(supplied):
+            raise ValidationError('O depósito offline é definido pelo caixa.')
     except (ObjectDoesNotExist,ValueError,ValidationError):
-        return JsonResponse({'error':'Selecione seu caixa aberto e um depósito válido.'},status=400)
+        return JsonResponse({'error':'Selecione um caixa aberto com depósito padrão ativo.'},status=400)
     claims={**identity(request),'session':str(session.public_id),'depot':depot.pk}
     catalog=[]
     for part in g.Peca.objects.filter(ativo=True).prefetch_related('codigos_alternativos'):

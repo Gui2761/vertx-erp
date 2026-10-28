@@ -1,0 +1,32 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Painel Executivo{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div>
+    <span class="gp-eyebrow">VISÃO EXECUTIVA</span>
+    <h1>{{ organization.display_name }}</h1>
+    <p>Indicadores agregados dos módulos contratados e autorizados para o seu escopo.</p>
+  </div>
+</section>
+{% if metric_groups %}
+  {% for group, metrics in metric_groups %}
+    <section class="gp-panel" aria-labelledby="metric-group-{{ forloop.counter }}">
+      <div class="gp-panel-head"><h2 id="metric-group-{{ forloop.counter }}">{{ group }}</h2></div>
+      <div class="gp-card-grid">
+        {% for metric in metrics %}
+          <article class="gp-metric">
+            <span class="gp-metric-label">{{ metric.label }}</span>
+            <strong class="gp-count">{{ metric.value }}</strong>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+{% else %}
+  <section class="gp-panel"><div class="gp-empty-inline">Nenhum indicador pode ser exibido com os módulos, permissões e escopo atuais.</div></section>
+{% endif %}
+<section class="gp-foundation-note" role="note">
+  <strong>Limite desta visão</strong>
+  <p>Os números são contagens agregadas de registros disponíveis. Esta tela não calcula execução orçamentária, receitas, despesas, saldo financeiro ou resultado fiscal oficial. A fundação contábil e financeira não substitui os fluxos legais de contabilidade pública.</p>
+</section>
+{% endblock %}

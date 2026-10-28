@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -13,7 +13,7 @@ from .models import (
     OrganizationMembership, PermissaoMembership,
 )
 from .saas_models import (
-    AdministradorPlataforma, AssinaturaSaaS, AuditoriaSaaS,
+    CORE_SAAS_MODULES, AdministradorPlataforma, AssinaturaSaaS, AuditoriaSaaS,
     HistoricoPlanoSaaS, PlanoSaaS, PrimeiroAcessoSaaS,
 )
 from .saas_services import alterar_plano, alterar_status_cliente, criar_cliente, metricas_uso, reemitir_primeiro_acesso, verificar_limite
@@ -48,6 +48,23 @@ class SaaSAdminTests(TestCase):
     def make_tenant(self, *, cnpj='39966868000186', email='admin-cliente@example.test'):
         return criar_cliente(actor=self.actor, company=self.company(cnpj), admin=self.admin_data(email), plan_id=self.plan.pk)
 
+    def unused_test_cnpj(self):
+        for number in range(90000000, 90001000):
+            base = f'{number:08d}0001'
+            first_weights = (5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)
+            first_sum = sum(int(digit) * weight for digit, weight in zip(base, first_weights))
+            first_remainder = first_sum % 11
+            first_digit = 0 if first_remainder < 2 else 11 - first_remainder
+            partial = f'{base}{first_digit}'
+            second_weights = (6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)
+            second_sum = sum(int(digit) * weight for digit, weight in zip(partial, second_weights))
+            second_remainder = second_sum % 11
+            second_digit = 0 if second_remainder < 2 else 11 - second_remainder
+            candidate = f'{partial}{second_digit}'
+            if not Organization.objects.filter(cnpj=candidate).exists():
+                return candidate
+        self.fail('Não foi possível encontrar um CNPJ sintético livre para o teste.')
+
     def test_onboarding_atomico_cria_tenant_admin_plano_modulos_e_token_digest(self):
         result = self.make_tenant()
         org, user = result['organization'], result['user']
@@ -56,7 +73,9 @@ class SaaSAdminTests(TestCase):
         self.assertFalse(user.has_usable_password())
         self.assertTrue(OrganizationMembership.objects.filter(pk=result['membership'].pk, organization=org, user=user).exists())
         self.assertEqual(AssinaturaSaaS.objects.get(organization=org).plano, self.plan)
-        self.assertEqual(set(ModuloOrganizacao.all_objects.filter(organization=org, habilitado=True).values_list('codigo', flat=True)), {'assistencia', 'estoque', 'pdv'})
+        self.assertEqual(set(ModuloOrganizacao.all_objects.filter(organization=org, habilitado=True).values_list('codigo', flat=True)),
+                         {'assistencia', 'clientes', 'produtos', 'estoque', 'estoque_basico',
+                          'estoque_completo', 'financeiro', 'financeiro_basico', 'relatorios_basicos', 'pdv', 'fiscal'})
         token_row = PrimeiroAcessoSaaS.objects.get(pk=result['token_id'])
         self.assertNotIn(result['token'], token_row.token_digest)
         self.assertEqual(token_row.token_digest, PrimeiroAcessoSaaS.digest(result['token']))
@@ -90,6 +109,42 @@ class SaaSAdminTests(TestCase):
         self.assertIsNotNone(row.usado_em)
         self.assertEqual(self.client.post(url, {'new_password1': 'Another!Pass9342', 'new_password2': 'Another!Pass9342'}).status_code, 410)
         self.assertNotContains(response, token)
+
+    def test_primeiro_acesso_preserva_csrf_com_origem_e_rejeita_origin_null(self):
+        # Use only synthetic tenants in the transactional test database.
+        accepted = self.make_tenant(cnpj=self.unused_test_cnpj(), email='csrf-ok@example.test')
+        client = Client(enforce_csrf_checks=True)
+        accepted_url = reverse('platform_core:saas_first_access', args=[accepted['token']])
+        page = client.get(accepted_url)
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page['Referrer-Policy'], 'origin')
+        csrf_token = client.cookies['csrftoken'].value
+        response = client.post(
+            accepted_url,
+            {'csrfmiddlewaretoken': csrf_token, 'new_password1': 'Client!Pass9342',
+             'new_password2': 'Client!Pass9342'},
+            HTTP_ORIGIN='http://testserver',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Acesso configurado')
+        accepted_row = PrimeiroAcessoSaaS.objects.get(pk=accepted['token_id'])
+        self.assertIsNotNone(accepted_row.usado_em)
+
+        rejected = self.make_tenant(cnpj=self.unused_test_cnpj(), email='csrf-null@example.test')
+        rejected_client = Client(enforce_csrf_checks=True)
+        rejected_url = reverse('platform_core:saas_first_access', args=[rejected['token']])
+        rejected_page = rejected_client.get(rejected_url)
+        self.assertEqual(rejected_page.status_code, 200)
+        rejected_response = rejected_client.post(
+            rejected_url,
+            {'csrfmiddlewaretoken': rejected_client.cookies['csrftoken'].value,
+             'new_password1': 'Client!Pass9342', 'new_password2': 'Client!Pass9342'},
+            HTTP_ORIGIN='null',
+        )
+        self.assertEqual(rejected_response.status_code, 403)
+        rejected['user'].refresh_from_db()
+        self.assertFalse(rejected['user'].has_usable_password())
+        self.assertIsNone(PrimeiroAcessoSaaS.objects.get(pk=rejected['token_id']).usado_em)
 
     def test_primeiro_acesso_expirado_nao_define_senha(self):
         result = self.make_tenant()
@@ -164,7 +219,7 @@ class SaaSAdminTests(TestCase):
                 capacidade='operar_pdv', permitido=True,
             )
         next_plan = PlanoSaaS.objects.create(
-            slug='profissional', nome='Profissional', preco='249.00',
+            slug='profissional-v2-teste', nome='Profissional', preco='249.00',
             modulos=['assistencia', 'rh'], limites={'usuarios': 10, 'filiais': 3},
         )
         subscription = alterar_plano(actor=self.actor, organization=result['organization'], plan_id=next_plan.pk, reason='homologação')
@@ -176,7 +231,8 @@ class SaaSAdminTests(TestCase):
             modules = dict(ModuloOrganizacao.objects.values_list('codigo', 'habilitado'))
             config = ConfiguracaoEmpresa.objects.get(organization=result['organization'])
         self.assertTrue(modules['rh'])
-        self.assertFalse(modules['pdv'])
+        self.assertTrue(modules['pdv'])
+        self.assertTrue(modules['fiscal'])
         self.assertEqual(config.limites, {'usuarios': 10, 'filiais': 3})
 
     def test_suspensao_reativacao_preserva_dados_e_audita(self):
@@ -360,9 +416,14 @@ class SaaSAdminTests(TestCase):
         self.client.force_login(self.platform)
         response = self.client.get(reverse('platform_core:saas_plan_create'))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Plano comercial público')
+        self.assertContains(response, 'Disponível para contratação online')
+        self.assertContains(response, 'Cadastro público bloqueado por padrão')
+        self.assertContains(response, 'Nível de indicadores')
         response = self.client.post(reverse('platform_core:saas_plan_create'), {
             'slug': 'enterprise-local', 'nome': 'Enterprise Local', 'descricao': 'Plano de homologação',
             'preco': '399.00', 'periodicidade': 'MENSAL', 'ativo': 'on',
+            'nivel_indicadores': 'COMPLETO',
             'modulos': ['assistencia', 'fiscal'], 'limite_usuarios': '25',
             'limite_filiais': '4', 'limite_armazenamento_mb': '2048',
             'limite_vendas_mes': '', 'limite_ordens_mes': '',
@@ -370,8 +431,9 @@ class SaaSAdminTests(TestCase):
         self.assertRedirects(response, reverse('platform_core:saas_plans'))
         plan = PlanoSaaS.objects.get(slug='enterprise-local')
         self.assertEqual(plan.preco, 399)
-        self.assertEqual(set(plan.modulos), {'assistencia', 'fiscal'})
+        self.assertEqual(set(plan.modulos), set(CORE_SAAS_MODULES))
         self.assertEqual(plan.limites['usuarios'], 25)
+        self.assertEqual(plan.nivel_indicadores, 'COMPLETO')
         self.assertIsNone(plan.limites['vendas_mes'])
         self.assertTrue(AuditoriaSaaS.objects.filter(action='PLANO_CRIADO').exists())
 

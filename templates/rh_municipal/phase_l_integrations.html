@@ -1,0 +1,23 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Integrações oficiais{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div><span class="gp-eyebrow">CONECTIVIDADE GOVERNAMENTAL</span><h1>Integrações oficiais</h1>
+  <p>Preparação tenant-isolada para endpoints, versões e referências de credenciais.</p></div>
+</section>
+<section class="gp-foundation-note" role="note"><strong>Transmissões desativadas</strong>
+  <p>PNCP, TCE, SIAFIC, eSocial, SUS, e-SUS e CNES ainda não possuem adaptadores oficiais nesta fase. Salvar uma configuração não envia dados nem valida credenciais. Não informe senhas, tokens, certificados ou CSC.</p>
+</section>
+{% if integration_error %}<div class="gp-flash error" role="alert">{{ integration_error }}</div>{% endif %}
+{% if integration_form %}<section class="gp-panel"><div class="gp-panel-head"><div><h2>Preparar configuração</h2><p>A integração será salva inativa e vinculada ao módulo contratado.</p></div></div>
+  {% if integration_form.provedor.field.choices %}<form method="post" class="gp-form">{% csrf_token %}
+    {% for field in integration_form %}<div class="gp-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small class="gp-error">{{ error }}</small>{% endfor %}</div>{% endfor %}
+    <button class="gp-button gp-button-primary" type="submit">Salvar preparação</button>
+  </form>{% else %}<p class="gp-empty-inline">Nenhum módulo elegível e autorizado para configurar integrações.</p>{% endif %}
+</section>{% endif %}
+<section class="gp-panel"><div class="gp-panel-head"><div><h2>Configurações da Prefeitura</h2><p>Referências do cofre são mascaradas; nenhum segredo é exibido.</p></div></div>
+  {% if integration_rows %}<div class="gp-table-wrap"><table class="gp-table"><thead><tr><th>Sistema</th><th>Identificação</th><th>Endpoint</th><th>Versão</th><th>Ambiente</th><th>Credencial</th><th>Estado</th></tr></thead><tbody>
+    {% for row in integration_rows %}<tr><td>{{ row.provedor }}</td><td>{{ row.nome }}</td><td>{{ row.endpoint|default:'—' }}</td><td>{{ row.versao_api|default:'—' }}</td><td>{{ row.ambiente }}</td><td>{% if row.referencia_configurada %}Referência registrada{% else %}Pendente{% endif %}</td><td>Preparação · desativada</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p class="gp-empty-inline">Nenhuma configuração de integração disponível para os módulos e permissões atuais.</p>{% endif %}
+</section>
+{% endblock %}

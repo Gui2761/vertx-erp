@@ -59,7 +59,9 @@ class NewRoleSecurityTests(WorkforceData,TestCase):
             part=self.db['part'];part.imagem=doc
             with self.assertRaises(ValidationError): part.save()
         with tenant_context(self.a):ModuloOrganizacao.objects.create(codigo='documentos',habilitado=False)
-        self.assertEqual(self.client.get(reverse('operacao:documento_arquivo',args=[doc.pk])).status_code,403)
+        # A disabled GED module hides its resources as 404 so callers cannot
+        # enumerate whether a document exists in the tenant.
+        self.assertEqual(self.client.get(reverse('operacao:documento_arquivo',args=[doc.pk])).status_code,404)
 
     def test_inventory_notifications_update_resolve_without_erasing_read_state(self):
         with tenant_context(self.a):

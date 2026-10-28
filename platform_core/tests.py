@@ -197,15 +197,17 @@ class MultiTenantTests(TestCase):
 
     def test_home_login_e_redirecionamentos(self):
         response = self.client.get(reverse('platform_core:home'))
-        self.assertContains(response, 'MARCA EMPRESA A')
-        self.assertContains(response, 'Entrar no ERP Assistência')
-        self.assertNotContains(response, 'MARCA EMPRESA B')
+        self.assertRedirects(response, '/assistencia/')
+        selector = self.client.get(reverse('platform_core:home'), {'organizacoes': '1'})
+        self.assertContains(selector, 'MARCA EMPRESA A')
+        self.assertContains(selector, 'Entrar no ERP Assistência')
+        self.assertNotContains(selector, 'MARCA EMPRESA B')
         self.assertEqual(self.client.get('/').status_code, 302)
         self.admin_a.set_password('test-password')
         self.admin_a.save()
         self.client.logout()
         self.assertContains(self.client.get(reverse('contas:login')), 'VERTYX')
-        self.assertRedirects(self.client.post(reverse('contas:login'), {'username': self.admin_a.username, 'password': 'test-password'}), reverse('platform_core:home'))
+        self.assertRedirects(self.client.post(reverse('contas:login'), {'username': self.admin_a.username, 'password': 'test-password'}), '/assistencia/')
 
     def test_multiplas_organizacoes_selecao_e_perfil_independentes(self):
         membership = OrganizationMembership.objects.create(user=self.admin_a, organization=self.b, role='TECNICO')

@@ -8,6 +8,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include('commercial.urls')),
     path("vertyx/", include('platform_core.urls')),
+    path("gestao-publica/", include('rh_municipal.public_urls')),
     path("gestao-publica/rh/", include('rh_municipal.urls')),
     path("", include("core.urls")),
     path("contas/", include("contas.urls")),

@@ -1,0 +1,49 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% load static %}
+{% block title %}Saúde SUS Municipal{% endblock %}
+{% block head_extra %}<link rel="manifest" href="{% url 'rh_municipal_public:saude_manifest' %}">{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div><div class="gp-eyebrow">VERTYX · VERTICAL MUNICIPAL</div><h1>Saúde SUS</h1><p>Operação municipal com acesso limitado ao produto, às permissões e ao escopo do profissional.</p></div>
+  {% if can_health_patient_manage %}<a class="gp-button" href="{% url 'rh_municipal_public:saude_patient_create' %}">Cadastrar cidadão</a>{% endif %}
+</section>
+<section class="gp-card-grid" aria-label="Indicadores agregados de saúde">
+  <article class="gp-metric"><span class="gp-metric-label">Unidades configuradas</span><strong class="gp-count">{{ summary.units }}</strong><span class="gp-chart-foot">Somente unidades no seu escopo</span></article>
+  <article class="gp-metric"><span class="gp-metric-label">Equipes ativas</span><strong class="gp-count">{{ summary.teams }}</strong><span class="gp-chart-foot">Dados agregados</span></article>
+  <article class="gp-metric"><span class="gp-metric-label">Atendimentos hoje</span><strong class="gp-count">{{ summary.appointments_today }}</strong><span class="gp-chart-foot">Sem identificação de pacientes</span></article>
+  <article class="gp-metric"><span class="gp-metric-label">Dispensações hoje</span><strong class="gp-count">{{ summary.dispensations_today }}</strong><span class="gp-chart-foot">Estoque municipal</span></article>
+</section>
+<section class="gp-content-grid">
+  <article class="gp-form-panel"><div class="gp-module-head"><div><div class="gp-eyebrow">NÚCLEO DISPONÍVEL</div><h2>Domínios de saúde</h2></div></div>
+    <div class="gp-module-list">
+      <div class="gp-module-row"><strong>Unidades, equipes e profissionais</strong><span>Reutiliza unidades municipais e fichas de servidores.</span></div>
+      <div class="gp-module-row"><strong>Cidadãos, agenda e atendimento</strong><span>Identidade de saúde municipal isolada por Prefeitura.</span></div>
+      <div class="gp-module-row"><strong>Prontuário e prescrição</strong><span>Conteúdo cifrado; a leitura exige permissão clínica e auditoria.</span></div>
+      <div class="gp-module-row"><strong>ACS/ACE, farmácia e regulação</strong><span>Inclui base para visitas, lotes FEFO, dispensação e fila auditada.</span></div>
+      <div class="gp-module-row"><strong>Vigilância, TFD, transporte e produção</strong><span>Fundação operacional. Integrações oficiais ainda não estão habilitadas.</span></div>
+    </div>
+  </article>
+  <article class="gp-form-panel"><div class="gp-eyebrow">SEGURANÇA E HOMOLOGAÇÃO</div><h2>Dados protegidos</h2>
+    <p>O painel apresenta somente contagens agregadas. O conteúdo clínico não é listado aqui e cada consulta ao prontuário gera auditoria.</p>
+    {% if health_encryption_ready %}<div class="gp-info">Cifragem de dados clínicos configurada para este ambiente.</div>{% else %}<div class="gp-error">Registro clínico bloqueado: falta provisionar a chave de cifragem da Saúde no ambiente local. Nenhum conteúdo será salvo em texto aberto.</div>{% endif %}
+    <div class="gp-foundation-note"><strong>Integrações pendentes:</strong> e-SUS, CNES, transmissão AIH/APAC e demais serviços oficiais não estão conectados. Esta versão não declara conformidade clínica/legal.</div>
+  </article>
+</section>
+<section class="gp-panel gp-quick-panel" aria-label="Atalhos de operação da Saúde">
+  <div class="gp-panel-head"><div><div class="gp-eyebrow">OPERAÇÃO</div><h2>Cadastros e agenda</h2></div></div>
+  <div class="gp-shortcuts">
+    {% if can_health_units %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_registry' 'unidades' %}"><span>⌂</span><strong>Unidades</strong><small>Vincular unidade municipal à Saúde</small><b>›</b></a>{% endif %}
+    {% if can_health_teams %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_registry' 'equipes' %}"><span>♧</span><strong>Equipes</strong><small>Configurar equipes e microáreas</small><b>›</b></a>{% endif %}
+    {% if can_health_professionals %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_registry' 'profissionais' %}"><span>♙</span><strong>Profissionais</strong><small>Vincular servidores às unidades</small><b>›</b></a>{% endif %}
+    {% if can_health_appointments %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_registry' 'agendas' %}"><span>◷</span><strong>Agendas</strong><small>Definir capacidade e horários</small><b>›</b></a><a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_registry' 'atendimentos' %}"><span>＋</span><strong>Agendamentos</strong><small>Agendar cidadão em vaga disponível</small><b>›</b></a>{% endif %}
+    {% if can_health_patient_manage %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_patient_create' %}"><span>＋</span><strong>Cidadãos</strong><small>Cadastrar cidadão com unidade de referência</small><b>›</b></a>{% endif %}
+    {% if can_health_field %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_field_visits' %}"><span>⌖</span><strong>Visitas ACS/ACE</strong><small>Registro de campo com observações protegidas</small><b>›</b></a>{% endif %}
+    {% if can_health_sanitary or can_health_epidemiology %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_surveillance' %}"><span>◉</span><strong>Vigilância</strong><small>Inspeções e notificações restritas</small><b>›</b></a>{% endif %}
+    {% if can_health_pharmacy %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_pharmacy' %}"><span>✚</span><strong>Farmácia</strong><small>Catálogo, lotes e dispensação FEFO</small><b>›</b></a>{% endif %}
+    {% if can_health_tfd %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_tfd' %}"><span>⇄</span><strong>TFD</strong><small>Solicitações protegidas e decisões auditadas</small><b>›</b></a>{% endif %}
+    {% if can_health_production %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_production' %}"><span>▥</span><strong>Produção SUS</strong><small>Registros locais sem transmissão oficial</small><b>›</b></a>{% endif %}
+    {% if can_health_regulation %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_regulation' %}"><span>⇄</span><strong>Regulação</strong><small>Fila, vagas, agendamento e atendimento</small><b>›</b></a>{% endif %}
+  </div>
+</section>
+{% endblock %}
+{% block extra_scripts %}<script>if('serviceWorker' in navigator){navigator.serviceWorker.register("{% url 'rh_municipal_public:saude_worker' %}",{scope:'/gestao-publica/saude/'}).catch(()=>{});}</script>{% endblock %}

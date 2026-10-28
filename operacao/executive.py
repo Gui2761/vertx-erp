@@ -16,12 +16,23 @@ class PeriodForm(forms.Form):
     inicio=forms.DateField(required=False,widget=forms.DateInput(attrs={'type':'date','class':'form-control'},format='%Y-%m-%d'))
     fim=forms.DateField(required=False,widget=forms.DateInput(attrs={'type':'date','class':'form-control'},format='%Y-%m-%d'))
     grafico=forms.ChoiceField(required=False,choices=[('7','7 dias'),('30','30 dias'),('3M','3 meses'),('6M','6 meses'),('12M','12 meses')])
+    def __init__(self, *args, analytics_level='COMPLETO', **kwargs):
+        self.analytics_level = analytics_level or 'BASICO'
+        super().__init__(*args, **kwargs)
+        if self.analytics_level == 'BASICO':
+            self.fields['periodo'].choices = [('HOJE','Hoje'),('SEMANA','Esta semana'),('MES','Este mês')]
+            self.fields['inicio'].required = False
+            self.fields['fim'].required = False
+            self.fields['grafico'].choices = [('7','7 dias'),('30','30 dias')]
+        elif self.analytics_level == 'AVANCADO':
+            self.fields['grafico'].choices = [('7','7 dias'),('30','30 dias'),('3M','3 meses'),('6M','6 meses')]
     def clean(self):
         data=super().clean()
         if data.get('periodo')=='PERSONALIZADO' and (not data.get('inicio') or not data.get('fim')):
             raise forms.ValidationError('Informe início e fim do período personalizado.')
-        if data.get('inicio') and data.get('fim') and (data['fim'] < data['inicio'] or (data['fim']-data['inicio']).days>366):
-            raise forms.ValidationError('Período deve ter até 366 dias e fim posterior ao início.')
+        max_days = 180 if self.analytics_level == 'AVANCADO' else 366
+        if data.get('inicio') and data.get('fim') and (data['fim'] < data['inicio'] or (data['fim']-data['inicio']).days>max_days):
+            raise forms.ValidationError(f'Período deve ter até {max_days} dias e fim posterior ao início.')
         return data
 
 def dates(form):
@@ -68,11 +79,55 @@ def charts(start,end,interval):
             row[key+'_width']=round(100*row[key]/maximum)
     return periods
 
+
+def sales_chart(start, end, interval):
+    """Net confirmed sales by sale date, with formal returns shown in their event period."""
+    periods=[]
+    monthly=interval.endswith('M')
+    date=start.replace(day=1) if monthly else start
+    while date<=end:
+        until=min(end,date+relativedelta(months=1)-timezone.timedelta(days=1)) if monthly else date
+        periods.append({'inicio':max(date,start),'fim':until,'label':date.strftime('%m/%Y' if monthly else '%d/%m'),'vendas':g.ZERO})
+        date=date+relativedelta(months=1) if monthly else date+timezone.timedelta(days=1)
+    if not periods:
+        return periods
+    confirmed=m.Venda.objects.filter(status__in=['CONFIRMADA','FINALIZADA','PARCIALMENTE_DEVOLVIDA','DEVOLVIDA']).filter(
+        Q(finalizada_em__date__range=(start,end)) |
+        Q(finalizada_em__isnull=True,status='CONFIRMADA',criado_em__date__range=(start,end))
+    ).prefetch_related('devolucoes')
+    returns=m.DevolucaoVenda.objects.filter(criado_em__date__range=(start,end))
+    for sale in confirmed:
+        # DateField grouping follows the active business timezone. Calling
+        # datetime.date() directly on an aware UTC timestamp can move a sale
+        # into tomorrow (for example, 21:00 in Sao Paulo is 00:00 UTC).
+        sale_date=timezone.localtime(sale.finalizada_em).date() if sale.finalizada_em else timezone.localtime(sale.criado_em).date()
+        value=Decimal(sale.snapshot['total']) if sale.snapshot else sale.total
+        for row in periods:
+            if row['inicio']<=sale_date<=row['fim']:
+                row['vendas']+=value
+                break
+    for returned in returns:
+        return_date=timezone.localtime(returned.criado_em).date()
+        for row in periods:
+            if row['inicio']<=return_date<=row['fim']:
+                row['vendas']-=returned.valor
+                break
+    maximum=max((max(row['vendas'],g.ZERO) for row in periods),default=g.ZERO) or Decimal('1')
+    for index,row in enumerate(periods):
+        row['x']=round(30+index*580/max(len(periods)-1,1))
+        row['height']=round(150*max(row['vendas'],g.ZERO)/maximum)
+        row['y']=175-row['height']
+    return periods
+
 def context(request, form, orders):
     start,end=dates(form)
     today=timezone.localdate()
     now=timezone.localtime()
-    ctx={'executive':True,'period_form':form,'period_start':start,'period_end':end,'greeting':'Bom dia' if now.hour<12 else 'Boa tarde' if now.hour<18 else 'Boa noite'}
+    from platform_core.modules import analytics_level, analytics_at_least, module_enabled
+    level=analytics_level(erp_code='assistencia')
+    ctx={'executive':True,'analytics_level':level,'advanced_analytics':analytics_at_least('AVANCADO', erp_code='assistencia'),
+         'complete_analytics':analytics_at_least('COMPLETO', erp_code='assistencia'),'period_form':form,'period_start':start,
+         'period_end':end,'greeting':'Bom dia' if now.hour<12 else 'Boa tarde' if now.hour<18 else 'Boa noite'}
     ctx['agenda_hoje']=orders.filter(agendada_para__date=today).select_related('cliente','unidade','equipamento').order_by('agendada_para')[:12]
     completed=orders.filter(status__in=['FINALIZADA','APROVADA','FATURADA'],conclusao__date__range=(start,end))
     ctx['assistance_completed']={'preventivas':completed.filter(tipo_atendimento='PREVENTIVA').count(),'corretivas':completed.filter(tipo_atendimento='CORRETIVA').count(),'total':completed.count()}
@@ -98,6 +153,30 @@ def context(request, form, orders):
     confirmed=list(m.Venda.objects.filter(status__in=['CONFIRMADA','FINALIZADA','PARCIALMENTE_DEVOLVIDA','DEVOLVIDA'],criado_em__date__range=(start,end)).prefetch_related('itens','devolucoes'))
     sales_value=sum(((Decimal(sale.snapshot['total']) if sale.snapshot else sale.total)-sum((row.valor for row in sale.devolucoes.all()),g.ZERO) for sale in confirmed),g.ZERO)
     ctx['commercial']={'abertos':open_quotes.count(),'aprovados':approved.count(),'vendas':len(confirmed),'valor':sales_value,'ticket':sales_value/len(confirmed) if confirmed else g.ZERO,'conversao':round(100*approved.count()/quotes.count(),1) if quotes.exists() else 0,'base':quotes.count()}
+    interval=form.cleaned_data.get('grafico') or '30'
+    chart_start=today.replace(day=1)-relativedelta(months=int(interval[:-1])-1) if interval.endswith('M') else today-timezone.timedelta(days=int(interval)-1)
+    if module_enabled('pdv'):
+        ctx['sales_chart']=sales_chart(chart_start,today,interval)
+        ctx['sales_chart_total']=sum((row['vendas'] for row in ctx['sales_chart']),g.ZERO)
+        if ctx['advanced_analytics']:
+            span=(today-chart_start).days+1
+            previous_end=chart_start-timezone.timedelta(days=1)
+            previous_start=previous_end-timezone.timedelta(days=span-1)
+            previous=sales_chart(previous_start,previous_end,interval)
+            ctx['sales_comparison_previous']=sum((row['vendas'] for row in previous),g.ZERO)
+            prior=ctx['sales_comparison_previous']
+            ctx['sales_comparison_percent']=round((ctx['sales_chart_total']-prior)*100/abs(prior),1) if prior else None
+    stock_chart=[]
+    ctx['stock_chart_enabled'] = module_enabled('estoque_basico')
+    if ctx['stock_chart_enabled']:
+        for part in g.Peca.objects.filter(ativo=True).select_related('fornecedor','categoria'):
+            data=metrics(part)
+            stock_chart.append({'label':part.sku or part.descricao[:16],'disponivel':data['disponivel']})
+        stock_chart=sorted(stock_chart,key=lambda row:row['disponivel'],reverse=True)[:10]
+        maximum=max((row['disponivel'] for row in stock_chart),default=Decimal('1')) or Decimal('1')
+        for row in stock_chart:
+            row['width']=round(100*row['disponivel']/maximum)
+    ctx['stock_chart']=stock_chart
     if allowed(request.user,'financeiro'):
         ledger=g.Lancamento.objects.filter(status__in=['PENDENTE','VENCIDO'])
         due=lambda kind:sum((row.saldo for row in ledger.filter(tipo=kind,vencimento=today)),g.ZERO)
@@ -115,8 +194,16 @@ def context(request, form, orders):
         ctx['cash_chart']=charts(chart_start,today,interval)
         ctx['cash_in_points']=' '.join(f'{row["x"]},{row["y_entrada"]}' for row in ctx['cash_chart'])
         ctx['cash_out_points']=' '.join(f'{row["x"]},{row["y_saida"]}' for row in ctx['cash_chart'])
-        month_start=today.replace(day=1)-relativedelta(months=11)
-        ctx['revenue_chart']=charts(month_start,today,'12M')
+        ctx['revenue_chart']=charts(chart_start,today,interval)
+        ctx['revenue_chart_total']=sum((row['faturamento'] for row in ctx['revenue_chart']),g.ZERO)
+        if ctx['advanced_analytics']:
+            span=(today-chart_start).days+1
+            previous_end=chart_start-timezone.timedelta(days=1)
+            previous_start=previous_end-timezone.timedelta(days=span-1)
+            previous_revenue=charts(previous_start,previous_end,interval)
+            ctx['revenue_comparison_previous']=sum((row['faturamento'] for row in previous_revenue),g.ZERO)
+            prior=ctx['revenue_comparison_previous']
+            ctx['revenue_comparison_percent']=round((ctx['revenue_chart_total']-prior)*100/abs(prior),1) if prior else None
         entries=g.Lancamento.objects.filter(tipo='RECEBER',data_emissao__range=(start,end)).exclude(status='CANCELADO').select_related('contrato','orcamento','origem_raiz__contrato','origem_raiz__orcamento','origem_raiz__ordem').prefetch_related('orcamento__itens','origem_raiz__orcamento__itens')
         totals={'Serviços':g.ZERO,'Produtos':g.ZERO,'Contratos':g.ZERO,'Locações':g.ZERO,'Sem classificação':g.ZERO}
         sale_accounts=set(m.Venda.objects.exclude(conta=None).values_list('conta_id',flat=True))

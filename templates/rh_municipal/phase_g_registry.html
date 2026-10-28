@@ -1,0 +1,53 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}{{ health_registry_title }}{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div><div class="gp-eyebrow">VERTYX · SAÚDE SUS</div><h1>{{ health_registry_title }}</h1>
+    <p>{{ subtitle }}</p></div>
+  <div class="gp-head-actions"><a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_home' %}">Voltar à Saúde</a></div>
+</section>
+<section class="gp-content-grid gp-admin-grid">
+  {% if can_manage_registry %}
+  <article class="gp-panel gp-form-panel">
+    <div class="gp-panel-head"><div><div class="gp-eyebrow">CADASTRO MUNICIPAL</div><h2>Novo registro</h2></div></div>
+    <p class="gp-muted">As opções são limitadas à organização e ao escopo do seu acesso.</p>
+    <form method="post" class="gp-form" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="gp-error">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="gp-form-grid">
+        {% for field in form %}
+          {% if field.field.widget.input_type == 'checkbox' %}
+            <label class="gp-toggle {% if field.name == 'servicos' %}gp-span-2{% endif %}" for="{{ field.id_for_label }}">{{ field }}<span>{{ field.label }}</span></label>
+          {% else %}
+            <label class="gp-field {% if field.name == 'servicos' %}gp-span-2{% endif %}" for="{{ field.id_for_label }}">
+              <span>{{ field.label }}{% if field.field.required %} <b aria-hidden="true">*</b>{% endif %}</span>
+              {{ field }}
+              {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+              {% for error in field.errors %}<small class="gp-field-error">{{ error }}</small>{% endfor %}
+            </label>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <div class="gp-actions"><button class="gp-button" type="submit">Salvar registro</button></div>
+    </form>
+  </article>
+  {% endif %}
+  <article class="gp-panel">
+    <div class="gp-panel-head"><div><div class="gp-eyebrow">DADOS NO SEU ESCOPO</div><h2>{{ rows|length }} registro(s) recente(s)</h2></div></div>
+    {% if rows %}
+      <div class="gp-table-wrap"><table class="gp-table"><thead><tr><th>Identificação</th><th>Detalhe</th><th>Vínculo</th><th>Situação</th>{% if registry == 'atendimentos' and can_manage_registry or registry == 'atendimentos' and can_health_records_sensitive %}<th>Ação</th>{% endif %}</tr></thead>
+        <tbody>{% for row in rows %}<tr>{% for value in row|slice:":4" %}<td>{{ value }}</td>{% endfor %}{% if registry == 'atendimentos' and can_manage_registry or registry == 'atendimentos' and can_health_records_sensitive %}<td>
+          {% if can_manage_registry and row.5 %}<form method="post" action="{% url 'rh_municipal_public:saude_appointment_transition' row.4 %}" class="gp-inline-form">{% csrf_token %}
+            <select class="gp-input" name="status" aria-label="Nova situação do atendimento">
+              {% if row.5 == 'AGENDADO' %}<option value="EM_ATENDIMENTO">Iniciar</option><option value="CANCELADO">Cancelar</option><option value="FALTOU">Registrar falta</option>{% else %}<option value="CONCLUIDO">Concluir</option><option value="CANCELADO">Cancelar</option>{% endif %}
+            </select>
+            <input class="gp-input" name="justification" maxlength="300" placeholder="Justificativa se cancelar/falta" aria-label="Justificativa">
+            <button class="gp-button gp-button-small" type="submit">Atualizar</button>
+          </form>{% elif can_manage_registry %}<span class="gp-muted">Sem transição</span>{% endif %}
+          {% if can_health_records_sensitive %}<a class="gp-button gp-button-light gp-button-small" href="{% url 'rh_municipal_public:saude_clinical_record' row.4 %}">Prontuário</a>{% endif %}
+        </td>{% endif %}</tr>{% endfor %}</tbody>
+      </table></div>
+    {% else %}<div class="gp-empty-inline">Nenhum registro disponível neste escopo.</div>{% endif %}
+  </article>
+</section>
+{% endblock %}

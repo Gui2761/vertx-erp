@@ -315,7 +315,23 @@ class ImportConcurrencyTests(ImportData,TransactionTestCase):
 class ImportMigrationPreservationTests(ImportData,TransactionTestCase):
     def test_additive_migration_preserves_previous_tables_rows(self):
         from django.db.migrations.executor import MigrationExecutor
+        from platform_core.models import ERPCatalog
         self.assertEqual(connection.settings_dict['HOST'],'127.0.0.1');self.assertTrue(connection.settings_dict['NAME'].startswith('test_'))
+        # TransactionTestCase flushes migration-seeded catalog rows. Restore
+        # the public product required by rh_municipal.0004 before replaying the
+        # forward migration chain; production installs receive it from
+        # platform_core.0014.
+        ERPCatalog.objects.get_or_create(
+            code='gestao-publica',
+            defaults={
+                'name': 'VERTYX Gestão Pública',
+                'description': 'Estrutura e gestão municipal.',
+                'active': True,
+                'operational': True,
+                'public_path': '/gestao-publica/',
+                'entry_path': '/gestao-publica/',
+            },
+        )
         MigrationExecutor(connection).migrate([('operacao','0021_nfce_response_code')])
         try:
             self.setup_import()

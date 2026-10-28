@@ -12,6 +12,7 @@ from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 from platform_core.context import tenant_context
 from platform_core.models import OrganizationMembership, MembershipERP, PlatformAudit
+from platform_core.saas_models import AssinaturaSaaS, PlanoSaaS
 from contas.models import Usuario, Tecnico
 from . import models as m, workforce as w
 from .employee_forms import FuncionarioForm
@@ -94,6 +95,23 @@ class EmployeeCentralTests(EmployeeFixture, TestCase):
             actions = set(PlatformAudit.objects.filter(organization=self.a).values_list('action', flat=True))
             self.assertTrue({'RH_CONTA_CRIADA', 'RH_JORNADA_CRIADA', 'RH_TECNICO_VINCULADO', 'RH_CADASTRO_SALVO'} <= actions)
             self.assertNotIn(self.password, str(list(PlatformAudit.objects.values_list('changes', flat=True))))
+
+    def test_new_employee_membership_is_blocked_at_plan_user_quota(self):
+        current = OrganizationMembership.objects.filter(organization=self.a, status='ATIVO').count()
+        plan = PlanoSaaS.objects.create(
+            slug='employee-user-quota-test', nome='Quota funcionários',
+            modulos=['assistencia', 'rh_asst_completo'],
+            limites={'usuarios': current, 'filiais': None, 'vendas_mes': None,
+                     'ordens_mes': None, 'armazenamento_mb': None},
+        )
+        AssinaturaSaaS.objects.create(organization=self.a, plano=plan)
+        response = self.client.post(self.create_url(), self.payload(
+            matricula='RH-LIMITE', username='rh-user-quota-limit',
+        ))
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(response, 'Limite de usuários do plano atingido.', status_code=400)
+        self.assertFalse(Usuario.objects.filter(username='rh-user-quota-limit').exists())
+        self.assertEqual(OrganizationMembership.objects.filter(organization=self.a, status='ATIVO').count(), current)
 
     def test_created_technician_login_pwa_and_my_timekeeping_use_new_journey(self):
         self.client.post(self.create_url(), self.payload())

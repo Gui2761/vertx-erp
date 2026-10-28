@@ -12,7 +12,7 @@ class CommerceData(Block2Fixtures):
         self.setup_operations()
         self.operator=self.user('pdv-bloco3',self.a,'PDV')
         with tenant_context(self.a):
-            self.cash=m.ContaBancaria.objects.create(nome='Caixa PDV',tipo='CAIXA')
+            self.cash=m.ContaBancaria.objects.create(nome='Caixa PDV',tipo='CAIXA',deposito_padrao=self.depot)
             self.bank=m.ContaBancaria.objects.create(nome='Banco PIX',tipo='BANCO')
             self.cash_method=g.FormaPagamento.objects.create(nome='Dinheiro PDV',tipo_pdv='DINHEIRO')
             self.pix=g.FormaPagamento.objects.create(nome='PIX PDV',tipo_pdv='PIX',conta_pdv=self.bank)
@@ -91,14 +91,19 @@ class CommerceTests(CommerceData,TestCase):
             self.assertEqual((g.Lancamento.objects.count(),m.Pagamento.objects.count()),(0,0))
             sale.refresh_from_db();self.assertEqual(sale.status,'RASCUNHO')
 
-    def test_payment_without_bank_is_tracked(self):
+    def test_payment_without_financial_account_is_rejected_without_writes(self):
         with tenant_context(self.a):
             self.pix.conta_pdv=None;self.pix.save();self.incoming(1)
             sale,item=self.sale()
-            sale=c.finalize(self.operator,sale.public_id,[{'forma':self.pix.pk,'valor':'10.00'}],uuid.uuid4())
-            payment=sale.pagamentos_pdv.get().pagamento
-            self.assertIsNone(payment.conta_id);self.assertEqual(payment.valor,10)
-            self.assertIn('Não bancarizado',payment.controle_caixa)
+            self.part.refresh_from_db();stock_before=self.part.quantidade_atual
+            finance_before=g.Lancamento.objects.count()
+            with self.assertRaises(ValidationError):
+                c.finalize(self.operator,sale.public_id,[{'forma':self.pix.pk,'valor':'10.00'}],uuid.uuid4())
+            sale.refresh_from_db();self.part.refresh_from_db()
+            self.assertEqual(sale.status,'RASCUNHO')
+            self.assertEqual(self.part.quantidade_atual,stock_before)
+            self.assertEqual((g.Lancamento.objects.count(),m.Pagamento.objects.count(),sale.pagamentos_pdv.count()),
+                             (finance_before,0,0))
 
     def test_closed_cash_blocks_writes_and_difference_requires_reason(self):
         with tenant_context(self.a):

@@ -38,7 +38,7 @@ def configuracao(request):
         if logo:
             from platform_core.saas_services import verificar_limite
             try:
-                verificar_limite(request.organization, 'armazenamento_mb', incremento=logo.size)
+                verificar_limite(request.organization, 'armazenamento_mb', incremento=logo.size, erp_code='assistencia')
             except ValidationError as exc:
                 company.add_error('logo', '; '.join(exc.messages))
                 return render(request, 'operacao/configuracao.html', {'company': company, 'params': params}, status=400)

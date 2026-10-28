@@ -1,0 +1,6 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Ajustes de ponto{% endblock %}
+{% block content %}
+<section class="gp-page-head"><div><span class="gp-eyebrow">PONTO DIGITAL · AUDITORIA</span><h1>Ajustes autorizados</h1><p>Uma correção cria novo evento manual com autoria, motivo e horário informado. A marcação original nunca é sobrescrita.</p></div></section>
+<section class="gp-panel gp-phase-c-form gp-phase-form-panel"><div class="gp-panel-head"><div><span class="gp-eyebrow">NOVO EVENTO MANUAL</span><h2>Registrar ajuste</h2></div><span class="gp-status">Ponto · Ajuste autorizado</span></div>{% if form.non_field_errors %}<div class="gp-error">{{ form.non_field_errors }}</div>{% endif %}<form method="post" class="gp-form">{% csrf_token %}<div class="gp-form-grid">{% for field in form %}<label class="gp-field"><span>{{ field.label }}</span>{{ field }}{% for error in field.errors %}<small class="gp-error-text">{{ error }}</small>{% endfor %}</label>{% endfor %}</div><div class="gp-info">O sistema valida novamente a Prefeitura, o escopo do servidor e a sequência de marcações do dia.</div><div class="gp-actions"><button class="gp-button primary" type="submit">Registrar ajuste auditado</button></div></form></section>
+{% endblock %}

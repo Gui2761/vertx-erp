@@ -22,6 +22,7 @@ class ReturnTests(CommerceData,TestCase):
             self.assertEqual(second.itens.get().movimento.custo_total,Decimal('14.66'))
             sale.refresh_from_db();self.assertEqual(sale.status,'DEVOLVIDA')
             self.assertEqual(g.Lancamento.objects.filter(tipo='PAGAR').count(),2)
+            self.assertEqual(list(g.Lancamento.objects.filter(tipo='PAGAR').order_by('pk').values_list('valor',flat=True)),[Decimal('9.66'),Decimal('19.33')])
             self.assertEqual(self.cash.saldo,Decimal('28.99'))
 
     def test_credit_return_abates_pending_without_fictional_payment(self):

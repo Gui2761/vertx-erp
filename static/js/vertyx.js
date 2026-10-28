@@ -1,4 +1,4 @@
-if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register(location.pathname.startsWith('/pdv/')?'/pdv/sw.js':location.pathname.startsWith('/vendedor/')?'/vendedor/sw.js':'/sw.js').catch(() => {
+if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register(document.body.classList.contains('vx-technician')?'/tecnico/sw.js':location.pathname.startsWith('/pdv/')?'/pdv/sw.js':location.pathname.startsWith('/vendedor/')?'/vendedor/sw.js':'/sw.js').catch(() => {
   const status=document.querySelector('[data-install-status]');
   if(status)status.textContent='Não foi possível ativar o service worker. Recarregue com conexão e confira o painel Application do navegador. As vendas continuam exigindo conexão.';
 });

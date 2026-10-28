@@ -443,7 +443,7 @@ class CentroCusto(CadastroFinanceiro):
 
 
 class FormaPagamento(CadastroFinanceiro):
-    tipo_pdv = models.CharField(max_length=12, blank=True, choices=[('DINHEIRO','Dinheiro'),('PIX','PIX informado'),('DEBITO','Débito'),('CREDITO','Crédito'),('BOLETO','Boleto'),('CREDIARIO','Crediário'),('OUTRO','Outro')])
+    tipo_pdv = models.CharField(max_length=20, blank=True, choices=[('DINHEIRO','Dinheiro'),('PIX','PIX'),('DEBITO','Cartão de débito'),('CREDITO','Cartão de crédito'),('BOLETO','Boleto'),('TRANSFERENCIA','Transferência bancária'),('CREDIARIO','Crediário'),('OUTRO','Outros')])
     conta_pdv = models.ForeignKey('operacao.ContaBancaria', on_delete=models.PROTECT, null=True, blank=True)
 
 

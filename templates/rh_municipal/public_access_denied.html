@@ -1,0 +1,4 @@
+{% extends 'commercial/base.html' %}
+{% block title %}Acesso municipal indisponível — VERTYX{% endblock %}
+{% block body_class %}municipal-login-page{% endblock %}
+{% block content %}<section class="gp-login-shell"><div class="gp-login-card"><span class="eyebrow">ACESSO MUNICIPAL</span><h1>Acesso não disponível</h1><p>Esta conta não possui um acesso ativo ao ERP Gestão Pública nesta organização. Peça ao administrador autorizado da Prefeitura para verificar seu vínculo, produto e permissões.</p><div class="hero-actions"><a class="button button-primary" href="{% url 'rh_municipal_public:login' %}">Entrar com outra conta</a><form method="post" action="{% url 'contas:logout' %}">{% csrf_token %}<button class="button button-outline" type="submit">Sair da conta</button></form></div><a class="gp-login-back" href="{% url 'commercial:home' %}">Voltar ao site VERTYX</a></div></section>{% endblock %}

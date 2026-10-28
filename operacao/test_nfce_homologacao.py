@@ -424,8 +424,23 @@ class NFCeConcurrencyTests(NFCeData,TransactionTestCase):
 class NFCeMigrationPreservationTests(FiscalData,TransactionTestCase):
     def test_0020_preserves_all_old_columns_rows_and_phase1_document(self):
         from django.db.migrations.executor import MigrationExecutor
+        from platform_core.models import ERPCatalog
         self.assertEqual(connection.settings_dict['HOST'],'127.0.0.1')
         self.assertTrue(connection.settings_dict['NAME'].startswith('test_'))
+        # TransactionTestCase flush removes one-time migration seed rows. The
+        # historical procurement migration expects the global product to be
+        # present when this test restores the latest schema.
+        ERPCatalog.objects.get_or_create(
+            code='gestao-publica',
+            defaults={
+                'name': 'VERTYX Gestão Pública',
+                'description': 'Estrutura e gestão municipal.',
+                'active': True,
+                'operational': True,
+                'public_path': '/gestao-publica/',
+                'entry_path': '/gestao-publica/',
+            },
+        )
         # Build the authorized Phase-1 fixture on the current schema. Do not
         # query current models after entering a historical schema: subsequent
         # additive fields (e.g. documentary proposal) do not exist there yet.

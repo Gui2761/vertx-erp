@@ -1,4 +1,5 @@
 """Seller experience over official PDV, personnel and notification records."""
+import logging
 import uuid
 from django import forms
 from django.contrib import messages
@@ -35,6 +36,8 @@ class GoalForm(forms.ModelForm):
         super().__init__(*args,**kwargs)
         self.fields['vendedor'].queryset=Usuario.objects.filter(is_active=True,memberships__organization=current_organization(),memberships__status='ATIVO',memberships__role__in=['VENDEDOR','PDV']).distinct()
         for field in self.fields.values(): field.widget.attrs['class']='form-control'
+
+logger = logging.getLogger(__name__)
 
 def date_range(request):
     today=timezone.localdate()
@@ -120,19 +123,52 @@ def customer(request):
 @transaction.atomic
 def terminal(request):
     require_capability(request.user,'pdv')
+    opening_error = None
+    opening_conta = ''
+    opening_contado = ''
+    opening_request_id = uuid.uuid4()
+    def report_operation_error(error):
+        nonlocal opening_error, opening_conta, opening_contado, opening_request_id
+        if request.POST.get('action') != 'abrir':
+            messages.error(request, error)
+            return
+        # Keep the user's values visible so a retry is informed and idempotent.
+        opening_error = error
+        opening_conta = request.POST.get('conta', '')
+        opening_contado = request.POST.get('contado', '')
+        try:
+            opening_request_id = uuid.UUID(str(request.POST.get('request_id', '')))
+        except (ValueError, TypeError, AttributeError):
+            opening_request_id = uuid.uuid4()
     if request.method=='POST':
         try:
             if request.POST.get('action')=='abrir':
-                c.open_cash(request.user,int(request.POST['conta']),request.POST['contado'],request.POST['request_id'])
+                try:
+                    account_id = int(request.POST.get('conta', ''))
+                except (TypeError, ValueError):
+                    raise ValidationError('Selecione um caixa válido e tente novamente.') from None
+                c.open_cash(request.user,account_id,request.POST.get('contado'),request.POST.get('request_id'))
                 return redirect('operacao:pdv_home')
             if request.POST.get('action')=='venda':
-                sale=c.new_sale(request.user,request.POST['caixa'],int(request.POST['deposito']),request_id=request.POST['request_id'])
+                sale=c.new_sale(request.user,request.POST['caixa'],request_id=request.POST['request_id'])
                 return redirect('operacao:pdv_sale',public_id=sale.public_id)
             raise ValidationError('Operação inválida.')
-        except (ValidationError,ValueError,KeyError,ObjectDoesNotExist) as exc:
-            messages.error(request,'; '.join(exc.messages) if isinstance(exc,ValidationError) else 'Revise os dados da operação.')
+        except ValidationError as exc:
+            report_operation_error('; '.join(exc.messages))
+        except KeyError as exc:
+            # Keep the diagnostic useful without logging request values, CSRF
+            # material, or the idempotency token.
+            missing = str(exc.args[0]) if exc.args else 'desconhecido'
+            logger.warning('PDV opening rejected: incomplete form; field=%s organization_id=%s user_id=%s', missing, getattr(current_organization(), 'pk', None), request.user.pk)
+            report_operation_error(f'O formulário de abertura chegou incompleto (campo {missing}). Atualize a página e tente novamente.')
+        except ValueError:
+            logger.warning('PDV opening rejected: invalid identifier; organization_id=%s user_id=%s', getattr(current_organization(), 'pk', None), request.user.pk)
+            report_operation_error('Não foi possível interpretar o caixa selecionado. Atualize a página, selecione o caixa novamente e tente.')
+        except ObjectDoesNotExist as exc:
+            logger.warning('PDV opening rejected: scoped record missing; exception_type=%s organization_id=%s user_id=%s', type(exc).__name__, getattr(current_organization(), 'pk', None), request.user.pk)
+            report_operation_error('O caixa ou um vínculo necessário não está disponível nesta organização. Atualize a página e confira o cadastro do caixa.')
     sessions=m.SessaoCaixa.objects.filter(operador=request.user,fechado_em__isnull=True).select_related('conta')
-    return render(request,'operacao/seller_terminal.html',{'sessions':sessions,'contas':m.ContaBancaria.objects.filter(ativo=True,tipo='CAIXA'),'depositos':m.Deposito.objects.filter(ativo=True),'request_id':uuid.uuid4(),'drafts':m.Venda.objects.filter(sessao_caixa__operador=request.user,status='RASCUNHO',sessao_caixa__fechado_em__isnull=True).order_by('-pk')[:10],'cash_supervisor':has_capability(request.user,'caixa_supervisor')})
+    return render(request,'operacao/seller_terminal.html',{'sessions':sessions,'contas':m.ContaBancaria.objects.filter(ativo=True,tipo='CAIXA',deposito_padrao__ativo=True,deposito_padrao__organization_id=current_organization().pk).select_related('deposito_padrao'),'request_id':uuid.uuid4(),'opening_error':opening_error,'opening_conta':opening_conta,'opening_contado':opening_contado,'opening_request_id':opening_request_id,'drafts':m.Venda.objects.filter(sessao_caixa__operador=request.user,status='RASCUNHO',sessao_caixa__fechado_em__isnull=True).order_by('-pk')[:10],'cash_supervisor':has_capability(request.user,'caixa_supervisor')})
 
 def sale_context(request,sale,session):
     query=request.GET.get('q','').strip()[:100]

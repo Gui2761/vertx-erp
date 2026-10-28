@@ -30,7 +30,7 @@ class SellerData(CommerceData):
         self.other=self.user('other-seller',self.a,'VENDEDOR')
         with tenant_context(self.a):
             PermissaoMembership.objects.create(membership=OrganizationMembership.objects.get(user=self.other,organization=self.a),capacidade='operar_pdv',permitido=True)
-            self.other_cash=m.ContaBancaria.objects.create(nome='Outro caixa',tipo='CAIXA')
+            self.other_cash=m.ContaBancaria.objects.create(nome='Outro caixa',tipo='CAIXA',deposito_padrao=self.depot)
             self.other_session=c.open_cash(self.other,self.other_cash.pk,0,uuid.uuid4())
             self.other_sale=c.new_sale(self.other,self.other_session.public_id,self.depot.pk)
             self.schedule=m.JornadaTrabalho.objects.create(nome='Abertura 5x2',semana={str(i):{'entrada':'08:00','saida':'17:00','inicio_intervalo':'12:00','fim_intervalo':'13:00'} for i in range(5)})
@@ -58,10 +58,14 @@ class SellerPWATests(SellerData,TestCase):
     def test_menu_server_html_contains_only_sales_and_self_service(self):
         response=self.client.get('/vendedor/');self.assertEqual(response.status_code,200)
         html=response.content.decode();menu=html.split('id="menuPrincipal">')[1].split('</div>')[0]
-        for label in ['VERTYX VENDEDOR','Minha rotina','Minhas vendas','Minha meta','Minha comissão','Meu ponto','Hora extra','Notificações','Sair']:
-            self.assertIn(label,menu)
-        for text in ['Financeiro','Estoque','Compras','Contratos','Usuários','Configurações','RH','Voltar para VERTYX','disabled','display:none']:
-            self.assertNotIn(text,menu)
+        self.assertIn('VERTYX VENDEDOR',menu)
+        labels=re.findall(r'class="vx-nav-label">([^<]+)</span>',menu)
+        self.assertEqual(labels,['Minha rotina','Minhas vendas','Minha meta','Minha comissão','Meu ponto','Hora extra','Notificações'])
+        for path in ['/financeiro/','/estoque/','/compras/','/contratos/','/contas/usuarios/','/configuracoes/','/rh/funcionarios/','/assistencia/']:
+            self.assertNotIn(f'href="{path}',menu)
+        self.assertNotIn('disabled',menu)
+        self.assertNotIn('display:none',menu)
+        self.assertIn('action="/contas/logout/"',menu)
         self.assertIn('href="/vendedor/"',html)
         self.assertNotIn('href="/assistencia/"',html)
 

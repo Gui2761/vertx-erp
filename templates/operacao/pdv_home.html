@@ -1,1 +1,53 @@
-{% extends 'base.html' %}{% block content %}<main class="container-fluid"><h1>PDV · Caixas</h1><a href="{% url 'operacao:pdv_config' %}">Configuração de descontos e reservas</a><form method="post" class="card card-body my-3">{% csrf_token %}<input type="hidden" name="request_id" value="{{ request_id }}"><h2 class="h4">Abrir caixa</h2><label for="conta">Conta de caixa</label><select class="form-select" name="conta" id="conta" required>{% for conta in contas %}<option value="{{ conta.pk }}">{{ conta }}</option>{% endfor %}</select><label for="contado">Numerário contado na abertura</label><input class="form-control" id="contado" name="contado" type="number" min="0" step=".01" required value="0"><p>A contagem não gera receita nem modifica o saldo financeiro.</p><button class="btn btn-primary">Abrir caixa</button></form><div class="table-responsive"><table class="table"><thead><tr><th>Conta</th><th>Operador</th><th>Abertura</th><th>Situação</th></tr></thead><tbody>{% for row in sessions %}<tr><td><a href="{% url 'operacao:pdv_cash' row.public_id %}">{{ row.conta }}</a></td><td>{{ row.operador }}</td><td>{{ row.aberto_em }}</td><td>{% if row.fechado_em %}Fechado{% else %}Aberto{% endif %}</td></tr>{% endfor %}</tbody></table></div></main>{% endblock %}
+{% extends 'base.html' %}
+{% load l10n %}
+{% block title %}PDV · Caixas{% endblock %}
+{% block content %}
+<main class="container-fluid">
+  <header class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div><p class="text-primary fw-semibold mb-1">VERTYX PDV</p><h1>PDV · Caixas</h1><p class="text-muted mb-0">Gerencie sessões de caixa da organização atual.</p></div>
+    <a class="btn btn-outline-primary" href="{% url 'operacao:pdv_home' %}">Central do PDV</a>
+  </header>
+
+  {% if setup_needed or setup_missing_deposit %}
+  <section class="card border-primary mb-4" aria-labelledby="pdv-setup-title">
+    <div class="card-body">
+      <span class="badge text-bg-primary mb-2">Configuração inicial</span>
+      <h2 class="h4" id="pdv-setup-title">Prepare o PDV antes da primeira venda</h2>
+      <p>Esta orientação não cria caixas, depósitos, operadores ou movimentações. Faça cada cadastro quando estiver pronto.</p>
+      <ol class="mb-3">
+        {% if setup_needed %}<li class="mb-2"><strong>Cadastre uma conta de caixa e selecione seu depósito padrão.</strong> Em Bancos e caixa, crie uma conta do tipo <em>Caixa</em> e vincule um depósito ativo.<br><a href="/bancos/novo/">Cadastrar conta de caixa</a> · <a href="/bancos/?tipo=CAIXA">Consultar caixas cadastrados</a></li>{% endif %}
+        {% if setup_missing_deposit %}<li class="mb-2"><strong>Cadastre um depósito ativo</strong> para registrar de qual local os produtos serão baixados.<br><a href="/depositos/novo/">Cadastrar depósito</a></li>{% endif %}
+        {% if can_configure_operators %}<li><strong>Autorize os operadores individualmente.</strong> Na configuração de permissões, selecione a membership da organização e conceda <code>operar_pdv</code> somente a quem poderá vender.<br><a href="{% url 'platform_core:permissoes' %}">Configurar operadores</a></li>{% else %}<li>Um administrador da empresa precisa autorizar os operadores individualmente; o perfil de vendedor não concede acesso ao caixa por si só.</li>{% endif %}
+      </ol>
+      {% if setup_needed and not unconfigured_cash_accounts %}<p class="alert alert-warning mb-0">Nenhuma conta ativa do tipo Caixa com depósito padrão está disponível. Cadastre e configure uma para habilitar a abertura de sessão.</p>{% endif %}
+      {% if unconfigured_cash_accounts %}<p class="alert alert-warning">Há caixas sem depósito padrão. Eles não podem ser abertos para novas sessões até que um administrador configure o vínculo:</p><ul>{% for caixa in unconfigured_cash_accounts %}<li><a href="{% url 'operacao:banco_editar' caixa.pk %}">{{ caixa.nome }} — configurar depósito padrão</a></li>{% endfor %}</ul>{% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Cadastros do PDV">
+    {% if can_manage_cash_accounts %}<a class="btn btn-outline-primary" href="/bancos/?tipo=CAIXA">Gerenciar caixas</a><a class="btn btn-outline-primary" href="/bancos/novo/">Cadastrar caixa</a><a class="btn btn-outline-primary" href="{% url 'gestao:forma_pagamento_lista' %}">Formas de pagamento</a>{% endif %}
+    {% if can_manage_deposits %}<a class="btn btn-outline-primary" href="/depositos/">Gerenciar depósitos</a>{% endif %}
+    {% if can_configure_operators %}<a class="btn btn-outline-primary" href="{% url 'platform_core:permissoes' %}">Gerenciar operadores</a><a class="btn btn-outline-primary" href="{% url 'operacao:pdv_config' %}">Configurações do PDV</a>{% endif %}
+    {% if can_manage_cash_accounts %}<a class="btn btn-outline-primary" href="{% url 'operacao:pdv_movements' %}">Movimentações</a>{% endif %}
+    {% if can_manage_cash_accounts %}<a class="btn btn-outline-primary" href="{% url 'operacao:pdv_history' %}">Histórico de vendas</a>{% endif %}
+  </nav>
+
+  <section class="card card-body mb-4" aria-labelledby="open-cash-title">
+    <h2 class="h4" id="open-cash-title">Abrir sessão de caixa</h2>
+    {% if contas %}
+      <form method="post" class="row g-3 align-items-end">{% csrf_token %}
+        <input type="hidden" name="request_id" value="{{ request_id }}">
+        <div class="col-md-5"><label class="form-label" for="conta">Caixa ativo · depósito padrão</label><select class="form-select" name="conta" id="conta" required>{% for conta in contas %}<option value="{{ conta.pk|unlocalize }}">{{ conta }} · {{ conta.deposito_padrao.nome }}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label class="form-label" for="contado">Numerário contado na abertura</label><input class="form-control" id="contado" name="contado" type="number" min="0" step=".01" required value="0"><div class="form-text">A contagem não gera receita nem altera saldo financeiro.</div></div>
+        <div class="col-md-3"><button class="btn btn-primary w-100">Abrir caixa</button></div>
+      </form>
+    {% else %}<p class="alert alert-info mb-0">Depois de cadastrar uma conta do tipo Caixa, ela aparecerá aqui. Nenhum caixa foi aberto automaticamente.</p>{% endif %}
+  </section>
+
+  <h2 class="h4">Sessões registradas</h2>
+  <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Conta</th><th>Operador</th><th>Abertura</th><th>Situação</th></tr></thead><tbody>
+  {% for row in sessions %}<tr><td><a href="{% url 'operacao:pdv_cash' row.public_id %}">{{ row.conta }}</a></td><td>{{ row.operador }}</td><td>{{ row.aberto_em|date:'d/m/Y H:i' }}</td><td>{% if row.fechado_em %}<span class="badge text-bg-secondary">Fechado</span>{% else %}<span class="badge text-bg-success">Aberto</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="4" class="text-muted">Nenhuma sessão de caixa registrada.</td></tr>{% endfor %}
+  </tbody></table></div>
+</main>
+{% endblock %}

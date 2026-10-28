@@ -46,6 +46,9 @@ class PagamentoVenda(RegistroImutavel):
     valor = models.DecimalField(max_digits=14,decimal_places=2,validators=[MinValueValidator(Decimal('.01'))])
     recebido = models.DecimalField(max_digits=14,decimal_places=2)
     troco = models.DecimalField(max_digits=14,decimal_places=2,default=0)
+    parcelas = models.PositiveSmallIntegerField(default=1,validators=[MinValueValidator(1),MaxValueValidator(12)])
+    class Meta:
+        constraints=[models.CheckConstraint(condition=models.Q(parcelas__gte=1,parcelas__lte=12),name='pagamento_venda_parcelas_1_12')]
 
 class DevolucaoVenda(RegistroImutavel):
     dados = models.JSONField(default=dict,editable=False)

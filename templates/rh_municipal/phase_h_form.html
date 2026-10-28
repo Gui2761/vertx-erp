@@ -1,0 +1,6 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="gp-page-head"><div><div class="gp-eyebrow">EDUCAÇÃO MUNICIPAL</div><h1>{{ title }}</h1><p>{{ subtitle }}</p></div><a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:educacao_home' %}">Voltar ao painel</a></section>
+<form class="gp-form-panel gp-form" method="post" novalidate>{% csrf_token %}{% if form.non_field_errors %}<div class="gp-error">{{ form.non_field_errors }}</div>{% endif %}<div class="gp-form-grid">{% for field in form %}<div class="gp-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<span class="gp-field-error">{{ error }}</span>{% endfor %}</div>{% endfor %}</div><div class="gp-foundation-note">A operação está limitada à Prefeitura e aos módulos contratados. Nenhum outro cadastro municipal é criado implicitamente.</div><div class="gp-actions"><button class="gp-button" type="submit">Salvar</button><a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:educacao_home' %}">Cancelar</a></div></form>
+{% endblock %}

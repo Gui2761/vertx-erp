@@ -63,6 +63,10 @@ def verify():
             executor.migrate(final)
             new = executor.loader.project_state(final).apps
             org = new.get_model('platform_core', 'Organization').objects.using(alias).get(slug='tecnolmed')
+            catalog = new.get_model('platform_core', 'ERPCatalog')
+            assistance = catalog.objects.using(alias).get(code='assistencia')
+            assert 'entry_path' in {field.name for field in catalog._meta.get_fields()}
+            assert assistance.entry_path == '/assistencia/'
             for app, name, original in [('clientes', 'Cliente', client), ('equipamentos', 'CategoriaEquipamento', category), ('equipamentos', 'Equipamento', equipment), ('contas', 'Tecnico', tech), ('ordens', 'OrdemServico', order)]:
                 item = new.get_model(app, name).objects.using(alias).get(pk=original.pk)
                 assert item.organization_id == org.pk

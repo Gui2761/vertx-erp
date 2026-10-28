@@ -1,0 +1,3 @@
+{% extends 'commercial/base.html' %}
+{% block title %}Administrador criado · VERTYX{% endblock %}
+{% block content %}<section class="section"><div class="container"><div class="success-card" style="max-width:680px;margin:48px auto;padding:clamp(24px,5vw,48px);border:1px solid #dfe7f2;border-radius:24px;background:#fff"><span class="eyebrow">CONFIGURAÇÃO CONCLUÍDA</span><h1>Administrador da Plataforma criado com sucesso.</h1><p>A senha não é exibida nem armazenada em texto simples. Entre com o e-mail ou usuário informado no cadastro.</p><a class="button button-primary" href="{% url 'contas:login' %}">Acessar VERTYX</a></div></div></section>{% endblock %}

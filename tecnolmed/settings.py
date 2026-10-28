@@ -13,6 +13,12 @@ DEBUG = config("DEBUG", default=not bool(RENDER_EXTERNAL_HOSTNAME), cast=bool)
 SECRET_KEY = config("SECRET_KEY", default="dev-secret-key-nao-use-em-producao" if DEBUG else '')
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1" if DEBUG else '', cast=Csv())
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+# Optional one-time bootstrap gate for the first VERTYX platform administrator.
+# Keep this value in the process environment/secret store, never in source control.
+PLATFORM_BOOTSTRAP_TOKEN = config('PLATFORM_BOOTSTRAP_TOKEN', default='')
+# Optional one-time bootstrap gate for the first VERTYX platform administrator.
+# Keep this value in the process environment/secret store, never in source control.
+PLATFORM_BOOTSTRAP_TOKEN = config('PLATFORM_BOOTSTRAP_TOKEN', default='')
 
 # O Render injeta automaticamente o nome público do serviço nesta variável;
 # adicionamos aos hosts/origens confiáveis sem precisar editar nada manualmente.

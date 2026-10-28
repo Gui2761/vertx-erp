@@ -238,7 +238,9 @@ class TechnicianPWATests(Block2Fixtures, TestCase):
         response=self.client.post(self.url('contas:logout'))
         self.assertEqual(response['Cache-Control'],'private, no-store')
         response=self.client.post(self.url('contas:login'),{'username':self.admin.username,'password':'synthetic-local-test-only'})
-        self.assertRedirects(response,self.url('platform_core:home'))
+        # A tenant with exactly one authorized ERP now lands in that product;
+        # the organization/product selector is only needed for multiple apps.
+        self.assertRedirects(response,'/assistencia/')
         self.assertEqual(self.client.get(self.url('gestao:financeiro')).status_code,200)
         self.client.post(self.url('contas:logout'))
         self.client.post(self.url('contas:login'),{'username':self.tech.username,'password':'synthetic-local-test-only'})
@@ -247,7 +249,9 @@ class TechnicianPWATests(Block2Fixtures, TestCase):
     def test_organization_switch_recomputes_role_without_trusting_previous_session(self):
         member=OrganizationMembership.objects.create(user=self.tech,organization=self.b,role='GESTOR')
         MembershipERP.objects.create(membership=member,erp=self.erp)
-        self.assertRedirects(self.client.post(self.url('platform_core:select_organization'),{'organization':str(self.b.public_id)}),self.url('platform_core:home'))
+        selected=self.client.post(self.url('platform_core:select_organization'),{'organization':str(self.b.public_id)})
+        self.assertRedirects(selected,self.url('platform_core:home'),fetch_redirect_response=False)
+        self.assertRedirects(self.client.get(self.url('platform_core:home')),'/assistencia/')
         self.assertEqual(self.client.get(self.url('gestao:financeiro')).status_code,200)
         manager_menu = self.menu_html(self.client.get(self.url('core:painel')))
         self.assertIn('href="/financeiro/"', manager_menu)

@@ -27,8 +27,21 @@ def seller_manifest(request):
     return response
 
 
+def technician_manifest(request):
+    """Give the field technician app its own install identity and scope."""
+    data=json.loads(manifest(request).content)
+    data.update(
+        id='/tecnico/', name='VERTYX Técnico', short_name='VERTYX Técnico',
+        start_url='/tecnico/', scope='/tecnico/',
+        description='Atendimentos e rotina operacional do técnico VERTYX.',
+    )
+    response=JsonResponse(data,content_type='application/manifest+json')
+    response['Cache-Control']='no-cache'
+    return response
+
+
 def scoped_worker(request,app):
-    assert app in {'pdv','vendedor'}
+    assert app in {'pdv','vendedor','tecnico'}
     response=HttpResponse((Path(settings.BASE_DIR)/f'static/pwa/{app}-sw.js').read_text(encoding='utf-8'),content_type='application/javascript')
     response['Service-Worker-Allowed']=f'/{app}/'
     response['Cache-Control']='no-cache'

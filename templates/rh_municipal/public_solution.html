@@ -1,0 +1,46 @@
+{% extends 'commercial/base.html' %}
+{% load static %}
+{% block title %}VERTYX Gestão Pública — Gestão inteligente para Prefeituras{% endblock %}
+{% block body_class %}municipal-solution-page{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'css/gestao-publica-commercial.css' %}">{% endblock %}
+{% block content %}
+<section class="gp-public-hero">
+  <div class="container gp-public-hero-grid">
+    <div class="gp-public-copy">
+      <span class="eyebrow pill"><span class="status-dot"></span> VERTYX · GESTÃO PÚBLICA</span>
+      <h1>Gestão inteligente para <em>Prefeituras.</em></h1>
+      <p>Uma base integrada para organizar a estrutura municipal, os acessos profissionais e os indicadores da Prefeitura, com informações limitadas ao contrato e às permissões de cada pessoa.</p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="#solucao">Conhecer a solução <svg aria-hidden="true"><use href="#i-arrow"></use></svg></a>
+        <a class="button button-outline" href="{% url 'rh_municipal_public:login' %}">Entrar no ERP <svg aria-hidden="true"><use href="#i-arrow"></use></svg></a>
+      </div>
+      <div class="gp-public-note"><svg aria-hidden="true"><use href="#i-check"></use></svg> Acesso pelo computador, tablet ou celular. A instalação PWA está disponível para a área autenticada.</div>
+    </div>
+    <div class="gp-public-visual" aria-label="Visão da estrutura municipal no VERTYX">
+      <div class="gp-public-orbit"></div>
+      <div class="gp-dashboard-card">
+        <div class="gp-dashboard-top"><span class="gp-mini-brand"><b>V</b> VERTYX</span><span class="gp-demo-tag">GESTÃO PÚBLICA</span></div>
+        <div class="gp-dashboard-title"><small>VISÃO DA PREFEITURA</small><strong>Estrutura municipal</strong><span>Dados conforme seu acesso e escopo</span></div>
+        <div class="gp-mock-metrics"><div><small>Secretarias</small><b>—</b></div><div><small>Unidades</small><b>—</b></div><div><small>Acessos</small><b>—</b></div></div>
+        <div class="gp-org-tree"><div class="gp-tree-row root"><span>⌂</span><b>Prefeitura</b><small>Organização</small></div><div class="gp-tree-branches"><div class="gp-tree-row"><span>▦</span><b>Secretarias</b><small>Estrutura configurável</small></div><div class="gp-tree-row"><span>⌖</span><b>Unidades</b><small>Escopo municipal</small></div><div class="gp-tree-row"><span>♙</span><b>Profissionais</b><small>Permissões individuais</small></div></div></div>
+        <div class="gp-dashboard-foot"><span><i></i> Ambiente protegido</span><span>Indicadores do contrato</span></div>
+      </div>
+      <p class="gp-visual-caption">Prévia ilustrativa da estrutura do produto · sem dados de Prefeitura.</p>
+    </div>
+  </div>
+</section>
+<div class="gp-public-strip"><div class="container"><span>UMA BASE MUNICIPAL</span><b>Organização</b><i>→</i><b>Estrutura</b><i>→</i><b>Pessoas</b><i>→</i><b>Indicadores</b></div></div>
+<section class="section gp-public-section" id="solucao"><div class="container">
+  <div class="section-heading"><span class="eyebrow">UMA EXPERIÊNCIA PARA A PREFEITURA</span><h2>Clareza na estrutura.<br>Controle em cada acesso.</h2><p>O núcleo atual do ERP organiza a base municipal e mostra a cada usuário somente o que seu papel, permissão e escopo permitem.</p></div>
+  <div class="gp-public-feature-grid">
+    <article class="gp-public-feature"><span>▦</span><div><h3>Estrutura municipal</h3><p>Organize secretarias, departamentos, setores e unidades conforme a realidade de cada Prefeitura.</p></div></article>
+    <article class="gp-public-feature"><span>♙</span><div><h3>Acessos profissionais</h3><p>Vincule pessoas a papéis, funções e escopos municipais com permissões específicas.</p></div></article>
+    <article class="gp-public-feature"><span>⌖</span><div><h3>Visão por escopo</h3><p>Limite consultas e ações à Prefeitura, secretaria, departamento, setor ou unidade autorizada.</p></div></article>
+    <article class="gp-public-feature"><span>▤</span><div><h3>Convites controlados</h3><p>Convites protegidos por token, uso único, validade e vínculo definido pela administração municipal.</p></div></article>
+    <article class="gp-public-feature"><span>↗</span><div><h3>Indicadores municipais</h3><p>Acompanhe a estrutura e os indicadores disponíveis, respeitando o nível contratado e o escopo do usuário.</p></div></article>
+    <article class="gp-public-feature"><span>▣</span><div><h3>Computador ou celular</h3><p>A interface responsiva pode ser acessada em vários dispositivos; a área autenticada está preparada para instalação PWA.</p></div></article>
+  </div>
+</div></section>
+<section class="gp-public-modules"><div class="container gp-public-modules-grid"><div><span class="eyebrow">ARQUITETURA MODULAR</span><h2>Uma plataforma que acompanha o contrato.</h2><p>A base municipal está preparada para evoluir por módulos. A disponibilidade de cada recurso depende do produto e do contrato ativos para a Prefeitura.</p><a class="text-link" href="{% url 'commercial:demo' %}?assunto=INTEGRADA">Conversar com a equipe VERTYX <svg aria-hidden="true"><use href="#i-arrow"></use></svg></a></div><div class="gp-module-preview"><div><span class="gp-module-icon">▦</span><strong>Núcleo de Gestão Pública</strong><small>Estrutura, acessos, escopos, convites e indicadores disponíveis</small><b class="gp-module-status">Base atual</b></div><div class="gp-module-future"><span class="gp-module-icon">＋</span><strong>Outros módulos</strong><small>Disponibilidade conforme evolução do produto e contratação</small><b class="gp-module-status muted">A definir no contrato</b></div><p>Recursos específicos não apresentados aqui não devem ser considerados disponíveis até serem contratados e habilitados.</p></div></div></section>
+<section class="container gp-public-cta"><div><span class="eyebrow">ACESSO DA PREFEITURA</span><h2>Pronto para entrar no ambiente municipal?</h2><p>Use a conta profissional vinculada à sua Prefeitura.</p></div><a class="button button-light" href="{% url 'rh_municipal_public:login' %}">Entrar no ERP <svg aria-hidden="true"><use href="#i-arrow"></use></svg></a></section>
+{% endblock %}

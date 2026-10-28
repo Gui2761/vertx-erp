@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Movimentações do PDV{% endblock %}
+{% block content %}
+<main class="container-fluid">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4"><div><p class="text-primary fw-semibold mb-1">VERTYX PDV</p><h1 class="h2">Movimentações</h1><p class="text-muted">Consulta somente leitura das movimentações oficiais originadas no PDV.</p></div><a class="btn btn-outline-primary" href="{% url 'operacao:pdv_home' %}?gestao=1">Voltar para caixas</a></div>
+  {% if erro_periodo %}<div class="alert alert-danger" role="alert">Período inválido. Confira as datas informadas.</div>{% endif %}
+  <form class="card card-body mb-3" method="get"><div class="row g-3 align-items-end"><div class="col-sm-5"><label class="form-label" for="start">De</label><input class="form-control" id="start" type="date" name="inicio" value="{{ inicio|date:'Y-m-d' }}"></div><div class="col-sm-5"><label class="form-label" for="end">Até</label><input class="form-control" id="end" type="date" name="fim" value="{{ fim|date:'Y-m-d' }}"></div><div class="col-sm-2"><button class="btn btn-primary w-100">Filtrar</button></div></div></form>
+  <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Data</th><th>Conta</th><th>Tipo</th><th>Descrição</th><th>Operador</th><th class="text-end">Valor</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ row.data|date:'d/m/Y' }}</td><td>{{ row.conta }}</td><td>{{ row.get_tipo_display }}</td><td>{{ row.descricao }}</td><td>{{ row.usuario }}</td><td class="text-end {% if row.tipo == 'SAIDA' %}text-danger{% else %}text-success{% endif %}">R$ {{ row.valor|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Nenhuma movimentação de PDV neste período.</td></tr>{% endfor %}</tbody></table></div>
+  {% include 'paginacao.html' %}
+</main>
+{% endblock %}

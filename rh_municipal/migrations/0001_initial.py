@@ -14,7 +14,7 @@ def seed_vertical_catalog(apps, schema_editor):
         ('gestao-publica', 'ERP Gestão Pública Municipal', 'Vertical de gestão pública com RH Municipal isolado.'),
     ]
     for code, name, description in entries:
-        ERPCatalog.objects.get_or_create(code=code, defaults={'name': name, 'description': description, 'active': True})
+        ERPCatalog.objects.using(schema_editor.connection.alias).get_or_create(code=code, defaults={'name': name, 'description': description, 'active': True})
 
 
 class Migration(migrations.Migration):

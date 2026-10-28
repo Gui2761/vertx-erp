@@ -2,6 +2,7 @@ import uuid
 from decimal import Decimal
 from pathlib import PurePosixPath
 from django import forms
+from django.db.models import Q
 from django.utils import timezone
 from platform_core.context import current_organization
 from gestao.forms import Estilizado
@@ -58,7 +59,27 @@ class ItemCompraForm(ItemCompraBaseForm):
         return data
 CotacaoCompraForm = model_form(m.CotacaoCompra, ['fornecedor', 'valor', 'validade', 'prazo', 'observacoes'])
 ItemVendaForm = model_form(m.ItemVenda, ['peca', 'quantidade', 'valor_unitario', 'desconto'])
-ContaBancariaForm = model_form(m.ContaBancaria, ['nome', 'banco', 'agencia', 'numero', 'titular', 'tipo', 'saldo_inicial', 'permite_saldo_negativo', 'ativo'])
+ContaBancariaForm = model_form(m.ContaBancaria, ['nome', 'banco', 'agencia', 'numero', 'titular', 'tipo', 'deposito_padrao', 'saldo_inicial', 'permite_saldo_negativo', 'ativo'])
+class ContaBancariaForm(ContaBancariaForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        depot_options = m.Deposito.objects.filter(ativo=True)
+        if self.instance.pk and self.instance.deposito_padrao_id:
+            depot_options = m.Deposito.objects.filter(Q(ativo=True) | Q(pk=self.instance.deposito_padrao_id))
+        self.fields['deposito_padrao'].queryset = depot_options
+        self.fields['deposito_padrao'].required = False
+        self.fields['deposito_padrao'].label = 'Depósito padrão do caixa'
+        self.fields['deposito_padrao'].help_text = 'Obrigatório para contas do tipo Caixa. Vendas e baixas de estoque usarão este depósito automaticamente.'
+        # Keep the existing field ordering intuitive in the shared finance form.
+        self.order_fields(['nome', 'tipo', 'deposito_padrao', 'banco', 'agencia', 'numero', 'titular', 'saldo_inicial', 'permite_saldo_negativo', 'ativo'])
+
+    def clean(self):
+        data = super().clean()
+        if data.get('tipo') == 'CAIXA' and not data.get('deposito_padrao'):
+            self.add_error('deposito_padrao', 'Selecione o depósito padrão para este caixa.')
+        elif data.get('tipo') == 'CAIXA' and not data['deposito_padrao'].ativo:
+            self.add_error('deposito_padrao', 'O depósito padrão do caixa precisa estar ativo.')
+        return data
 ExtratoForm = model_form(m.ExtratoBancario, ['conta', 'identificador', 'data', 'valor', 'descricao'])
 FiscalForm = model_form(m.DocumentoFiscal, ['tipo', 'cliente', 'lancamento', 'ordem', 'venda', 'serie', 'ambiente', 'municipio', 'codigo_servico', 'impostos', 'retencoes', 'descricao', 'valor'])
 

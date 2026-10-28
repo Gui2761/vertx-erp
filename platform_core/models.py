@@ -61,9 +61,46 @@ class ERPCatalog(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     active = models.BooleanField(default=True)
+    operational = models.BooleanField(default=False, help_text='Indica que a experiência deste produto está implementada e liberada para entrada.')
+    public_path = models.CharField(max_length=150, blank=True)
+    entry_path = models.CharField(max_length=150, blank=True)
 
     def __str__(self):
         return self.name
+
+
+class ERPProductModule(models.Model):
+    """Explicit module catalog scoped to one canonical ERP product."""
+    erp = models.ForeignKey(ERPCatalog, on_delete=models.PROTECT, related_name='modules')
+    code = models.SlugField(max_length=40)
+    name = models.CharField(max_length=120)
+    description = models.TextField(blank=True)
+    active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['erp__name', 'sort_order', 'name', 'pk']
+        constraints = [models.UniqueConstraint(fields=['erp', 'code'], name='erp_module_code_unique')]
+
+    def __str__(self):
+        return f'{self.erp.name} · {self.name}'
+
+
+class ERPProductResource(models.Model):
+    """Feature/resource registry beneath a product module."""
+    module = models.ForeignKey(ERPProductModule, on_delete=models.PROTECT, related_name='resources')
+    code = models.SlugField(max_length=50)
+    name = models.CharField(max_length=120)
+    description = models.TextField(blank=True)
+    active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['module__erp__name', 'module__sort_order', 'sort_order', 'name', 'pk']
+        constraints = [models.UniqueConstraint(fields=['module', 'code'], name='erp_resource_code_unique')]
+
+    def __str__(self):
+        return f'{self.module} · {self.name}'
 
 
 class OrganizationERP(models.Model):
@@ -86,7 +123,7 @@ class OrganizationMembership(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name='memberships')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='memberships')
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
-    role = models.CharField(max_length=20, choices=[('ADMIN', 'Administrador da organização'), ('GESTOR', 'Gestor'), ('TECNICO', 'Técnico'), ('PLANEJADOR', 'Planejador'), ('ATENDIMENTO', 'Atendimento'), ('PAINEL', 'Somente painel operacional'), ('ESTOQUE', 'Estoquista'), ('FINANCEIRO', 'Financeiro'), ('CONTABILIDADE', 'Contabilidade'), ('CLIENTE', 'Cliente do portal'), ('PDV', 'Operador de PDV'), ('VENDEDOR', 'Vendedor'), ('COMPRAS', 'Compras'), ('RH', 'Recursos humanos'), ('PAINEL_TV', 'Painel TV somente leitura')], default='TECNICO')
+    role = models.CharField(max_length=20, choices=[('ADMIN', 'Administrador da organização'), ('GESTOR', 'Gestor'), ('TECNICO', 'Técnico'), ('PLANEJADOR', 'Planejador'), ('ATENDIMENTO', 'Atendimento'), ('PAINEL', 'Somente painel operacional'), ('ESTOQUE', 'Estoquista'), ('FINANCEIRO', 'Financeiro'), ('CONTABILIDADE', 'Contabilidade'), ('CLIENTE', 'Cliente do portal'), ('PDV', 'Operador de PDV'), ('VENDEDOR', 'Vendedor'), ('COMPRAS', 'Compras'), ('RH', 'Recursos humanos'), ('PAINEL_TV', 'Painel TV somente leitura'), ('SERVIDOR_PUBLICO', 'Servidor público (acesso municipal)')], default='TECNICO')
     joined_at = models.DateTimeField(default=timezone.now)
     left_at = models.DateTimeField(null=True, blank=True)
 
@@ -186,7 +223,8 @@ class ConfiguracaoEmpresa(ConfiguracaoTenant):
 
 
 class ModuloOrganizacao(ConfiguracaoTenant):
-    codigo = models.CharField(max_length=20, choices=[(x, x.title()) for x in ['pdv', 'assistencia', 'estoque', 'compras', 'financeiro', 'ponto', 'rh', 'portal', 'contratos', 'fiscal', 'documentos']])
+    from .saas_models import MODULE_LABELS
+    codigo = models.CharField(max_length=20, choices=sorted(MODULE_LABELS.items()))
     habilitado = models.BooleanField(default=True)
 
     class Meta:
@@ -212,6 +250,7 @@ class PermissaoMembership(ConfiguracaoTenant):
 
 # SaaS administration is a platform capability, never a tenant membership role.
 from .saas_models import (
-    AdministradorPlataforma, PlanoSaaS, AssinaturaSaaS,
+    AdministradorPlataforma, PlanoSaaS, PlanoProdutoModulo, ContratoSaaS,
+    ItemContratoSaaS, AssinaturaSaaS,
     HistoricoPlanoSaaS, PrimeiroAcessoSaaS, AuditoriaSaaS,
 )
