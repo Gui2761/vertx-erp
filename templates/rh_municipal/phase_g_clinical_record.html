@@ -22,7 +22,9 @@
 <section class="gp-content-grid gp-admin-grid">
   <article class="gp-panel gp-form-panel">
     <div class="gp-eyebrow">REGISTRO CIFRADO</div><h2>Nova evolução</h2>
-    {% if not health_encryption_ready %}
+    {% if not can_create_clinical %}
+      <p>Seu acesso permite somente consulta.</p>
+    {% elif not health_encryption_ready %}
       <div class="gp-error">O registro está bloqueado até que a chave de cifragem seja provisionada neste ambiente.</div>
     {% elif appointment.status != 'EM_ATENDIMENTO' %}
       <div class="gp-info">A evolução só pode ser registrada durante um atendimento em andamento.</div>
@@ -43,11 +45,11 @@
       <div class="gp-record">
         <strong>{{ entry.criada_em|date:'d/m/Y H:i' }}</strong>
         <span> · {{ entry.autor.get_full_name|default:entry.autor.username }}</span>
-        <form method="post" class="gp-form" autocomplete="off">
+        {% if can_create_clinical %}<form method="post" class="gp-form" autocomplete="off">
           {% csrf_token %}<input type="hidden" name="action" value="read"><input type="hidden" name="entry_id" value="{{ entry.pk }}">
           <label class="gp-field"><span>Justificativa de consulta</span><input class="gp-input" name="justification" maxlength="300" required autocomplete="off"></label>
           <button class="gp-button gp-button-light" type="submit">Consultar evolução</button>
-        </form>
+        </form>{% else %}<a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_citizen_chart' appointment.cidadao.public_id %}?atendimento={{ appointment.public_id }}&amp;purpose=continuidade">Consultar histórico do cidadão</a>{% endif %}
       </div>
     {% empty %}<div class="gp-empty-inline">Nenhuma evolução registrada.</div>{% endfor %}
   </article>

@@ -134,6 +134,8 @@ PUBLIC_PERMISSION_LABELS = {
     'saude.records.view': 'Consultar atendimentos',
     'saude.records.manage': 'Gerenciar atendimentos',
     'saude.records.sensitive': 'Acessar conteúdo clínico sensível com auditoria',
+    'saude.records.create': 'Criar atendimentos e registros clínicos',
+    'saude.records.edit': 'Retificar registros e concluir atendimentos',
     'saude.appointments.view': 'Consultar agendas de saúde',
     'saude.appointments.manage': 'Gerenciar agendas e atendimentos',
     'saude.field.view': 'Consultar visitas de campo',
@@ -712,8 +714,13 @@ SCOPE_PATHS['acaoplanoacaointerno'] = {
 }
 
 
-def scoped_queryset(user, queryset):
+def scoped_queryset(user, queryset, *, capability=None):
     accesses = list(accesses_for(user))
+    if capability is not None:
+        accesses = [access for access in accesses if (
+            access.papel == AcessoMunicipal.Papel.ADMIN_PREFEITURA
+            or access.permissoes.filter(capacidade=capability, permitido=True).exists()
+        )]
     if not accesses:
         return queryset.none()
     if any(row.escopo == AcessoMunicipal.Escopo.PREFEITURA for row in accesses):

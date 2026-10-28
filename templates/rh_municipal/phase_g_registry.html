@@ -35,8 +35,8 @@
   <article class="gp-panel">
     <div class="gp-panel-head"><div><div class="gp-eyebrow">DADOS NO SEU ESCOPO</div><h2>{{ rows|length }} registro(s) recente(s)</h2></div></div>
     {% if rows %}
-      <div class="gp-table-wrap"><table class="gp-table"><thead><tr><th>Identificação</th><th>Detalhe</th><th>Vínculo</th><th>Situação</th>{% if registry == 'atendimentos' and can_manage_registry or registry == 'atendimentos' and can_health_records_sensitive %}<th>Ação</th>{% endif %}</tr></thead>
-        <tbody>{% for row in rows %}<tr>{% for value in row|slice:":4" %}<td>{{ value }}</td>{% endfor %}{% if registry == 'atendimentos' and can_manage_registry or registry == 'atendimentos' and can_health_records_sensitive %}<td>
+      <div class="gp-table-wrap"><table class="gp-table"><thead><tr><th>Identificação</th><th>Detalhe</th><th>Vínculo</th><th>Situação</th>{% if registry == 'atendimentos' and can_manage_registry or registry == 'atendimentos' and can_health_charts %}<th>Ação</th>{% endif %}</tr></thead>
+        <tbody>{% for row in rows %}<tr>{% for value in row|slice:":4" %}<td>{{ value }}</td>{% endfor %}{% if registry == 'atendimentos' and can_manage_registry or registry == 'atendimentos' and can_health_charts %}<td>
           {% if can_manage_registry and row.5 %}<form method="post" action="{% url 'rh_municipal_public:saude_appointment_transition' row.4 %}" class="gp-inline-form">{% csrf_token %}
             <select class="gp-input" name="status" aria-label="Nova situação do atendimento">
               {% if row.5 == 'AGENDADO' %}<option value="EM_ATENDIMENTO">Iniciar</option><option value="CANCELADO">Cancelar</option><option value="FALTOU">Registrar falta</option>{% else %}<option value="CONCLUIDO">Concluir</option><option value="CANCELADO">Cancelar</option>{% endif %}
@@ -44,7 +44,7 @@
             <input class="gp-input" name="justification" maxlength="300" placeholder="Justificativa se cancelar/falta" aria-label="Justificativa">
             <button class="gp-button gp-button-small" type="submit">Atualizar</button>
           </form>{% elif can_manage_registry %}<span class="gp-muted">Sem transição</span>{% endif %}
-          {% if can_health_records_sensitive %}<a class="gp-button gp-button-light gp-button-small" href="{% url 'rh_municipal_public:saude_clinical_record' row.4 %}">Prontuário</a>{% endif %}
+          {% if can_health_charts %}<a class="gp-button gp-button-light gp-button-small" href="{% url 'rh_municipal_public:saude_citizen_chart' row.6 %}">Prontuário do cidadão</a>{% endif %}
         </td>{% endif %}</tr>{% endfor %}</tbody>
       </table></div>
     {% else %}<div class="gp-empty-inline">Nenhum registro disponível neste escopo.</div>{% endif %}

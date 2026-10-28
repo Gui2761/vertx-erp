@@ -576,20 +576,33 @@ def transition_epidemiology_notification(actor, *, notification_id, situation, j
 @transaction.atomic
 def create_clinical_entry(actor, *, appointment_id, content, justification=''):
     org = _require(actor, 'saude.records.sensitive')
+    _require(actor, 'saude.records.create')
+    _require(actor, 'saude.records.view')
+    _require(actor, 'saude.patients.view')
     appointment = m.AtendimentoSaudeMunicipal.objects.select_for_update().filter(
         pk=appointment_id, organization=org,
     ).first()
     if appointment is None:
         raise ValidationError('Atendimento não encontrado nesta Prefeitura.')
     _record_allowed(actor, 'saude.records.sensitive', appointment)
+    _record_allowed(actor, 'saude.records.create', appointment)
+    _record_allowed(actor, 'saude.records.view', appointment)
+    _record_allowed(actor, 'saude.patients.view', appointment.cidadao)
     if appointment.status != m.AtendimentoSaudeMunicipal.Status.EM_ATENDIMENTO:
         raise ValidationError('A evolução só pode ser registrada durante um atendimento em andamento.')
     if not str(content or '').strip():
         raise ValidationError('Informe o conteúdo da evolução clínica.')
+    return _persist_clinical_entry(actor, appointment, content, justification=justification)
+
+
+def _persist_clinical_entry(actor, appointment, content, *, justification='', public_id=None, retifica=None):
+    """Internal writer; callers must authorize and lock the encounter first."""
+    org = current_organization()
     cipher = _fernet()
     plaintext = str(content).encode('utf-8')
     row = m.EvolucaoClinicaMunicipal(
         organization=org, atendimento=appointment, conteudo_cifrado=cipher.encrypt(plaintext),
+        public_id=public_id or uuid.uuid4(), retifica=retifica,
         conteudo_hash=hashlib.sha256(plaintext).hexdigest(), autor=actor,
         **{f'{key}_id': getattr(appointment, f'{key}_id') for key in ('secretaria', 'departamento', 'setor', 'unidade')},
     )
@@ -602,6 +615,8 @@ def create_clinical_entry(actor, *, appointment_id, content, justification=''):
 @transaction.atomic
 def read_clinical_entry(actor, *, entry_id, justification):
     org = _require(actor, 'saude.records.sensitive')
+    _require(actor, 'saude.records.view')
+    _require(actor, 'saude.patients.view')
     justification = (justification or '').strip()
     if not justification:
         raise ValidationError('Informe a justificativa para consultar o prontuário.')
@@ -611,6 +626,8 @@ def read_clinical_entry(actor, *, entry_id, justification):
     if row is None:
         raise ValidationError('Registro clínico não encontrado nesta Prefeitura.')
     _record_allowed(actor, 'saude.records.sensitive', row)
+    _record_allowed(actor, 'saude.records.view', row)
+    _record_allowed(actor, 'saude.patients.view', row.atendimento.cidadao)
     # Audit is committed with the read request; never log plaintext or identifiers beyond local PKs.
     _audit(actor, org, 'PRONTUARIO_ACESSADO', row._meta.label_lower, row.pk,
            row.atendimento.cidadao_id, justification, {'atendimento': row.atendimento_id})

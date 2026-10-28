@@ -49,6 +49,7 @@ PUBLIC_PERMISSION_CODES = {
     'saude.teams.view', 'saude.teams.manage', 'saude.professionals.view',
     'saude.professionals.manage', 'saude.patients.view', 'saude.patients.manage',
     'saude.records.view', 'saude.records.manage', 'saude.records.sensitive',
+    'saude.records.create', 'saude.records.edit',
     'saude.appointments.view', 'saude.appointments.manage',
     'saude.field.view', 'saude.field.manage', 'saude.pharmacy.view',
     'saude.pharmacy.manage', 'saude.dispense', 'saude.sanitary.view',

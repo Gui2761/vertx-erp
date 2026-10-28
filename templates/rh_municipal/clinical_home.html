@@ -1,0 +1,11 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Prontuários e atendimentos{% endblock %}
+{% block content %}
+<section class="gp-page-head"><div><h1>Prontuários e atendimentos</h1><p>Acesso restrito à Prefeitura e ao escopo autorizado. Não há listagem geral de pacientes.</p></div></section>
+<section class="gp-panel">
+{% if can_search_chart %}
+  <h2>Localizar cidadão cadastrado</h2>
+  <form method="post" class="gp-form" autocomplete="off">{% csrf_token %}{{ search_form.as_p }}<button class="gp-button" type="submit">Localizar prontuário</button></form>
+{% else %}<p>Seu acesso permite somente consulta. Abra o prontuário a partir de um atendimento autorizado.</p>{% endif %}
+</section>
+{% endblock %}

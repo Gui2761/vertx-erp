@@ -177,6 +177,8 @@ class EvolucaoClinicaMunicipal(HealthRecord):
     conteudo_hash = models.CharField(max_length=64)
     autor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     criada_em = models.DateTimeField(default=timezone.now, editable=False)
+    retifica = models.OneToOneField('self', null=True, blank=True, on_delete=models.PROTECT,
+                                   related_name='retificacao')
 
     class Meta:
         ordering = ['criada_em', 'pk']
@@ -207,7 +209,8 @@ class PrescricaoSaudeMunicipal(HealthRecord):
 
 class ItemPrescricaoSaude(HealthRecord):
     prescricao = models.ForeignKey(PrescricaoSaudeMunicipal, on_delete=models.PROTECT, related_name='itens')
-    medicamento_nome = models.CharField(max_length=140)
+    medicamento_nome = models.CharField(max_length=140, blank=True)
+    medicamento_nome_cifrado = models.BinaryField(blank=True, default=bytes)
     apresentacao = models.CharField(max_length=100, blank=True)
     quantidade = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
     posologia_cifrada = models.BinaryField(blank=True, default=bytes)

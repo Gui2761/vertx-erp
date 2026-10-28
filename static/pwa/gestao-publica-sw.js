@@ -6,5 +6,7 @@ self.addEventListener('activate', event => event.waitUntil(self.clients.claim())
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
+  const path = new URL(request.url).pathname;
+  if (path.startsWith('/gestao-publica/saude/prontuarios/') || path.endsWith('/prontuario/')) return;
   event.respondWith(fetch(request, { cache: 'no-store' }));
 });

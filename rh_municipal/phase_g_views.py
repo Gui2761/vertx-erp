@@ -121,7 +121,8 @@ HEALTH_REGISTRIES = {
                              f'{row.agenda.inicio:%d/%m/%Y %H:%M}' if row.agenda_id else 'Sem agenda',
                              row.get_status_display(), row.pk,
                              row.status if row.status in {health.AtendimentoSaudeMunicipal.Status.AGENDADO,
-                                                          health.AtendimentoSaudeMunicipal.Status.EM_ATENDIMENTO} else ''),
+                                                          health.AtendimentoSaudeMunicipal.Status.EM_ATENDIMENTO} else '',
+                             row.cidadao.public_id),
     },
 }
 
@@ -204,8 +205,10 @@ def health_appointment_transition(request, pk):
 @login_required
 @require_http_methods(['GET', 'POST'])
 def health_clinical_record(request, pk):
-    if not _can(request.user, 'saude.records.sensitive'):
+    if not all(_can(request.user, code) for code in ('saude.records.sensitive', 'saude.records.view', 'saude.patients.view')):
         raise PermissionDenied('Acesso ao prontuário clínico não autorizado.')
+    if request.method == 'POST' and not _can(request.user, 'saude.records.create'):
+        raise PermissionDenied('Este acesso permite somente consulta do prontuário.')
     organization = current_organization()
     appointment = scoped_queryset(
         request.user,
@@ -213,6 +216,14 @@ def health_clinical_record(request, pk):
     ).select_related('cidadao', 'unidade_saude__unidade').filter(pk=pk).first()
     if appointment is None:
         raise PermissionDenied('O atendimento não está disponível no escopo autorizado.')
+
+    for capability in ('saude.records.view', 'saude.records.sensitive'):
+        svc._record_allowed(request.user, capability, appointment)
+    svc._record_allowed(request.user, 'saude.patients.view', appointment.cidadao)
+    if request.method == 'POST':
+        svc._record_allowed(request.user, 'saude.records.create', appointment)
+    svc._audit(request.user, organization, 'PRONTUARIO_ABERTO', appointment._meta.label_lower,
+               appointment.pk, appointment.cidadao_id, reason='Consulta ao atendimento')
 
     form = ClinicalEntryActionForm(request.POST or None, initial={'action': 'create'})
     viewed_content = None
@@ -242,7 +253,7 @@ def health_clinical_record(request, pk):
         health.EvolucaoClinicaMunicipal.objects.filter(
             organization=organization, atendimento=appointment,
         ),
-    ).select_related('autor').order_by('-criada_em')
+    ).select_related('autor').defer('conteudo_cifrado').order_by('-criada_em')
     context = _context(
         request, can_health_dashboard=_can(request.user, 'saude.dashboard.view'),
         can_health_patients=_can(request.user, 'saude.patients.view'),
@@ -260,6 +271,7 @@ def health_clinical_record(request, pk):
         'subtitle': 'A leitura do conteúdo exige justificativa e gera auditoria.',
         'appointment': appointment, 'entries': entries, 'form': form,
         'viewed_content': viewed_content,
+        'can_create_clinical': has_municipal_permission(request.user, 'saude.records.create', module='saude_sus', record=appointment),
     })
     response = render(request, 'rh_municipal/phase_g_clinical_record.html', context)
     response['Cache-Control'] = 'no-store, private'
@@ -840,7 +852,7 @@ def health_manifest(request):
 def health_worker(request):
     if not _can(request.user, 'saude.dashboard.view'):
         raise PermissionDenied('PWA Saúde SUS não autorizado.')
-    body = """self.addEventListener('install',e=>{self.skipWaiting()});self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim())});self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request,{cache:'no-store'}))});"""
+    body = """self.addEventListener('install',e=>{self.skipWaiting()});self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim())});self.addEventListener('fetch',e=>{const p=new URL(e.request.url).pathname;if(e.request.method!=='GET'||p.startsWith('/gestao-publica/saude/prontuarios/')||p.endsWith('/prontuario/'))return;e.respondWith(fetch(e.request,{cache:'no-store'}))});"""
     response = HttpResponse(body, content_type='application/javascript')
     response['Service-Worker-Allowed'] = '/gestao-publica/saude/'
     response['Cache-Control'] = 'no-store'

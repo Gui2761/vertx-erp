@@ -1,7 +1,7 @@
 from django.urls import path
 from contas.views import MunicipalLoginView
 
-from . import public_views, phase_a_views, procurement_views, phase_c_views, phase_d_views, phase_e_views, phase_f_views, phase_g_views, phase_h_views, phase_i_views, phase_k_views, phase_l_views
+from . import public_views, phase_a_views, procurement_views, phase_c_views, phase_d_views, phase_e_views, phase_f_views, phase_g_views, phase_h_views, phase_i_views, phase_k_views, phase_l_views, clinical_views
 
 app_name = 'rh_municipal_public'
 urlpatterns = [
@@ -48,6 +48,11 @@ urlpatterns = [
     path('territorio/sw.js', phase_f_views.territory_worker, name='territory_worker'),
     path('nfse/', phase_f_views.nfse_home, name='nfse_home'),
     path('saude/', phase_g_views.health_home, name='saude_home'),
+    path('saude/prontuarios/', clinical_views.clinical_home, name='saude_charts'),
+    path('saude/prontuarios/<uuid:patient_id>/', clinical_views.citizen_chart, name='saude_citizen_chart'),
+    path('saude/prontuarios/<uuid:patient_id>/atendimentos/', clinical_views.begin_encounter, name='saude_encounter_begin'),
+    path('saude/prontuarios/<uuid:patient_id>/atendimentos/<uuid:encounter_id>/', clinical_views.clinical_action, name='saude_clinical_action'),
+    path('saude/prontuarios/<uuid:patient_id>/documentos/<uuid:entry_id>/', clinical_views.clinical_document, name='saude_clinical_document'),
     path('saude/configuracao/<slug:registry>/', phase_g_views.health_registry, name='saude_registry'),
     path('saude/atendimentos/<int:pk>/situacao/', phase_g_views.health_appointment_transition, name='saude_appointment_transition'),
     path('saude/atendimentos/<int:pk>/prontuario/', phase_g_views.health_clinical_record, name='saude_clinical_record'),

@@ -1,0 +1,76 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Prontuário do cidadão{% endblock %}
+{% block content %}
+<section class="gp-page-head"><div><div class="gp-eyebrow">SAÚDE · ACESSO AUDITADO</div><h1>Prontuário do cidadão</h1>
+  <p>{{ patient.nome }} · {{ family_count }} vínculo(s) familiar(es) ativo(s) no seu escopo.</p>
+  <p>Unidade de referência: {{ patient.unidade.nome|default:'Não informada' }}</p></div></section>
+<section class="gp-panel"><h2>Histórico de atendimentos</h2>
+  {% for visit in visits %}<p><a href="?atendimento={{ visit.public_id }}">{{ visit.iniciado_em|date:'d/m/Y H:i'|default:'Agendado' }} · {{ visit.unidade_saude.unidade.nome }} · {{ visit.get_status_display }}</a>
+  <span>Responsável: {{ visit.profissional.servidor.nome|default:'Não atribuído' }}</span></p>
+  {% empty %}<p>Nenhum atendimento disponível no seu escopo.</p>{% endfor %}
+  {% if visits.has_previous %}<a href="?visitas={{ visits.previous_page_number }}">Atendimentos anteriores</a>{% endif %}
+  {% if visits.has_next %}<a href="?visitas={{ visits.next_page_number }}">Mais atendimentos</a>{% endif %}
+</section>
+{% if selected %}
+{% if can_start_scheduled %}<form method="post" class="gp-form" action="{% url 'rh_municipal_public:saude_clinical_action' patient.public_id selected.public_id %}">{% csrf_token %}<input type="hidden" name="action" value="start"><button class="gp-button" type="submit">Iniciar atendimento agendado</button></form>{% endif %}
+<section class="gp-panel"><h2>Atendimento · {{ selected.get_status_display }}</h2>
+  <p>{{ selected.unidade_saude.unidade.nome }} · Responsável: {{ selected.profissional.servidor.nome|default:'Não atribuído' }}</p>
+  {% if can_read_clinical %}<form method="get" class="gp-form">
+    <input type="hidden" name="atendimento" value="{{ selected.public_id }}">
+    <label>Finalidade de acesso <select name="purpose" class="gp-input" required>{% for value,label in purposes %}<option value="{{ value }}" {% if value == purpose %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <button class="gp-button" type="submit">Consultar conteúdo clínico</button>
+  </form>{% else %}<p>Conteúdo clínico restrito. Seu acesso permite consultar apenas o histórico operacional.</p>{% endif %}
+  <p>O conteúdo só é recuperado mediante finalidade e auditoria. Registros anteriores são preservados nas retificações.</p>
+  {% for entry in events %}<article class="gp-record">
+    <strong>{{ entry.criada_em|date:'d/m/Y H:i:s' }}</strong> · Registrado por {{ entry.autor.get_full_name|default:entry.autor.username }}
+    {% if entry.retifica_id %}<span> · Retificação</span>{% endif %}{% if entry.has_correction %}<span> · Há versão retificada posterior</span>{% endif %}
+    {% if entry.clinical %}
+      <h3>{{ entry.kind_label }}</h3>
+      {% if entry.clinical.professional %}<p>Profissional: {{ entry.clinical.professional.nome }} · {{ entry.clinical.professional.ocupacao }} · {{ entry.clinical.professional.conselho }} {{ entry.clinical.professional.registro }}</p>
+      <p>Unidade: {{ entry.clinical.unit.nome }} · Equipe: {{ entry.clinical.team.nome|default:'Não vinculada' }} · Responsável: {{ entry.clinical.responsible.nome }}</p>{% endif %}
+      {% for label,value in entry.visible_fields %}<p><strong>{{ label }}:</strong> {{ value|linebreaksbr }}</p>{% endfor %}
+      {% if entry.clinical.kind == 'prescricao' %}<a href="#prescricoes">Ver prescrições deste atendimento</a>{% endif %}
+      {% if entry.clinical.kind == 'documento' %}<a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_clinical_document' patient.public_id entry.public_id %}">Baixar documento protegido</a>{% endif %}
+      {% if entry.can_correct %}<a class="gp-button gp-button-light" href="?atendimento={{ selected.public_id }}&amp;purpose={{ purpose }}&amp;eventos={{ events.number }}&amp;retificar={{ entry.public_id }}">Retificar este registro</a>{% endif %}
+      {% if can_edit_clinical and entry.clinical.prescription.status == 'ATIVA' %}<form method="post" class="gp-form" action="{% url 'rh_municipal_public:saude_clinical_action' patient.public_id selected.public_id %}" autocomplete="off">
+        {% csrf_token %}<input type="hidden" name="action" value="cancel_prescription"><input type="hidden" name="prescription_id" value="{{ entry.clinical.prescription.public_id }}">
+        <label>Motivo do cancelamento <textarea class="gp-input" name="motivo" maxlength="2000" required></textarea></label><button class="gp-button" type="submit">Cancelar prescrição</button>
+      </form>{% endif %}
+    {% else %}<p>Registro clínico protegido.</p>{% endif %}
+  </article>{% empty %}<p>Nenhum registro neste atendimento.</p>{% endfor %}
+  {% if events.has_previous %}<a href="?atendimento={{ selected.public_id }}&amp;purpose={{ purpose }}&amp;eventos={{ events.previous_page_number }}">Registros anteriores</a>{% endif %}
+  {% if events.has_next %}<a href="?atendimento={{ selected.public_id }}&amp;purpose={{ purpose }}&amp;eventos={{ events.next_page_number }}">Mais registros</a>{% endif %}
+</section>
+{% if purpose %}<section class="gp-panel" id="prescricoes"><h2>Prescrições do atendimento, por data</h2>
+  {% for prescription in prescriptions %}<article class="gp-record">
+    <h3>{{ prescription.emitida_em|date:'d/m/Y H:i' }} · {{ prescription.get_status_display }}</h3>
+    <p>Profissional: {{ prescription.profissional.servidor.nome }}</p>
+    {% for item in prescription.clinical_items %}<p><strong>{{ item.medicamento }}</strong> · Quantidade: {{ item.quantidade }}<br>{{ item.posologia|linebreaksbr }}</p>{% endfor %}
+    {% if prescription.clinical_orientation %}<p>{{ prescription.clinical_orientation|linebreaksbr }}</p>{% endif %}
+  </article>{% empty %}<p>Nenhuma prescrição registrada.</p>{% endfor %}
+  {% if prescriptions.has_previous %}<a href="?atendimento={{ selected.public_id }}&amp;purpose={{ purpose }}&amp;receitas={{ prescriptions.previous_page_number }}">Página anterior</a>{% endif %}
+  {% if prescriptions.has_next %}<a href="?atendimento={{ selected.public_id }}&amp;purpose={{ purpose }}&amp;receitas={{ prescriptions.next_page_number }}">Mais prescrições</a>{% endif %}
+</section>{% endif %}
+{% if can_create_clinical or can_edit_clinical %}
+<section class="gp-panel"><h2>{% if event_form.corrige.value %}Retificar registro{% else %}Acolhimento e registro clínico{% endif %}</h2>
+  {% if can_create_clinical or event_form.corrige.value %}<form method="post" class="gp-form" action="{% url 'rh_municipal_public:saude_clinical_action' patient.public_id selected.public_id %}" autocomplete="off">
+    {% csrf_token %}<input type="hidden" name="action" value="event">{{ event_form.as_p }}<button class="gp-button" type="submit">Salvar registro protegido</button>
+  </form>{% else %}<p>Para retificar, consulte o conteúdo e selecione a versão atual de um registro.</p>{% endif %}
+</section>
+{% endif %}
+{% if can_create_clinical %}
+<section class="gp-content-grid gp-admin-grid">
+  <article class="gp-panel"><h2>Prescrição</h2><p>Registro local. Não gera receita com assinatura digital nem substitui requisitos de emissão.</p>
+    <form method="post" class="gp-form" action="{% url 'rh_municipal_public:saude_clinical_action' patient.public_id selected.public_id %}" autocomplete="off">{% csrf_token %}<input type="hidden" name="action" value="prescription">{{ prescription_form.as_p }}<button class="gp-button" type="submit">Registrar prescrição</button></form>
+  </article>
+  <article class="gp-panel"><h2>Documento do atendimento</h2>
+    <form method="post" enctype="multipart/form-data" class="gp-form" action="{% url 'rh_municipal_public:saude_clinical_action' patient.public_id selected.public_id %}" autocomplete="off">{% csrf_token %}<input type="hidden" name="action" value="document">{{ document_form.as_p }}<button class="gp-button" type="submit">Anexar documento protegido</button></form>
+  </article>
+</section>
+{% endif %}
+{% if can_edit_clinical %}<form method="post" class="gp-form" action="{% url 'rh_municipal_public:saude_clinical_action' patient.public_id selected.public_id %}">{% csrf_token %}<input type="hidden" name="action" value="conclude"><button class="gp-button" type="submit">Concluir atendimento</button></form>{% endif %}
+{% endif %}
+{% if can_begin_encounter %}<section class="gp-panel"><h2>Iniciar novo atendimento</h2>
+  <form method="post" class="gp-form" action="{% url 'rh_municipal_public:saude_encounter_begin' patient.public_id %}">{% csrf_token %}{{ encounter_form.as_p }}<button class="gp-button" type="submit">Iniciar atendimento</button></form>
+</section>{% endif %}
+{% endblock %}

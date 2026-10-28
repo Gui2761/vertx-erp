@@ -46,6 +46,10 @@ def _context(request, **extra):
         'profile': PerfilPrefeitura.objects.filter(organization=current_organization()).first(),
         'municipal_accesses': accesses_for(user),
         'municipal_modules': modules,
+        'can_health_dashboard': _phase_e_allowed(user, 'saude.dashboard.view', 'saude_sus'),
+        'can_health_charts': all(_phase_e_allowed(user, code, 'saude_sus') for code in (
+            'saude.records.view', 'saude.patients.view',
+        )),
         'can_manage_access': has_municipal_permission(user, 'access.manage'),
         'can_view_access': has_municipal_permission(user, 'access.view'),
         'can_view_structure': has_municipal_permission(user, 'structure.view'),
