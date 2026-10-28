@@ -123,6 +123,8 @@ PUBLIC_PERMISSION_LABELS = {
     'nfse.view': 'Consultar rascunhos NFS-e municipais',
     'nfse.manage': 'Preparar rascunhos NFS-e municipais',
     'saude.dashboard.view': 'Consultar indicadores agregados de saúde',
+    'saude.primary.view': 'Consultar Atenção Básica e cobertura das UBS',
+    'saude.primary.manage': 'Cadastrar famílias e vínculos territoriais nas UBS',
     'saude.units.view': 'Consultar unidades de saúde',
     'saude.units.manage': 'Gerenciar configuração de unidades de saúde',
     'saude.teams.view': 'Consultar equipes de saúde',

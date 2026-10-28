@@ -1,0 +1,44 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Atenção Básica / UBS{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div><div class="gp-eyebrow">VERTYX · SAÚDE SUS</div><h1>Atenção Básica / UBS</h1>
+    <p>Famílias e equipes das UBS e Centros de Saúde ativos no seu escopo municipal.</p></div>
+</section>
+<section class="gp-panel">
+  <form method="get" class="gp-form">
+    {{ filter_form.as_p }}
+    <button class="gp-button" type="submit">Filtrar unidade</button>
+  </form>
+  <div class="gp-table-wrap"><table class="gp-table">
+    <caption>Cobertura territorial cadastrada por unidade</caption>
+    <thead><tr><th>Unidade</th><th>CNES</th><th>Equipes ativas</th><th>Famílias ativas</th><th>Famílias sem equipe</th></tr></thead>
+    <tbody>{% for row in primary_rows %}<tr><td>{{ row.unidade__nome }}</td><td>{{ row.cnes|default:'Não informado' }}</td><td>{{ row.teams }}</td><td>{{ row.families }}</td><td>{{ row.without_team }}</td></tr>
+    {% empty %}<tr><td colspan="5">Nenhuma UBS disponível para este filtro.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p class="gp-muted">Esta visão não apresenta nomes de cidadãos, endereços de famílias ou conteúdo clínico.</p>
+</section>
+{% if family_form %}
+<section class="gp-content-grid gp-admin-grid">
+  <article class="gp-panel gp-form-panel">
+    <h2>Cadastrar família na UBS</h2>
+    <p>Use um código interno sem nome, CPF ou CNS. O endereço fica restrito ao cadastro territorial.</p>
+    <form method="post" class="gp-form" autocomplete="off">
+      {% csrf_token %}<input type="hidden" name="action" value="family">
+      {{ family_form.as_p }}
+      <button class="gp-button" type="submit">Cadastrar família</button>
+    </form>
+    <p class="gp-muted">Use o filtro de unidade acima para carregar as equipes da UBS antes de cadastrar a família.</p>
+  </article>
+  {% if member_form %}<article class="gp-panel gp-form-panel">
+    <h2>Vincular cidadão cadastrado</h2>
+    <p>O cidadão deve estar ativo, autorizado e ter esta UBS como unidade de referência.</p>
+    <form method="post" class="gp-form" autocomplete="off">
+      {% csrf_token %}<input type="hidden" name="action" value="member">
+      {{ member_form.as_p }}
+      <button class="gp-button" type="submit">Vincular cidadão</button>
+    </form>
+  </article>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -33,6 +33,7 @@
   <div class="gp-panel-head"><div><div class="gp-eyebrow">OPERAÇÃO</div><h2>Cadastros e agenda</h2></div></div>
   <div class="gp-shortcuts">
     {% if can_health_charts %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_charts' %}"><span>▤</span><strong>Prontuários e atendimentos</strong><small>Histórico por cidadão com acesso auditado</small><b>›</b></a>{% endif %}
+    {% if can_health_primary %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_primary' %}"><span>⌂</span><strong>Atenção Básica / UBS</strong><small>Famílias, equipes e cobertura territorial</small><b>›</b></a>{% endif %}
     {% if can_health_units %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_registry' 'unidades' %}"><span>⌂</span><strong>Unidades</strong><small>Vincular unidade municipal à Saúde</small><b>›</b></a>{% endif %}
     {% if can_health_teams %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_registry' 'equipes' %}"><span>♧</span><strong>Equipes</strong><small>Configurar equipes e microáreas</small><b>›</b></a>{% endif %}
     {% if can_health_professionals %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_registry' 'profissionais' %}"><span>♙</span><strong>Profissionais</strong><small>Vincular servidores às unidades</small><b>›</b></a>{% endif %}

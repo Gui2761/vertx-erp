@@ -1,7 +1,7 @@
 from django.urls import path
 from contas.views import MunicipalLoginView
 
-from . import public_views, phase_a_views, procurement_views, phase_c_views, phase_d_views, phase_e_views, phase_f_views, phase_g_views, phase_h_views, phase_i_views, phase_k_views, phase_l_views, clinical_views
+from . import public_views, phase_a_views, procurement_views, phase_c_views, phase_d_views, phase_e_views, phase_f_views, phase_g_views, phase_h_views, phase_i_views, phase_k_views, phase_l_views, primary_care_views, clinical_views
 
 app_name = 'rh_municipal_public'
 urlpatterns = [
@@ -48,6 +48,7 @@ urlpatterns = [
     path('territorio/sw.js', phase_f_views.territory_worker, name='territory_worker'),
     path('nfse/', phase_f_views.nfse_home, name='nfse_home'),
     path('saude/', phase_g_views.health_home, name='saude_home'),
+    path('saude/atencao-basica/', primary_care_views.primary_care_home, name='saude_primary'),
     path('saude/prontuarios/', clinical_views.clinical_home, name='saude_charts'),
     path('saude/prontuarios/<uuid:patient_id>/', clinical_views.citizen_chart, name='saude_citizen_chart'),
     path('saude/prontuarios/<uuid:patient_id>/atendimentos/', clinical_views.begin_encounter, name='saude_encounter_begin'),

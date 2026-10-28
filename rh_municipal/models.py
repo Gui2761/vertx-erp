@@ -46,6 +46,7 @@ PUBLIC_PERMISSION_CODES = {
     'arrecadacao.view', 'arrecadacao.manage', 'divida.view', 'divida.manage',
     'nfse.view', 'nfse.manage',
     'saude.dashboard.view', 'saude.units.view', 'saude.units.manage',
+    'saude.primary.view', 'saude.primary.manage',
     'saude.teams.view', 'saude.teams.manage', 'saude.professionals.view',
     'saude.professionals.manage', 'saude.patients.view', 'saude.patients.manage',
     'saude.records.view', 'saude.records.manage', 'saude.records.sensitive',
