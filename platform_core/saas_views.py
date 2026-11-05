@@ -220,7 +220,8 @@ def primeiro_administrador_concluido(request):
 def primeiro_acesso(request, token):
     digest = PrimeiroAcessoSaaS.digest(token)
     row = PrimeiroAcessoSaaS.objects.select_related('user', 'organization').filter(token_digest=digest).first()
-    valid = bool(row and row.usado_em is None and row.expira_em > timezone.now() and row.user.is_active)
+    valid = bool(row and row.usado_em is None and row.expira_em > timezone.now()
+                 and not row.user.has_usable_password() and row.access_is_active())
     if not valid:
         return _render(request, 'platform_core/saas/first_access_expired.html', status=410)
     form = SetPasswordForm(row.user, request.POST or None)
@@ -230,6 +231,13 @@ def primeiro_acesso(request, token):
             if locked.usado_em or locked.expira_em <= timezone.now():
                 return _render(request, 'platform_core/saas/first_access_expired.html', status=410)
             user = get_user_model().objects.select_for_update().get(pk=locked.user_id)
+            # Recheck grants after locking: a revoked invitation must not set a password.
+            list(OrganizationMembership.objects.select_for_update().filter(
+                user=user, organization_id=locked.organization_id,
+            ))
+            locked.user = user
+            if user.has_usable_password() or not locked.access_is_active():
+                return _render(request, 'platform_core/saas/first_access_expired.html', status=410)
             locked_form = SetPasswordForm(user, request.POST)
             if not locked_form.is_valid():
                 return _render(request, 'platform_core/saas/first_access.html',

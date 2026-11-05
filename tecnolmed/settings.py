@@ -8,6 +8,8 @@ from .deployment import postgres_database, upload_storage, validate_public_setti
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+MUNICIPAL_HEALTH_ENCRYPTION_KEY = config('MUNICIPAL_HEALTH_ENCRYPTION_KEY', default='')
+
 RENDER_EXTERNAL_HOSTNAME = config("RENDER_EXTERNAL_HOSTNAME", default=None)
 DEBUG = config("DEBUG", default=not bool(RENDER_EXTERNAL_HOSTNAME), cast=bool)
 SECRET_KEY = config("SECRET_KEY", default="dev-secret-key-nao-use-em-producao" if DEBUG else '')

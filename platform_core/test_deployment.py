@@ -18,6 +18,32 @@ def environment(values):
 
 
 class ProductionConfigurationTests(SimpleTestCase):
+    def test_homologacao_desabilita_email_e_fiscal_sem_mudar_settings_principais(self):
+        from tecnolmed import homologation_settings
+        self.assertEqual(homologation_settings.EMAIL_BACKEND, 'django.core.mail.backends.dummy.EmailBackend')
+        self.assertFalse(homologation_settings.FISCAL_SIMULATION_ENABLED)
+        self.assertFalse(homologation_settings.FISCAL_NFCE_LOCAL_ENABLED)
+        self.assertEqual(homologation_settings.SESSION_COOKIE_NAME, 'vertyx_homologacao_sessionid')
+        self.assertEqual(homologation_settings.CSRF_COOKIE_NAME, 'vertyx_homologacao_csrftoken')
+
+    @override_settings(FISCAL_SIMULATION_ENABLED=False, FISCAL_NFCE_LOCAL_ENABLED=False)
+    def test_fiscal_desabilitado_rejeita_execucao_antes_de_operar(self):
+        from django.core.exceptions import ValidationError
+        from fiscal.foundation import simulacao
+        from fiscal.nfce.services import local
+        with self.assertRaises(ValidationError):
+            simulacao()
+        with self.assertRaises(ValidationError):
+            local()
+
+    def test_render_internal_database_url_preserva_host_banco_e_ssl(self):
+        data = postgres_database(environment({
+            'DATABASE_URL': 'postgresql://demo:synthetic@dpg-demo-internal/vertyx_demo',
+        }), False)
+        self.assertEqual(data['HOST'], 'dpg-demo-internal')
+        self.assertEqual(data['NAME'], 'vertyx_demo')
+        self.assertEqual(data['OPTIONS']['sslmode'], 'require')
+
     def test_sem_database_url_producao_falha_sem_fallback(self):
         with self.assertRaises(ImproperlyConfigured):
             postgres_database(environment({}), False)
@@ -229,3 +255,29 @@ class RemoteStorageTests(TestCase):
                 self.data_a['conference'].refresh_from_db()
                 from ordens import services
                 self.assertEqual(services.digest(self.data_a['conference'].dados), self.data_a['conference'].digest)
+
+class CommercialHomologationBoundaryTests(TestCase):
+    """An Assistance-only organization must not reach unreleased municipal flows."""
+    from .tests import MultiTenantTests
+    setUp = MultiTenantTests.setUp
+    make_user = MultiTenantTests.make_user
+    make_data = MultiTenantTests.make_data
+
+    def test_assistance_users_cannot_read_or_write_clinical_or_procurement_routes(self):
+        from uuid import UUID
+        patient = UUID('00000000-0000-0000-0000-000000000001')
+        paths = [
+            '/gestao-publica/licitacoes/',
+            '/gestao-publica/saude/prontuarios/',
+            f'/gestao-publica/saude/prontuarios/{patient}/',
+            f'/gestao-publica/saude/prontuarios/{patient}/atendimentos/',
+        ]
+        for user in (self.admin_a, self.tech_a):
+            self.assertFalse(user.is_staff)
+            self.assertFalse(user.is_superuser)
+            self.client.force_login(user)
+            for path in paths:
+                for method in ('get', 'post'):
+                    with self.subTest(role=user.username, path=path, method=method):
+                        response = getattr(self.client, method)(path)
+                        self.assertIn(response.status_code, (403, 404))

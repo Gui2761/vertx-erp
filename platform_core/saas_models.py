@@ -337,22 +337,30 @@ class PrimeiroAcessoSaaS(models.Model):
     def clean(self):
         if not re.fullmatch(r'[0-9a-f]{64}', self.token_digest or ''):
             raise ValidationError({'token_digest': 'Armazene somente o SHA-256 do token.'})
-        if self.user_id and self.organization_id:
-            active_membership = self.user.memberships.filter(
-                organization_id=self.organization_id, status='ATIVO',
-            ).first()
-            ordinary_admin = bool(active_membership and active_membership.role == 'ADMIN')
-            municipal_admin = False
-            if active_membership:
-                from rh_municipal.models import AcessoMunicipal
-                municipal_admin = AcessoMunicipal.all_objects.filter(
-                    membership=active_membership,
-                    papel=AcessoMunicipal.Papel.ADMIN_PREFEITURA,
-                    escopo=AcessoMunicipal.Escopo.PREFEITURA,
-                    ativo=True,
-                ).exists()
-            if not ordinary_admin and not municipal_admin:
-                raise ValidationError({'user': 'O usuário deve possuir membership ativo ADMIN ou acesso municipal ADMIN_PREFEITURA na organização do token.'})
+        if self.user_id and self.organization_id and not self.access_is_active():
+            raise ValidationError({'user': 'O usuário deve possuir vínculo e acesso ativos na organização do convite.'})
+
+    def access_is_active(self):
+        from .models import OrganizationMembership
+        if not self.user.is_active or self.organization.status != 'ATIVA':
+            return False
+        membership = OrganizationMembership.objects.filter(
+            user_id=self.user_id, organization_id=self.organization_id, status='ATIVO',
+        ).first()
+        if membership is None:
+            return False
+        if membership.role == 'ADMIN':
+            return True  # Preserve the initial tenant administrator flow.
+        from .access import has_erp_access
+        if membership.role in ('TECNICO', 'ESTOQUE', 'FINANCEIRO', 'ATENDIMENTO', 'VENDEDOR'):
+            return not self.user.is_staff and not self.user.is_superuser and has_erp_access(
+                self.user, self.organization, code='assistencia',
+            )
+        from rh_municipal.models import AcessoMunicipal
+        return AcessoMunicipal.all_objects.filter(
+            membership=membership, papel=AcessoMunicipal.Papel.ADMIN_PREFEITURA,
+            escopo=AcessoMunicipal.Escopo.PREFEITURA, ativo=True,
+        ).exists()
 
     @staticmethod
     def digest(raw_token):

@@ -10,3 +10,12 @@ tmp
 media
 media_private
 staticfiles
+backups
+output
+material_comercial
+*.sqlite3-*
+*.dump
+*.backup
+*.log
+*.tmp
+validation_settings_*.py

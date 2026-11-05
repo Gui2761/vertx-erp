@@ -331,6 +331,9 @@ def reemitir_primeiro_acesso(*, actor, organization):
         Organization.objects.select_for_update().get(pk=organization.pk)
         current = PrimeiroAcessoSaaS.objects.select_for_update().filter(
             organization=organization, usado_em__isnull=True,
+            user_id__in=OrganizationMembership.objects.filter(
+                organization=organization, role='ADMIN', status='ATIVO',
+            ).values('user_id'),
         ).order_by('-criado_em').first()
         if current is None:
             raise ValidationError('Não há um primeiro acesso pendente para reemitir.')
@@ -358,6 +361,81 @@ def reemitir_primeiro_acesso(*, actor, organization):
         return {'token': raw_token, 'token_id': replacement.pk, 'user': user,
                 'invalidated_token_id': previous_id, 'created_at': replacement.criado_em,
                 'expires_at': replacement.expira_em}
+
+
+@transaction.atomic
+def convidar_avaliador(*, actor, organization, nome, email, role):
+    """Create a restricted member, with no password or administrative grant."""
+    from django.core.exceptions import PermissionDenied
+    from django.core.validators import validate_email
+    from .access import has_erp_access
+    organization = Organization.objects.select_for_update().get(pk=organization.pk)
+    if not actor or not actor.is_active or not OrganizationMembership.objects.filter(
+        user=actor, organization=organization, status='ATIVO', role='ADMIN',
+    ).exists() or not has_erp_access(actor, organization, code='assistencia'):
+        raise PermissionDenied('Somente o administrador ativo desta organização pode convidar avaliadores.')
+    if role not in ('TECNICO', 'ESTOQUE', 'FINANCEIRO', 'ATENDIMENTO', 'VENDEDOR'):
+        raise ValidationError('Escolha um perfil restrito, sem administração.')
+    email = email.strip().casefold()
+    validate_email(email)
+    if not nome.strip():
+        raise ValidationError('Informe o nome do avaliador.')
+    User = get_user_model()
+    if User.objects.filter(email__iexact=email).exists():
+        raise ValidationError('Já existe uma conta com este e-mail; nenhum vínculo ou senha foi alterado.')
+    verificar_limite(organization, 'usuarios')
+    parts = nome.strip().split(None, 1)
+    user = User(username=_username_for(email), email=email, first_name=parts[0][:150],
+                last_name=parts[1][:150] if len(parts) > 1 else '', perfil=role,
+                is_staff=False, is_superuser=False)
+    user.set_unusable_password()
+    user.save()
+    membership = OrganizationMembership.objects.create(organization=organization, user=user, role=role)
+    erp = ERPCatalog.objects.get(code='assistencia', active=True)
+    MembershipERP.objects.create(membership=membership, erp=erp, enabled=True)
+    raw = secrets.token_urlsafe(48)
+    token = PrimeiroAcessoSaaS(organization=organization, user=user,
+        token_digest=PrimeiroAcessoSaaS.digest(raw), expira_em=timezone.now() + timedelta(hours=48))
+    token.full_clean()
+    token.save()
+    registrar(actor, 'AVALIADOR_CONVIDADO', f'membership:{membership.pk}', organization=organization,
+              details={'user_id': user.pk, 'role': role, 'token_id': token.pk})
+    return {'user': user, 'membership': membership, 'token': raw, 'token_id': token.pk}
+
+
+@transaction.atomic
+def reemitir_convite_avaliador(*, actor, organization, user_id):
+    """Rotate a restricted member's unused link; never reset an activated account."""
+    from django.core.exceptions import PermissionDenied
+    from .access import has_erp_access
+    organization = Organization.objects.select_for_update().get(pk=organization.pk)
+    if not actor or not actor.is_active or not OrganizationMembership.objects.filter(
+        user=actor, organization=organization, status='ATIVO', role='ADMIN',
+    ).exists() or not has_erp_access(actor, organization, code='assistencia'):
+        raise PermissionDenied('Somente o administrador ativo desta organização pode reemitir convites.')
+    membership = OrganizationMembership.objects.filter(
+        organization=organization, user_id=user_id, status='ATIVO',
+        role__in=('TECNICO', 'ESTOQUE', 'FINANCEIRO', 'ATENDIMENTO', 'VENDEDOR'),
+    ).first()
+    if membership is None:
+        raise ValidationError('Avaliador ativo não encontrado nesta organização.')
+    pending = list(PrimeiroAcessoSaaS.objects.select_for_update().filter(
+        organization=organization, user_id=user_id, usado_em__isnull=True,
+    ))
+    user = get_user_model().objects.select_for_update().get(pk=user_id)
+    probe = PrimeiroAcessoSaaS(organization=organization, user=user)
+    if user.has_usable_password() or not probe.access_is_active():
+        raise ValidationError('A conta já foi ativada ou o acesso foi revogado; nenhuma senha foi alterada.')
+    for previous in pending:
+        previous.usado_em = timezone.now()
+        previous.save(update_fields=['usado_em'])
+    raw = secrets.token_urlsafe(48)
+    token = PrimeiroAcessoSaaS(organization=organization, user=user,
+        token_digest=PrimeiroAcessoSaaS.digest(raw), expira_em=timezone.now()+timedelta(hours=48))
+    token.full_clean(); token.save()
+    registrar(actor, 'CONVITE_AVALIADOR_REEMITIDO', f'membership:{membership.pk}',
+              organization=organization, details={'user_id':user.pk, 'token_id':token.pk})
+    return {'user':user, 'membership':membership, 'token':raw, 'token_id':token.pk}
 
 
 def aplicar_modulos(organization, plan):
