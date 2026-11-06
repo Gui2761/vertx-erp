@@ -1,0 +1,3543 @@
+{
+  "mode": "plan_only_no_migrations_executed",
+  "expected_database": "vertyx_testes",
+  "count": 137,
+  "plan_sha256": "bdf38109ef7ed3abeb746685229dcbd2629a75056a1c494d7a85a97135104ed2",
+  "leaf_nodes": [
+    [
+      "admin",
+      "0003_logentry_add_action_flag_choices"
+    ],
+    [
+      "auth",
+      "0012_alter_user_first_name_max_length"
+    ],
+    [
+      "clientes",
+      "0005_fundacao_bloco3"
+    ],
+    [
+      "commercial",
+      "0001_initial"
+    ],
+    [
+      "contas",
+      "0009_alter_usuario_perfil"
+    ],
+    [
+      "contenttypes",
+      "0002_remove_content_type_name"
+    ],
+    [
+      "equipamentos",
+      "0007_operacao_bloco2"
+    ],
+    [
+      "gestao",
+      "0017_alter_formapagamento_tipo_pdv"
+    ],
+    [
+      "operacao",
+      "0028_pagamentovenda_parcelas_and_more"
+    ],
+    [
+      "ordens",
+      "0012_piloto_jornada_contratual"
+    ],
+    [
+      "platform_core",
+      "0024_itemcontratosaas_nivel_indicadores_snapshot"
+    ],
+    [
+      "rh_municipal",
+      "0016_itemprescricao_nome_protegido"
+    ],
+    [
+      "sessions",
+      "0001_initial"
+    ]
+  ],
+  "migrations": [
+    {
+      "app": "contenttypes",
+      "migration": "0001_initial",
+      "dependencies": [],
+      "operations": [
+        "Create model ContentType",
+        "Alter unique_together for contenttype (1 constraint(s))"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "35ed8489a147e0b42a15c21b5d4f0e8940de6f73fb326e9d6dea91b4d0b953cc"
+    },
+    {
+      "app": "contenttypes",
+      "migration": "0002_remove_content_type_name",
+      "dependencies": [
+        [
+          "contenttypes",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Change Meta options on contenttype",
+        "Alter field name on contenttype",
+        "Raw Python operation",
+        "Remove field name from contenttype"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "7d36494075750f0ed3c0f68d0cb1548eba59cc593f52f691f6cc37a043083766"
+    },
+    {
+      "app": "auth",
+      "migration": "0001_initial",
+      "dependencies": [
+        [
+          "contenttypes",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model Permission",
+        "Create model Group",
+        "Create model User"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "845cff319606332f49ef20ce165d1a17e522c426c5e56d7616133e9e4eaba5ef"
+    },
+    {
+      "app": "auth",
+      "migration": "0002_alter_permission_name_max_length",
+      "dependencies": [
+        [
+          "auth",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Alter field name on permission"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "feaf97e0e8f7d148bec3db9bab2349c5e15888117c1ff2829deff63ef9e16cff"
+    },
+    {
+      "app": "auth",
+      "migration": "0003_alter_user_email_max_length",
+      "dependencies": [
+        [
+          "auth",
+          "0002_alter_permission_name_max_length"
+        ]
+      ],
+      "operations": [
+        "Alter field email on user"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "9d5657b4db9872dc26c2d634c2f5911a3d69ab1d8552af4c6d633bc4001dfabf"
+    },
+    {
+      "app": "auth",
+      "migration": "0004_alter_user_username_opts",
+      "dependencies": [
+        [
+          "auth",
+          "0003_alter_user_email_max_length"
+        ]
+      ],
+      "operations": [
+        "Alter field username on user"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "9538db342c9a9bec4ca12b3137fb80772c4ea4afb861e8647a2962b1ea58344a"
+    },
+    {
+      "app": "auth",
+      "migration": "0005_alter_user_last_login_null",
+      "dependencies": [
+        [
+          "auth",
+          "0004_alter_user_username_opts"
+        ]
+      ],
+      "operations": [
+        "Alter field last_login on user"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "79f60a35dc000fdd427bc05c85233ae5b9c4ada078ff0688fc9f78604bf7eaee"
+    },
+    {
+      "app": "auth",
+      "migration": "0006_require_contenttypes_0002",
+      "dependencies": [
+        [
+          "auth",
+          "0005_alter_user_last_login_null"
+        ],
+        [
+          "contenttypes",
+          "0002_remove_content_type_name"
+        ]
+      ],
+      "operations": [],
+      "contains_data_operations": false,
+      "source_sha256": "00cb16e3405f14b62dbeffa15c68c9030291e4ddd513d733648ba460d6c5e781"
+    },
+    {
+      "app": "auth",
+      "migration": "0007_alter_validators_add_error_messages",
+      "dependencies": [
+        [
+          "auth",
+          "0006_require_contenttypes_0002"
+        ]
+      ],
+      "operations": [
+        "Alter field username on user"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "115db87dc327530fb5e1964ba3d03f9746492f90600406947be39f54f6cc042f"
+    },
+    {
+      "app": "auth",
+      "migration": "0008_alter_user_username_max_length",
+      "dependencies": [
+        [
+          "auth",
+          "0007_alter_validators_add_error_messages"
+        ]
+      ],
+      "operations": [
+        "Alter field username on user"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "02857f65f7d648147a5d12596b200a83e29145391d3f986ceb84b3b865a2c351"
+    },
+    {
+      "app": "auth",
+      "migration": "0009_alter_user_last_name_max_length",
+      "dependencies": [
+        [
+          "auth",
+          "0008_alter_user_username_max_length"
+        ]
+      ],
+      "operations": [
+        "Alter field last_name on user"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "19a89500e7f108a7397da9b1733181f92105f758663b3685b60f5c2da384d76e"
+    },
+    {
+      "app": "auth",
+      "migration": "0010_alter_group_name_max_length",
+      "dependencies": [
+        [
+          "auth",
+          "0009_alter_user_last_name_max_length"
+        ]
+      ],
+      "operations": [
+        "Alter field name on group"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "0963ed6498ac0b3a8430b6ca34c1b4a4b1d5f55b43d3db902f15a03ff74b14cd"
+    },
+    {
+      "app": "auth",
+      "migration": "0011_update_proxy_permissions",
+      "dependencies": [
+        [
+          "auth",
+          "0010_alter_group_name_max_length"
+        ],
+        [
+          "contenttypes",
+          "0002_remove_content_type_name"
+        ]
+      ],
+      "operations": [
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "85a5dde708dc4b6111e1bc71ce723ecfba7b1f8aedecfd130900ff7782765436"
+    },
+    {
+      "app": "auth",
+      "migration": "0012_alter_user_first_name_max_length",
+      "dependencies": [
+        [
+          "auth",
+          "0011_update_proxy_permissions"
+        ]
+      ],
+      "operations": [
+        "Alter field first_name on user"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "6cefbc9f80903763ff8492a537a22836ef69f2227e19d402509b8099d2baecb0"
+    },
+    {
+      "app": "contas",
+      "migration": "0001_initial",
+      "dependencies": [
+        [
+          "auth",
+          "0012_alter_user_first_name_max_length"
+        ]
+      ],
+      "operations": [
+        "Create model Usuario",
+        "Create model Tecnico"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "d958a8f4155ca82838b696db9f4947329885cd10be1d8aa48d93ebc21e54b198"
+    },
+    {
+      "app": "admin",
+      "migration": "0001_initial",
+      "dependencies": [
+        [
+          "contas",
+          "__first__"
+        ],
+        [
+          "contenttypes",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model LogEntry"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "f4716989d9815b6231f0d7291754835e008c96818447fe57984bbf8985883335"
+    },
+    {
+      "app": "admin",
+      "migration": "0002_logentry_remove_auto_add",
+      "dependencies": [
+        [
+          "admin",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Alter field action_time on logentry"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "2c127e659a2236edea0ed57eccd38786ae84e365790a80b96b758c617f50be43"
+    },
+    {
+      "app": "admin",
+      "migration": "0003_logentry_add_action_flag_choices",
+      "dependencies": [
+        [
+          "admin",
+          "0002_logentry_remove_auto_add"
+        ]
+      ],
+      "operations": [
+        "Alter field action_flag on logentry"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "02700a827190720e5c417495a395071b6baa28a34e74bc8f90824afaafc01841"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0001_initial",
+      "dependencies": [
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model ERPCatalog",
+        "Create model Organization",
+        "Create model OrganizationERP",
+        "Create model OrganizationMembership",
+        "Create model PlatformAudit",
+        "Create model MembershipERP",
+        "Create constraint organization_cnpj_unique on model organization",
+        "Add field erp to organizationerp",
+        "Add field organization to organizationerp",
+        "Add field organization to organizationmembership",
+        "Add field user to organizationmembership",
+        "Add field membership to membershiperp",
+        "Add field erp to platformaudit",
+        "Add field organization to platformaudit",
+        "Add field user to platformaudit",
+        "Create constraint organization_erp_unique on model organizationerp",
+        "Create constraint organization_user_unique on model organizationmembership",
+        "Create constraint membership_erp_unique on model membershiperp"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "94f64d1704fd9271b28158a0407dc407c8e92ff795ca5b1041f4332ef84f60f9"
+    },
+    {
+      "app": "clientes",
+      "migration": "0001_initial",
+      "dependencies": [],
+      "operations": [
+        "Create model Cliente",
+        "Create model Unidade",
+        "Create model ContatoCliente"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "5117f15d5cd9b500e956f7bc08501d0f117b2d9f82de587b803b6fd1494da86f"
+    },
+    {
+      "app": "equipamentos",
+      "migration": "0001_initial",
+      "dependencies": [
+        [
+          "clientes",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Create model CategoriaEquipamento",
+        "Create model Equipamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "63c4699c311f265e4c94f3a2f9cbd5820e6a9469a095d9464472e64159680076"
+    },
+    {
+      "app": "ordens",
+      "migration": "0001_initial",
+      "dependencies": [
+        [
+          "clientes",
+          "0001_initial"
+        ],
+        [
+          "contas",
+          "0001_initial"
+        ],
+        [
+          "equipamentos",
+          "0001_initial"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model OrdemServico",
+        "Create model Localizacao",
+        "Create model Foto",
+        "Create model Conferencia",
+        "Create model Auditoria",
+        "Create model Assinatura",
+        "Create constraint assinatura_unica_ciclo on model assinatura"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "b3accea5dc9bc372f363b7e5232e98b6ea715ba8c0b19c870ae7c9e9552e7049"
+    },
+    {
+      "app": "ordens",
+      "migration": "0002_localizacao_geo_resultado_coerente_and_more",
+      "dependencies": [
+        [
+          "ordens",
+          "0001_initial"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create constraint geo_resultado_coerente on model localizacao",
+        "Create constraint geo_precisao_positiva on model localizacao",
+        "Create constraint geo_inicio_unico_ciclo on model localizacao"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "974412ad69e3bff0253be7fef2aaab151546089800f82a80d7400546d3b842b9"
+    },
+    {
+      "app": "equipamentos",
+      "migration": "0002_categoriaequipamento_organization_and_more",
+      "dependencies": [
+        [
+          "equipamentos",
+          "0001_initial"
+        ],
+        [
+          "platform_core",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Add field organization to categoriaequipamento",
+        "Add field organization to equipamento",
+        "Alter field nome on categoriaequipamento",
+        "Create constraint categoria_nome_por_org on model categoriaequipamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "0ca5d050c8bb5f18dc66fe100f36ec0f1b70c9af276694ce833970e3192bfcb8"
+    },
+    {
+      "app": "contas",
+      "migration": "0002_tecnico_organization_alter_tecnico_usuario_and_more",
+      "dependencies": [
+        [
+          "contas",
+          "0001_initial"
+        ],
+        [
+          "platform_core",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Add field organization to tecnico",
+        "Alter field usuario on tecnico",
+        "Create constraint tecnico_usuario_por_org on model tecnico"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "b9f472e6321c73c9d749aac8fd14f89940c373b79991e2aa983c6616c685c1af"
+    },
+    {
+      "app": "clientes",
+      "migration": "0002_cliente_organization_alter_cliente_cpf_cnpj_and_more",
+      "dependencies": [
+        [
+          "clientes",
+          "0001_initial"
+        ],
+        [
+          "platform_core",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Add field organization to cliente",
+        "Alter field cpf_cnpj on cliente",
+        "Create constraint cliente_documento_por_org on model cliente"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "3614b62d087b46533a56faf8cfa644d9f787071d13fcf4534f0923f38d52e6ed"
+    },
+    {
+      "app": "ordens",
+      "migration": "0003_ordemservico_organization_and_more",
+      "dependencies": [
+        [
+          "clientes",
+          "0002_cliente_organization_alter_cliente_cpf_cnpj_and_more"
+        ],
+        [
+          "contas",
+          "0002_tecnico_organization_alter_tecnico_usuario_and_more"
+        ],
+        [
+          "equipamentos",
+          "0002_categoriaequipamento_organization_and_more"
+        ],
+        [
+          "ordens",
+          "0002_localizacao_geo_resultado_coerente_and_more"
+        ],
+        [
+          "platform_core",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Add field organization to ordemservico",
+        "Create index os_org_status_abertura on field(s) organization, status, -abertura of model ordemservico"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "8279d12cefec99d2eae0fe1abc90a1b0603fa261b463578bbc2bc1e03d1b048a"
+    },
+    {
+      "app": "ordens",
+      "migration": "0004_conferencia_issuer",
+      "dependencies": [
+        [
+          "ordens",
+          "0003_ordemservico_organization_and_more"
+        ]
+      ],
+      "operations": [
+        "Add field issuer to conferencia"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "09785cabf1596471ce2172295e92f2b4cef33eb403e2909b4a8f2fb80acefb9c"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0002_tecnolmed_backfill",
+      "dependencies": [
+        [
+          "platform_core",
+          "0001_initial"
+        ],
+        [
+          "clientes",
+          "0002_cliente_organization_alter_cliente_cpf_cnpj_and_more"
+        ],
+        [
+          "contas",
+          "0002_tecnico_organization_alter_tecnico_usuario_and_more"
+        ],
+        [
+          "equipamentos",
+          "0002_categoriaequipamento_organization_and_more"
+        ],
+        [
+          "ordens",
+          "0004_conferencia_issuer"
+        ]
+      ],
+      "operations": [
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "eaafb03bd2fa15858f89408613652af6aaa84021b04b2e7f3398e6c6dd82d5b9"
+    },
+    {
+      "app": "clientes",
+      "migration": "0003_require_organization",
+      "dependencies": [
+        [
+          "clientes",
+          "0002_cliente_organization_alter_cliente_cpf_cnpj_and_more"
+        ],
+        [
+          "platform_core",
+          "0002_tecnolmed_backfill"
+        ]
+      ],
+      "operations": [
+        "Alter field organization on cliente"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "1a0c40a6fa978f555219167213b226d057eae17f2db02ef38e87cf4215bc0509"
+    },
+    {
+      "app": "clientes",
+      "migration": "0004_cliente_inscricao_estadual_and_more",
+      "dependencies": [
+        [
+          "clientes",
+          "0003_require_organization"
+        ]
+      ],
+      "operations": [
+        "Add field inscricao_estadual to cliente",
+        "Add field inscricao_municipal to cliente",
+        "Add field responsavel to cliente",
+        "Add field email to unidade",
+        "Add field observacoes to unidade"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "a82f27049974924c173e1399b042c388d5d56a861a90efa4c672c2c099fa7352"
+    },
+    {
+      "app": "clientes",
+      "migration": "0005_fundacao_bloco3",
+      "dependencies": [
+        [
+          "clientes",
+          "0004_cliente_inscricao_estadual_and_more"
+        ]
+      ],
+      "operations": [
+        "Add field limite_credito to cliente"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "eadaa8ac7ef455a5c94f581842f8e3c34d0819fdbd17736db075713694f80e8e"
+    },
+    {
+      "app": "commercial",
+      "migration": "0001_initial",
+      "dependencies": [],
+      "operations": [
+        "Create model PlanoComercial",
+        "Create model InteresseComercial",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "b215b584e954132384949a292430e9e2966055c539a333cf86edf761cbb78f38"
+    },
+    {
+      "app": "contas",
+      "migration": "0003_require_organization",
+      "dependencies": [
+        [
+          "contas",
+          "0002_tecnico_organization_alter_tecnico_usuario_and_more"
+        ],
+        [
+          "platform_core",
+          "0002_tecnolmed_backfill"
+        ]
+      ],
+      "operations": [
+        "Alter field organization on tecnico"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "ff8bb997061d2a748d3cdaf00e349d9b88cec038db865b9a36a9ed79314b3a02"
+    },
+    {
+      "app": "contas",
+      "migration": "0004_alter_usuario_perfil",
+      "dependencies": [
+        [
+          "contas",
+          "0003_require_organization"
+        ]
+      ],
+      "operations": [
+        "Alter field perfil on usuario"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "ef3f010a689839f6639655b5343302a57d1f36099766aae6e20c21688f8441cb"
+    },
+    {
+      "app": "contas",
+      "migration": "0005_alter_usuario_perfil",
+      "dependencies": [
+        [
+          "contas",
+          "0004_alter_usuario_perfil"
+        ]
+      ],
+      "operations": [
+        "Alter field perfil on usuario"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "890866935ba70fbd074ebe6590d3e3007fdf9efb0c847a5ca186bf20c2d4c612"
+    },
+    {
+      "app": "contas",
+      "migration": "0006_alter_usuario_perfil",
+      "dependencies": [
+        [
+          "contas",
+          "0005_alter_usuario_perfil"
+        ]
+      ],
+      "operations": [
+        "Alter field perfil on usuario"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "9d2d203e5244ee0f3759df469288598c69ac413d4a1c564431ac525d284502a3"
+    },
+    {
+      "app": "contas",
+      "migration": "0007_operacao_bloco2",
+      "dependencies": [
+        [
+          "contas",
+          "0006_alter_usuario_perfil"
+        ]
+      ],
+      "operations": [
+        "Add field competencias to tecnico",
+        "Add field conselho to tecnico",
+        "Add field funcao to tecnico",
+        "Add field numero_registro to tecnico"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "d8645b5c712ff8d96fd28e2ed5d261f7cdbaa3d2b775133678920807740737e8"
+    },
+    {
+      "app": "contas",
+      "migration": "0008_fundacao_bloco3",
+      "dependencies": [
+        [
+          "contas",
+          "0007_operacao_bloco2"
+        ]
+      ],
+      "operations": [
+        "Alter field perfil on usuario"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "97739cb3e8f8fef69f6d0d184378b7ebaf164c4c6d7875f43b32f9ab5d5acbd1"
+    },
+    {
+      "app": "contas",
+      "migration": "0009_alter_usuario_perfil",
+      "dependencies": [
+        [
+          "contas",
+          "0008_fundacao_bloco3"
+        ]
+      ],
+      "operations": [
+        "Alter field perfil on usuario"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "9566ebfd5d77708b2c5281cc6782738f977888a346c6bb067ba32da1c6404be2"
+    },
+    {
+      "app": "equipamentos",
+      "migration": "0003_require_organization",
+      "dependencies": [
+        [
+          "equipamentos",
+          "0002_categoriaequipamento_organization_and_more"
+        ],
+        [
+          "platform_core",
+          "0002_tecnolmed_backfill"
+        ]
+      ],
+      "operations": [
+        "Alter field organization on categoriaequipamento",
+        "Alter field organization on equipamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "596269be0e03188b414f9adcfd654c9a7825726f717cfd3c197174cf5859e386"
+    },
+    {
+      "app": "equipamentos",
+      "migration": "0004_organization_upload_paths",
+      "dependencies": [
+        [
+          "equipamentos",
+          "0003_require_organization"
+        ]
+      ],
+      "operations": [
+        "Alter field foto on equipamento",
+        "Alter field manual on equipamento",
+        "Alter field qr_code on equipamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "cb5dd8759b9a0bb3f36c3d73519707028f662b443c84434518f0e6b75888f725"
+    },
+    {
+      "app": "equipamentos",
+      "migration": "0005_equipamento_criticidade_equipamento_data_aquisicao_and_more",
+      "dependencies": [
+        [
+          "equipamentos",
+          "0004_organization_upload_paths"
+        ]
+      ],
+      "operations": [
+        "Add field criticidade to equipamento",
+        "Add field data_aquisicao to equipamento",
+        "Add field localizacao to equipamento",
+        "Add field patrimonio to equipamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "8ba9d6817a5fa25a04b40a4131fedbfcb6ea752a2f8dc0c499164f2fb59c9432"
+    },
+    {
+      "app": "equipamentos",
+      "migration": "0006_alter_equipamento_criticidade",
+      "dependencies": [
+        [
+          "equipamentos",
+          "0005_equipamento_criticidade_equipamento_data_aquisicao_and_more"
+        ]
+      ],
+      "operations": [
+        "Alter field criticidade on equipamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "64e0aa0024e16fbefd171ed6e6998a829e773c1510311539b80dfb8371152a22"
+    },
+    {
+      "app": "equipamentos",
+      "migration": "0007_operacao_bloco2",
+      "dependencies": [
+        [
+          "equipamentos",
+          "0006_alter_equipamento_criticidade"
+        ]
+      ],
+      "operations": [
+        "Add field marca to equipamento",
+        "Add field potencia to equipamento",
+        "Add field registro_anvisa to equipamento",
+        "Add field situacao_cadastro to equipamento",
+        "Add field tensao to equipamento",
+        "Add field tipo to equipamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "751d3ff96c94ca46dcdb68619c6c994d67d637ae9bf8d4ee30b83b631bda06e5"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0003_alter_organizationmembership_role",
+      "dependencies": [
+        [
+          "platform_core",
+          "0002_tecnolmed_backfill"
+        ]
+      ],
+      "operations": [
+        "Alter field role on organizationmembership"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "bb32cf3d753f05330110c2db73d854671ce459510040be3a82298b49a18a4fb9"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0004_membershiperp_visualizar_painel_operacional_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0003_alter_organizationmembership_role"
+        ]
+      ],
+      "operations": [
+        "Add field visualizar_painel_operacional to membershiperp",
+        "Alter field role on organizationmembership"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "415941604dd9ad3b0e44b96a826ef68e0eb050bb071f6a907027f8383e4055ee"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0005_fundacao_bloco3",
+      "dependencies": [
+        [
+          "platform_core",
+          "0004_membershiperp_visualizar_painel_operacional_and_more"
+        ]
+      ],
+      "operations": [
+        "Alter field role on organizationmembership",
+        "Create model ConfiguracaoEmpresa",
+        "Create model FilialEmpresa",
+        "Create model ModuloOrganizacao",
+        "Create model PermissaoMembership"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "abea25e613fb8a3e7a4b35d8277dd44cc3e35e51ce2c5c775c7aaee056453f01"
+    },
+    {
+      "app": "ordens",
+      "migration": "0005_require_organization",
+      "dependencies": [
+        [
+          "ordens",
+          "0004_conferencia_issuer"
+        ],
+        [
+          "platform_core",
+          "0002_tecnolmed_backfill"
+        ]
+      ],
+      "operations": [
+        "Alter field organization on ordemservico"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "fa73d1981a3f9babcddfeb98a613874e6c34408efad7842c2c3cc0d804f1823d"
+    },
+    {
+      "app": "ordens",
+      "migration": "0006_private_object_key_length",
+      "dependencies": [
+        [
+          "ordens",
+          "0005_require_organization"
+        ]
+      ],
+      "operations": [
+        "Alter field arquivo on foto"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "c19e8e1208250ceade320df438568dd0c9fd41f38ef6b7011c2bc07897a48d0b"
+    },
+    {
+      "app": "ordens",
+      "migration": "0007_ordemservico_valor_cobranca_and_more",
+      "dependencies": [
+        [
+          "ordens",
+          "0006_private_object_key_length"
+        ]
+      ],
+      "operations": [
+        "Add field valor_cobranca to ordemservico",
+        "Add field vencimento_cobranca to ordemservico"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "d2ca4d1d080a5870661092cc65efc0f62b29c01603b63c0e782ee8fa5a6f547c"
+    },
+    {
+      "app": "gestao",
+      "migration": "0001_initial",
+      "dependencies": [
+        [
+          "clientes",
+          "0003_require_organization"
+        ],
+        [
+          "contas",
+          "0004_alter_usuario_perfil"
+        ],
+        [
+          "equipamentos",
+          "0004_organization_upload_paths"
+        ],
+        [
+          "ordens",
+          "0007_ordemservico_valor_cobranca_and_more"
+        ],
+        [
+          "platform_core",
+          "0002_tecnolmed_backfill"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model CategoriaFinanceira",
+        "Create model CentroCusto",
+        "Create model Contrato",
+        "Create model AgendaPreventiva",
+        "Create model ContratoEquipamento",
+        "Add field equipamentos to contrato",
+        "Create model ContratoUnidade",
+        "Add field unidades to contrato",
+        "Create model FormaPagamento",
+        "Create model Fornecedor",
+        "Create model Lancamento",
+        "Create model EventoFinanceiro",
+        "Create model Orcamento",
+        "Add field orcamento to lancamento",
+        "Create model Peca",
+        "Create model Movimentacao",
+        "Create model ItemOrcamento",
+        "Create constraint categoriafinanceira_nome_org on model categoriafinanceira",
+        "Create constraint centrocusto_nome_org on model centrocusto",
+        "Create constraint agenda_contrato_equip_data on model agendapreventiva",
+        "Create constraint contrato_equipamento_unique on model contratoequipamento",
+        "Create constraint contrato_unidade_unique on model contratounidade",
+        "Create constraint contrato_numero_org on model contrato",
+        "Create constraint contrato_datas_validas on model contrato",
+        "Create constraint formapagamento_nome_org on model formapagamento",
+        "Create constraint recebivel_os_unique on model lancamento",
+        "Create constraint recebivel_orcamento_unique on model lancamento",
+        "Create constraint recebivel_contrato_comp_unique on model lancamento",
+        "Create constraint lancamento_valor_positivo on model lancamento",
+        "Create constraint lancamento_liquidacao_coerente on model lancamento",
+        "Create constraint peca_sku_org on model peca",
+        "Create constraint peca_saldo_nao_negativo on model peca",
+        "Create constraint mov_saldo_nao_negativo on model movimentacao",
+        "Create constraint mov_request_org_unique on model movimentacao"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "509f7859df17f4fa13ff3d18fd8c8e3d55d09d9cd017d6c2551995b293df758b"
+    },
+    {
+      "app": "gestao",
+      "migration": "0002_contrato_cobertura_pecas_contrato_cobertura_servicos_and_more",
+      "dependencies": [
+        [
+          "gestao",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Add field cobertura_pecas to contrato",
+        "Add field cobertura_servicos to contrato",
+        "Add field reajuste to contrato"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "d36033de414c454110928eec31ee8e8497eec8eb83fe75d1a917323ee4ac7b8f"
+    },
+    {
+      "app": "ordens",
+      "migration": "0008_ordemservico_agendada_para_ordemservico_checklist_and_more",
+      "dependencies": [
+        [
+          "gestao",
+          "0002_contrato_cobertura_pecas_contrato_cobertura_servicos_and_more"
+        ],
+        [
+          "ordens",
+          "0007_ordemservico_valor_cobranca_and_more"
+        ]
+      ],
+      "operations": [
+        "Add field agendada_para to ordemservico",
+        "Add field checklist to ordemservico",
+        "Add field contrato to ordemservico",
+        "Add field deslocamento_km to ordemservico",
+        "Add field horas to ordemservico",
+        "Add field numero_personalizado to ordemservico",
+        "Add field prazo to ordemservico",
+        "Add field prioridade to ordemservico",
+        "Alter field status on ordemservico",
+        "Alter field tipo_atendimento on ordemservico"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "f4f0c90a030ded39e48d1fd87dc196d3377880920b55f05e397a55a93e740afd"
+    },
+    {
+      "app": "ordens",
+      "migration": "0009_ordemservico_agendada_ate_alter_ordemservico_tecnico",
+      "dependencies": [
+        [
+          "contas",
+          "0006_alter_usuario_perfil"
+        ],
+        [
+          "ordens",
+          "0008_ordemservico_agendada_para_ordemservico_checklist_and_more"
+        ]
+      ],
+      "operations": [
+        "Add field agendada_ate to ordemservico",
+        "Alter field tecnico on ordemservico"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "b1a6b9911673495c5a003ff5e3b7a8e872d1ef455d9932c96f885b4e814dcf05"
+    },
+    {
+      "app": "operacao",
+      "migration": "0001_initial",
+      "dependencies": [
+        [
+          "clientes",
+          "0004_cliente_inscricao_estadual_and_more"
+        ],
+        [
+          "contas",
+          "0005_alter_usuario_perfil"
+        ],
+        [
+          "equipamentos",
+          "0005_equipamento_criticidade_equipamento_data_aquisicao_and_more"
+        ],
+        [
+          "gestao",
+          "0002_contrato_cobertura_pecas_contrato_cobertura_servicos_and_more"
+        ],
+        [
+          "ordens",
+          "0008_ordemservico_agendada_para_ordemservico_checklist_and_more"
+        ],
+        [
+          "platform_core",
+          "0003_alter_organizationmembership_role"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model CategoriaPeca",
+        "Create model Chamado",
+        "Create model Compra",
+        "Create model Configuracao",
+        "Create model ContaBancaria",
+        "Create model CotacaoCompra",
+        "Create model Deposito",
+        "Add field deposito to compra",
+        "Create model DocumentoFiscal",
+        "Create model Documento",
+        "Create model ItemCompra",
+        "Create model ModeloChecklist",
+        "Create model MovimentoCaixa",
+        "Create model ExtratoBancario",
+        "Create model Notificacao",
+        "Create model Pagamento",
+        "Create model Parcela",
+        "Create model PlanoEquipamento",
+        "Create model PlanoPreventivo",
+        "Add field plano to planoequipamento",
+        "Create model PortalCliente",
+        "Create model PreventivaProgramada",
+        "Create model SaidaNotificacao",
+        "Create model SaldoDeposito",
+        "Create model Venda",
+        "Create model ItemVenda",
+        "Add field venda to documentofiscal",
+        "Create constraint categoriapeca_nome_organizacao on model categoriapeca",
+        "Create constraint configuracao_org_unica on model configuracao",
+        "Create constraint contabancaria_nome_organizacao on model contabancaria",
+        "Create constraint deposito_nome_organizacao on model deposito",
+        "Create constraint modelochecklist_nome_organizacao on model modelochecklist",
+        "Create constraint movimento_caixa_referencia on model movimentocaixa",
+        "Create constraint extrato_conta_id_unico on model extratobancario",
+        "Create constraint notificacao_destino_chave on model notificacao",
+        "Create constraint pagamento_request_org on model pagamento",
+        "Create constraint parcela_origem_numero on model parcela",
+        "Create constraint planopreventivo_nome_organizacao on model planopreventivo",
+        "Create constraint plano_equipamento_unico on model planoequipamento",
+        "Create constraint portal_usuario_cliente_org on model portalcliente",
+        "Create constraint preventiva_plano_equip_data on model preventivaprogramada",
+        "Create constraint saldo_deposito_peca on model saldodeposito",
+        "Create constraint saldo_deposito_positivo on model saldodeposito"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "ba56cdf773a08b9812862baae72d0ffbdefe606570abf05a8cc9ef20ef71bd5a"
+    },
+    {
+      "app": "gestao",
+      "migration": "0003_movimentacao_destino_movimentacao_origem_and_more",
+      "dependencies": [
+        [
+          "gestao",
+          "0002_contrato_cobertura_pecas_contrato_cobertura_servicos_and_more"
+        ],
+        [
+          "operacao",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Add field destino to movimentacao",
+        "Add field origem to movimentacao",
+        "Add field deslocamento to orcamento",
+        "Add field impostos to orcamento",
+        "Add field categoria to peca",
+        "Add field cfop to peca",
+        "Add field cst_csosn to peca",
+        "Add field estoque_maximo to peca",
+        "Add field ncm to peca",
+        "Alter field tipo on movimentacao",
+        "Alter field status on orcamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "39beac113e93f56547c1d6cbf6f787bfa6a85d45846c801f00a119200aa82144"
+    },
+    {
+      "app": "gestao",
+      "migration": "0004_orcamento_numero_personalizado",
+      "dependencies": [
+        [
+          "gestao",
+          "0003_movimentacao_destino_movimentacao_origem_and_more"
+        ]
+      ],
+      "operations": [
+        "Add field numero_personalizado to orcamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "23669bce20a85075cf2ed2ed6330d7e56adae6b8046fc6a0bbbbaee45a72d998"
+    },
+    {
+      "app": "gestao",
+      "migration": "0005_movimentacao_detalhamento_peca_controla_validade",
+      "dependencies": [
+        [
+          "gestao",
+          "0004_orcamento_numero_personalizado"
+        ]
+      ],
+      "operations": [
+        "Add field detalhamento to movimentacao",
+        "Add field controla_validade to peca"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "c2fdc0e976d9242a6291dd68b3aaddcfaf75529bc36b12939d34a7c62c53c302"
+    },
+    {
+      "app": "operacao",
+      "migration": "0002_compra_pedido_relatorio_id_compra_selecao_relatorio_and_more",
+      "dependencies": [
+        [
+          "gestao",
+          "0005_movimentacao_detalhamento_peca_controla_validade"
+        ],
+        [
+          "operacao",
+          "0001_initial"
+        ],
+        [
+          "ordens",
+          "0008_ordemservico_agendada_para_ordemservico_checklist_and_more"
+        ],
+        [
+          "platform_core",
+          "0003_alter_organizationmembership_role"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Add field pedido_relatorio_id to compra",
+        "Add field selecao_relatorio to compra",
+        "Add field consumo_historico_dias to configuracao",
+        "Add field dias_alerta_validade to configuracao",
+        "Add field estoque_ideal_padrao to configuracao",
+        "Add field estoque_minimo_padrao to configuracao",
+        "Add field intervalo_alertas_minutos to configuracao",
+        "Add field relatorio_dia_semana to configuracao",
+        "Add field relatorio_horario to configuracao",
+        "Add field relatorio_semanal_ativo to configuracao",
+        "Add field reposicao_dias to configuracao",
+        "Add field ultima_verificacao_estoque to configuracao",
+        "Add field documento_entrada to itemcompra",
+        "Add field fabricacao to itemcompra",
+        "Add field lote to itemcompra",
+        "Add field validade to itemcompra",
+        "Add field resolvida_em to notificacao",
+        "Create model ItemRelatorioEstoque",
+        "Add field relatorio_item to itemcompra",
+        "Create model LoteEstoque",
+        "Create model MovimentacaoLote",
+        "Create model OcorrenciaEstoque",
+        "Add field ocorrencia_estoque to notificacao",
+        "Create model RelatorioEstoque",
+        "Add field relatorio to itemrelatorioestoque",
+        "Add field relatorio_estoque to compra",
+        "Create model ReservaEstoque",
+        "Create constraint lote_quantidade_positiva on model loteestoque",
+        "Create constraint lote_grupo_deposito on model loteestoque",
+        "Create constraint ocorrencia_estoque_aberta_unica on model ocorrenciaestoque",
+        "Create constraint relatorio_estoque_semana_unica on model relatorioestoque",
+        "Create constraint relatorio_estoque_peca_unica on model itemrelatorioestoque",
+        "Create constraint reserva_quantidade_positiva on model reservaestoque"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "f4726a4c3d64b8173906129ca5f6d297c1c703d5f46a0d39022c911b02fb8e72"
+    },
+    {
+      "app": "operacao",
+      "migration": "0003_detalhar_saldos_legados_em_lotes",
+      "dependencies": [
+        [
+          "operacao",
+          "0002_compra_pedido_relatorio_id_compra_selecao_relatorio_and_more"
+        ]
+      ],
+      "operations": [
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "62372476e8de5bf348667b90cb54eda8b4bbed6d4f4ca2a9bb27c0807ec3f2b9"
+    },
+    {
+      "app": "operacao",
+      "migration": "0004_compra_compra_relatorio_request_unico",
+      "dependencies": [
+        [
+          "gestao",
+          "0005_movimentacao_detalhamento_peca_controla_validade"
+        ],
+        [
+          "operacao",
+          "0003_detalhar_saldos_legados_em_lotes"
+        ],
+        [
+          "platform_core",
+          "0003_alter_organizationmembership_role"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create constraint compra_relatorio_request_unico on model compra"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "0c9cbfffbaccc741ef7afe66e3c3d689073c2edef03e3967775326ee8ab0639f"
+    },
+    {
+      "app": "operacao",
+      "migration": "0005_configuracao_painel_blocos_and_more",
+      "dependencies": [
+        [
+          "operacao",
+          "0004_compra_compra_relatorio_request_unico"
+        ]
+      ],
+      "operations": [
+        "Add field painel_blocos to configuracao",
+        "Add field painel_intervalo to configuracao",
+        "Add field painel_tema to configuracao"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "a9f65b81dc0e1819ced20e9a4c9b40563556d76b67989423312bc94b350e2498"
+    },
+    {
+      "app": "operacao",
+      "migration": "0006_estabilizacao_bloco1",
+      "dependencies": [
+        [
+          "operacao",
+          "0005_configuracao_painel_blocos_and_more"
+        ]
+      ],
+      "operations": [
+        "Add field custo_total to itemvenda",
+        "Add field custo_total to movimentacaolote",
+        "Add field custo_unitario to movimentacaolote"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "0f202940f8c746f7212823726b60a38a1c1ca7b3465ac21830d95828c526ce10"
+    },
+    {
+      "app": "gestao",
+      "migration": "0006_estabilizacao_bloco1",
+      "dependencies": [
+        [
+          "gestao",
+          "0005_movimentacao_detalhamento_peca_controla_validade"
+        ]
+      ],
+      "operations": [
+        "Add field origem_raiz to lancamento",
+        "Add field custo_total to movimentacao"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "7e2bdf34ff4a3b0fabd1ea9838d9d65558caefb9db54a0e6199f09b05d60ce19"
+    },
+    {
+      "app": "gestao",
+      "migration": "0007_origem_parcelas_existentes",
+      "dependencies": [
+        [
+          "gestao",
+          "0006_estabilizacao_bloco1"
+        ],
+        [
+          "operacao",
+          "0006_estabilizacao_bloco1"
+        ]
+      ],
+      "operations": [
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "97ca8e207574226b08e786946e7aa64df4afbdccc72f9524303b299d7b6b1172"
+    },
+    {
+      "app": "gestao",
+      "migration": "0008_operacao_bloco2",
+      "dependencies": [
+        [
+          "gestao",
+          "0007_origem_parcelas_existentes"
+        ]
+      ],
+      "operations": [
+        "Add field endereco to fornecedor",
+        "Add field nome_fantasia to fornecedor",
+        "Add field observacoes to fornecedor",
+        "Add field produtos_categorias to fornecedor",
+        "Add field representante to fornecedor"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "0b2a92afc7f628163c65cb98f01c184ce961f0a630a5052cf9440a43f779bda8"
+    },
+    {
+      "app": "operacao",
+      "migration": "0007_operacao_bloco2",
+      "dependencies": [
+        [
+          "clientes",
+          "0004_cliente_inscricao_estadual_and_more"
+        ],
+        [
+          "contas",
+          "0007_operacao_bloco2"
+        ],
+        [
+          "equipamentos",
+          "0007_operacao_bloco2"
+        ],
+        [
+          "gestao",
+          "0008_operacao_bloco2"
+        ],
+        [
+          "operacao",
+          "0006_estabilizacao_bloco1"
+        ],
+        [
+          "ordens",
+          "0009_ordemservico_agendada_ate_alter_ordemservico_tecnico"
+        ],
+        [
+          "platform_core",
+          "0004_membershiperp_visualizar_painel_operacional_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model AlocacaoReservaEstoque",
+        "Create model ArtigoConhecimento",
+        "Create model ItemRecebimentoCompra",
+        "Create model NecessidadePecaOS",
+        "Create model PlanoTecnico",
+        "Create model RecebimentoCompra",
+        "Add field agendada_ate to chamado",
+        "Add field agendada_para to chamado",
+        "Add field email to chamado",
+        "Add field observacoes_internas to chamado",
+        "Add field origem to chamado",
+        "Add field prazo to chamado",
+        "Add field prioridade_solicitada to chamado",
+        "Add field request_id to chamado",
+        "Add field sla_horas to chamado",
+        "Add field solicitante to chamado",
+        "Add field tecnico to chamado",
+        "Add field telefone to chamado",
+        "Add field tipo to chamado",
+        "Add field previsao_recebimento to compra",
+        "Add field categoria to documento",
+        "Add field chamado to documento",
+        "Add field emissao to documento",
+        "Add field fornecedor to documento",
+        "Add field observacoes to documento",
+        "Add field tecnico to documento",
+        "Add field unidade to documento",
+        "Add field validade to documento",
+        "Add field categoria to modelochecklist",
+        "Add field fabricante to modelochecklist",
+        "Add field modelo to modelochecklist",
+        "Add field tipo_equipamento to modelochecklist",
+        "Add field tipo_servico to modelochecklist",
+        "Add field tipo_manutencao to planopreventivo",
+        "Add field unidade to planopreventivo",
+        "Add field request_id to reservaestoque",
+        "Alter field status on chamado",
+        "Alter field periodicidade on planopreventivo",
+        "Create constraint chamado_org_request_unico on model chamado",
+        "Create constraint reserva_org_request_unico on model reservaestoque",
+        "Add field lote to alocacaoreservaestoque",
+        "Add field organization to alocacaoreservaestoque",
+        "Add field reserva to alocacaoreservaestoque",
+        "Add field equipamento to artigoconhecimento",
+        "Add field manual to artigoconhecimento",
+        "Add field ordem to artigoconhecimento",
+        "Add field organization to artigoconhecimento",
+        "Add field item to itemrecebimentocompra",
+        "Add field movimentacao to itemrecebimentocompra",
+        "Add field organization to itemrecebimentocompra",
+        "Add field compra to necessidadepecaos",
+        "Add field deposito to necessidadepecaos",
+        "Add field ordem to necessidadepecaos",
+        "Add field organization to necessidadepecaos",
+        "Add field peca to necessidadepecaos",
+        "Add field usuario to necessidadepecaos",
+        "Add field organization to planotecnico",
+        "Add field plano to planotecnico",
+        "Add field tecnico to planotecnico",
+        "Add field equipe to planopreventivo",
+        "Add field compra to recebimentocompra",
+        "Add field deposito to recebimentocompra",
+        "Add field organization to recebimentocompra",
+        "Add field usuario to recebimentocompra",
+        "Add field recebimento to itemrecebimentocompra",
+        "Create constraint reserva_lote_unico on model alocacaoreservaestoque",
+        "Create constraint reserva_lote_saldo_valido on model alocacaoreservaestoque",
+        "Create constraint necessidade_os_peca_aberta on model necessidadepecaos",
+        "Create constraint plano_tecnico_unico on model planotecnico",
+        "Create constraint recebimento_org_request_unico on model recebimentocompra",
+        "Create constraint recebimento_item_unico on model itemrecebimentocompra"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "7406793143c4041db5411a4e705e4961f1145d5fe8dd5c19285f1510532fa050"
+    },
+    {
+      "app": "gestao",
+      "migration": "0009_fundacao_bloco3",
+      "dependencies": [
+        [
+          "gestao",
+          "0008_operacao_bloco2"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ]
+      ],
+      "operations": [
+        "Add field cest to peca",
+        "Add field codigo_barras to peca",
+        "Add field csosn to peca",
+        "Add field cst to peca",
+        "Add field descricao_curta to peca",
+        "Add field exige_lote to peca",
+        "Add field fator_compra to peca",
+        "Add field fator_venda to peca",
+        "Add field fracionavel to peca",
+        "Add field gtin to peca",
+        "Add field observacoes to peca",
+        "Add field origem_fiscal to peca",
+        "Add field registro_anvisa to peca",
+        "Add field subcategoria to peca",
+        "Add field unidade_compra to peca",
+        "Add field unidade_venda to peca",
+        "Create model CodigoProduto",
+        "Create model FornecedorProduto"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "c66152ed4e6fb21fd2d5f4ea836a00f2c588aed62c7a311d764b799cd0893155"
+    },
+    {
+      "app": "gestao",
+      "migration": "0010_fundacao_bloco3",
+      "dependencies": [
+        [
+          "gestao",
+          "0009_fundacao_bloco3"
+        ],
+        [
+          "operacao",
+          "0007_operacao_bloco2"
+        ]
+      ],
+      "operations": [
+        "Add field conta_pdv to formapagamento",
+        "Add field tipo_pdv to formapagamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "2c46367e17fee5d8f2af9f50f0489a2101fbb12441c53283c02a96ee0300e4d6"
+    },
+    {
+      "app": "operacao",
+      "migration": "0008_fundacao_bloco3",
+      "dependencies": [
+        [
+          "clientes",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "gestao",
+          "0010_fundacao_bloco3"
+        ],
+        [
+          "operacao",
+          "0007_operacao_bloco2"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Add field conversao to itemvenda",
+        "Add field movimento to itemvenda",
+        "Add field acrescimo to venda",
+        "Add field centro_custo to venda",
+        "Add field desconto_global to venda",
+        "Add field filial to venda",
+        "Add field finalizacao_dados to venda",
+        "Add field finalizacao_id to venda",
+        "Add field orcamento_origem to venda",
+        "Add field public_id to venda",
+        "Add field snapshot to venda",
+        "Alter field cliente on venda",
+        "Alter field status on venda",
+        "Create model DevolucaoVenda",
+        "Create model ItemDevolucaoVenda",
+        "Create model PagamentoVenda",
+        "Create model SessaoCaixa",
+        "Create model EventoCaixa",
+        "Add field sessao_caixa to venda",
+        "Create model ConfiguracaoPDV",
+        "Create constraint devolucao_venda_request_org on model devolucaovenda",
+        "Create constraint caixa_abertura_org on model sessaocaixa",
+        "Create constraint caixa_conta_sessao_aberta on model sessaocaixa"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "7771b8e0da0d5549a5d8cd2c51223bdaa679b2089bc26b01aaba02497299039c"
+    },
+    {
+      "app": "operacao",
+      "migration": "0009_fundacao_bloco3",
+      "dependencies": [
+        [
+          "operacao",
+          "0008_fundacao_bloco3"
+        ]
+      ],
+      "operations": [
+        "Add field dados to devolucaovenda"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "14a4d26944934a1b4197d692340177a8914fdf2ddd8e1301c2ed0a59b2b9c118"
+    },
+    {
+      "app": "gestao",
+      "migration": "0011_fundacao_bloco3",
+      "dependencies": [
+        [
+          "gestao",
+          "0010_fundacao_bloco3"
+        ]
+      ],
+      "operations": [
+        "Alter field tipo on eventofinanceiro"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "456045c184c19dfbfef37bd613670afca827a2f5d80e8ba423fcaca3b68b3946"
+    },
+    {
+      "app": "operacao",
+      "migration": "0010_fundacao_bloco3",
+      "dependencies": [
+        [
+          "contas",
+          "0008_fundacao_bloco3"
+        ],
+        [
+          "gestao",
+          "0011_fundacao_bloco3"
+        ],
+        [
+          "operacao",
+          "0009_fundacao_bloco3"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model Departamento",
+        "Create model JornadaTrabalho",
+        "Create model Funcionario",
+        "Create model EscalaFuncionario",
+        "Create model MarcacaoPonto",
+        "Create model SolicitacaoAjustePonto",
+        "Create model DecisaoAjustePonto",
+        "Create constraint departamento_nome_org on model departamento",
+        "Create constraint jornada_nome_org on model jornadatrabalho",
+        "Create constraint funcionario_usuario_org on model funcionario",
+        "Create constraint funcionario_matricula_org on model funcionario",
+        "Create constraint escala_funcionario_data_org on model escalafuncionario",
+        "Create index ponto_func_data_idx on field(s) organization, funcionario, data_hora of model marcacaoponto",
+        "Create constraint ponto_request_org on model marcacaoponto"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "a5eedf701b104b18a90684ba7b3546d9f303baa40d05fed85684494fa7fecbb3"
+    },
+    {
+      "app": "gestao",
+      "migration": "0012_fundacao_bloco3",
+      "dependencies": [
+        [
+          "gestao",
+          "0011_fundacao_bloco3"
+        ]
+      ],
+      "operations": [
+        "Alter field tipo on movimentacao"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "0e188490d8f9e916927bdbd1af6baa2625e3827844de1ccabce6dbc59f405afe"
+    },
+    {
+      "app": "operacao",
+      "migration": "0011_fundacao_bloco3",
+      "dependencies": [
+        [
+          "gestao",
+          "0012_fundacao_bloco3"
+        ],
+        [
+          "operacao",
+          "0010_fundacao_bloco3"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model Inventario",
+        "Create model ItemInventario",
+        "Create model ContagemInventario",
+        "Create model AjusteInventario",
+        "Create model TransferenciaEstoque",
+        "Create model EtapaTransferencia",
+        "Add field transferencia to reservaestoque",
+        "Create constraint inventario_lote_unico on model iteminventario",
+        "Create constraint inventario_contagem_request_org on model contageminventario",
+        "Create constraint transferencia_request_org on model transferenciaestoque"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "c7cb08d7ede17b36ca33523201ca476d7d74765371e7591fa2db473e0bf7e98d"
+    },
+    {
+      "app": "gestao",
+      "migration": "0013_fundacao_bloco3",
+      "dependencies": [
+        [
+          "gestao",
+          "0012_fundacao_bloco3"
+        ],
+        [
+          "operacao",
+          "0011_fundacao_bloco3"
+        ]
+      ],
+      "operations": [
+        "Add field tipo to centrocusto",
+        "Add field imagem to peca"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "43c70f68ecc0bd0f8205517b6ed1111a407938d520fb318944fabe4f5fc933b0"
+    },
+    {
+      "app": "gestao",
+      "migration": "0014_categoriafinanceira_natureza",
+      "dependencies": [
+        [
+          "gestao",
+          "0013_fundacao_bloco3"
+        ]
+      ],
+      "operations": [
+        "Add field natureza to categoriafinanceira"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "0e15925de6be78410b2fc9d20ba0a6dfc4879021cff822f9c6d8cc214bb535ff"
+    },
+    {
+      "app": "gestao",
+      "migration": "0015_alter_centrocusto_tipo",
+      "dependencies": [
+        [
+          "gestao",
+          "0014_categoriafinanceira_natureza"
+        ]
+      ],
+      "operations": [
+        "Alter field tipo on centrocusto"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "3524bf9587edf02673e97d092105f3463d2d11b518ed2ac3b5bb58446a9cc58b"
+    },
+    {
+      "app": "gestao",
+      "migration": "0016_movimentacao_perda",
+      "dependencies": [
+        [
+          "gestao",
+          "0015_alter_centrocusto_tipo"
+        ]
+      ],
+      "operations": [
+        "Alter field tipo on movimentacao"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "b15c591dd91cecb4d09ffc795c01c2446422c83f9f1fa9a942992d089a3ed8d7"
+    },
+    {
+      "app": "gestao",
+      "migration": "0017_alter_formapagamento_tipo_pdv",
+      "dependencies": [
+        [
+          "gestao",
+          "0016_movimentacao_perda"
+        ]
+      ],
+      "operations": [
+        "Alter field tipo_pdv on formapagamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "6e308a32de83a14c8147c033e7c1ac6d3852d38593ecf2f753a3c83233035eae"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0006_saas_platform_admin",
+      "dependencies": [
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model PlanoSaaS",
+        "Add field cidade to organization",
+        "Add field endereco to organization",
+        "Add field uf to organization",
+        "Create model AdministradorPlataforma",
+        "Create model AssinaturaSaaS",
+        "Create model AuditoriaSaaS",
+        "Create model HistoricoPlanoSaaS",
+        "Create model PrimeiroAcessoSaaS"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "4719113f53fec1c80b98be25778dcbd83bf0081b2a52cde4e50b732617b74bac"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0007_planosaas_plano_comercial_planosaas_publico_ativo_and_more",
+      "dependencies": [
+        [
+          "commercial",
+          "0001_initial"
+        ],
+        [
+          "platform_core",
+          "0006_saas_platform_admin"
+        ]
+      ],
+      "operations": [
+        "Add field plano_comercial to planosaas",
+        "Add field publico_ativo to planosaas",
+        "Create constraint saas_public_offer_period_unique on model planosaas"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "61c0386e3b2a9a518dc74ac837b369c19f5f969e1a763e969844f85545fc99ed"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0008_expand_saas_entitlements",
+      "dependencies": [
+        [
+          "platform_core",
+          "0007_planosaas_plano_comercial_planosaas_publico_ativo_and_more"
+        ],
+        [
+          "commercial",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "e870be24645feae7b5d91a5207f170cf6653fd8ed0a0b8ef14ec2f88a5bfda97"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0009_core_modules_all_plans",
+      "dependencies": [
+        [
+          "platform_core",
+          "0008_expand_saas_entitlements"
+        ],
+        [
+          "commercial",
+          "0001_initial"
+        ]
+      ],
+      "operations": [
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "3bd5f1f8bd6d13f0a6c5cd357cdb1ff9bcb1a864b898401e32767da56e69a07a"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0010_core_customer_product_entitlements",
+      "dependencies": [
+        [
+          "platform_core",
+          "0009_core_modules_all_plans"
+        ]
+      ],
+      "operations": [
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "4b0f935a403cc2bf322b890a872862d5be2035fc1fdd868d0e05d6911c2eff9b"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0011_alter_moduloorganizacao_codigo",
+      "dependencies": [
+        [
+          "platform_core",
+          "0010_core_customer_product_entitlements"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "f685a13e601e93e3518d1594e52833665e7f42e8145455f5d9582c8e9c9ee186"
+    },
+    {
+      "app": "ordens",
+      "migration": "0010_operacao_bloco2",
+      "dependencies": [
+        [
+          "contas",
+          "0007_operacao_bloco2"
+        ],
+        [
+          "operacao",
+          "0007_operacao_bloco2"
+        ],
+        [
+          "ordens",
+          "0009_ordemservico_agendada_ate_alter_ordemservico_tecnico"
+        ]
+      ],
+      "operations": [
+        "Add field categoria to foto",
+        "Add field causa_provavel to ordemservico",
+        "Add field materiais to ordemservico",
+        "Add field modelo_checklist to ordemservico",
+        "Add field recomendacoes to ordemservico",
+        "Add field solucao to ordemservico",
+        "Alter field status on ordemservico",
+        "Alter field tipo_atendimento on ordemservico",
+        "Create model TecnicoAuxiliar",
+        "Add field auxiliares to ordemservico",
+        "Create constraint os_auxiliar_unico on model tecnicoauxiliar"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "f0db8de4a2671e1e2307275598e95a86bc91a0d5fed896ac968f8936367923a3"
+    },
+    {
+      "app": "ordens",
+      "migration": "0011_piloto_jornada_contratual",
+      "dependencies": [
+        [
+          "ordens",
+          "0010_operacao_bloco2"
+        ]
+      ],
+      "operations": [
+        "Add field imagem_tecnico to assinatura",
+        "Add field imagem_tecnico_sha256 to assinatura",
+        "Create model DocumentoOSAssinado"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "cbd70720f0833e7e850b0fd8145d6c47126f17f5d7005367a842cf0bd688803a"
+    },
+    {
+      "app": "operacao",
+      "migration": "0012_fundacao_bloco3",
+      "dependencies": [
+        [
+          "clientes",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "gestao",
+          "0013_fundacao_bloco3"
+        ],
+        [
+          "operacao",
+          "0011_fundacao_bloco3"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Add field compra to documento",
+        "Add field funcionario to documento",
+        "Add field peca to documento",
+        "Add field venda to documento",
+        "Add field conversao to itemcompra",
+        "Add field criacao_id to venda",
+        "Add field dados_criacao to venda",
+        "Add field finalizada_em to venda",
+        "Alter field reembolso on devolucaovenda",
+        "Create constraint venda_criacao_request_org on model venda",
+        "Create constraint venda_finalizacao_request_org on model venda"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "ee289ef6c8ca7f9ba74234179a8a0d8bfcfe888bc4f9a7deeb2cc4babe563a87"
+    },
+    {
+      "app": "operacao",
+      "migration": "0013_fundacao_bloco3",
+      "dependencies": [
+        [
+          "operacao",
+          "0012_fundacao_bloco3"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model FechamentoPonto"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "31131e615121576540df0bbd61336cece3411741a2d9351e9cd3416a1db8298e"
+    },
+    {
+      "app": "operacao",
+      "migration": "0014_piloto_jornada_contratual",
+      "dependencies": [
+        [
+          "contas",
+          "0008_fundacao_bloco3"
+        ],
+        [
+          "gestao",
+          "0013_fundacao_bloco3"
+        ],
+        [
+          "operacao",
+          "0013_fundacao_bloco3"
+        ],
+        [
+          "ordens",
+          "0011_piloto_jornada_contratual"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model ConfiguracaoJornadaContrato",
+        "Create model CorrecaoJornadaContrato",
+        "Create model DecisaoJornadaContrato",
+        "Create model JornadaContrato",
+        "Create model EventoJornadaContrato",
+        "Add field jornada to correcaojornadacontrato",
+        "Create model OrdemJornadaContrato",
+        "Create constraint jornada_contrato_tecnico_dia on model jornadacontrato",
+        "Create constraint jornada_evento_terminal_unico on model eventojornadacontrato",
+        "Create constraint jornada_os_ciclo_unico on model ordemjornadacontrato"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "16bc095c3e48040edcb38beda66e05c5654554554704856b6061706d06abdc3c"
+    },
+    {
+      "app": "operacao",
+      "migration": "0015_funcionario_contato",
+      "dependencies": [
+        [
+          "operacao",
+          "0014_piloto_jornada_contratual"
+        ]
+      ],
+      "operations": [
+        "Add field telefone to funcionario",
+        "Add field email to funcionario",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "f7f19c75dcf58818805faba11ca5ba2f73e580b2b08f555c553d7fd1de2541a1"
+    },
+    {
+      "app": "operacao",
+      "migration": "0016_hora_extra_aprovacao",
+      "dependencies": [
+        [
+          "operacao",
+          "0015_funcionario_contato"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model ReferenciaJornadaPonto",
+        "Create model SolicitacaoHoraExtra",
+        "Create model DecisaoHoraExtra",
+        "Create constraint ponto_referencia_dia_org on model referenciajornadaponto",
+        "Create constraint extra_request_org on model solicitacaohoraextra",
+        "Create constraint extra_funcionario_dia_org on model solicitacaohoraextra",
+        "Create constraint extra_minutos_positivos on model solicitacaohoraextra",
+        "Create constraint extra_decisao_quantidade on model decisaohoraextra",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "4a43cbedcb24480bfb64fe10ea09120adae874fe71a93355fd1a995f6b42b32c"
+    },
+    {
+      "app": "operacao",
+      "migration": "0017_seller_central",
+      "dependencies": [
+        [
+          "operacao",
+          "0016_hora_extra_aprovacao"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model MetaVendedor",
+        "Create model SolicitacaoDescontoPDV"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "b191d2f8f3ecf4ff3b0b2be94e02034658fe0e1c61685f2de78de5eabd20e2be"
+    },
+    {
+      "app": "operacao",
+      "migration": "0018_pdv_offline_sync",
+      "dependencies": [
+        [
+          "operacao",
+          "0017_seller_central"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model SincronizacaoPDV"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "b14d7dee5d1013108a5c703f1300952b03417cfc7276d85c56d212ab092a7cb8"
+    },
+    {
+      "app": "operacao",
+      "migration": "0019_fiscal_foundation",
+      "dependencies": [
+        [
+          "clientes",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ],
+        [
+          "operacao",
+          "0018_pdv_offline_sync"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ]
+      ],
+      "operations": [
+        "Add field autorizado_em to documentofiscal",
+        "Add field chave to documentofiscal",
+        "Add field estabelecimento to documentofiscal",
+        "Add field modelo to documentofiscal",
+        "Add field snapshot_fiscal to documentofiscal",
+        "Alter field ambiente on documentofiscal",
+        "Alter field cliente on documentofiscal",
+        "Create model ConfiguracaoFiscal",
+        "Add field configuracao_fiscal to documentofiscal",
+        "Create model CredencialFiscal",
+        "Add field credencial_fiscal to documentofiscal",
+        "Create model DetalhesNFCe",
+        "Create model DetalhesNFe",
+        "Create model DetalhesNFSe",
+        "Create model PerfilFiscalEstabelecimento",
+        "Create model RegraTributariaFiscal",
+        "Add field regra_fiscal to documentofiscal",
+        "Create model SerieFiscal",
+        "Create model ReservaNumeracaoFiscal",
+        "Add field serie_fiscal to documentofiscal",
+        "Create model SolicitacaoFiscal",
+        "Create model EventoFiscal",
+        "Create model TentativaFiscal",
+        "Create model VinculoCredencialFiscal",
+        "Create constraint fiscal_config_versao_unica on model configuracaofiscal",
+        "Create constraint fiscal_regra_versao_unica on model regratributariafiscal",
+        "Create constraint fiscal_serie_contexto_unico on model seriefiscal",
+        "Create constraint fiscal_numero_positivo on model seriefiscal",
+        "Create constraint fiscal_numero_reservado_unico on model reservanumeracaofiscal",
+        "Create constraint fiscal_solicitacao_idempotente on model solicitacaofiscal",
+        "Create constraint fiscal_solicitacao_operacao_unica on model solicitacaofiscal",
+        "Create constraint fiscal_vinculo_unico on model vinculocredencialfiscal",
+        "Alter field endereco_estruturado on perfilfiscalestabelecimento",
+        "Alter field parametros on regratributariafiscal",
+        "Alter field resultado_simulado on solicitacaofiscal"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "d8735d841aed7dba524a7e4b5e01a83e15699e98b66ddf684c7131fdebd7417e"
+    },
+    {
+      "app": "operacao",
+      "migration": "0020_nfce_homologacao_local",
+      "dependencies": [
+        [
+          "gestao",
+          "0013_fundacao_bloco3"
+        ],
+        [
+          "operacao",
+          "0019_fiscal_foundation"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ]
+      ],
+      "operations": [
+        "Alter field motor on configuracaofiscal",
+        "Create model ArtefatoNFCe",
+        "Create model ConfiguracaoNFCe",
+        "Create model PagamentoFiscalNFCe",
+        "Create model TributacaoProdutoNFCe"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "d5dbec558dde06d39fbc544ebb3888971618f116e1c12e410961ea5f081ab209"
+    },
+    {
+      "app": "operacao",
+      "migration": "0021_nfce_response_code",
+      "dependencies": [
+        [
+          "operacao",
+          "0020_nfce_homologacao_local"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on artefatonfce"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "837a6f462a6d34d92e33fb57624f3a7954b727260bfb204999893b86b670c6c2"
+    },
+    {
+      "app": "operacao",
+      "migration": "0022_migration_assistant",
+      "dependencies": [
+        [
+          "operacao",
+          "0021_nfce_response_code"
+        ],
+        [
+          "platform_core",
+          "0005_fundacao_bloco3"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model LoteImportacao",
+        "Create model LinhaImportacao",
+        "Create constraint importacao_arquivo_org_tipo on model loteimportacao",
+        "Create constraint importacao_linha_unica on model linhaimportacao"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "50b13a81cf3f6e5fda385b1e9ceae701d6df18a1350c5d8d06eaeec287177f31"
+    },
+    {
+      "app": "operacao",
+      "migration": "0023_fiscal_documental_proposal",
+      "dependencies": [
+        [
+          "operacao",
+          "0022_migration_assistant"
+        ]
+      ],
+      "operations": [
+        "Add field proposta_documental to configuracaofiscal"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "ab00d581dd8f603de9451d1cabc8126bdb131c16c9af2fbcd15d2222cd9c9cee"
+    },
+    {
+      "app": "operacao",
+      "migration": "0024_fiscal_preparation",
+      "dependencies": [
+        [
+          "operacao",
+          "0023_fiscal_documental_proposal"
+        ]
+      ],
+      "operations": [
+        "Add field configuracao_confirmada to configuracaofiscal",
+        "Add field preparacao_fiscal to configuracaofiscal"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "f1d732addacd145bb3005baad0a3b4b65d707ee7dece54ba785afdbf33dbf248"
+    },
+    {
+      "app": "operacao",
+      "migration": "0025_contabancaria_titular_extratobancario_ignorado_and_more",
+      "dependencies": [
+        [
+          "gestao",
+          "0014_categoriafinanceira_natureza"
+        ],
+        [
+          "operacao",
+          "0024_fiscal_preparation"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Add field titular to contabancaria",
+        "Add field ignorado to extratobancario",
+        "Add field ignorado_em to extratobancario",
+        "Add field ignorado_por to extratobancario",
+        "Add field categoria to movimentocaixa",
+        "Add field centro_custo to movimentocaixa",
+        "Add field documento_ref to movimentocaixa",
+        "Add field lancamento to movimentocaixa",
+        "Add field origem to movimentocaixa",
+        "Add field desconto to pagamento",
+        "Add field juros to pagamento",
+        "Add field multa to pagamento"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "1abf9c2a9afeecefa37c38a4a4c8521541fd07c0a4d16e5d08597d1b1b7c9b01"
+    },
+    {
+      "app": "operacao",
+      "migration": "0026_movimentocaixa_conta_contraparte",
+      "dependencies": [
+        [
+          "operacao",
+          "0025_contabancaria_titular_extratobancario_ignorado_and_more"
+        ]
+      ],
+      "operations": [
+        "Add field conta_contraparte to movimentocaixa"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "bd8bbe7c5fbfe9a14970068a9a390fb813055afc6c7bd401162b9efb3f73d972"
+    },
+    {
+      "app": "operacao",
+      "migration": "0027_contabancaria_deposito_padrao",
+      "dependencies": [
+        [
+          "operacao",
+          "0026_movimentocaixa_conta_contraparte"
+        ]
+      ],
+      "operations": [
+        "Add field deposito_padrao to contabancaria"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "aec227969445e2459bb24ea7f114ae16e46a12b2436969afd4a61feb01b87c52"
+    },
+    {
+      "app": "operacao",
+      "migration": "0028_pagamentovenda_parcelas_and_more",
+      "dependencies": [
+        [
+          "gestao",
+          "0017_alter_formapagamento_tipo_pdv"
+        ],
+        [
+          "operacao",
+          "0027_contabancaria_deposito_padrao"
+        ],
+        [
+          "platform_core",
+          "0011_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Add field parcelas to pagamentovenda",
+        "Create constraint pagamento_venda_parcelas_1_12 on model pagamentovenda"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "ef28f14c15e9b970ea61d44579a526f2922aa07c69ce89d800fa2d76e2a5f5ee"
+    },
+    {
+      "app": "ordens",
+      "migration": "0012_piloto_jornada_contratual",
+      "dependencies": [
+        [
+          "ordens",
+          "0011_piloto_jornada_contratual"
+        ]
+      ],
+      "operations": [
+        "Add field condicao_final to ordemservico",
+        "Add field pendencias_tecnicas to ordemservico"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "5a09a80851da1cadf5d9f622f65fb391195ee6d3429bd3d2b6020925066bef1a"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0012_planosaas_nivel_indicadores",
+      "dependencies": [
+        [
+          "platform_core",
+          "0011_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Add field nivel_indicadores to planosaas",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "01a1393dd6b3dae312d2a97af9d5343e1ef650262441aec99a57442e17406556"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0013_alter_organizationmembership_role",
+      "dependencies": [
+        [
+          "platform_core",
+          "0012_planosaas_nivel_indicadores"
+        ]
+      ],
+      "operations": [
+        "Alter field role on organizationmembership"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "62fa454b9d9dd82ed7e126e08019c11ef5d044e40b14973b856a9bce82bbd9d1"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0014_multierp_catalog_and_contracts",
+      "dependencies": [
+        [
+          "platform_core",
+          "0013_alter_organizationmembership_role"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Add field entry_path to erpcatalog",
+        "Add field operational to erpcatalog",
+        "Add field public_path to erpcatalog",
+        "Add field erp to planosaas",
+        "Create model ContratoSaaS",
+        "Create model ERPProductModule",
+        "Create model ERPProductResource",
+        "Create model ItemContratoSaaS",
+        "Create model PlanoProdutoModulo",
+        "Create constraint erp_module_code_unique on model erpproductmodule",
+        "Create constraint erp_resource_code_unique on model erpproductresource",
+        "Create constraint saas_contract_erp_unique on model itemcontratosaas",
+        "Create constraint saas_plan_module_unique on model planoprodutomodulo",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "ab1368f3b228a850159098c7865bf3ef5cffa373d57bd02cd2d6ed5be9277f5c"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0015_alter_moduloorganizacao_codigo",
+      "dependencies": [
+        [
+          "platform_core",
+          "0014_multierp_catalog_and_contracts"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "32fe9fc3ed1af015703ffa639927592537fbf17e5c10e33ce47858ea920a15ad"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0016_alter_moduloorganizacao_codigo",
+      "dependencies": [
+        [
+          "platform_core",
+          "0015_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "9e4e90aed88578d5ce26f66c6f327a04c203b85cdd0de9ac8e3594e4e49ff5f1"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0017_alter_moduloorganizacao_codigo",
+      "dependencies": [
+        [
+          "platform_core",
+          "0016_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "603a49a47c440d1b2ebab210eb62fb275eccf70a0fce0d8af0d411cf03d1efcb"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0018_alter_moduloorganizacao_codigo",
+      "dependencies": [
+        [
+          "platform_core",
+          "0017_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "33131415b7642a86d07d6fc712158a5b600471bf00611baadc73bbb490493e68"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0019_alter_moduloorganizacao_codigo",
+      "dependencies": [
+        [
+          "platform_core",
+          "0018_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "53995b55bd1d194c93e8f8be2cc89f1f76d0a403158e1790acd650421c3cec83"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0020_alter_moduloorganizacao_codigo",
+      "dependencies": [
+        [
+          "platform_core",
+          "0019_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "4a5c539aeffc4c5787ab5cbfdcbd62de5b890c0bf140611bfb61224a3db87d4c"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0021_alter_moduloorganizacao_codigo",
+      "dependencies": [
+        [
+          "platform_core",
+          "0020_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "90e31e1fc50f80e94ca5ab74902b2d510ac5da4711badb80b5ebe8dc1569fa28"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0022_alter_moduloorganizacao_codigo",
+      "dependencies": [
+        [
+          "platform_core",
+          "0021_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "204cfde977dafac48c7e8996cfd897f279d1f9c562d89acc046c4dd8fd774d07"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0023_alter_moduloorganizacao_codigo",
+      "dependencies": [
+        [
+          "platform_core",
+          "0022_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Alter field codigo on moduloorganizacao",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "06acaf5eaeb84138d6c821839f6fac0f4d862d816a7f5215df4bf20fc6a61b2c"
+    },
+    {
+      "app": "platform_core",
+      "migration": "0024_itemcontratosaas_nivel_indicadores_snapshot",
+      "dependencies": [
+        [
+          "platform_core",
+          "0023_alter_moduloorganizacao_codigo"
+        ]
+      ],
+      "operations": [
+        "Add field nivel_indicadores_snapshot to itemcontratosaas"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "0121633881b104211b5ba0a5602e3199b452c53f2d413c09be867159096e7a37"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0001_initial",
+      "dependencies": [
+        [
+          "platform_core",
+          "0006_saas_platform_admin"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model CargoMunicipal",
+        "Create model FuncaoMunicipal",
+        "Create model JornadaMunicipal",
+        "Create model Secretaria",
+        "Create model DepartamentoMunicipal",
+        "Create model Servidor",
+        "Create model PontoServidor",
+        "Create model HistoricoServidor",
+        "Create model FeriasServidor",
+        "Create model DocumentoServidor",
+        "Create model AfastamentoServidor",
+        "Create model SetorMunicipal",
+        "Add field setor to servidor",
+        "Create model SolicitacaoServidor",
+        "Create model DecisaoSolicitacaoServidor",
+        "Create model UnidadeMunicipal",
+        "Add field unidade to servidor",
+        "Create model VinculoFuncional",
+        "Add field vinculo to servidor",
+        "Create model AcessoRH",
+        "Create constraint rhmun_cargo_codigo on model cargomunicipal",
+        "Create constraint rhmun_funcao_codigo on model funcaomunicipal",
+        "Create constraint rhmun_jornada_nome on model jornadamunicipal",
+        "Create constraint rhmun_secretaria_codigo on model secretaria",
+        "Create constraint rhmun_depto_codigo on model departamentomunicipal",
+        "Create constraint rhmun_ponto_request on model pontoservidor",
+        "Create constraint rhmun_setor_codigo on model setormunicipal",
+        "Create constraint rhmun_solic_request on model solicitacaoservidor",
+        "Create constraint rhmun_unidade_codigo on model unidademunicipal",
+        "Create constraint rhmun_vinculo_codigo on model vinculofuncional",
+        "Create constraint rhmun_matricula_org on model servidor",
+        "Create constraint rhmun_usuario_org on model servidor",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "a4e4dbcd791bf37e0b2b1fa0afe5bef623ebac7aef6463fb018dfd0685c4798b"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0002_acessomunicipal_convitemunicipal_perfilprefeitura_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0013_alter_organizationmembership_role"
+        ],
+        [
+          "rh_municipal",
+          "0001_initial"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model AcessoMunicipal",
+        "Create model ConviteMunicipal",
+        "Create model PerfilPrefeitura",
+        "Create model PermissaoMunicipal"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "805daadcaca7843948491f404a33dad1d397c8ee0950f503f1509d463b48de9c"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0003_departamentomunicipal_responsavel_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0015_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0002_acessomunicipal_convitemunicipal_perfilprefeitura_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Add field responsavel to departamentomunicipal",
+        "Add field responsavel to secretaria",
+        "Add field responsavel to setormunicipal",
+        "Add field responsavel to unidademunicipal",
+        "Create model AcaoPlanejamentoMunicipal",
+        "Create model BancoMunicipal",
+        "Create model ContaBancariaMunicipal",
+        "Create model ConciliacaoBancariaMunicipal",
+        "Create model ContaContabilMunicipal",
+        "Create model ElementoDespesaMunicipal",
+        "Create model ExercicioMunicipal",
+        "Create model DotacaoOrcamentariaMunicipal",
+        "Create model CreditoAdicionalMunicipal",
+        "Create model FonteDestinacaoRecursoMunicipal",
+        "Add field fonte_recurso to dotacaoorcamentariamunicipal",
+        "Create model FuncaoOrcamentariaMunicipal",
+        "Add field funcao to dotacaoorcamentariamunicipal",
+        "Create model IndicadorPlanejamentoMunicipal",
+        "Add field indicador to acaoplanejamentomunicipal",
+        "Create model InstrumentoPlanejamentoMunicipal",
+        "Create model LancamentoContabilMunicipal",
+        "Create model DocumentoContabilMunicipal",
+        "Create model MovimentacaoTesourariaMunicipal",
+        "Create model NaturezaDespesaMunicipal",
+        "Add field natureza to elementodespesamunicipal",
+        "Add field natureza_despesa to dotacaoorcamentariamunicipal",
+        "Create model OrgaoOrcamentarioMunicipal",
+        "Create model PartidaContabilMunicipal",
+        "Create model PeriodoContabilMunicipal",
+        "Add field periodo to lancamentocontabilmunicipal",
+        "Create model FechamentoContabilMunicipal",
+        "Create model PlanoContasMunicipal",
+        "Add field plano to contacontabilmunicipal",
+        "Create model ProgramaPlanejamentoMunicipal",
+        "Add field programa to indicadorplanejamentomunicipal",
+        "Add field programa to dotacaoorcamentariamunicipal",
+        "Add field programa to acaoplanejamentomunicipal",
+        "Create model SubfuncaoOrcamentariaMunicipal",
+        "Add field subfuncao to dotacaoorcamentariamunicipal",
+        "Create model UnidadeOrcamentariaMunicipal",
+        "Add field unidade_orcamentaria to dotacaoorcamentariamunicipal",
+        "Add field unidade_orcamentaria to contabancariamunicipal",
+        "Create constraint rhmun_banco_codigo_org on model bancomunicipal",
+        "Create constraint rhmun_exercicio_ano_org on model exerciciomunicipal",
+        "Create constraint rhmun_fonte_recurso_codigo on model fontedestinacaorecursomunicipal",
+        "Create constraint rhmun_funcao_orc_codigo on model funcaoorcamentariamunicipal",
+        "Create constraint rhmun_instrumento_versao_org on model instrumentoplanejamentomunicipal",
+        "Create constraint rhmun_natureza_desp_codigo on model naturezadespesamunicipal",
+        "Create constraint rhmun_elemento_desp_codigo on model elementodespesamunicipal",
+        "Create constraint rhmun_orgao_orc_codigo on model orgaoorcamentariomunicipal",
+        "Create constraint rhmun_periodo_contabil_org on model periodocontabilmunicipal",
+        "Create constraint rhmun_lancamento_request_org on model lancamentocontabilmunicipal",
+        "Create constraint rhmun_plano_contas_versao on model planocontasmunicipal",
+        "Create constraint rhmun_conta_contabil_codigo on model contacontabilmunicipal",
+        "Create constraint rhmun_programa_codigo_exercicio on model programaplanejamentomunicipal",
+        "Create constraint rhmun_indicador_programa_codigo on model indicadorplanejamentomunicipal",
+        "Create constraint rhmun_acao_programa_codigo on model acaoplanejamentomunicipal",
+        "Create constraint rhmun_subfuncao_orc_codigo on model subfuncaoorcamentariamunicipal",
+        "Create constraint rhmun_unidade_orc_codigo on model unidadeorcamentariamunicipal"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "79a8f9c796cc9d91eb42546d2bc1160614633c624d8cdb84de5d4e41365ad7ce"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0004_ataregistroprecosmunicipal_contratopublicomunicipal_and_more",
+      "dependencies": [
+        [
+          "gestao",
+          "0017_alter_formapagamento_tipo_pdv"
+        ],
+        [
+          "operacao",
+          "0028_pagamentovenda_parcelas_and_more"
+        ],
+        [
+          "platform_core",
+          "0016_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0003_departamentomunicipal_responsavel_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Raw Python operation",
+        "Create model AtaRegistroPrecosMunicipal",
+        "Create model ContratoPublicoMunicipal",
+        "Create model CotacaoFornecedorMunicipal",
+        "Create model HistoricoContratacaoPublica",
+        "Create model ItemContratacaoMunicipal",
+        "Create model ItemAtaRegistroPrecosMunicipal",
+        "Create model ItemContratoPublicoMunicipal",
+        "Create model ExecucaoContratoPublico",
+        "Create model ItemPesquisaPrecoMunicipal",
+        "Create model ItemSolicitacaoCompra",
+        "Add field solicitacao_item to itemcontratacaomunicipal",
+        "Create model LoteContratacaoMunicipal",
+        "Add field lote to itemcontratacaomunicipal",
+        "Create model ModalidadeContratacaoMunicipal",
+        "Create model PesquisaPrecoMunicipal",
+        "Add field pesquisa to cotacaofornecedormunicipal",
+        "Create model ProcessoContratacaoMunicipal",
+        "Add field processo to pesquisaprecomunicipal",
+        "Add field processo to lotecontratacaomunicipal",
+        "Create model LicitacaoMunicipal",
+        "Add field processo to itemcontratacaomunicipal",
+        "Create model FornecedorProcessoMunicipal",
+        "Add field processo to contratopublicomunicipal",
+        "Add field processo to ataregistroprecosmunicipal",
+        "Create model PropostaMunicipal",
+        "Create model ItemPropostaMunicipal",
+        "Create model SolicitacaoCompra",
+        "Add field solicitacao to processocontratacaomunicipal",
+        "Add field solicitacao to pesquisaprecomunicipal",
+        "Add field solicitacao to itemsolicitacaocompra",
+        "Create model DocumentoContratacaoMunicipal",
+        "Create model UtilizacaoAtaPrecosMunicipal",
+        "Create model AditivoContratoPublico",
+        "Create constraint rhmun_modalidade_codigo_org on model modalidadecontratacaomunicipal",
+        "Create constraint rhmun_cotacao_pesq_fornec on model cotacaofornecedormunicipal",
+        "Create constraint rhmun_lote_proc_num on model lotecontratacaomunicipal",
+        "Create constraint rhmun_item_proc_num on model itemcontratacaomunicipal",
+        "Create constraint rhmun_proc_fornec_unique on model fornecedorprocessomunicipal",
+        "Create constraint rhmun_contrato_num_org on model contratopublicomunicipal",
+        "Create constraint rhmun_ata_num_org on model ataregistroprecosmunicipal",
+        "Create constraint rhmun_proposta_fornec_num on model propostamunicipal",
+        "Create constraint rhmun_prop_item_unique on model itempropostamunicipal",
+        "Create constraint rhmun_solic_compra_num_org on model solicitacaocompra",
+        "Create constraint rhmun_proc_contratacao_num_org on model processocontratacaomunicipal",
+        "Create constraint rhmun_proc_solicitacao_unique on model processocontratacaomunicipal",
+        "Create constraint rhmun_documento_contratacao_alvo on model documentocontratacaomunicipal",
+        "Create constraint rhmun_ata_uso_ref_org on model utilizacaoataprecosmunicipal"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "35b1ca008ce2ec26806a84acac824809bd4ec3e02dbafe932ecb867b6a9f0c91"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0005_pontoservidor_endereco_ip_pontoservidor_latitude_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0017_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0004_ataregistroprecosmunicipal_contratopublicomunicipal_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Add field endereco_ip to pontoservidor",
+        "Add field latitude to pontoservidor",
+        "Add field longitude to pontoservidor",
+        "Add field observacao to pontoservidor",
+        "Add field registrado_por to pontoservidor",
+        "Add field observacoes_funcionais to servidor",
+        "Add field situacao_funcional to servidor",
+        "Alter field origem on pontoservidor",
+        "Create model BeneficioServidorMunicipal",
+        "Create model CompetenciaFolhaMunicipal",
+        "Create model DependenteServidorMunicipal",
+        "Create model EscalaMunicipal",
+        "Create model EventoFolhaMunicipal",
+        "Create model EventoPontoDigital",
+        "Create model FeriadoMunicipal",
+        "Create model GrupoJornadaMunicipal",
+        "Create model FolgaMunicipal",
+        "Create model AtribuicaoJornadaMunicipal",
+        "Create model HistoricoLotacaoServidor",
+        "Create model HorarioJornadaMunicipal",
+        "Create model JustificativaPontoMunicipal",
+        "Create model LancamentoFolhaMunicipal",
+        "Create model MovimentacaoBancoHorasMunicipal",
+        "Create model PeriodoPontoMunicipal",
+        "Create model RemuneracaoBaseServidorMunicipal",
+        "Create model SnapshotFechamentoPontoMunicipal",
+        "Create model SolicitacaoHoraExtraMunicipal",
+        "Create model DecisaoPontoMunicipal",
+        "Create constraint rhmun_comp_folha_org_mes on model competenciafolhamunicipal",
+        "Create constraint rhmun_escala_nome_org on model escalamunicipal",
+        "Create constraint rhmun_evento_folha_codigo_org on model eventofolhamunicipal",
+        "Create constraint rhmun_feriado_data_nome on model feriadomunicipal",
+        "Create constraint rhmun_grupo_jornada_nome_org on model grupojornadamunicipal",
+        "Create constraint rhmun_folga_alvo_exclusivo on model folgamunicipal",
+        "Create constraint rhmun_atribuicao_alvo_exclusivo on model atribuicaojornadamunicipal",
+        "Create constraint rhmun_horario_jornada_dia_turno on model horariojornadamunicipal",
+        "Create constraint rhmun_periodo_ponto_org_mes on model periodopontomunicipal",
+        "Create constraint rhmun_fechamento_ponto_versao on model snapshotfechamentopontomunicipal",
+        "Create constraint rhmun_decisao_ponto_alvo_exclusivo on model decisaopontomunicipal",
+        "Raw Python operation"
+      ],
+      "contains_data_operations": true,
+      "source_sha256": "f7a1a5fce5461bdfadd05bba7ff6090e2a68a381cefed7f619632971efb8bc15"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0006_bempatrimonial_condutormunicipal_and_more",
+      "dependencies": [
+        [
+          "gestao",
+          "0017_alter_formapagamento_tipo_pdv"
+        ],
+        [
+          "platform_core",
+          "0018_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0005_pontoservidor_endereco_ip_pontoservidor_latitude_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model BemPatrimonial",
+        "Create model CondutorMunicipal",
+        "Create model DepositoAlmoxarifadoMunicipal",
+        "Create model DepreciacaoPatrimonial",
+        "Create model EventoAlmoxarifadoMunicipal",
+        "Create model EventoPatrimonioMunicipal",
+        "Create model InventarioAlmoxarifadoMunicipal",
+        "Create model InventarioPatrimonial",
+        "Create model ItemAlmoxarifadoMunicipal",
+        "Create model ItemInventarioAlmoxarifadoMunicipal",
+        "Create model ItemInventarioPatrimonial",
+        "Create model LoteAlmoxarifadoMunicipal",
+        "Create model MovimentacaoPatrimonial",
+        "Create model RecebimentoAlmoxarifadoMunicipal",
+        "Create model SaldoAlmoxarifadoMunicipal",
+        "Create model SolicitacaoMaterialMunicipal",
+        "Create model RequisicaoMaterialAuditada",
+        "Create model MovimentoAlmoxarifadoMunicipal",
+        "Create model ItemSolicitacaoMaterialMunicipal",
+        "Create model VeiculoMunicipal",
+        "Create model ManutencaoVeiculoMunicipal",
+        "Create model EventoFrotaMunicipal",
+        "Create model DocumentoFrotaMunicipal",
+        "Create model AbastecimentoMunicipal",
+        "Create model ViagemMunicipal",
+        "Create constraint rhmun_bem_tombamento_org on model bempatrimonial",
+        "Create constraint rhmun_deposito_codigo_org on model depositoalmoxarifadomunicipal",
+        "Create constraint rhmun_deprec_bem_comp_org on model depreciacaopatrimonial",
+        "Create constraint rhmun_invalm_deposito_exercicio_org on model inventarioalmoxarifadomunicipal",
+        "Create constraint rhmun_invpat_exercicio_unidade on model inventariopatrimonial",
+        "Create constraint rhmun_item_almox_codigo_org on model itemalmoxarifadomunicipal",
+        "Create constraint rhmun_invpat_bem_unico on model iteminventariopatrimonial",
+        "Create constraint rhmun_lote_almox_org on model lotealmoxarifadomunicipal",
+        "Create constraint rhmun_saldo_deposito_item_org on model saldoalmoxarifadomunicipal",
+        "Create constraint rhmun_saldo_almox_nao_negativo on model saldoalmoxarifadomunicipal",
+        "Create constraint rhmun_veiculo_placa_org on model veiculomunicipal"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "3840a853359d4d84de378062334c84c1b446eef5b295b5f072e5c962bd10ed67"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0007_auditoriaprocessodigitalmunicipal_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0019_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0006_bempatrimonial_condutormunicipal_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model AuditoriaProcessoDigitalMunicipal",
+        "Create model ManifestacaoOuvidoriaMunicipal",
+        "Create model EventoOuvidoriaMunicipal",
+        "Create model PedidoEsicMunicipal",
+        "Create model ProcessoDigitalMunicipal",
+        "Create model ParteProcessoMunicipal",
+        "Create model ParecerProcessoMunicipal",
+        "Create model DocumentoProcessoMunicipal",
+        "Create model DespachoProcessoMunicipal",
+        "Create model ProtocoloMunicipal",
+        "Add field protocolo to processodigitalmunicipal",
+        "Create model PublicacaoTransparenciaMunicipal",
+        "Create model RecursoEsicMunicipal",
+        "Create model EventoEsicMunicipal",
+        "Create model RespostaEsicMunicipal",
+        "Create model RespostaOuvidoriaMunicipal",
+        "Create model SolicitacaoAssinaturaMunicipal",
+        "Create model SignatarioMunicipal",
+        "Create model EventoAssinaturaMunicipal",
+        "Create model TarefaProcessoMunicipal",
+        "Create model TramiteProcessoMunicipal",
+        "Create model VersaoDocumentoProcessoMunicipal",
+        "Add field versao_documento to solicitacaoassinaturamunicipal",
+        "Add field atual to documentoprocessomunicipal",
+        "Create model ContadorExpedienteMunicipal",
+        "Create constraint rhmun_ouvidoria_protocolo_org on model manifestacaoouvidoriamunicipal",
+        "Create constraint rhmun_esic_protocolo_org on model pedidoesicmunicipal",
+        "Create constraint rhmun_protocolo_num_org on model protocolomunicipal",
+        "Create constraint rhmun_processo_digital_num_org on model processodigitalmunicipal",
+        "Create constraint rhmun_signatario_solic_mem on model signatariomunicipal",
+        "Create constraint rhmun_signatario_solic_ordem on model signatariomunicipal",
+        "Create constraint rhmun_doc_proc_versao_org on model versaodocumentoprocessomunicipal"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "cdbca93b837b576062eab3e08ebec279b824ae7b6c3e710f65206896ef510703"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0008_auditoriatributariamunicipal_contribuintemunicipal_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0020_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0007_auditoriaprocessodigitalmunicipal_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model AuditoriaTributariaMunicipal",
+        "Create model ContribuinteMunicipal",
+        "Create model ImovelMunicipal",
+        "Create model LancamentoTributarioMunicipal",
+        "Create model InscricaoDividaAtivaMunicipal",
+        "Create model NotaServicoMunicipal",
+        "Create model ParcelaTributariaMunicipal",
+        "Create model PagamentoArrecadacaoMunicipal",
+        "Create model RegraTributariaMunicipal",
+        "Add field regra to lancamentotributariomunicipal",
+        "Create constraint rhmun_contrib_codigo_org on model contribuintemunicipal",
+        "Create constraint rhmun_contrib_doc_org on model contribuintemunicipal",
+        "Create constraint rhmun_imovel_inscricao_org on model imovelmunicipal",
+        "Create constraint rhmun_divida_numero_org on model inscricaodividaativamunicipal",
+        "Create constraint rhmun_nfse_num_interno_org on model notaservicomunicipal",
+        "Create constraint rhmun_parcela_tributo_num_org on model parcelatributariamunicipal",
+        "Create constraint rhmun_pgto_arrec_req_org on model pagamentoarrecadacaomunicipal",
+        "Create constraint rhmun_regra_tributo_versao_org on model regratributariamunicipal",
+        "Create constraint rhmun_lanc_tributo_num_org on model lancamentotributariomunicipal"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "fd25ffb158dbbe96e5c998d696954095f2005faca00484cc2b54e6090670afbf"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0009_agendasaudemunicipal_auditoriaacessosaude_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0021_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0008_auditoriatributariamunicipal_contribuintemunicipal_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model AgendaSaudeMunicipal",
+        "Create model AuditoriaAcessoSaude",
+        "Create model CidadaoSaudeMunicipal",
+        "Create model AtendimentoSaudeMunicipal",
+        "Create model DispensacaoMedicamentoMunicipal",
+        "Create model EquipeSaudeMunicipal",
+        "Create model EstabelecimentoSanitarioMunicipal",
+        "Create model EvolucaoClinicaMunicipal",
+        "Create model LoteMedicamentoMunicipal",
+        "Create model ItemDispensacaoSaude",
+        "Create model MedicamentoMunicipal",
+        "Add field medicamento to lotemedicamentomunicipal",
+        "Create model NotificacaoEpidemiologicaMunicipal",
+        "Create model PrescricaoSaudeMunicipal",
+        "Create model ItemPrescricaoSaude",
+        "Add field prescricao to dispensacaomedicamentomunicipal",
+        "Create model ProfissionalSaudeMunicipal",
+        "Add field profissional to prescricaosaudemunicipal",
+        "Create model InspecaoSanitariaMunicipal",
+        "Add field profissional to atendimentosaudemunicipal",
+        "Add field profissional to agendasaudemunicipal",
+        "Create model TFDMunicipal",
+        "Create model UnidadeSaudeMunicipal",
+        "Create model SolicitacaoRegulacaoSaude",
+        "Create model RegistroProducaoSUS",
+        "Add field unidade_saude to profissionalsaudemunicipal",
+        "Add field unidade_saude to lotemedicamentomunicipal",
+        "Create model FamiliaTerritorialSaude",
+        "Add field unidade_saude to equipesaudemunicipal",
+        "Add field unidade_saude to dispensacaomedicamentomunicipal",
+        "Add field unidade_saude to atendimentosaudemunicipal",
+        "Add field unidade_saude to agendasaudemunicipal",
+        "Create model VagaRegulacaoSaude",
+        "Create model VeiculoSanitarioMunicipal",
+        "Create model VinculoFamiliaSaude",
+        "Create model VisitaTerritorialSaude",
+        "Create constraint rhmun_saude_citizen_cpf on model cidadaosaudemunicipal",
+        "Create constraint rhmun_saude_citizen_cns on model cidadaosaudemunicipal",
+        "Create constraint rhmun_saude_medicine_code on model medicamentomunicipal",
+        "Create constraint rhmun_saude_unit_org on model unidadesaudemunicipal",
+        "Create constraint rhmun_saude_prof_unit on model profissionalsaudemunicipal",
+        "Create constraint rhmun_saude_medicine_lot on model lotemedicamentomunicipal",
+        "Create constraint rhmun_saude_family_org_code on model familiaterritorialsaude",
+        "Create constraint rhmun_saude_team_org_code on model equipesaudemunicipal",
+        "Create constraint rhmun_saude_dispense_req on model dispensacaomedicamentomunicipal",
+        "Create constraint rhmun_saude_agenda_time on model agendasaudemunicipal",
+        "Create constraint rhmun_saude_vehicle_org on model veiculosanitariomunicipal",
+        "Create constraint rhmun_saude_family_member on model vinculofamiliasaude"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "da4bd018366f3ca90d2b20b017ef288ede3faec467ee77856793c222bdef0832"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0010_agendasaudemunicipal_departamento_and_more",
+      "dependencies": [
+        [
+          "rh_municipal",
+          "0009_agendasaudemunicipal_auditoriaacessosaude_and_more"
+        ]
+      ],
+      "operations": [
+        "Add field departamento to agendasaudemunicipal",
+        "Add field secretaria to agendasaudemunicipal",
+        "Add field setor to agendasaudemunicipal",
+        "Add field unidade to agendasaudemunicipal",
+        "Add field departamento to atendimentosaudemunicipal",
+        "Add field secretaria to atendimentosaudemunicipal",
+        "Add field setor to atendimentosaudemunicipal",
+        "Add field unidade to atendimentosaudemunicipal",
+        "Add field departamento to auditoriaacessosaude",
+        "Add field secretaria to auditoriaacessosaude",
+        "Add field setor to auditoriaacessosaude",
+        "Add field unidade to auditoriaacessosaude",
+        "Add field departamento to cidadaosaudemunicipal",
+        "Add field secretaria to cidadaosaudemunicipal",
+        "Add field setor to cidadaosaudemunicipal",
+        "Add field unidade to cidadaosaudemunicipal",
+        "Add field departamento to dispensacaomedicamentomunicipal",
+        "Add field secretaria to dispensacaomedicamentomunicipal",
+        "Add field setor to dispensacaomedicamentomunicipal",
+        "Add field unidade to dispensacaomedicamentomunicipal",
+        "Add field departamento to equipesaudemunicipal",
+        "Add field secretaria to equipesaudemunicipal",
+        "Add field setor to equipesaudemunicipal",
+        "Add field unidade to equipesaudemunicipal",
+        "Add field departamento to estabelecimentosanitariomunicipal",
+        "Add field secretaria to estabelecimentosanitariomunicipal",
+        "Add field setor to estabelecimentosanitariomunicipal",
+        "Add field unidade to estabelecimentosanitariomunicipal",
+        "Add field departamento to evolucaoclinicamunicipal",
+        "Add field secretaria to evolucaoclinicamunicipal",
+        "Add field setor to evolucaoclinicamunicipal",
+        "Add field unidade to evolucaoclinicamunicipal",
+        "Add field departamento to familiaterritorialsaude",
+        "Add field secretaria to familiaterritorialsaude",
+        "Add field setor to familiaterritorialsaude",
+        "Add field unidade to familiaterritorialsaude",
+        "Add field departamento to inspecaosanitariamunicipal",
+        "Add field secretaria to inspecaosanitariamunicipal",
+        "Add field setor to inspecaosanitariamunicipal",
+        "Add field unidade to inspecaosanitariamunicipal",
+        "Add field departamento to itemdispensacaosaude",
+        "Add field secretaria to itemdispensacaosaude",
+        "Add field setor to itemdispensacaosaude",
+        "Add field unidade to itemdispensacaosaude",
+        "Add field departamento to itemprescricaosaude",
+        "Add field secretaria to itemprescricaosaude",
+        "Add field setor to itemprescricaosaude",
+        "Add field unidade to itemprescricaosaude",
+        "Add field departamento to lotemedicamentomunicipal",
+        "Add field secretaria to lotemedicamentomunicipal",
+        "Add field setor to lotemedicamentomunicipal",
+        "Add field unidade to lotemedicamentomunicipal",
+        "Add field departamento to medicamentomunicipal",
+        "Add field secretaria to medicamentomunicipal",
+        "Add field setor to medicamentomunicipal",
+        "Add field unidade to medicamentomunicipal",
+        "Add field departamento to notificacaoepidemiologicamunicipal",
+        "Add field secretaria to notificacaoepidemiologicamunicipal",
+        "Add field setor to notificacaoepidemiologicamunicipal",
+        "Add field unidade to notificacaoepidemiologicamunicipal",
+        "Add field departamento to prescricaosaudemunicipal",
+        "Add field secretaria to prescricaosaudemunicipal",
+        "Add field setor to prescricaosaudemunicipal",
+        "Add field unidade to prescricaosaudemunicipal",
+        "Add field departamento to profissionalsaudemunicipal",
+        "Add field secretaria to profissionalsaudemunicipal",
+        "Add field setor to profissionalsaudemunicipal",
+        "Add field unidade to profissionalsaudemunicipal",
+        "Add field departamento to registroproducaosus",
+        "Add field secretaria to registroproducaosus",
+        "Add field setor to registroproducaosus",
+        "Add field unidade to registroproducaosus",
+        "Add field departamento to solicitacaoregulacaosaude",
+        "Add field secretaria to solicitacaoregulacaosaude",
+        "Add field setor to solicitacaoregulacaosaude",
+        "Add field unidade to solicitacaoregulacaosaude",
+        "Add field departamento to tfdmunicipal",
+        "Add field secretaria to tfdmunicipal",
+        "Add field setor to tfdmunicipal",
+        "Add field unidade to tfdmunicipal",
+        "Add field departamento to unidadesaudemunicipal",
+        "Add field secretaria to unidadesaudemunicipal",
+        "Add field setor to unidadesaudemunicipal",
+        "Add field departamento to vagaregulacaosaude",
+        "Add field secretaria to vagaregulacaosaude",
+        "Add field setor to vagaregulacaosaude",
+        "Add field unidade to vagaregulacaosaude",
+        "Add field departamento to veiculosanitariomunicipal",
+        "Add field secretaria to veiculosanitariomunicipal",
+        "Add field setor to veiculosanitariomunicipal",
+        "Add field unidade to veiculosanitariomunicipal",
+        "Add field departamento to vinculofamiliasaude",
+        "Add field secretaria to vinculofamiliasaude",
+        "Add field setor to vinculofamiliasaude",
+        "Add field unidade to vinculofamiliasaude",
+        "Add field departamento to visitaterritorialsaude",
+        "Add field secretaria to visitaterritorialsaude",
+        "Add field setor to visitaterritorialsaude",
+        "Add field unidade to visitaterritorialsaude"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "94e598d56820c8aa411fe9e77522e25067f16f5d70e5fb38dff641da237fa20b"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0011_anoletivomunicipal_avaliacaoescolarmunicipal_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0022_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0010_agendasaudemunicipal_departamento_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model AnoLetivoMunicipal",
+        "Create model AvaliacaoEscolarMunicipal",
+        "Create model EscolaMunicipal",
+        "Create model CardapioAlimentacaoEscolar",
+        "Create model CalendarioEscolarMunicipal",
+        "Create model EventoEducacaoMunicipal",
+        "Create model ItemCardapioEscolar",
+        "Create model MatriculaAlunoMunicipal",
+        "Create model FrequenciaEscolarMunicipal",
+        "Create model NotaEscolarMunicipal",
+        "Create model ResponsavelAlunoMunicipal",
+        "Create model SalaEscolarMunicipal",
+        "Create model TransporteEscolarMunicipal",
+        "Create model TurmaMunicipal",
+        "Add field turma to matriculaalunomunicipal",
+        "Create model LotacaoProfessorTurma",
+        "Add field turma to avaliacaoescolarmunicipal",
+        "Create constraint rhmun_ano_letivo_org_nome on model anoletivomunicipal",
+        "Create constraint rhmun_escola_unidade_org on model escolamunicipal",
+        "Create constraint rhmun_cardapio_escola_data_ref on model cardapioalimentacaoescolar",
+        "Create constraint rhmun_frequencia_matricula_data on model frequenciaescolarmunicipal",
+        "Create constraint rhmun_nota_avaliacao_matricula on model notaescolarmunicipal",
+        "Create constraint rhmun_responsavel_aluno_unico on model responsavelalunomunicipal",
+        "Create constraint rhmun_sala_escola_codigo on model salaescolarmunicipal",
+        "Create constraint rhmun_rota_escolar_org_codigo on model transporteescolarmunicipal",
+        "Create constraint rhmun_turma_escola_ano_codigo on model turmamunicipal",
+        "Create constraint rhmun_matricula_escola_numero on model matriculaalunomunicipal",
+        "Create constraint rhmun_matricula_aluno_ano on model matriculaalunomunicipal",
+        "Create constraint rhmun_lotacao_professor_turma_disc on model lotacaoprofessorturma"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "b47c9a24402dc49e1d280c36326ae9136ee8c5e3c3318dbec3cb9eaae1229a88"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0012_controleinternomunicipal_achadocontroleinterno_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0023_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0011_anoletivomunicipal_avaliacaoescolarmunicipal_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model ControleInternoMunicipal",
+        "Create model AchadoControleInterno",
+        "Create model EventoControleInterno",
+        "Create model PlanoAcaoInterno",
+        "Create model EvidenciaControleInterno",
+        "Create model AcaoPlanoAcaoInterno",
+        "Create model RecomendacaoControleInterno",
+        "Add field recomendacao to planoacaointerno",
+        "Create model RiscoControleInterno",
+        "Add field risco to controleinternomunicipal",
+        "Add field risco to achadocontroleinterno",
+        "Create constraint rhmun_risco_org_codigo on model riscocontroleinterno",
+        "Create constraint rhmun_controle_org_codigo on model controleinternomunicipal",
+        "Create constraint rhmun_achado_org_codigo on model achadocontroleinterno"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "89560313efd38a9187542d2acf7bec962881fa90674af09d10718dc94f5d72f5"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0013_riscocontroleinterno_rhmun_risco_prob_1_5_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0023_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0012_controleinternomunicipal_achadocontroleinterno_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create constraint rhmun_risco_prob_1_5 on model riscocontroleinterno",
+        "Create constraint rhmun_risco_impacto_1_5 on model riscocontroleinterno"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "2513c7ea9cec7528cabc84a5c50a6b06612feda37f1206e66d00b2c53dd13aa6"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0014_configuracaointegracaomunicipal_and_more",
+      "dependencies": [
+        [
+          "platform_core",
+          "0023_alter_moduloorganizacao_codigo"
+        ],
+        [
+          "rh_municipal",
+          "0013_riscocontroleinterno_rhmun_risco_prob_1_5_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model ConfiguracaoIntegracaoMunicipal",
+        "Create model EventoIntegracaoMunicipal",
+        "Create model TentativaIntegracaoMunicipal",
+        "Create constraint rhmun_integ_org_provider_name on model configuracaointegracaomunicipal",
+        "Create constraint rhmun_integ_org_idempotency on model tentativaintegracaomunicipal"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "0c9b9d4705575c8a19895cf5d872c1598ee93c992bd88201911ed61f0fd42742"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0015_agendamentoregulacaosaude",
+      "dependencies": [
+        [
+          "platform_core",
+          "0024_itemcontratosaas_nivel_indicadores_snapshot"
+        ],
+        [
+          "rh_municipal",
+          "0014_configuracaointegracaomunicipal_and_more"
+        ],
+        [
+          "contas",
+          "__first__"
+        ]
+      ],
+      "operations": [
+        "Create model AgendamentoRegulacaoSaude"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "9e03a586abee52b6607cc72914bc7d8bf867d70171ccde7e63931853c226006c"
+    },
+    {
+      "app": "rh_municipal",
+      "migration": "0016_itemprescricao_nome_protegido",
+      "dependencies": [
+        [
+          "rh_municipal",
+          "0015_agendamentoregulacaosaude"
+        ]
+      ],
+      "operations": [
+        "Alter field medicamento_nome on itemprescricaosaude",
+        "Add field medicamento_nome_cifrado to itemprescricaosaude",
+        "Add field retifica to evolucaoclinicamunicipal"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "2bcfc0b9ce192474cf778e5209e3149f2a69638d1c7154cc1cb6d95e07cba56e"
+    },
+    {
+      "app": "sessions",
+      "migration": "0001_initial",
+      "dependencies": [],
+      "operations": [
+        "Create model Session"
+      ],
+      "contains_data_operations": false,
+      "source_sha256": "2aa438e2393ee5135c4dda94bfde65fd49e8300f1c3f93bed25ae3a09f2f69b9"
+    }
+  ],
+  "identity": null,
+  "destination_verified": false
+}

@@ -4,7 +4,7 @@ Configurações do projeto TECNOLMED Gestão Clínica (ERP de assistência técn
 from pathlib import Path
 from decouple import config, Csv
 from django.core.exceptions import ImproperlyConfigured
-from .deployment import postgres_database, upload_storage, validate_public_settings
+from .deployment import postgres_database, upload_storage, homologation_storage, validate_public_settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -116,7 +116,9 @@ MEDIA_ROOT = Path(config('MEDIA_ROOT', default=str(BASE_DIR / 'media')))
 PRIVATE_MEDIA_ROOT = Path(config("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "media_private")))
 # Definição BACKEND/OPTIONS opcional de Django Storage (ex.: bucket privado S3).
 # Credenciais devem vir do ambiente/provedor, nunca de valores versionados.
-PRIVATE_STORAGE = upload_storage(config, DEBUG)
+PRIVATE_STORAGE = (homologation_storage(config)
+    if config('DJANGO_SETTINGS_MODULE', default='') == 'tecnolmed.homologation_settings'
+    else upload_storage(config, DEBUG))
 if PRIVATE_STORAGE:
     from copy import deepcopy
     STORAGES['default'] = deepcopy(PRIVATE_STORAGE)

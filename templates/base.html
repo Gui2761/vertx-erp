@@ -74,6 +74,7 @@
 <div class="vx-main" id="conteudo">
   {% if user.is_authenticated and contingencia_jornada_contratual %}<div class="alert alert-warning" role="status">Modo de contingência: Jornada Contratual suspensa. Histórico preservado; atendimentos continuam pelo fluxo da OS.</div>{% endif %}
   {% if user.is_authenticated %}<nav class="vx-breadcrumb" aria-label="Localização">{% if pdv_experience %}<a href="{% url 'operacao:pdv_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:pdv_home' %}">PDV</a>{% elif seller_experience %}<a href="{% url 'operacao:seller_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:seller_home' %}">Minha rotina</a>{% elif request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
+  {% if uploads_disabled %}<div class="alert alert-info" role="status">Homologação sem armazenamento de arquivos: fotos, documentos e logos estão desativados. Cadastros e operações sem anexos continuam disponíveis.</div>{% endif %}
   {% for message in messages %}
     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
       {{ message }}

@@ -39,7 +39,11 @@ def postgres_database(config, debug):
     return database
 
 
-def upload_storage(config, debug):
+def upload_storage(config, debug, *, disabled=False):
+    if disabled:
+        # Explicit opt-in by the dedicated homologation settings only. Do not
+        # even read AWS/S3 configuration or instantiate a provider client.
+        return {'BACKEND': 'platform_core.uploads.DisabledStorage', 'OPTIONS': {}}
     mode = config('UPLOAD_STORAGE', default='local' if debug else '').lower()
     if mode not in ['local', 's3'] or not debug and mode != 's3':
         raise ImproperlyConfigured('Configure UPLOAD_STORAGE=s3 em homologação/produção.')
@@ -77,6 +81,36 @@ def upload_storage(config, debug):
             ),
         },
     }
+
+
+def homologation_storage(config):
+    """Explicit R2 opt-in; incomplete configuration never falls back to disk/AWS."""
+    mode = config('HOMOLOGATION_STORAGE', default='disabled').strip().lower()
+    if mode not in ('disabled', 'r2'):
+        raise ImproperlyConfigured('HOMOLOGATION_STORAGE deve ser disabled ou r2.')
+    disabled = {'BACKEND': 'platform_core.uploads.DisabledStorage', 'OPTIONS': {}}
+    if mode == 'disabled':
+        return disabled
+    names = ('S3_BUCKET_NAME', 'S3_ENDPOINT_URL', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY')
+    values = {name: config(name, default='').strip() for name in names}
+    if not all(values.values()):
+        return disabled
+    endpoint = urlsplit(values['S3_ENDPOINT_URL'])
+    import re
+    if (endpoint.scheme != 'https' or not re.fullmatch(r'[a-fA-F0-9]{32}\.r2\.cloudflarestorage\.com', endpoint.netloc)
+            or endpoint.path not in ('', '/') or endpoint.query or endpoint.fragment):
+        raise ImproperlyConfigured('S3_ENDPOINT_URL deve ser o endpoint HTTPS S3 da conta R2, sem credenciais.')
+    if values['S3_BUCKET_NAME'] != 'vertyx-homologacao':
+        raise ImproperlyConfigured('R2 de homologação exige o bucket vertyx-homologacao.')
+    if config('S3_REGION_NAME', default='auto') != 'auto' or config('S3_ADDRESSING_STYLE', default='path') != 'path':
+        raise ImproperlyConfigured('R2 de homologação exige região auto e addressing style path.')
+    # Explicit values prevent inherited AWS session tokens or AWS defaults from
+    # selecting a different provider. No client/network is created at startup.
+    values.update(UPLOAD_STORAGE='s3', S3_REGION_NAME='auto', S3_ADDRESSING_STYLE='path', AWS_SESSION_TOKEN=None)
+    def r2_config(name, default=None, cast=None):
+        value = values.get(name, default)
+        return cast(value) if cast else value
+    return upload_storage(r2_config, False)
 
 
 def validate_public_settings(secret, hosts, origins, debug):

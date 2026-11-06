@@ -214,10 +214,13 @@ def assinatura_imagem(request, pk, assinatura_id):
 @login_required
 def pdf(request, pk, assinatura_id):
     from .reports import gerar_pdf
+    from platform_core.uploads import UploadsDisabled, disabled_response
     ordem = ordem_permitida(request, pk)
     assinatura = get_object_or_404(Assinatura.objects.select_related('conferencia'), pk=assinatura_id, ordem=ordem)
     try:
         conteudo = gerar_pdf(assinatura)
+    except UploadsDisabled:
+        return disabled_response(request, 'O comprovante PDF não está disponível nesta homologação sem armazenamento permanente. A OS e a assinatura permanecem registradas no banco.')
     except (ValidationError, OSError) as exc:
         operation_failure('pdf_generation_failed', exc)
         return HttpResponse('Não foi possível gerar o comprovante: verifique a integridade e a disponibilidade dos arquivos.', status=409)

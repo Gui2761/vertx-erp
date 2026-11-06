@@ -25,10 +25,12 @@ considerar a referência local `origin/main` prova de atualização remota.
 - Se houver dados no destino, exigir backup validado e ensaio de restauração;
   não presumir vazio somente pelo nome do banco.
 - Selecionar `DJANGO_SETTINGS_MODULE=tecnolmed.homologation_settings`.
-- Conferir `DEBUG=False`, `DATABASE_SSL_REQUIRE=True`, `SECRET_KEY` adequada,
-  hosts/origens HTTPS específicos e `UPLOAD_STORAGE=s3`.
-- Usar bucket privado exclusivo DEMO, credenciais restritas e persistência
-  verificada. Não apontar a dados operacionais existentes.
+- Conferir `DEBUG=False`, `DATABASE_SSL_REQUIRE=True`, `SECRET_KEY` adequada
+  e hosts/origens HTTPS específicos. Não é necessário contratar S3.
+- As settings de homologação forçam storage desativado, inclusive se houver
+  `UPLOAD_STORAGE=s3` ou credenciais AWS antigas no ambiente. Remover somente
+  deste serviço DEMO as referências AWS/S3 não utilizadas, sem revogar chaves
+  ou modificar grupos compartilhados de outros serviços.
 - Revisar Environment Groups, credenciais externas, Cron Jobs e Background
   Workers. Não iniciar `processar_estoque --loop` nesta rodada.
 - Não configurar certificados fiscais, pagamentos, mensageria ou integrações
@@ -36,9 +38,27 @@ considerar a referência local `origin/main` prova de atualização remota.
 - Validar o build Docker Linux autorizado. Ele não foi executado localmente.
 
 As settings de homologação descartam e-mails com backend dummy, desligam
-simulação fiscal/NFC-e local e usam cookies exclusivos. Não mudam banco ou
-storage por conta própria nem bloqueiam todo serviço externo de terceiros:
-a revisão de credenciais e tarefas no painel continua necessária.
+simulação fiscal/NFC-e local, usam cookies exclusivos e desativam os storages
+público/privado de uploads. Não mudam o banco nem bloqueiam todo serviço externo
+de terceiros: a revisão de credenciais e tarefas no painel continua necessária.
+
+Fotos, logos, documentos e importações de arquivos são recusados com mensagem
+explícita, antes de criar arquivos temporários. O backend também bloqueia
+gravações diretas; não existe fallback local para uploads. Formulários sem
+arquivos continuam funcionando. Assinaturas de OS permanecem no PostgreSQL;
+a finalização não exige armazenar o PDF nesta etapa. A solicitação do PDF que
+exige preservação de arquivo retorna indisponibilidade explícita, sem criar
+cópia efêmera. Demais relatórios que não exigem esse storage seguem seu fluxo.
+Arquivos estáticos da aplicação continuam servidos por WhiteNoise, separados
+dos uploads. Não usar estas settings como isolamento automático de testes:
+testes automatizados continuam exigindo banco descartável e bloqueio externo.
+
+Variáveis de storage dispensáveis neste modo: `UPLOAD_STORAGE`, `S3_BUCKET_NAME`,
+`S3_REGION_NAME`, `S3_ENDPOINT_URL`, `S3_ADDRESSING_STYLE`, `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY` e `AWS_SESSION_TOKEN`. Nenhuma delas é lida para
+configurar o storage desativado. Não usar `DEBUG=True` como contorno.
+Essa exceção é exclusiva de `tecnolmed.homologation_settings`; as settings
+normais com `DEBUG=False` continuam exigindo armazenamento S3 configurado.
 
 Para trocar `DATABASE_URL`: banco novo → Connect → Internal Database URL;
 Web Service → Environment → editar a variável existente. **Save only** não
@@ -134,7 +154,8 @@ contas, além dos bloqueios nas settings e serviços.
 - Avaliadores sem acesso a usuários, plataforma, Django Admin e produtos bloqueados.
 - IDOR por GET/POST entre organizações negado; anexos privados sem acesso cruzado.
 - Percorrer cliente/equipamento, OS, estoque, contrato, orçamento/venda e financeiro.
-- Conferir auditoria, saldo, recebíveis e persistência dos anexos após reinício.
+- Conferir auditoria, saldo, recebíveis e bloqueio claro dos anexos, sem arquivos
+  gravados em bucket ou disco efêmero. OS e assinaturas persistem no banco.
 - Confirmar ausência de operações fiscais, bancárias, governamentais ou mensagens reais.
 - Registrar bugs com módulo, passos, esperado/observado e evidência fictícia;
   não anexar senhas, links de convite ou dados reais.
@@ -163,5 +184,60 @@ conexões externas/outros bancos bloqueadas. O cluster foi parado ao final.
 `check --deploy` aponta apenas HSTS de subdomínios/preload, mantidos desligados
 pois não controlamos os demais subdomínios de `onrender.com`.
 
-O bucket real, TLS do PostgreSQL remoto, build e fluxos online ainda precisam
-ser validados após autorização. Testes locais não certificam produção.
+TLS do PostgreSQL remoto, build e fluxos online ainda precisam ser validados
+após autorização. Não há bucket a validar enquanto os uploads estiverem
+desativados. Testes locais não certificam produção nem homologam anexos.
+
+
+## Armazenamento opcional Cloudflare R2 (preparação local)
+
+O padrão continua `HOMOLOGATION_STORAGE=disabled`: uploads são bloqueados antes
+que arquivos sejam recebidos em disco; não são lidas credenciais S3 nesse modo.
+Para ativar posteriormente no Render, com autorização de publicação:
+
+| Variável | Valor |
+| --- | --- |
+| DJANGO_SETTINGS_MODULE | tecnolmed.homologation_settings |
+| DEBUG | False |
+| HOMOLOGATION_STORAGE | r2 |
+| S3_BUCKET_NAME | vertyx-homologacao |
+| S3_ENDPOINT_URL | https://<ACCOUNT_ID>.r2.cloudflarestorage.com |
+| S3_REGION_NAME | auto |
+| S3_ADDRESSING_STYLE | path |
+| AWS_ACCESS_KEY_ID | Access Key ID R2, somente no secret store do Render |
+| AWS_SECRET_ACCESS_KEY | Secret Access Key R2, somente no secret store do Render |
+
+Não usar credenciais AWS operacionais. `AWS_SESSION_TOKEN` é ignorado no modo R2;
+`UPLOAD_STORAGE` não seleciona o modo da homologação. Banco, chave clínica e
+variáveis de autenticação permanecem inalterados. Não é necessária migration.
+O endpoint aceito é o S3 padrão da conta R2, sem caminhos, portas ou credenciais.
+Modos, bucket, região e endpoint incorretos impedem a inicialização com erro sem
+valores sensíveis. Configuração incompleta mantém `DisabledStorage` e o aviso
+claro de uploads desativados; nunca utiliza filesystem ou outro provedor.
+
+Criar/confirmar bucket privado, desabilitar acesso público/r2.dev e emitir chave
+R2 Object Read & Write restrita somente a esse bucket. Não enviar chaves por
+chat nem armazená-las em arquivos versionados. O navegador usa rotas Django
+autenticadas; não recebe credenciais nem URLs públicas/presigned do R2.
+Os objetos mantêm `private/organizations/<uuid>/...` e
+`media/organizations/<uuid>/...`; os downloads validam também vínculo e
+permissão do recurso no banco. Logos são consultados somente pela chave atual
+da organização autenticada; fotos, documentos e PDFs preservam suas regras.
+
+O backend S3 existente usa assinatura v4, timeouts, tentativas limitadas e
+mensagens genéricas de indisponibilidade. Falhas não usam disco persistente
+alternativo. Arquivos temporários de processamento podem ser utilizados pelo
+Django/backend, sem substituir o armazenamento remoto. OS e assinaturas
+continuam no PostgreSQL. Não há transação distribuída entre PostgreSQL e R2:
+um erro posterior à gravação remota pode deixar objeto órfão, exigindo futura
+reconciliação autorizada; não apagar objetos automaticamente nesta etapa.
+
+A desativação posterior (`HOMOLOGATION_STORAGE=disabled`) preserva banco e
+objetos remotos, mas torna arquivos/PDFs persistidos indisponíveis pela aplicação.
+Ela não apaga arquivos nem constitui rollback do banco.
+
+Antes da liberação online, realizar smoke test autorizado com arquivos fictícios:
+logo, foto, documento/anexo, PDF assinado e negativa de acesso entre organizações;
+confirmar visibilidade privada no R2. Moto comprova fluxos locais simulados, não
+credenciais reais, políticas do bucket ou conectividade do Render. A configuração
+não libera produtos clínicos, fiscal nem outras integrações bloqueadas.
