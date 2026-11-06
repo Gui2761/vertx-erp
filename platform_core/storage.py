@@ -1,5 +1,6 @@
 """Uploads S3 privados; links apontam para a autorização Django, não para o bucket."""
 from contextlib import contextmanager
+import re
 from botocore.exceptions import BotoCoreError, ClientError
 from storages.backends.s3 import S3Storage
 from django.urls import reverse
@@ -25,6 +26,26 @@ def storage_operation(event):
 
 
 class AuthenticatedS3Storage(S3Storage):
+    def usage_bytes(self, prefix):
+        """Measure one tenant with S3 V2 pagination, without downloading objects."""
+        if not isinstance(prefix, str) or not re.fullmatch(
+                r'organizations/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/', prefix):
+            raise ValueError('Prefixo de medição inválido.')
+        with storage_operation('storage_usage_failed'):
+            # Respect the storage location (private/media), including its slash
+            # boundary. No bucket-wide listing or per-object HEAD is necessary.
+            path = self._normalize_name(prefix)
+            paginator = self.connection.meta.client.get_paginator('list_objects_v2')
+            total = 0
+            for page in paginator.paginate(Bucket=self.bucket_name, Prefix=path):
+                for item in page.get('Contents', ()):
+                    key, size = item.get('Key'), item.get('Size')
+                    if (not isinstance(key, str) or not key.startswith(path)
+                            or type(size) is not int or size < 0):
+                        raise ValueError('Resposta de medição inválida.')
+                    total += size
+            return total
+
     def url(self, name, parameters=None, expire=None, http_method=None):
         return reverse('legacy_media', kwargs={'name': name})
 

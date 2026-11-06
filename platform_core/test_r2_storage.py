@@ -91,6 +91,56 @@ class R2ProtectedFilesTests(TestCase):
     make_user = deployment_tests.RemoteStorageTests.make_user
     make_data = deployment_tests.RemoteStorageTests.make_data
 
+    def prepare_metered_documents(self):
+        from .saas_models import PlanoSaaS, AssinaturaSaaS
+        from .saas_services import aplicar_modulos
+        user = self.make_user('metered-admin', self.a, 'ADMIN')
+        plan = PlanoSaaS.objects.create(slug='metered-synthetic', nome='Synthetic metered',
+            modulos=['assistencia', 'documentos'], limites={'armazenamento_mb': 1})
+        AssinaturaSaaS.objects.create(organization=self.a, plano=plan, status='ATIVA')
+        aplicar_modulos(self.a, plan)
+        self.client.force_login(user)
+
+    def test_metered_document_upload_and_download_use_v2_and_ignore_other_tenant(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from operacao.models import Documento
+        from .context import tenant_context
+        self.prepare_metered_documents()
+        self.s3.put_object(Bucket=self.bucket,
+            Key=f'private/organizations/{self.b.public_id}/large-synthetic.bin', Body=b'x' * (2 * 1024 * 1024))
+        payload = b'%PDF-1.4 synthetic acceptance only'
+        with patch('storages.backends.s3.S3Storage.listdir', side_effect=AssertionError('Legacy listing must not be used')):
+            response = self.client.post(reverse('operacao:documento_novo'), {
+                'titulo': 'Metered fictitious document', 'tipo': 'PDF', 'categoria': 'OUTRO',
+                'cliente': self.data_a['client'].pk,
+                'arquivo': SimpleUploadedFile('synthetic.pdf', payload, content_type='application/pdf')})
+        self.assertEqual(response.status_code, 302)
+        with tenant_context(self.a):
+            document = Documento.objects.get(titulo='Metered fictitious document')
+        response = self.client.get(reverse('operacao:documento_arquivo', args=[document.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(b''.join(response.streaming_content), payload)
+        self.client.force_login(self.tech_b)
+        self.assertEqual(self.client.get(reverse('operacao:documento_arquivo', args=[document.pk])).status_code, 404)
+
+    def test_meter_failure_blocks_upload_before_any_object_or_document_is_created(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from operacao.models import Documento
+        from .context import tenant_context
+        from .storage import StorageUnavailable
+        self.prepare_metered_documents()
+        with tenant_context(self.a):
+            before = Documento.objects.count()
+        with patch('platform_core.storage.AuthenticatedS3Storage.usage_bytes', side_effect=StorageUnavailable()), patch(
+                'platform_core.storage.AuthenticatedS3Storage._save', side_effect=AssertionError('Must not upload on unknown usage')):
+            response = self.client.post(reverse('operacao:documento_novo'), {
+                'titulo': 'Rejected fictitious document', 'tipo': 'PDF',
+                'arquivo': SimpleUploadedFile('synthetic.pdf', b'%PDF-1.4 synthetic', content_type='application/pdf')})
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(response, 'Medição não disponível', status_code=400)
+        with tenant_context(self.a):
+            self.assertEqual(Documento.objects.count(), before)
+
     def test_r2_configuration_roundtrip_with_simulated_endpoint_and_private_bucket(self):
         from django.core.files.storage import storages
         endpoint = 'https://' + 'a'*32 + '.r2.cloudflarestorage.com'

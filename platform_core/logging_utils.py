@@ -36,4 +36,24 @@ def logging_config(level='INFO'):
 
 def operation_failure(event, exc):
     # Somente eventos fixos definidos no código; nunca passar texto do request.
-    logging.getLogger('vertyx.operations').error('event=%s error=%s', event, type(exc).__name__)
+    from botocore.exceptions import ClientError
+    logger = logging.getLogger('vertyx.operations')
+    if isinstance(exc, ClientError):
+        # Provider messages, request IDs, URLs and arbitrary error codes may
+        # contain secrets. Only fixed, recognized classifications are logged.
+        codes = {'AccessDenied', 'InvalidAccessKeyId', 'SignatureDoesNotMatch',
+                 'ExpiredToken', 'InvalidToken', 'NoSuchBucket', 'NoSuchKey',
+                 'RequestTimeout', 'SlowDown', 'ServiceUnavailable', 'InternalError',
+                 'NotImplemented', 'AuthorizationHeaderMalformed', 'InvalidRequest',
+                 'NotFound', '404'}
+        operations = {'ListObjects', 'ListObjectsV2', 'HeadObject', 'PutObject',
+                      'GetObject', 'DeleteObject'}
+        code = exc.response.get('Error', {}).get('Code')
+        operation = exc.operation_name
+        status = exc.response.get('ResponseMetadata', {}).get('HTTPStatusCode')
+        logger.error('event=%s error=%s s3_code=%s operation=%s http_status=%s',
+                     event, type(exc).__name__, code if code in codes else 'Other',
+                     operation if operation in operations else 'Other',
+                     status if type(status) is int and 400 <= status <= 599 else '-')
+    else:
+        logger.error('event=%s error=%s', event, type(exc).__name__)

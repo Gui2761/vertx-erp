@@ -631,6 +631,9 @@ def _storage_usage_bytes(organization):
     total = 0
     try:
         backend = private_storage.backend
+        measure = getattr(backend, 'usage_bytes', None)
+        if callable(measure):
+            return measure(prefix)
         pending = [prefix.rstrip('/')]
         while pending:
             directory = pending.pop()
@@ -643,8 +646,12 @@ def _storage_usage_bytes(organization):
                 key = f'{directory}/{name}'
                 if key.startswith(prefix):
                     total += backend.size(key)
-    except Exception:
+    except Exception as exc:
         # Storage failures must never be represented as zero usage.
+        from .storage import StorageUnavailable
+        from .logging_utils import operation_failure
+        if not isinstance(exc, StorageUnavailable):
+            operation_failure('storage_usage_measure_failed', exc)
         return None
     return total
 
