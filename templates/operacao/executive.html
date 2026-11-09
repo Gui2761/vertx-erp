@@ -11,12 +11,36 @@
   </div>
 </header>
 
-<form method="get" class="card p-3 mb-4">
-  <div class="vx-period-grid">
-    <div><label for="id_periodo">Período</label>{{ period_form.periodo }}</div>
-    {% if advanced_analytics %}<div><label for="id_inicio">De</label>{{ period_form.inicio }}</div><div><label for="id_fim">Até</label>{{ period_form.fim }}</div>{% endif %}
-    <div><label for="id_grafico">Janela dos gráficos</label>{{ period_form.grafico }}</div>
-    <button class="btn btn-primary align-self-end">Aplicar período</button>
+<form method="get" class="card p-3 mb-4 border-0" style="background-color: var(--vx-surface); border: 1px solid var(--vx-border) !important; border-radius: var(--vx-radius);">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div class="d-flex align-items-center gap-2">
+      <span class="vx-indicator-dot" style="background-color: var(--vx-brand);"></span>
+      <span class="vx-section-title">FILTRAR PERÍODO</span>
+    </div>
+    <div class="d-flex align-items-center flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-2">
+        <label for="id_periodo" class="small text-muted mb-0 fw-semibold text-nowrap">Período:</label>
+        {{ period_form.periodo }}
+      </div>
+      {% if advanced_analytics %}
+      <div class="d-flex align-items-center gap-2">
+        <label for="id_inicio" class="small text-muted mb-0 fw-semibold">De:</label>
+        {{ period_form.inicio }}
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <label for="id_fim" class="small text-muted mb-0 fw-semibold">Até:</label>
+        {{ period_form.fim }}
+      </div>
+      {% endif %}
+      <div class="d-flex align-items-center gap-2">
+        <label for="id_grafico" class="small text-muted mb-0 fw-semibold text-nowrap">Janela:</label>
+        {{ period_form.grafico }}
+      </div>
+      <button class="btn btn-primary btn-sm px-3 py-1 d-inline-flex align-items-center gap-1 shadow-sm" style="min-height: 36px;">
+        <i class="bi bi-funnel-fill"></i>
+        <span>Aplicar</span>
+      </button>
+    </div>
   </div>
   {{ period_form.errors }}
 </form>
