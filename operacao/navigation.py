@@ -116,6 +116,35 @@ def _menu(request):
         ('Configurações',by_title['CONFIGURAÇÕES']+by_title['CADASTROS']),
         ('Operacional',by_title['INÍCIO']+by_title['ASSISTÊNCIA']),
     ]
-    from platform_core.modules import module_for_path,module_enabled
-    groups=[(title,[(label,url,icon) for label,url,icon in links if module_enabled(module_for_path(url))]) for title,links in groups]
-    return {'administrative_navigation':True,'can_operational_panel':panel_access,'executive_navigation':[{'title':title,'links':[{'label':label,'url':url,'icon':ICON_ALIASES.get(icon,icon)} for label,url,icon in links]} for title,links in groups]}
+    from platform_core.modules import module_for_path, module_enabled, product_module_enabled, required_modules_for_path
+    from gestao.permissions import allowed
+
+    def _is_nav_allowed(url):
+        clean_path = url.split('?')[0]
+        if clean_path.startswith(('/financeiro/', '/bancos/')) and not allowed(request.user, 'financeiro'):
+            return False
+        required = required_modules_for_path(clean_path, None)
+        if not required:
+            mod = module_for_path(clean_path)
+            if mod:
+                required = (mod,)
+        if required:
+            org = getattr(request, 'organization', None)
+            if org and any(not product_module_enabled(request.user, 'assistencia', code, org) for code in required):
+                return False
+        return module_enabled(module_for_path(clean_path))
+
+    filtered_groups = []
+    for title, links in groups:
+        allowed_links = [(label, url, icon) for label, url, icon in links if _is_nav_allowed(url)]
+        if allowed_links:
+            filtered_groups.append((title, allowed_links))
+
+    return {
+        'administrative_navigation': True,
+        'can_operational_panel': panel_access,
+        'executive_navigation': [
+            {'title': title, 'links': [{'label': label, 'url': url, 'icon': ICON_ALIASES.get(icon, icon)} for label, url, icon in links]}
+            for title, links in filtered_groups
+        ]
+    }

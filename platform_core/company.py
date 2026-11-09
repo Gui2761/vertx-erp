@@ -92,18 +92,25 @@ def meu_plano(request):
     """Visualização estrita da assinatura e cotas exclusivas da organização ativa."""
     from .saas_models import AssinaturaSaaS
     from .saas_services import metricas_uso
-    from .models import ModuloOrganizacao
 
     org = current_organization()
     subscription = AssinaturaSaaS.objects.filter(organization=org).select_related('plano', 'plano__erp').first()
     metrics = metricas_uso(org, erp_code='assistencia') if subscription else {}
-    modulos = ModuloOrganizacao.objects.filter(habilitado=True)
+    
+    active_modules = []
+    if subscription and subscription.plano:
+        for pm in subscription.plano.modulos_produto.select_related('modulo').all():
+            active_modules.append({
+                'code': pm.modulo.code,
+                'name': pm.modulo.name,
+                'description': pm.modulo.description or 'Módulo operacional liberado no plano.',
+            })
 
     context = {
         'titulo': f'Minha Assinatura · {org.display_name}',
         'subscription': subscription,
         'metrics': metrics,
-        'modulos': modulos,
+        'active_modules': active_modules,
         'organization': org,
         'back_url': reverse('platform_core:empresa'),
     }

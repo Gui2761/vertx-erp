@@ -135,60 +135,21 @@
   </div>
   <div class="card-body">
     <div class="row g-3">
+      {% for mod in active_modules %}
       <div class="col-md-4">
-        <div class="d-flex align-items-center p-3 border rounded-3">
-          <i class="bi bi-box-seam fs-3 text-success me-3"></i>
+        <div class="d-flex align-items-center p-3 border rounded-3 h-100 bg-white">
+          <i class="bi bi-check-circle-fill fs-3 text-success me-3"></i>
           <div>
-            <strong class="d-block text-dark">Estoque com FEFO</strong>
-            <small class="text-muted">Controle de lotes e validade de medicamentos</small>
+            <strong class="d-block text-dark">{{ mod.name }}</strong>
+            <small class="text-muted">{{ mod.description }}</small>
           </div>
         </div>
       </div>
-      <div class="col-md-4">
-        <div class="d-flex align-items-center p-3 border rounded-3">
-          <i class="bi bi-receipt fs-3 text-success me-3"></i>
-          <div>
-            <strong class="d-block text-dark">Central do PDV</strong>
-            <small class="text-muted">Ponto de venda com suporte offline</small>
-          </div>
-        </div>
+      {% empty %}
+      <div class="col-12">
+        <p class="text-muted mb-0">Nenhum módulo operacional configurado neste plano.</p>
       </div>
-      <div class="col-md-4">
-        <div class="d-flex align-items-center p-3 border rounded-3">
-          <i class="bi bi-cash-stack fs-3 text-success me-3"></i>
-          <div>
-            <strong class="d-block text-dark">Gestão Financeira</strong>
-            <small class="text-muted">Contas a pagar/receber, caixa e conciliação</small>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="d-flex align-items-center p-3 border rounded-3">
-          <i class="bi bi-tools fs-3 text-success me-3"></i>
-          <div>
-            <strong class="d-block text-dark">Ordens de Serviço</strong>
-            <small class="text-muted">Atendimentos, laudos e assinaturas digitais</small>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="d-flex align-items-center p-3 border rounded-3">
-          <i class="bi bi-file-earmark-text fs-3 text-success me-3"></i>
-          <div>
-            <strong class="d-block text-dark">Módulo Fiscal</strong>
-            <small class="text-muted">Configurações e parâmetros tributários</small>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="d-flex align-items-center p-3 border rounded-3">
-          <i class="bi bi-bar-chart fs-3 text-success me-3"></i>
-          <div>
-            <strong class="d-block text-dark">Relatórios Executivos</strong>
-            <small class="text-muted">Indicadores em tempo real e auditoria</small>
-          </div>
-        </div>
-      </div>
+      {% endfor %}
     </div>
   </div>
 </div>
