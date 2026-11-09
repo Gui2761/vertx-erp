@@ -284,9 +284,11 @@ def inicio(request):
     }
     by_plan = PlanoSaaS.objects.annotate(clientes=Count('assinaturas')).order_by('nome')
     usage_rows = []
-    for sub in subscriptions.select_related('organization', 'plano')[:100]:
-        usage_rows.append({'organization': sub.organization, 'plan': sub.plano,
-                           'metrics': metricas_uso(sub.organization)})
+    sub_map = {sub.organization_id: sub for sub in subscriptions}
+    for org in orgs[:100]:
+        sub = sub_map.get(org.id)
+        usage_rows.append({'organization': org, 'plan': sub.plano if sub else None,
+                           'metrics': metricas_uso(org)})
     return _render(request, 'platform_core/saas/dashboard.html', {
         'counts': counts, 'mrr': mrr, 'by_plan': by_plan,
         'near_limit': near_limit[:8], 'financeiro_saas_preparado': True,
