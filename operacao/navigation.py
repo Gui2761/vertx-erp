@@ -83,6 +83,7 @@ def _menu(request):
     if membership.role=='ADMIN':
         groups[-1][1].extend([('Configurações','/configuracoes/','gear'),('Estoque e Compras','/configuracoes/estoque-compras/','sliders'),('Painel operacional · Configuração','/configuracoes/painel-operacional/','sliders'),('Usuários','/contas/usuarios/','person-check')])
         groups[-1][1].append(('Empresa e módulos','/vertyx/empresa/','settings'))
+        groups[-1][1].append(('Minha Assinatura','/vertyx/empresa/plano/','bookmark-check'))
     if module_enabled('relatorios_completos') and has_capability(request.user, 'executivo'):
         groups[0][1].append(('Gestão executiva','/gestao/executiva/','chart'))
     pdv_links=[('Central do PDV','/pdv/','cart'),('Caixas','/pdv/?gestao=1','bank')]

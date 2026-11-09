@@ -5,7 +5,14 @@ from . import saas_views
 
 app_name = 'platform_core'
 urlpatterns = [path('', views.home, name='home'), path('organizacao/', views.select_organization, name='select_organization')]
-urlpatterns += [path('empresa/',company.configuration,name='empresa'),path('empresa/modulos/',company.configuration,{'kind':'modulos'},name='modulos'),path('empresa/permissoes/',company.configuration,{'kind':'permissao'},name='permissoes'),path('empresa/filiais/nova/',company.configuration,{'kind':'filial'},name='filial_nova'),path('empresa/filiais/<uuid:public_id>/',company.configuration,{'kind':'filial'},name='filial_editar')]
+urlpatterns += [
+    path('empresa/', company.configuration, name='empresa'),
+    path('empresa/plano/', company.meu_plano, name='meu_plano'),
+    path('empresa/modulos/', company.configuration, {'kind': 'modulos'}, name='modulos'),
+    path('empresa/permissoes/', company.configuration, {'kind': 'permissao'}, name='permissoes'),
+    path('empresa/filiais/nova/', company.configuration, {'kind': 'filial'}, name='filial_nova'),
+    path('empresa/filiais/<uuid:public_id>/', company.configuration, {'kind': 'filial'}, name='filial_editar')
+]
 urlpatterns += [
     path('saas/manifest.webmanifest', saas_views.manifest, name='saas_manifest'),
     path('saas/sw.js', saas_views.service_worker, name='saas_sw'),

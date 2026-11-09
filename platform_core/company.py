@@ -85,3 +85,27 @@ def configuration(request, kind='empresa', public_id=None):
         else:
             return redirect('platform_core:empresa')
     return render(request,'platform_core/company.html',{'titulo':title,'form':form,'filiais':FilialEmpresa.objects.all(),'back_url':reverse('platform_core:home')},status=400 if request.method=='POST' else 200)
+
+
+@login_required
+def meu_plano(request):
+    """Visualização estrita da assinatura e cotas exclusivas da organização ativa."""
+    from .saas_models import AssinaturaSaaS
+    from .saas_services import metricas_uso
+    from .models import ModuloOrganizacao
+
+    org = current_organization()
+    subscription = AssinaturaSaaS.objects.filter(organization=org).select_related('plano', 'plano__erp').first()
+    metrics = metricas_uso(org, erp_code='assistencia') if subscription else {}
+    modulos = ModuloOrganizacao.objects.filter(habilitado=True)
+
+    context = {
+        'titulo': f'Minha Assinatura · {org.display_name}',
+        'subscription': subscription,
+        'metrics': metrics,
+        'modulos': modulos,
+        'organization': org,
+        'back_url': reverse('platform_core:empresa'),
+    }
+    return render(request, 'platform_core/meu_plano.html', context)
+
