@@ -1,10 +1,14 @@
-<header class="vx-page-header">
+<header class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-2 border-bottom border-secondary border-opacity-10">
   <div>
-    <p class="vx-eyebrow">VERTYX Gestão · Indicadores {{ analytics_level|lower }}</p>
-    <h1>{{ greeting }}, {{ user.get_full_name|default:user.username }}</h1>
-    <p>Visão da sua organização · {{ period_start|date:'d/m/Y' }} — {{ period_end|date:'d/m/Y' }}</p>
+    <h1 class="h2 mb-1">Visão Geral</h1>
+    <p class="text-muted small mb-0">{{ greeting }}, {{ user.get_full_name|default:user.username }} · {{ period_start|date:'d/m/Y' }} — {{ period_end|date:'d/m/Y' }}</p>
   </div>
-  {% if advanced_analytics %}<a class="btn btn-outline-primary" href="{% url 'operacao:calendario' %}">Ver planejamento</a>{% endif %}
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge bg-success-subtle text-success px-3 py-2">
+      <i class="bi bi-shield-check me-1"></i> Operação Ativa
+    </span>
+    {% if advanced_analytics %}<a class="btn btn-outline-primary btn-sm" href="{% url 'operacao:calendario' %}">Ver planejamento</a>{% endif %}
+  </div>
 </header>
 
 <form method="get" class="card p-3 mb-4">
@@ -18,26 +22,55 @@
 </form>
 
 {% if not advanced_analytics %}
-<section class="vx-exec-kpis mb-4" aria-label="Indicadores básicos">
-  <article class="card vx-exec-kpi"><span class="text-muted">Vendas no período</span><strong>{{ commercial.vendas }}</strong></article>
-  <article class="card vx-exec-kpi"><span class="text-muted">Valor líquido de vendas</span><strong>R$ {{ sales_chart_total|floatformat:2 }}</strong></article>
-  <article class="card vx-exec-kpi"><span class="text-muted">Produtos abaixo do ideal</span><strong>{{ stock_summary.repor }}</strong></article>
-  <article class="card vx-exec-kpi"><span class="text-muted">Lotes vencendo em até 90 dias</span><strong>{{ stock_summary.vencendo }}</strong></article>
+<section class="mb-4" aria-label="Indicadores principais">
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <span class="vx-indicator-dot"></span>
+    <span class="vx-section-title">INDICADORES PRINCIPAIS</span>
+  </div>
+  <div class="row g-3">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card vx-exec-kpi vx-kpi-success">
+        <span class="vx-kpi-label">Vendas no período</span>
+        <strong class="vx-kpi-value">{{ commercial.vendas }}</strong>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card vx-exec-kpi vx-kpi-success">
+        <span class="vx-kpi-label">Valor líquido de vendas</span>
+        <strong class="vx-kpi-value">R$ {{ sales_chart_total|floatformat:2 }}</strong>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card vx-exec-kpi {% if stock_summary.repor %}vx-kpi-danger{% else %}vx-kpi-neutral{% endif %}">
+        <span class="vx-kpi-label">Produtos abaixo do ideal</span>
+        <strong class="vx-kpi-value">{{ stock_summary.repor }}</strong>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card vx-exec-kpi {% if stock_summary.vencendo %}vx-kpi-warning{% else %}vx-kpi-neutral{% endif %}">
+        <span class="vx-kpi-label">Lotes vencendo em até 90 dias</span>
+        <strong class="vx-kpi-value">{{ stock_summary.vencendo }}</strong>
+      </div>
+    </div>
+  </div>
 </section>
 {% endif %}
 
-{% if stock_summary.repor %}<a class="alert alert-warning d-block text-decoration-none" href="{% url 'operacao:stock_occurrences' %}?tipo=REPOSICAO"><strong>ATENÇÃO — {{ stock_summary.repor }} PRODUTOS PRECISAM DE REPOSIÇÃO</strong></a>{% endif %}
+{% if stock_summary.repor %}<a class="alert alert-warning d-block text-decoration-none mb-4" href="{% url 'operacao:stock_occurrences' %}?tipo=REPOSICAO"><strong>ATENÇÃO — {{ stock_summary.repor }} PRODUTOS PRECISAM DE REPOSIÇÃO</strong></a>{% endif %}
 
 {% if sales_chart %}
 <section class="card p-4 mb-4" aria-label="Gráfico de vendas">
-  <h2 class="h4">Vendas líquidas</h2>
-  <p class="small text-muted">Vendas confirmadas, descontadas devoluções formais, agrupadas pela janela selecionada.</p>
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <span class="vx-indicator-dot" style="background-color: var(--vx-brand);"></span>
+    <span class="vx-section-title">VENDAS LÍQUIDAS</span>
+  </div>
+  <p class="small text-muted mb-3">Vendas confirmadas, descontadas devoluções formais, agrupadas pela janela selecionada.</p>
   <svg class="vx-exec-chart" viewBox="0 0 640 210" role="img" aria-label="Vendas líquidas por período">
-    <line x1="25" y1="175" x2="620" y2="175" stroke="#dce5ed"/>
-    {% for row in sales_chart %}<rect x="{{ row.x|add:'-9' }}" y="{{ row.y }}" width="18" height="{{ row.height }}" rx="3" fill="#006f74"><title>{{ row.label }} · R$ {{ row.vendas|floatformat:2 }}</title></rect>{% endfor %}
-    <text x="25" y="202" font-size="11">{{ sales_chart.0.label }}</text><text x="620" y="202" text-anchor="end" font-size="11">{% with last=sales_chart|last %}{{ last.label }}{% endwith %}</text>
+    <line x1="25" y1="175" x2="620" y2="175" stroke="rgba(255,255,255,0.08)"/>
+    {% for row in sales_chart %}<rect x="{{ row.x|add:'-9' }}" y="{{ row.y }}" width="18" height="{{ row.height }}" rx="4" fill="#10b981"><title>{{ row.label }} · R$ {{ row.vendas|floatformat:2 }}</title></rect>{% endfor %}
+    <text x="25" y="202" font-size="11" fill="#64748b">{{ sales_chart.0.label }}</text><text x="620" y="202" text-anchor="end" font-size="11" fill="#64748b">{% with last=sales_chart|last %}{{ last.label }}{% endwith %}</text>
   </svg>
-  {% if advanced_analytics %}<p class="mb-0">Total no período: <strong>R$ {{ sales_chart_total|floatformat:2 }}</strong>. Período anterior: R$ {{ sales_comparison_previous|floatformat:2 }}.{% if sales_comparison_percent is not None %} Variação: {{ sales_comparison_percent }}%.{% endif %}</p>{% endif %}
+  {% if advanced_analytics %}<p class="mb-0 mt-2 text-muted">Total no período: <strong class="text-white">R$ {{ sales_chart_total|floatformat:2 }}</strong>. Período anterior: R$ {{ sales_comparison_previous|floatformat:2 }}.{% if sales_comparison_percent is not None %} Variação: {{ sales_comparison_percent }}%.{% endif %}</p>{% endif %}
 </section>
 {% endif %}
 

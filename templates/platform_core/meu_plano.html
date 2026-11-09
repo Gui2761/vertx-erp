@@ -4,13 +4,12 @@
 {% block title %}Minha Assinatura · {{ organization.display_name }}{% endblock %}
 
 {% block content %}
-<div class="vx-page-header mb-4">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-2 border-bottom border-secondary border-opacity-10">
   <div>
-    <span class="vx-eyebrow">Segurança & Tenancy</span>
     <h1 class="h2 mb-1">Minha Assinatura & Plano</h1>
-    <p class="text-muted mb-0">Gestão de plano, cotas e recursos liberados exclusivamente para <strong>{{ organization.display_name }}</strong>.</p>
+    <p class="text-muted small mb-0">Gestão de plano, cotas e recursos liberados exclusivamente para <strong>{{ organization.display_name }}</strong>.</p>
   </div>
-  <div class="vx-actions">
+  <div class="d-flex align-items-center gap-2">
     <a href="{% url 'platform_core:empresa' %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-gear me-1"></i> Dados da Empresa
     </a>
@@ -20,7 +19,7 @@
   </div>
 </div>
 
-<nav class="vx-actions mb-4" aria-label="Navegação da empresa">
+<nav class="d-flex gap-2 flex-wrap mb-4" aria-label="Navegação da empresa">
   <a href="{% url 'platform_core:empresa' %}" class="btn btn-outline-secondary btn-sm">Dados Fiscais</a>
   <a href="{% url 'platform_core:meu_plano' %}" class="btn btn-primary btn-sm">Meu Plano</a>
   <a href="{% url 'platform_core:modulos' %}" class="btn btn-outline-secondary btn-sm">Módulos</a>
@@ -38,27 +37,25 @@
 <div class="row g-4 mb-4">
   <!-- Card do Plano -->
   <div class="col-lg-5">
-    <div class="card h-100 shadow-sm border-0" style="border-radius: var(--vx-radius);">
-      <div class="card-header bg-white border-bottom py-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <span class="fw-bold text-dark">Plano Contratado</span>
-          {% if subscription.status == 'ATIVA' %}
-            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">Ativo</span>
-          {% elif subscription.status == 'IMPLANTACAO' %}
-            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1">Em Implantação</span>
-          {% else %}
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1">{{ subscription.get_status_display|default:'Homologação' }}</span>
-          {% endif %}
-        </div>
+    <div class="card h-100 vx-exec-kpi vx-kpi-neutral">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="vx-section-title">Plano Contratado</span>
+        {% if subscription.status == 'ATIVA' %}
+          <span class="badge bg-success-subtle text-success">Ativo</span>
+        {% elif subscription.status == 'IMPLANTACAO' %}
+          <span class="badge bg-warning-subtle text-warning">Em Implantação</span>
+        {% else %}
+          <span class="badge bg-primary-subtle text-primary">{{ subscription.get_status_display|default:'Homologação' }}</span>
+        {% endif %}
       </div>
-      <div class="card-body">
-        <h3 class="fw-bold text-dark mb-1">{{ subscription.plano.nome|default:'Plano Homologação Vertyx' }}</h3>
+      <div>
+        <h3 class="fw-bold mb-1 text-white">{{ subscription.plano.nome|default:'Plano Homologação Vertyx' }}</h3>
         <p class="text-muted small mb-3">{{ subscription.plano.descricao|default:'Pacote completo para assistência, estoque especializado e gestão de varejo/farmácia.' }}</p>
         
-        <div class="p-3 bg-light rounded-3 mb-3">
+        <div class="p-3 rounded-3 mb-3" style="background-color: var(--vx-surface-subtle); border: 1px solid var(--vx-border);">
           <div class="d-flex justify-content-between align-items-baseline">
             <span class="text-muted small">Mensalidade:</span>
-            <span class="fs-4 fw-bold text-dark">
+            <span class="fs-4 fw-bold text-white">
               {% if subscription.plano.valor_mensal %}
                 R$ {{ subscription.plano.valor_mensal|floatformat:2 }}<small class="fs-6 text-muted fw-normal"> / mês</small>
               {% else %}
@@ -68,7 +65,7 @@
           </div>
         </div>
 
-        <ul class="list-unstyled small mb-0">
+        <ul class="list-unstyled small mb-0 text-muted">
           <li class="py-1 d-flex align-items-center"><i class="bi bi-check2-circle text-success me-2"></i> Armazenamento Seguro S3/R2</li>
           <li class="py-1 d-flex align-items-center"><i class="bi bi-check2-circle text-success me-2"></i> Isolamento de Dados por Tenant</li>
           <li class="py-1 d-flex align-items-center"><i class="bi bi-check2-circle text-success me-2"></i> PWA Offline para Técnicos e Vendas</li>
@@ -80,43 +77,43 @@
 
   <!-- Cotas de Consumo -->
   <div class="col-lg-7">
-    <div class="card h-100 shadow-sm border-0" style="border-radius: var(--vx-radius);">
-      <div class="card-header bg-white border-bottom py-3">
-        <span class="fw-bold text-dark">Consumo e Limites da Organização</span>
+    <div class="card h-100 p-4">
+      <div class="mb-3">
+        <span class="vx-section-title">Consumo e Limites da Organização</span>
       </div>
-      <div class="card-body">
+      <div>
         <div class="row g-3">
           <div class="col-sm-6">
-            <div class="p-3 border rounded-3 bg-white">
+            <div class="p-3 rounded-3" style="background-color: var(--vx-surface-subtle); border: 1px solid var(--vx-border);">
               <span class="text-muted small d-block mb-1"><i class="bi bi-people me-1 text-primary"></i> Usuários Ativos</span>
-              <span class="fs-5 fw-bold text-dark">{{ metrics.usuarios.display|default:'1 / 3' }}</span>
+              <span class="fs-5 fw-bold text-white">{{ metrics.usuarios.display|default:'1 / 3' }}</span>
               <div class="progress mt-2" style="height: 6px;">
-                <div class="progress-bar bg-primary" role="progressbar" style="width: 33%"></div>
+                <div class="progress-bar" role="progressbar" style="width: 33%"></div>
               </div>
             </div>
           </div>
           <div class="col-sm-6">
-            <div class="p-3 border rounded-3 bg-white">
+            <div class="p-3 rounded-3" style="background-color: var(--vx-surface-subtle); border: 1px solid var(--vx-border);">
               <span class="text-muted small d-block mb-1"><i class="bi bi-building me-1 text-primary"></i> Filiais Próprias</span>
-              <span class="fs-5 fw-bold text-dark">{{ metrics.filiais.display|default:'0 / 1' }}</span>
+              <span class="fs-5 fw-bold text-white">{{ metrics.filiais.display|default:'0 / 1' }}</span>
               <div class="progress mt-2" style="height: 6px;">
-                <div class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
               </div>
             </div>
           </div>
           <div class="col-sm-6">
-            <div class="p-3 border rounded-3 bg-white">
+            <div class="p-3 rounded-3" style="background-color: var(--vx-surface-subtle); border: 1px solid var(--vx-border);">
               <span class="text-muted small d-block mb-1"><i class="bi bi-cart me-1 text-primary"></i> Vendas no Mês</span>
-              <span class="fs-5 fw-bold text-dark">{{ metrics.vendas_mes.display|default:'0 / Ilimitado' }}</span>
+              <span class="fs-5 fw-bold text-white">{{ metrics.vendas_mes.display|default:'0 / Ilimitado' }}</span>
               <div class="progress mt-2" style="height: 6px;">
                 <div class="progress-bar bg-success" role="progressbar" style="width: 10%"></div>
               </div>
             </div>
           </div>
           <div class="col-sm-6">
-            <div class="p-3 border rounded-3 bg-white">
+            <div class="p-3 rounded-3" style="background-color: var(--vx-surface-subtle); border: 1px solid var(--vx-border);">
               <span class="text-muted small d-block mb-1"><i class="bi bi-cloud-arrow-up me-1 text-primary"></i> Armazenamento R2</span>
-              <span class="fs-5 fw-bold text-dark">{{ metrics.armazenamento_mb.display|default:'Ativo / Ilimitado' }}</span>
+              <span class="fs-5 fw-bold text-white">{{ metrics.armazenamento_mb.display|default:'Ativo / Ilimitado' }}</span>
               <div class="progress mt-2" style="height: 6px;">
                 <div class="progress-bar bg-info" role="progressbar" style="width: 15%"></div>
               </div>
@@ -129,18 +126,18 @@
 </div>
 
 <!-- Módulos Contratados -->
-<div class="card shadow-sm border-0 mb-4" style="border-radius: var(--vx-radius);">
-  <div class="card-header bg-white border-bottom py-3">
-    <span class="fw-bold text-dark">Módulos Habilitados para {{ organization.display_name }}</span>
+<div class="card p-4 mb-4">
+  <div class="mb-3">
+    <span class="vx-section-title">Módulos Habilitados para {{ organization.display_name }}</span>
   </div>
-  <div class="card-body">
+  <div>
     <div class="row g-3">
       {% for mod in active_modules %}
       <div class="col-md-4">
-        <div class="d-flex align-items-center p-3 border rounded-3 h-100 bg-white">
+        <div class="d-flex align-items-center p-3 rounded-3 h-100" style="background-color: var(--vx-surface-subtle); border: 1px solid var(--vx-border);">
           <i class="bi bi-check-circle-fill fs-3 text-success me-3"></i>
           <div>
-            <strong class="d-block text-dark">{{ mod.name }}</strong>
+            <strong class="d-block text-white">{{ mod.name }}</strong>
             <small class="text-muted">{{ mod.description }}</small>
           </div>
         </div>

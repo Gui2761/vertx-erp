@@ -1,29 +1,26 @@
 {% extends "base.html" %}
-{% load widget_tweaks %}
+{% load static widget_tweaks %}
 {% block title %}Entrar · VERTYX ERP{% endblock %}
 {% block content %}
 <div class="d-flex align-items-center justify-content-center" style="min-height: 75vh;">
   <div class="col-11 col-sm-9 col-md-6 col-lg-4">
-    <div class="card shadow-lg border-0" style="border-radius: 1rem; overflow: hidden; background: #ffffff;">
-      <div class="card-header text-white py-4 text-center" style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); border-bottom: none;">
-        <div class="d-inline-flex align-items-center justify-content-center bg-white rounded-3 shadow-sm mb-2" style="width: 44px; height: 44px; font-weight: 800; font-size: 1.25rem; color: #0d9488;">
-          V
-        </div>
-        <h4 class="fw-bold mb-0 text-white tracking-tight">VERTYX</h4>
-        <div class="small text-white-50 mt-1">Plataforma SaaS Multi-Tenant</div>
+    <div class="card vx-login-card">
+      <div class="card-header text-center py-4 border-0 bg-transparent">
+        <img src="{% static 'img/vertyx-logo-white.png' %}" alt="VERTYX" height="42" class="mb-2">
+        <div class="small text-muted">Acesso Corporativo Seguro · Multi-Tenant</div>
       </div>
-      <div class="card-body p-4">
+      <div class="card-body p-4 pt-1">
         {% if form.errors %}
           <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3">Usuário ou senha inválidos.</div>
         {% endif %}
         <form method="post">
           {% csrf_token %}
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-secondary">E-mail ou Usuário</label>
+            <label class="form-label small fw-semibold text-muted">E-mail ou Usuário</label>
             {{ form.username|add_class:"form-control form-control-lg fs-6" }}
           </div>
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-secondary">Senha de Acesso</label>
+            <label class="form-label small fw-semibold text-muted">Senha de Acesso</label>
             {{ form.password|add_class:"form-control form-control-lg fs-6" }}
           </div>
           <div class="d-grid mt-4">
@@ -32,7 +29,7 @@
           <input type="hidden" name="next" value="{{ next }}">
         </form>
       </div>
-      <div class="card-footer bg-light text-center py-3 border-0 small text-muted">
+      <div class="card-footer text-center py-3 border-0 small text-muted">
         Segurança & Confinamento por Tenant · Vertyx Cloud
       </div>
     </div>

@@ -5,12 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}VERTYX{% endblock %} · VERTYX</title>
+    <link rel="icon" type="image/png" href="{% static 'img/vertyx-icon.png' %}">
     <link href="{% static 'vendor/bootstrap.min.css' %}" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
     <link rel="stylesheet" href="{% static 'css/vertyx.css' %}">
-<meta name="theme-color" content="#006f74"><link rel="manifest" href="{% if pdv_experience %}{% url 'operacao:pdv_manifest_scoped' %}{% elif seller_experience %}{% url 'operacao:seller_manifest' %}{% elif technician_experience %}{% url 'operacao:technician_manifest' %}{% else %}{% url 'operacao:manifest' %}{% endif %}">
+<meta name="theme-color" content="#0b111d"><link rel="manifest" href="{% if pdv_experience %}{% url 'operacao:pdv_manifest_scoped' %}{% elif seller_experience %}{% url 'operacao:seller_manifest' %}{% elif technician_experience %}{% url 'operacao:technician_manifest' %}{% else %}{% url 'operacao:manifest' %}{% endif %}">
 {% if technician_experience %}<link rel="stylesheet" href="{% static 'css/technician.css' %}">{% endif %}
 {% if pdv_experience or seller_experience or request.resolver_match.url_name == 'seller_management' %}<link rel="stylesheet" href="{% static 'css/seller.css' %}?v=seller-console-6">{% endif %}
 </head>
@@ -20,7 +21,9 @@
 {% if user.is_authenticated %}
 <nav class="navbar navbar-expand-xl navbar-dark bg-dark vx-nav" aria-label="Navegação principal">
   <div class="container-fluid">
-    <a class="navbar-brand" href="{% if pdv_experience %}{% url 'operacao:pdv_home' %}{% elif seller_experience %}{% url 'operacao:seller_home' %}{% elif request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}">VERTYX</a>
+    <a class="navbar-brand d-inline-flex align-items-center" href="{% if pdv_experience %}{% url 'operacao:pdv_home' %}{% elif seller_experience %}{% url 'operacao:seller_home' %}{% elif request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}">
+      <img src="{% static 'img/vertyx-logo-white.png' %}" alt="VERTYX" height="26" class="vx-navbar-logo">
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir ou recolher menu principal">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -61,11 +64,19 @@
 {% modulo_permitido 'pdv' as pdv_ok %}{% if pdv_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:pdv_home' %}">PDV</a></li>{% endif %}{% modulo_permitido 'ponto' as ponto_ok %}{% if ponto_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:ponto_home' %}">Meu ponto</a></li>{% endif %}{% modulo_permitido 'rh' as rh_ok %}{% if rh_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:rh_list' 'funcionarios' %}">RH</a></li>{% endif %}{% modulo_permitido 'executivo' as exec_ok %}{% if exec_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:executive' %}">Gestão executiva</a></li>{% endif %}{% if estoque_escrever %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:inventory_list' %}">Inventário</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:transfer_list' %}">Transferências</a></li>{% endif %}{% if user.is_administrador %}<li class="nav-item"><a class="nav-link" href="{% url 'platform_core:empresa' %}">Empresa</a></li><li class="nav-item"><a class="nav-link" href="{% url 'platform_core:meu_plano' %}">Minha Assinatura</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:configuracao' %}">Configurações</a></li>{% endif %}
         {% endif %}
         {% endif %}</ul>
-      <span class="navbar-text text-light me-3">{{ request.organization.display_name }} · {{ user.get_full_name|default:user.username }} ({{ request.membership.get_role_display }})</span>
-      <form method="post" action="{% url 'contas:logout' %}">
-        {% csrf_token %}
-        <button class="btn btn-outline-light btn-sm">Sair</button>
-      </form>
+      <div class="mt-auto pt-3 border-top border-secondary border-opacity-10 w-100">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <span class="small text-white fw-bold text-truncate" title="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</span>
+          <form method="post" action="{% url 'contas:logout' %}" class="m-0">
+            {% csrf_token %}
+            <button class="btn btn-outline-light btn-sm py-0 px-2" style="font-size: 0.72rem;">Sair</button>
+          </form>
+        </div>
+        <div class="d-flex align-items-center justify-content-between">
+          <small class="text-muted text-truncate" style="font-size: 0.75rem;" title="{{ request.organization.display_name }}">{{ request.organization.display_name }}</small>
+          <span class="badge bg-primary-subtle text-primary" style="font-size: 0.68rem;">{{ request.membership.get_role_display }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </nav>
