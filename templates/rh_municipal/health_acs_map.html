@@ -547,10 +547,10 @@
   <!-- 1. TACTICAL HUD HEADER -->
   <header>
     <div class="brand-cluster">
-      <div class="brand-icon">G</div>
+      <div class="brand-icon">SE</div>
       <div class="brand-headings">
-        <h1>VERTYX GeoHealth <span>e-SUS APS</span></h1>
-        <p>Monitoramento Territorial de Agentes Comunitários · Atenção Primária</p>
+        <h1>Prefeitura Municipal de Brejo Grande <span>e-SUS Território</span></h1>
+        <p>Fundo Municipal de Saúde · Vigilância & Monitoramento Territorial ACS (Medic CHT)</p>
       </div>
     </div>
 
@@ -574,8 +574,8 @@
       </div>
 
       <div class="hud-metric">
-        <span class="hud-label">Sincronização Ministério</span>
-        <span class="hud-val" style="color: #4ade80;">100% Portaria 3.493</span>
+        <span class="hud-label">Portaria 3.493 / Previne</span>
+        <span class="hud-val" style="color: #4ade80;">94% Metas Batidas</span>
       </div>
     </div>
   </header>
@@ -764,6 +764,31 @@
         </div>
       </div>
 
+      <!-- FICHA DE VISITA DOMICILIAR E-SUS TERRITÓRIO (MEDIC CHT STANDARD) -->
+      <div style="background: rgba(11, 17, 32, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 0.65rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; color:#38bdf8; letter-spacing:0.5px;">Sinais Vitais e-SUS</span>
+          <span style="font-size:0.72rem; background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.3); padding:0.15rem 0.5rem; border-radius:6px; font-weight:700;">Visita Realizada</span>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:0.5rem; text-align:center;">
+          <div style="background:rgba(255,255,255,0.04); padding:0.5rem; border-radius:8px;">
+            <span style="font-size:0.7rem; color:var(--text-dim); display:block;">P. Arterial</span>
+            <strong style="font-family:var(--font-mono); font-size:0.95rem; color:#fff;" id="drawer-pa">130/85</strong>
+            <small style="font-size:0.65rem; color:#94a3b8; display:block;">mmHg</small>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); padding:0.5rem; border-radius:8px;">
+            <span style="font-size:0.7rem; color:var(--text-dim); display:block;">Glicemia</span>
+            <strong style="font-family:var(--font-mono); font-size:0.95rem; color:#fff;" id="drawer-glicemia">108</strong>
+            <small style="font-size:0.65rem; color:#94a3b8; display:block;">mg/dL</small>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); padding:0.5rem; border-radius:8px;">
+            <span style="font-size:0.7rem; color:var(--text-dim); display:block;">Antropometria</span>
+            <strong style="font-family:var(--font-mono); font-size:0.95rem; color:#fff;" id="drawer-peso">72.4</strong>
+            <small style="font-size:0.65rem; color:#94a3b8; display:block;">kg</small>
+          </div>
+        </div>
+      </div>
+
       <div style="font-size: 0.8rem; color: var(--text-dim);">
         Última visita registrada pelo ACS <strong>José Santos</strong> hoje às 10:24. Dados sincronizados com o prontuário eletrônico e-SUS APS.
       </div>
@@ -788,10 +813,10 @@
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Camadas de Tile
-    const tileDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // Camadas de Tile Públicas sem necessidade de API Key
+    const tileOSM = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '© OpenStreetMap contributors, © CARTO'
+      attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
     const tileSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -877,10 +902,10 @@
     const housesGroup = L.layerGroup().addTo(map);
 
     const housesData = [
-      { coords: [-10.4268, -36.4730], name: 'Família Silva Oliveira', resp: 'Maria da Conceição Santos', cns: '704.8910.3847.192', alert: 'Hipertensão descompensada e Gestante de 28 semanas', risk: 'yellow' },
-      { coords: [-10.4275, -36.4725], name: 'Família Rocha Bezerra', resp: 'Sebastião Rocha', cns: '890.1234.5678.901', alert: 'Criança de 6 meses com vacina de pólio pendente', risk: 'yellow' },
-      { coords: [-10.4282, -36.4720], name: 'Família Albuquerque Lima', resp: 'Clara Albuquerque', cns: '712.3456.7890.123', alert: 'Foco potencial de Aedes aegypti identificado no quintal', risk: 'red' },
-      { coords: [-10.4290, -36.4715], name: 'Família Dantas Cavalcante', resp: 'Antonio Dantas', cns: '801.2345.6789.012', alert: 'Diabético tipo 2 com glicemia controlada após visita', risk: 'green' }
+      { coords: [-10.4268, -36.4730], name: 'Família Silva Oliveira', resp: 'Maria da Conceição Santos', cns: '704.8910.3847.192', alert: 'Hipertensão descompensada e Gestante de 28 semanas', risk: 'yellow', pa: '150/95', glicemia: '142', peso: '74.2' },
+      { coords: [-10.4275, -36.4725], name: 'Família Rocha Bezerra', resp: 'Sebastião Rocha', cns: '890.1234.5678.901', alert: 'Criança de 6 meses com vacina de pólio pendente', risk: 'yellow', pa: '125/80', glicemia: '89', peso: '68.0' },
+      { coords: [-10.4282, -36.4720], name: 'Família Albuquerque Lima', resp: 'Clara Albuquerque', cns: '712.3456.7890.123', alert: 'Foco potencial de Aedes aegypti identificado no quintal', risk: 'red', pa: '130/85', glicemia: '104', peso: '61.5' },
+      { coords: [-10.4290, -36.4715], name: 'Família Dantas Cavalcante', resp: 'Antonio Dantas', cns: '801.2345.6789.012', alert: 'Diabético tipo 2 com glicemia controlada após visita', risk: 'green', pa: '120/75', glicemia: '112', peso: '82.1' }
     ];
 
     housesData.forEach(h => {
@@ -947,6 +972,11 @@
       document.getElementById('drawer-resp').textContent = house.resp;
       document.getElementById('drawer-cns').textContent = house.cns;
       document.getElementById('drawer-alert-desc').textContent = house.alert;
+      if (document.getElementById('drawer-pa')) {
+        document.getElementById('drawer-pa').textContent = house.pa || '120/80';
+        document.getElementById('drawer-glicemia').textContent = house.glicemia || '96';
+        document.getElementById('drawer-peso').textContent = house.peso || '68.5';
+      }
       document.getElementById('house-drawer').classList.add('open');
     }
 

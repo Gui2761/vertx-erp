@@ -693,37 +693,49 @@
     <!-- GRADE DE ATALHOS RÁPIDOS -->
     <section class="services-grid">
       <div class="service-card" onclick="switchInboxTab('archived')">
-        <div class="service-icon">📄</div>
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
         <strong>Emitir Certidão Negativa (CND)</strong>
         <span>Autenticação ICP-Brasil</span>
       </div>
 
-      <div class="service-card" onclick="alert('Encaminhando para agendamento presencial na Secretaria Municipal de Saúde.')">
-        <div class="service-icon">🩺</div>
+      <div class="service-card" onclick="openAppointmentModal()">
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
+        </div>
         <strong>Agendar Consulta SUS</strong>
         <span>Unidades Básicas e e-SUS</span>
       </div>
 
       <div class="service-card" onclick="openNewProtocolModal()">
-        <div class="service-icon">📑</div>
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+        </div>
         <strong>Novo Protocolo</strong>
         <span>Abertura de Requerimento</span>
       </div>
 
-      <div class="service-card" onclick="alert('Exibindo Carteira de Vacinação Nacional sincronizada ao CPF.')">
-        <div class="service-icon">💉</div>
+      <div class="service-card" onclick="openVaccineModal()">
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg>
+        </div>
         <strong>Vacinação Digital</strong>
-        <span>Doses e Lotes Cadastrados</span>
+        <span>Carteira Nacional SUS</span>
       </div>
 
-      <div class="service-card" onclick="alert('Consultando débitos tributários de IPTU e Taxas do exercício 2026.')">
-        <div class="service-icon">🏠</div>
-        <strong>IPTU e Tributos 2026</strong>
-        <span>Emissão de Guia PIX</span>
+      <div class="service-card" onclick="openExamsModal()">
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0-14 0"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>
+        </div>
+        <strong>Exames & Laudos</strong>
+        <span>Laboratório Municipal</span>
       </div>
 
-      <div class="service-card" onclick="alert('Redirecionando para o canal integrado Fala.BR Ouvidoria Municipal.')">
-        <div class="service-icon">📢</div>
+      <div class="service-card" onclick="openOuvidoriaModal()">
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+        </div>
         <strong>Ouvidoria Fala.BR</strong>
         <span>Elogios, Denúncias e E-SIC</span>
       </div>
@@ -990,6 +1002,235 @@
     </div>
   </div>
 
+  <!-- 1. MODAL DE AGENDAMENTO DE CONSULTA SUS (PADRÃO MEDPLUM / MEU SUS DIGITAL) -->
+  <div class="modal-overlay" id="appointment-modal">
+    <div class="modal-box" style="max-width: 680px;">
+      <div class="modal-head">
+        <div>
+          <h3>Agendar Consulta na Atenção Primária</h3>
+          <p style="font-size: 0.8rem; color: var(--gov-text-dim);">Rede Municipal de Saúde · Integração e-SUS APS</p>
+        </div>
+        <button onclick="closeAppointmentModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <form onsubmit="handleNewAppointment(event)">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Especialidade Desejada</label>
+            <select id="app-spec" required onchange="updateDoctorsList()">
+              <option value="Clínica Médica Geral">Clínica Médica Geral / APS</option>
+              <option value="Medicina de Família">Medicina de Família e Comunidade</option>
+              <option value="Pediatria">Pediatria</option>
+              <option value="Pré-Natal e Saúde da Mulher">Pré-Natal & Saúde da Mulher</option>
+              <option value="Odontologia">Odontologia e Saúde Bucal</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Unidade Básica de Saúde (UBS)</label>
+            <select id="app-unit" required>
+              <option value="UBS Central (Sede)">UBS Central (Sede)</option>
+              <option value="UBS Povoado Brejão">UBS Povoado Brejão</option>
+              <option value="Centro de Saúde Municipal">Centro de Saúde Municipal</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Profissional Designado</label>
+            <select id="app-doctor" required>
+              <option value="Dra. Beatriz Carvalho (CRM/SE 4.821)">Dra. Beatriz Carvalho (Clínica Geral)</option>
+              <option value="Dr. Marcos Vinícius Melo (CRM/SE 5.120)">Dr. Marcos Vinícius Melo (Med. Família)</option>
+              <option value="Dra. Camila Nogueira (CRM/SE 6.304)">Dra. Camila Nogueira (Pediatria)</option>
+              <option value="Dr. Fernando Diniz (CRO/SE 2.891)">Dr. Fernando Diniz (Dentista)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Data Preferencial</label>
+            <input type="date" id="app-date" required value="2026-11-12">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Horário Disponível</label>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.25rem;">
+            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
+              <input type="radio" name="app-time" value="08:30" checked> 08:30
+            </label>
+            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
+              <input type="radio" name="app-time" value="09:15"> 09:15
+            </label>
+            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
+              <input type="radio" name="app-time" value="10:00"> 10:00
+            </label>
+            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
+              <input type="radio" name="app-time" value="11:30"> 11:30
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Motivo da Consulta / Observações</label>
+          <input type="text" id="app-reason" placeholder="Ex: Avaliação de exames, dor crônica, renovação de receita" required>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+          <button type="button" class="btn-action-ghost" onclick="closeAppointmentModal()">Cancelar</button>
+          <button type="submit" class="btn-action-primary">Confirmar Agendamento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. MODAL DA CARTEIRA DIGITAL DE VACINAÇÃO (MEU SUS DIGITAL) -->
+  <div class="modal-overlay" id="vaccine-modal">
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-head">
+        <div style="display:flex; align-items:center; gap:0.85rem;">
+          <div style="font-size:2rem;">💉</div>
+          <div>
+            <h3>Carteira Nacional de Vacinação Digital</h3>
+            <p style="font-size: 0.8rem; color: var(--gov-text-dim);">Certificado ConecteSUS · Autenticação Digital Federal</p>
+          </div>
+        </div>
+        <button onclick="closeVaccineModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div style="background:#f0fdf4; border:1px solid #86efac; padding:0.85rem 1.25rem; border-radius:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+        <div>
+          <strong style="color:#166534; font-size:0.95rem;">● Esquema Vacinal Completo e Atualizado</strong>
+          <div style="font-size:0.78rem; color:#15803d;">Cidadão: Carlos Eduardo Silveira · CPF: 042.***.***-89</div>
+        </div>
+        <span style="background:#16a34a; color:#fff; font-size:0.72rem; font-weight:800; padding:0.25rem 0.65rem; border-radius:6px;">SELO VERDE SUS</span>
+      </div>
+
+      <div style="max-height: 280px; overflow-y: auto; border: 1px solid var(--gov-border); border-radius: 8px;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+          <thead>
+            <tr style="background:#f8fafc; border-bottom:1px solid var(--gov-border); text-align:left;">
+              <th style="padding:0.65rem 0.85rem;">Imunobiológico</th>
+              <th style="padding:0.65rem 0.85rem;">Dose</th>
+              <th style="padding:0.65rem 0.85rem;">Data</th>
+              <th style="padding:0.65rem 0.85rem;">Lote / Fabricante</th>
+              <th style="padding:0.65rem 0.85rem;">Local de Aplicação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:0.65rem 0.85rem;"><strong>COVID-19 Bivalente</strong></td>
+              <td style="padding:0.65rem 0.85rem;">Reforço</td>
+              <td style="padding:0.65rem 0.85rem;">12/03/2026</td>
+              <td style="padding:0.65rem 0.85rem;"><code>FP9210</code> · Pfizer</td>
+              <td style="padding:0.65rem 0.85rem;">UBS Central</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:0.65rem 0.85rem;"><strong>Influenza Trivalente 2026</strong></td>
+              <td style="padding:0.65rem 0.85rem;">Anual</td>
+              <td style="padding:0.65rem 0.85rem;">18/04/2026</td>
+              <td style="padding:0.65rem 0.85rem;"><code>IN4412</code> · Butantan</td>
+              <td style="padding:0.65rem 0.85rem;">UBS Central</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:0.65rem 0.85rem;"><strong>Febre Amarela</strong></td>
+              <td style="padding:0.65rem 0.85rem;">Dose Única</td>
+              <td style="padding:0.65rem 0.85rem;">10/05/2022</td>
+              <td style="padding:0.65rem 0.85rem;"><code>FA8801</code> · Bio-Manguinhos</td>
+              <td style="padding:0.65rem 0.85rem;">Posto de Saúde</td>
+            </tr>
+            <tr>
+              <td style="padding:0.65rem 0.85rem;"><strong>Dupla Adulto (dT - Tétano)</strong></td>
+              <td style="padding:0.65rem 0.85rem;">Reforço 10 anos</td>
+              <td style="padding:0.65rem 0.85rem;">14/09/2021</td>
+              <td style="padding:0.65rem 0.85rem;"><code>DT2219</code> · Butantan</td>
+              <td style="padding:0.65rem 0.85rem;">UBS Central</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--gov-border);">
+        <div style="font-size:0.75rem; color:var(--gov-text-dim);">Chave de Autenticação ICP-Brasil: <strong>BR-SUS-2026-9810-774A</strong></div>
+        <button class="btn-action-primary" onclick="alert('Certificado Internacional de Vacinação baixado com sucesso em PDF!')">📥 Baixar Certificado PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODAL DE EXAMES & LAUDOS LABORATORIAIS -->
+  <div class="modal-overlay" id="exams-modal">
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-head">
+        <div style="display:flex; align-items:center; gap:0.85rem;">
+          <div style="font-size:2rem;">🔬</div>
+          <div>
+            <h3>Laudos & Exames Laboratoriais</h3>
+            <p style="font-size: 0.8rem; color: var(--gov-text-dim);">Laboratório Municipal de Análises Clínicas · SUS</p>
+          </div>
+        </div>
+        <button onclick="closeExamsModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:0.85rem; max-height:350px; overflow-y:auto;">
+        <!-- EXAME 1 -->
+        <div style="border:1px solid var(--gov-border); border-radius:10px; padding:1rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:0.75rem; color:#0284c7; font-weight:800;">PEDIDO Nº LAB-2026/4102</span>
+            <h4 style="font-size:1.05rem; margin-top:2px;">Hemograma Completo + Plaquetas</h4>
+            <div style="font-size:0.78rem; color:var(--gov-text-dim); margin-top:2px;">Coleta: 28/10/2026 · Dra. Beatriz Carvalho · Resultado: Normal</div>
+          </div>
+          <button class="btn-action-primary" onclick="alert('Baixando Laudo Oficial com assinatura digital do Bioquímico Responsável (CRF/SE 1.482).')">📥 Laudo PDF</button>
+        </div>
+
+        <!-- EXAME 2 -->
+        <div style="border:1px solid var(--gov-border); border-radius:10px; padding:1rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:0.75rem; color:#0284c7; font-weight:800;">PEDIDO Nº LAB-2026/4103</span>
+            <h4 style="font-size:1.05rem; margin-top:2px;">Glicemia de Jejum & Hemoglobina Glicada</h4>
+            <div style="font-size:0.78rem; color:var(--gov-text-dim); margin-top:2px;">Coleta: 28/10/2026 · Glicemia: 92 mg/dL · HbA1c: 5.4% (Normal)</div>
+          </div>
+          <button class="btn-action-primary" onclick="alert('Baixando Laudo Oficial com assinatura digital do Bioquímico Responsável (CRF/SE 1.482).')">📥 Laudo PDF</button>
+        </div>
+
+        <!-- EXAME 3 -->
+        <div style="border:1px solid var(--gov-border); border-radius:10px; padding:1rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:0.75rem; color:#0284c7; font-weight:800;">PEDIDO Nº LAB-2026/4104</span>
+            <h4 style="font-size:1.05rem; margin-top:2px;">Lipidograma Completo (Colesterol Total, HDL, LDL, Triglicerídeos)</h4>
+            <div style="font-size:0.78rem; color:var(--gov-text-dim); margin-top:2px;">Coleta: 28/10/2026 · Colesterol Total: 178 mg/dL · Liberado</div>
+          </div>
+          <button class="btn-action-primary" onclick="alert('Baixando Laudo Oficial com assinatura digital do Bioquímico Responsável (CRF/SE 1.482).')">📥 Laudo PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MODAL INSTITUCIONAL DE SELEÇÃO DE MUNICÍPIO (SEM PROMPT FEIO) -->
+  <div class="modal-overlay" id="city-modal">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-head">
+        <h3>Alterar Município de Conexão</h3>
+        <button onclick="closeCityModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label>Selecione a Prefeitura / Município:</label>
+        <select id="select-city-input" style="width:100%; padding:0.75rem; border-radius:8px; border:1px solid var(--gov-border); font-size:0.95rem; font-weight:600;">
+          <option value="Poço Redondo">Poço Redondo - SE</option>
+          <option value="Brejo Grande">Brejo Grande - SE</option>
+          <option value="Aracaju">Aracaju - SE</option>
+          <option value="Propriá">Propriá - SE</option>
+          <option value="Canindé de São Francisco">Canindé de São Francisco - SE</option>
+        </select>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+        <button type="button" class="btn-action-ghost" onclick="closeCityModal()">Cancelar</button>
+        <button type="button" class="btn-action-primary" onclick="applyCitySelection()">Confirmar Conexão</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     function switchInboxTab(tabKey) {
       document.getElementById('tab-open-btn').classList.toggle('active', tabKey === 'open');
@@ -998,23 +1239,72 @@
       document.getElementById('pane-archived').classList.toggle('active', tabKey === 'archived');
     }
 
-    function openNewProtocolModal() {
-      document.getElementById('protocol-modal').classList.add('open');
+    function openNewProtocolModal() { document.getElementById('protocol-modal').classList.add('open'); }
+    function closeNewProtocolModal() { document.getElementById('protocol-modal').classList.remove('open'); }
+
+    function openAppointmentModal() { document.getElementById('appointment-modal').classList.add('open'); }
+    function closeAppointmentModal() { document.getElementById('appointment-modal').classList.remove('open'); }
+
+    function openVaccineModal() { document.getElementById('vaccine-modal').classList.add('open'); }
+    function closeVaccineModal() { document.getElementById('vaccine-modal').classList.remove('open'); }
+
+    function openExamsModal() { document.getElementById('exams-modal').classList.add('open'); }
+    function closeExamsModal() { document.getElementById('exams-modal').classList.remove('open'); }
+
+    function openOuvidoriaModal() {
+      document.getElementById('new-sec').value = 'Secretaria de Saúde';
+      document.getElementById('new-subject').value = 'Manifestação de Ouvidoria / E-SIC';
+      openNewProtocolModal();
     }
 
-    function closeNewProtocolModal() {
-      document.getElementById('protocol-modal').classList.remove('open');
+    function openCityModal() { document.getElementById('city-modal').classList.add('open'); }
+    function closeCityModal() { document.getElementById('city-modal').classList.remove('open'); }
+
+    function applyCitySelection() {
+      const city = document.getElementById('select-city-input').value;
+      document.querySelector('.geo-text p').innerHTML = `Você está conectado a partir de: <strong>${city} - SE</strong>. Serviços municipais e agendamento SUS ativados com sucesso.`;
+      document.querySelector('.gov-entity h1').textContent = `Prefeitura Municipal de ${city}`;
+      closeCityModal();
     }
 
     function handleNewProtocol(e) {
       e.preventDefault();
       const sec = document.getElementById('new-sec').value;
       const subj = document.getElementById('new-subject').value;
-
       const randomNum = Math.floor(1000 + Math.random() * 9000);
       const code = `PROT-2026/${randomNum}`;
 
-      // Cria novo card na aba aberta
+      createProtocolCard(code, subj, `${sec} · Protocolo Aberto Agora`, '● Protocolado');
+      closeNewProtocolModal();
+      switchInboxTab('open');
+      alert(`Protocolo gerado com sucesso!\nNúmero: ${code}\nVocê pode acompanhar os despachos e notificações aqui na sua Caixa de Entrada.`);
+    }
+
+    function handleNewAppointment(e) {
+      e.preventDefault();
+      const spec = document.getElementById('app-spec').value;
+      const unit = document.getElementById('app-unit').value;
+      const doc = document.getElementById('app-doctor').value;
+      const date = document.getElementById('app-date').value;
+      const time = document.querySelector('input[name="app-time"]:checked').value;
+      const reason = document.getElementById('app-reason').value;
+
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const code = `CONS-2026/${randomNum}`;
+
+      createProtocolCard(
+        code,
+        `Consulta Agendada: ${spec} · ${date.split('-').reverse().join('/')} às ${time}`,
+        `${unit} · ${doc} · Motivo: ${reason}`,
+        '● Agendamento Confirmado'
+      );
+
+      closeAppointmentModal();
+      switchInboxTab('open');
+      alert(`Consulta agendada com sucesso no Sistema Municipal de Saúde!\nProtocolo: ${code}\nData: ${date.split('-').reverse().join('/')} às ${time}\nLocal: ${unit}\nProfissional: ${doc}\nCompareça com seu Cartão SUS e documento oficial.`);
+    }
+
+    function createProtocolCard(code, title, desc, statusText) {
       const pane = document.getElementById('pane-open');
       const card = document.createElement('article');
       card.className = 'protocol-card';
@@ -1023,26 +1313,26 @@
           <div>
             <span class="protocol-code">${code}</span>
             <div class="protocol-title">
-              <h3>${subj}</h3>
-              <p>${sec} · Protocolo Aberto Agora</p>
+              <h3>${title}</h3>
+              <p>${desc}</p>
             </div>
           </div>
-          <span class="protocol-status status-running">● Protocolado</span>
+          <span class="protocol-status status-running">${statusText}</span>
         </div>
         <div class="tramitation-stepper">
           <div class="step-item active">
             <div class="step-circle">1</div>
-            <div class="step-title">Protocolado</div>
+            <div class="step-title">Confirmado</div>
             <div class="step-time">Agora</div>
           </div>
           <div class="step-item">
             <div class="step-circle">2</div>
-            <div class="step-title">Triagem</div>
-            <div class="step-time">Pendente</div>
+            <div class="step-title">Recepção UBS</div>
+            <div class="step-time">No dia</div>
           </div>
           <div class="step-item">
             <div class="step-circle">3</div>
-            <div class="step-title">Análise</div>
+            <div class="step-title">Atendimento</div>
             <div class="step-time">Pendente</div>
           </div>
           <div class="step-item">
@@ -1052,28 +1342,14 @@
           </div>
         </div>
         <div class="protocol-actions">
-          <button class="btn-action-ghost" onclick="alert('Histórico do protocolo ${code} exibido.')">Histórico Completo</button>
-          <button class="btn-action-primary" onclick="alert('Seu protocolo está em fila de atendimento.')">Acompanhar Tramitação</button>
+          <button class="btn-action-ghost" onclick="alert('Comprovante oficial emitido sob o protocolo ${code}.')">Comprovante Digital</button>
+          <button class="btn-action-primary" onclick="alert('Seu agendamento está ativo e confirmado no sistema e-SUS APS.')">Ver Detalhes</button>
         </div>
       `;
-
       pane.insertBefore(card, pane.firstChild);
 
-      // Atualiza badge
       const badge = document.getElementById('badge-open');
       badge.textContent = parseInt(badge.textContent) + 1;
-
-      closeNewProtocolModal();
-      switchInboxTab('open');
-      alert(`Protocolo gerado com sucesso!\nNúmero: ${code}\nVocê pode acompanhar os despachos e notificações aqui na sua Caixa de Entrada.`);
-    }
-
-    function openCityModal() {
-      const city = prompt("Simulação de Georreferenciamento do Dispositivo:\nDigite o município desejado (ex: Poço Redondo, Brejo Grande, Aracaju, Canindé de São Francisco):", "Poço Redondo");
-      if (city) {
-        document.querySelector('.geo-text p').innerHTML = `Você está conectado a partir de: <strong>${city} - SE</strong> (Região do Alto Sertão Sergipano). Serviços municipais ativados com sucesso.`;
-        document.querySelector('.gov-entity h1').textContent = `Prefeitura Municipal de ${city}`;
-      }
     }
   </script>
 </body>
