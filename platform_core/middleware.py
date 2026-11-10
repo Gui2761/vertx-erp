@@ -83,8 +83,12 @@ class OrganizationMiddleware:
                     from .modules import product_module_enabled, required_modules_for_path
                     required = required_modules_for_path(request.path, request.resolver_match)
                     if any(not product_module_enabled(request.user, product_code, code, request.organization) for code in required):
-                        response=HttpResponseForbidden('Módulo não contratado ou desabilitado nesta organização.')
-                        response['Cache-Control']='private, no-store'
+                        from django.shortcuts import render
+                        try:
+                            response = render(request, '403.html', {'exception': 'Módulo não contratado ou desabilitado nesta organização.'}, status=403)
+                        except Exception:
+                            response = HttpResponseForbidden('Módulo não contratado ou desabilitado nesta organização.')
+                        response['Cache-Control'] = 'private, no-store'
                         return response
                 response = self.get_response(request)
         else:

@@ -1,1 +1,44 @@
-{% extends 'base.html' %}{% block title %}Acesso não permitido{% endblock %}{% block content %}<h1>Acesso não permitido</h1><p class="alert alert-warning">{{ exception|default:'Seu usuário não possui autorização para esta operação.' }}</p><a class="btn btn-primary" href="{% url 'operacao:tecnico' %}">Abrir agenda / atividade do dia</a>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Acesso Não Permitido · VERTYX{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="card p-4 p-md-5 text-center shadow-lg" style="background: #111827; border: 1px solid #1f293d; border-radius: 14px;">
+        <div class="mb-4">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 68px; height: 68px; border-radius: 50%; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #f59e0b; font-size: 2rem;">
+            <i class="bi bi-shield-lock"></i>
+          </span>
+        </div>
+        <div class="mb-3">
+          <span class="badge" style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.4rem 0.8rem;">
+            Acesso Restrito
+          </span>
+        </div>
+        <h1 class="h3 font-bold text-white mb-3" style="letter-spacing: -0.02em;">
+          Módulo não contratado ou desabilitado nesta organização.
+        </h1>
+        <p class="text-secondary mb-4" style="color: #94a3b8 !important; font-size: 0.95rem; line-height: 1.6;">
+          {{ exception|default:'Este recurso não faz parte do plano ativo contratado para sua organização ou está desabilitado pelo administrador.' }}
+        </p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
+          <a class="btn btn-primary px-4 py-2" href="/assistencia/">
+            <i class="bi bi-arrow-left me-1"></i> Voltar ao Painel
+          </a>
+          <a class="btn btn-outline-secondary px-4 py-2" href="javascript:history.back()">
+            Página anterior
+          </a>
+          {% if request.membership and request.membership.role == 'ADMIN' %}
+          <a class="btn btn-outline-info px-4 py-2" href="/vertyx/empresa/plano/">
+            <i class="bi bi-box-arrow-up-right me-1"></i> Ver Planos & Módulos
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

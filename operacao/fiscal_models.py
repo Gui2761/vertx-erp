@@ -141,7 +141,7 @@ class ConfiguracaoFiscal(CadastroFiscal):
     tipo = models.CharField(max_length=5, choices=TIPOS)
     ambiente = models.CharField(max_length=12, choices=AMBIENTES, default='SIMULACAO')
     versao = models.PositiveIntegerField(default=1)
-    motor = models.CharField(max_length=20, choices=[('SIMULADOR', 'Simulador local sem emissão'), ('NFCE_SVRS_HOM', 'NFC-e SVRS — somente homologação')], default='SIMULADOR')
+    motor = models.CharField(max_length=20, choices=[('SIMULADOR', 'Simulador local sem emissão'), ('NFCE_SVRS_HOM', 'NFC-e SVRS — somente homologação'), ('NFSE_ADN_HOM', 'NFS-e ADN Nacional — homologação')], default='SIMULADOR')
     habilitada = models.BooleanField(default=False)
     proposta_documental = models.JSONField(default=dict, blank=True, validators=[proposta_documental_publica])
     preparacao_fiscal = models.JSONField(default=dict, blank=True, validators=[preparacao_fiscal_publica])
@@ -164,6 +164,8 @@ class ConfiguracaoFiscal(CadastroFiscal):
             raise ValidationError('Proposta documental pendente não pode habilitar emissão nem outro ambiente.')
         if self.motor == 'NFCE_SVRS_HOM' and (self.tipo != 'NFCE' or self.ambiente != 'HOMOLOGACAO'):
             raise ValidationError('Motor SVRS restrito à NFC-e em homologação.')
+        if self.motor == 'NFSE_ADN_HOM' and (self.tipo != 'NFSE' or self.ambiente != 'HOMOLOGACAO'):
+            raise ValidationError('Motor ADN restrito à NFS-e em homologação.')
 
 class VinculoCredencialFiscal(CadastroFiscal):
     configuracao = models.ForeignKey(ConfiguracaoFiscal, on_delete=models.PROTECT, related_name='vinculos')

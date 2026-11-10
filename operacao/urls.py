@@ -42,6 +42,7 @@ urlpatterns = [
     path('fiscal/simulacao/cadastros/<str:kind>/', fiscal_views.cadastrar, name='fiscal_simulacao_cadastro'),
     path('fiscal/simulacao/novo/', fiscal_views.novo, name='fiscal_simulacao_novo'),
     path('fiscal/simulacao/documentos/<int:pk>/', fiscal_views.detalhe, name='fiscal_simulacao_detalhe'),
+    path('fiscal/nfse/<int:pk>/danfse/', fiscal_views.danfse, name='nfse_danfse'),
     path('fiscal/simulacao/documentos/<int:pk>/<str:operation>/', fiscal_views.solicitar, name='fiscal_simulacao_solicitar'),
     path('fiscal/simulacao/solicitacoes/<int:pk>/reconciliar/', fiscal_views.reconciliar, name='fiscal_simulacao_reconciliar'),
     path('vendedor/',seller.home,name='seller_home'),
