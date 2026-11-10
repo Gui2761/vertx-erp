@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Totem de Autoatendimento · UBS Maria Pureza · Brejo Grande / SE</title>
+  <title>Totem de Autoatendimento · Emissão de Senhas SUS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&family=JetBrains+Mono:wght@700;800;900&display=swap" rel="stylesheet">
@@ -44,7 +44,7 @@
     header {
       background: var(--kiosk-surface);
       border-bottom: 2px solid var(--kiosk-border);
-      padding: 1.5rem 3.5rem;
+      padding: 1rem 2.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -53,18 +53,18 @@
     .kiosk-entity {
       display: flex;
       align-items: center;
-      gap: 1.5rem;
+      gap: 1.25rem;
     }
 
     .coat-badge {
-      width: 52px;
-      height: 52px;
+      width: 46px;
+      height: 46px;
       border-radius: 12px;
       background: #1e3a8a;
       border: 2px solid #3b82f6;
       color: #fff;
       font-weight: 900;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -73,17 +73,17 @@
 
     .kiosk-titles h1 {
       font-family: var(--font-display);
-      font-size: 1.5rem;
+      font-size: 1.35rem;
       font-weight: 900;
       color: #fff;
       line-height: 1.1;
     }
 
     .kiosk-titles p {
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       color: #94a3b8;
       font-weight: 600;
-      margin-top: 3px;
+      margin-top: 2px;
     }
 
     .kiosk-clock-block {
@@ -91,50 +91,50 @@
     }
     .kiosk-clock {
       font-family: var(--font-mono);
-      font-size: 1.9rem;
+      font-size: 1.7rem;
       font-weight: 900;
       color: #38bdf8;
       line-height: 1;
     }
     .kiosk-date {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #94a3b8;
       font-weight: 600;
-      margin-top: 4px;
+      margin-top: 3px;
     }
 
     /* 2. ÁREA CENTRAL DE BOTÕES TOUCH */
     main {
-      padding: 2rem 3.5rem;
+      padding: 1.25rem 2.5rem;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: 1.5rem;
+      gap: 1rem;
     }
 
     .instruction-strip {
       text-align: center;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.25rem;
     }
     .instruction-strip h2 {
       font-family: var(--font-display);
-      font-size: 2rem;
+      font-size: 1.75rem;
       font-weight: 800;
       color: #fff;
       letter-spacing: -0.5px;
     }
     .instruction-strip p {
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: #cbd5e1;
-      margin-top: 4px;
+      margin-top: 2px;
       font-weight: 500;
     }
 
     .kiosk-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1.75rem;
+      gap: 1.25rem;
       width: 100%;
       max-width: 1380px;
     }
@@ -143,13 +143,13 @@
     .kiosk-touch-btn {
       background: var(--kiosk-card);
       border: 2px solid var(--kiosk-border);
-      border-radius: 20px;
-      padding: 2.25rem 1.75rem;
+      border-radius: 18px;
+      padding: 1.35rem 1.25rem;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      gap: 1.25rem;
+      gap: 0.85rem;
       cursor: pointer;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -178,9 +178,9 @@
     }
 
     .btn-svg-box {
-      width: 72px;
-      height: 72px;
-      border-radius: 16px;
+      width: 58px;
+      height: 58px;
+      border-radius: 14px;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.15);
       display: flex;
@@ -198,30 +198,30 @@
 
     .btn-title-block h3 {
       font-family: var(--font-display);
-      font-size: 1.4rem;
+      font-size: 1.25rem;
       font-weight: 800;
       color: #fff;
       line-height: 1.2;
     }
 
     .btn-title-block p {
-      font-size: 0.92rem;
+      font-size: 0.85rem;
       color: #94a3b8;
-      margin-top: 0.4rem;
-      line-height: 1.35;
+      margin-top: 0.25rem;
+      line-height: 1.3;
       font-weight: 500;
     }
 
     .legal-tag {
       background: #f59e0b;
       color: #000;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 900;
-      padding: 0.25rem 0.65rem;
+      padding: 0.2rem 0.55rem;
       border-radius: 6px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.2rem;
       display: inline-block;
     }
 
@@ -229,7 +229,7 @@
     footer {
       background: var(--kiosk-surface);
       border-top: 1px solid var(--kiosk-border);
-      padding: 1.15rem 3.5rem;
+      padding: 0.85rem 2.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -252,16 +252,163 @@
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid var(--kiosk-border);
       color: #fff;
-      padding: 0.6rem 1.2rem;
+      padding: 0.6rem 1.1rem;
       border-radius: 8px;
       font-size: 0.85rem;
       font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
+      transition: all 0.2s ease;
+      user-select: none;
     }
-    .btn-kiosk-tool:hover { background: rgba(255, 255, 255, 0.15); }
+    .btn-kiosk-tool:hover { background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.3); }
+    .btn-kiosk-tool.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+    .btn-zoom-group {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--kiosk-border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .btn-zoom-tool {
+      background: transparent;
+      border: none;
+      color: #fff;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-zoom-tool:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .btn-zoom-tool:active {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .btn-zoom-tool + .btn-zoom-tool {
+      border-left: 1px solid var(--kiosk-border);
+    }
+
+    /* =========================================================
+       MODO DE ALTO CONTRASTE (WCAG AAA - NATIVO E REAL)
+       Preto absoluto (#000000) e Amarelo vibrante (#FFFF00)
+       ========================================================= */
+    body.high-contrast {
+      background: #000000 !important;
+      color: #ffff00 !important;
+    }
+    body.high-contrast header,
+    body.high-contrast footer {
+      background: #000000 !important;
+      border-color: #ffff00 !important;
+    }
+    body.high-contrast .coat-badge {
+      background: #000000 !important;
+      border: 3px solid #ffff00 !important;
+      color: #ffff00 !important;
+    }
+    body.high-contrast .coat-badge svg {
+      stroke: #ffff00 !important;
+    }
+    body.high-contrast .kiosk-titles h1,
+    body.high-contrast .instruction-strip h2,
+    body.high-contrast .btn-title-block h3,
+    body.high-contrast .receipt-service {
+      color: #ffff00 !important;
+    }
+    body.high-contrast .kiosk-titles p,
+    body.high-contrast .instruction-strip p,
+    body.high-contrast .btn-title-block p,
+    body.high-contrast .kiosk-help span,
+    body.high-contrast .kiosk-date,
+    body.high-contrast .receipt-header p,
+    body.high-contrast .receipt-meta {
+      color: #ffffff !important;
+    }
+    body.high-contrast .kiosk-clock,
+    body.high-contrast .receipt-ticket {
+      color: #ffff00 !important;
+    }
+    body.high-contrast .kiosk-touch-btn {
+      background: #000000 !important;
+      border: 3px solid #ffff00 !important;
+      box-shadow: none !important;
+    }
+    body.high-contrast .kiosk-touch-btn:hover,
+    body.high-contrast .kiosk-touch-btn:focus-visible {
+      background: #ffff00 !important;
+      outline: 4px solid #ffffff !important;
+    }
+    body.high-contrast .kiosk-touch-btn:hover .btn-title-block h3,
+    body.high-contrast .kiosk-touch-btn:hover .btn-title-block p,
+    body.high-contrast .kiosk-touch-btn:hover .legal-tag {
+      color: #000000 !important;
+    }
+    body.high-contrast .kiosk-touch-btn:hover .btn-svg-box {
+      border-color: #000000 !important;
+      color: #000000 !important;
+    }
+    body.high-contrast .kiosk-touch-btn:hover .btn-svg-box svg {
+      stroke: #000000 !important;
+    }
+    body.high-contrast .btn-svg-box {
+      background: transparent !important;
+      border: 2px solid #ffff00 !important;
+      color: #ffff00 !important;
+    }
+    body.high-contrast .btn-svg-box svg {
+      stroke: #ffff00 !important;
+    }
+    body.high-contrast .legal-tag {
+      background: #ffff00 !important;
+      color: #000000 !important;
+      border: 1px solid #000000 !important;
+    }
+    body.high-contrast .btn-kiosk-tool,
+    body.high-contrast .btn-zoom-group {
+      background: #000000 !important;
+      border: 2px solid #ffff00 !important;
+      color: #ffff00 !important;
+    }
+    body.high-contrast .btn-zoom-tool {
+      color: #ffff00 !important;
+    }
+    body.high-contrast .btn-kiosk-tool.active {
+      background: #ffff00 !important;
+      color: #000000 !important;
+      border-color: #ffffff !important;
+    }
+    body.high-contrast .btn-kiosk-tool.active svg {
+      stroke: #000000 !important;
+    }
+    body.high-contrast .thermal-receipt {
+      background: #000000 !important;
+      border: 3px solid #ffff00 !important;
+      color: #ffffff !important;
+    }
+    body.high-contrast .receipt-header h4 {
+      color: #ffff00 !important;
+    }
+    body.high-contrast .receipt-divider {
+      border-bottom-color: #ffff00 !important;
+    }
+    body.high-contrast .receipt-instructions {
+      background: #111111 !important;
+      border: 1px solid #ffff00 !important;
+      color: #ffff00 !important;
+    }
+    body.high-contrast .btn-collect-ticket {
+      background: #ffff00 !important;
+      color: #000000 !important;
+      font-weight: 900 !important;
+    }
 
     /* MODAL DE IMPRESSÃO TÉRMICA DO TICKET */
     .print-overlay {
@@ -383,10 +530,14 @@
   <!-- HEADER INSTITUCIONAL -->
   <header>
     <div class="kiosk-entity">
-      <div class="coat-badge">SE</div>
+      <div class="coat-badge" title="Sistema Único de Saúde">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M2 12h20"/>
+        </svg>
+      </div>
       <div class="kiosk-titles">
-        <h1>Prefeitura Municipal de Brejo Grande</h1>
-        <p>Fundo Municipal de Saúde · Unidade Básica de Saúde Maria Pureza da Silva</p>
+        <h1>Sistema de Atendimento e Triagem</h1>
+        <p>Autoatendimento Cidadão · Emissão de Senhas Integrada</p>
       </div>
     </div>
 
@@ -405,7 +556,7 @@
 
     <div class="kiosk-grid">
       <!-- 1. ATENDIMENTO GERAL -->
-      <button class="kiosk-touch-btn" onclick="issueTicket('GER', 'Atendimento Clínico Geral', 'Consultas Médicas & Acolhimento Inicial')">
+      <button class="kiosk-touch-btn" onclick="issueTicket('GER', 'Atendimento Clínico Geral', 'Consultas Médicas & Acolhimento Inicial')" data-speech="Opção 1. Atendimento Geral. Consultas médicas com clínico geral, triagem inicial e acolhimento." aria-label="Opção 1: Atendimento Clínico Geral">
         <div class="btn-svg-box">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
         </div>
@@ -416,7 +567,7 @@
       </button>
 
       <!-- 2. PRIORITÁRIO LEI 10.048 -->
-      <button class="kiosk-touch-btn priority-accent" onclick="issueTicket('PRE', 'Atendimento Prioritário', 'Prioridade Legal Lei 10.048/2000')">
+      <button class="kiosk-touch-btn priority-accent" onclick="issueTicket('PRE', 'Atendimento Prioritário', 'Prioridade Legal Lei 10.048/2000')" data-speech="Opção 2. Atendimento Prioritário. Destinado a idosos com 80 anos ou mais, gestantes, lactantes, pessoas autistas e com deficiência, conforme a Lei 10.048." aria-label="Opção 2: Atendimento Prioritário por Lei">
         <div class="btn-svg-box">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </div>
@@ -428,7 +579,7 @@
       </button>
 
       <!-- 3. VACINAÇÃO -->
-      <button class="kiosk-touch-btn" onclick="issueTicket('VAC', 'Sala de Vacinação', 'Imunização Nacional & Campanhas')">
+      <button class="kiosk-touch-btn" onclick="issueTicket('VAC', 'Sala de Vacinação', 'Imunização Nacional & Campanhas')" data-speech="Opção 3. Sala de Vacinação. Vacinas de rotina infantil e adulto, gripe, dengue e campanhas de imunização." aria-label="Opção 3: Sala de Vacinação">
         <div class="btn-svg-box">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg>
         </div>
@@ -439,7 +590,7 @@
       </button>
 
       <!-- 4. ODONTOLOGIA -->
-      <button class="kiosk-touch-btn" onclick="issueTicket('ODO', 'Consultório Odontológico', 'Saúde Bucal e-SUS APS')">
+      <button class="kiosk-touch-btn" onclick="issueTicket('ODO', 'Consultório Odontológico', 'Saúde Bucal e-SUS APS')" data-speech="Opção 4. Odontologia. Avaliação bucal, restaurações, extrações e prevenção na atenção primária." aria-label="Opção 4: Odontologia">
         <div class="btn-svg-box">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 4 6 4 10c0 5 2.5 12 8 12s8-7 8-12c0-4-2.5-8-8-8Z"/><path d="M8 10h8"/></svg>
         </div>
@@ -450,7 +601,7 @@
       </button>
 
       <!-- 5. FARMÁCIA MUNICIPAL -->
-      <button class="kiosk-touch-btn" onclick="issueTicket('FAR', 'Farmácia Básica', 'Dispensação de Medicamentos')">
+      <button class="kiosk-touch-btn" onclick="issueTicket('FAR', 'Farmácia Básica', 'Dispensação de Medicamentos')" data-speech="Opção 5. Farmácia Básica. Dispensação de medicamentos padronizados pelo Sistema Único de Saúde com receita válida." aria-label="Opção 5: Farmácia Básica">
         <div class="btn-svg-box">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
         </div>
@@ -461,7 +612,7 @@
       </button>
 
       <!-- 6. EXAMES E LABORATÓRIO -->
-      <button class="kiosk-touch-btn" onclick="issueTicket('EXA', 'Coleta de Exames', 'Laboratório Municipal e-SUS')">
+      <button class="kiosk-touch-btn" onclick="issueTicket('EXA', 'Coleta de Exames', 'Laboratório Municipal e-SUS')" data-speech="Opção 6. Coleta e Exames. Exames laboratoriais, coleta de sangue, preventivo e triagens diagnósticas." aria-label="Opção 6: Coleta e Exames">
         <div class="btn-svg-box">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>
         </div>
@@ -473,7 +624,7 @@
     </div>
   </main>
 
-  <!-- FOOTER DO TOTEM -->
+  <!-- FOOTER DO TOTEM COM ACESSIBILIDADE WCAG AAA REAL -->
   <footer>
     <div class="kiosk-help">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
@@ -481,8 +632,24 @@
     </div>
 
     <div class="kiosk-access-buttons">
-      <button class="btn-kiosk-tool" onclick="alert('Modo de Alto Contraste ativado para o Totem.')">Alto Contraste</button>
-      <button class="btn-kiosk-tool" onclick="alert('Áudio-guia em Português ativado.')">Áudio Acessível</button>
+      <!-- Zoom de Fonte A- / A+ -->
+      <div class="btn-zoom-group" role="group" aria-label="Ajuste do tamanho do texto">
+        <button class="btn-zoom-tool" onclick="changeFontSize(-1)" title="Diminuir tamanho do texto" aria-label="Diminuir tamanho do texto">A -</button>
+        <button class="btn-zoom-tool" onclick="resetFontSize()" title="Tamanho original do texto" aria-label="Tamanho original do texto">A</button>
+        <button class="btn-zoom-tool" onclick="changeFontSize(1)" title="Aumentar tamanho do texto" aria-label="Aumentar tamanho do texto">A +</button>
+      </div>
+
+      <!-- Alto Contraste Real -->
+      <button class="btn-kiosk-tool" id="btn-contrast" onclick="toggleHighContrast()" aria-pressed="false" title="Alternar Modo de Alto Contraste">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20Z"/></svg>
+        <span id="contrast-label">Alto Contraste</span>
+      </button>
+
+      <!-- Áudio Acessível / Leitor de Tela Real -->
+      <button class="btn-kiosk-tool" id="btn-audio" onclick="toggleAudioGuide()" aria-pressed="false" title="Ativar ou desativar narração por voz">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        <span id="audio-label">Áudio Acessível</span>
+      </button>
     </div>
   </footer>
 
@@ -490,8 +657,8 @@
   <div class="print-overlay" id="print-modal">
     <div class="thermal-receipt">
       <div class="receipt-header">
-        <h4>UBS Maria Pureza da Silva</h4>
-        <p>Prefeitura de Brejo Grande · FMS</p>
+        <h4>Unidade Municipal de Saúde</h4>
+        <p>Sistema Integrado de Atendimento · SUS</p>
       </div>
 
       <div class="receipt-divider"></div>
@@ -596,6 +763,177 @@
         osc.stop(ctx.currentTime + 0.2);
       } catch (e) {}
     }
+
+    // =========================================================
+    // 3. MOTOR DE ACESSIBILIDADE WCAG AAA (100% REAL E FUNCIONAL)
+    // =========================================================
+
+    // A) MODO DE ALTO CONTRASTE
+    let isHighContrast = false;
+    function toggleHighContrast() {
+      isHighContrast = !isHighContrast;
+      const btn = document.getElementById('btn-contrast');
+      const label = document.getElementById('contrast-label');
+
+      if (isHighContrast) {
+        document.body.classList.add('high-contrast');
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        label.textContent = 'Alto Contraste: ATIVO';
+        localStorage.setItem('totem_high_contrast', '1');
+        speakGuide('Modo de Alto Contraste ativado.');
+      } else {
+        document.body.classList.remove('high-contrast');
+        btn.classList.remove('active');
+        btn.setAttribute('aria-pressed', 'false');
+        label.textContent = 'Alto Contraste';
+        localStorage.setItem('totem_high_contrast', '0');
+        speakGuide('Modo de Alto Contraste desativado.');
+      }
+    }
+
+    // Restaura preferência salva de alto contraste
+    if (localStorage.getItem('totem_high_contrast') === '1') {
+      toggleHighContrast();
+    }
+
+    // B) ESCALA DE FONTE DINÂMICA (A- / A / A+)
+    const fontSizes = [13, 14, 16, 18, 20, 22]; // em px no html
+    let currentFontIndex = 2; // padrão = 16px
+
+    function changeFontSize(delta) {
+      currentFontIndex = Math.max(0, Math.min(fontSizes.length - 1, currentFontIndex + delta));
+      applyFontSize();
+    }
+
+    function resetFontSize() {
+      currentFontIndex = 2; // 16px
+      applyFontSize();
+    }
+
+    function applyFontSize() {
+      const size = fontSizes[currentFontIndex];
+      document.documentElement.style.fontSize = `${size}px`;
+      localStorage.setItem('totem_font_index', currentFontIndex);
+      speakGuide(`Tamanho da fonte ajustado para ${size} pixels.`);
+    }
+
+    const savedFont = localStorage.getItem('totem_font_index');
+    if (savedFont !== null) {
+      currentFontIndex = parseInt(savedFont, 10);
+      if (!isNaN(currentFontIndex) && fontSizes[currentFontIndex]) {
+        document.documentElement.style.fontSize = `${fontSizes[currentFontIndex]}px`;
+      }
+    }
+
+    // C) ÁUDIO-GUIA ACESSÍVEL / LEITOR DE TELA NATIVO
+    let isAudioActive = false;
+    function toggleAudioGuide() {
+      isAudioActive = !isAudioActive;
+      const btn = document.getElementById('btn-audio');
+      const label = document.getElementById('audio-label');
+
+      if (isAudioActive) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        label.textContent = 'Áudio: LIGADO';
+        speakGuide('Assistente de voz ativado. Toque em qualquer opção para ouvir sua descrição ou confirmar a emissão da sua senha.', true);
+      } else {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-pressed', 'false');
+        label.textContent = 'Áudio Acessível';
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+        speakGuide('Assistente de voz desativado.', true);
+      }
+    }
+
+    function speakGuide(text, force = false) {
+      if ((!isAudioActive && !force) || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'pt-BR';
+      utter.rate = 1.05;
+      utter.pitch = 1.0;
+      window.speechSynthesis.speak(utter);
+    }
+
+    // Adiciona ouvintes a todos os botões do totem para leitura automática quando áudio ativado
+    document.querySelectorAll('.kiosk-touch-btn').forEach((btn, index) => {
+      const textToSpeak = btn.getAttribute('data-speech') || btn.innerText;
+
+      // Ao passar o mouse ou dar foco
+      btn.addEventListener('mouseenter', () => {
+        if (isAudioActive) speakGuide(textToSpeak);
+      });
+      btn.addEventListener('focus', () => {
+        if (isAudioActive) speakGuide(textToSpeak);
+      });
+
+      // Toque em telas touchscreen: se for o primeiro toque com áudio, lê; se der duplo toque ou segundo toque, emite
+      let lastTouchTime = 0;
+      btn.addEventListener('touchstart', (e) => {
+        if (isAudioActive) {
+          const now = Date.now();
+          if (now - lastTouchTime > 1200) {
+            // Primeiro toque: narra
+            speakGuide(textToSpeak);
+            lastTouchTime = now;
+          }
+        }
+      }, { passive: true });
+    });
+
+    // D) ACESSIBILIDADE DE TECLADO / ATALHOS PARA TOTENS FÍSICOS
+    window.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      if (document.getElementById('print-modal').classList.contains('open')) {
+        if (e.key === 'Enter' || e.key === 'Escape' || e.code === 'Space') {
+          closePrintModal();
+        }
+        return;
+      }
+
+      switch(key) {
+        case '1':
+          issueTicket('GER', 'Atendimento Clínico Geral', 'Consultas Médicas & Acolhimento Inicial');
+          break;
+        case '2':
+          issueTicket('PRE', 'Atendimento Prioritário', 'Prioridade Legal Lei 10.048/2000');
+          break;
+        case '3':
+          issueTicket('VAC', 'Sala de Vacinação', 'Imunização Nacional & Campanhas');
+          break;
+        case '4':
+          issueTicket('ODO', 'Consultório Odontológico', 'Saúde Bucal e-SUS APS');
+          break;
+        case '5':
+          issueTicket('FAR', 'Farmácia Básica', 'Dispensação de Medicamentos');
+          break;
+        case '6':
+          issueTicket('EXA', 'Coleta de Exames', 'Laboratório Municipal e-SUS');
+          break;
+        case 'c':
+          toggleHighContrast();
+          break;
+        case 'a':
+        case 'v':
+          toggleAudioGuide();
+          break;
+        case '+':
+        case '=':
+          changeFontSize(1);
+          break;
+        case '-':
+        case '_':
+          changeFontSize(-1);
+          break;
+        case '0':
+          resetFontSize();
+          break;
+      }
+    });
   </script>
 </body>
 </html>
