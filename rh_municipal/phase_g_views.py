@@ -871,6 +871,12 @@ def health_totem(request):
     return render(request, 'rh_municipal/health_totem.html')
 
 
+@require_http_methods(['GET', 'POST'])
+def health_professionals_screen(request):
+    """Tela Institucional de Gestão e Cadastro de Médicos e Profissionais de Saúde (FMS Brejo Grande)."""
+    return render(request, 'rh_municipal/health_professionals.html')
+
+
 @require_GET
 def health_call_panel(request):
     """Console de Operação do Médico e Recepção da UBS (Fila em Tempo Real)."""

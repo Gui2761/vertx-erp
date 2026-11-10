@@ -3,19 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Totem de Autoatendimento · Retirada de Senhas · UBS Brejo Grande</title>
+  <title>Totem de Autoatendimento · UBS Maria Pureza · Brejo Grande / SE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&family=JetBrains+Mono:wght@700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #0284c7;
-      --primary-dark: #0369a1;
-      --primary-glow: rgba(2, 132, 199, 0.35);
-      --bg: #090e17;
-      --card-bg: rgba(17, 24, 39, 0.85);
-      --border: rgba(255, 255, 255, 0.1);
-      --text: #f8fafc;
+      --kiosk-navy: #0b1528;
+      --kiosk-surface: #101f38;
+      --kiosk-card: #162a4d;
+      --kiosk-border: rgba(255, 255, 255, 0.14);
+      --kiosk-blue: #0284c7;
+      --kiosk-blue-hover: #0369a1;
+      --kiosk-amber: #d97706;
+      --kiosk-emerald: #059669;
+      --kiosk-purple: #7c3aed;
+      --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --font-display: 'Space Grotesk', system-ui, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
@@ -28,111 +31,104 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
-      background: radial-gradient(circle at 50% 20%, #111d33 0%, var(--bg) 80%);
-      color: var(--text);
+      background: var(--kiosk-navy);
+      color: var(--text-main);
       font-family: var(--font-body);
       user-select: none;
       -webkit-tap-highlight-color: transparent;
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
     }
 
-    /* BARRA SUPERIOR DE TROCA DE TELAS (TRIAD HUB) */
-    .triad-nav-bar {
-      background: rgba(11, 17, 32, 0.95);
-      border-bottom: 1px solid var(--border);
-      padding: 0.65rem 2rem;
+    /* 1. HEADER REAL DO TOTEM (HARDWARE KIOSK) */
+    header {
+      background: var(--kiosk-surface);
+      border-bottom: 2px solid var(--kiosk-border);
+      padding: 1.5rem 3.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      z-index: 100;
     }
 
-    .triad-label {
-      font-size: 0.78rem;
-      font-weight: 800;
-      color: #38bdf8;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+    .kiosk-entity {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 1.5rem;
     }
 
-    .triad-links {
-      display: flex;
-      gap: 0.75rem;
-    }
-
-    .btn-triad {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      color: #cbd5e1;
-      padding: 0.4rem 0.85rem;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      transition: all 0.2s;
-    }
-    .btn-triad.active {
-      background: var(--primary);
+    .coat-badge {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: #1e3a8a;
+      border: 2px solid #3b82f6;
       color: #fff;
-      border-color: var(--primary);
-    }
-    .btn-triad:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
-    }
-
-    /* HEADER DO TOTEM */
-    .totem-header {
-      padding: 2rem 3rem 1rem 3rem;
-      text-align: center;
-    }
-
-    .gov-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      background: rgba(2, 132, 199, 0.15);
-      border: 1px solid rgba(2, 132, 199, 0.35);
-      padding: 0.4rem 1rem;
-      border-radius: 999px;
-      font-size: 0.82rem;
-      font-weight: 800;
-      color: #38bdf8;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 0.75rem;
-    }
-
-    .totem-title {
-      font-family: var(--font-display);
-      font-size: 2.4rem;
       font-weight: 900;
-      color: #fff;
-      letter-spacing: -0.8px;
-      line-height: 1.15;
-    }
-
-    .totem-subtitle {
-      font-size: 1.15rem;
-      color: var(--text-muted);
-      margin-top: 0.5rem;
-      font-weight: 500;
-    }
-
-    /* GRID DE OPÇÕES DE ATENDIMENTO */
-    .totem-body {
-      flex: 1;
+      font-size: 1.3rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem 3rem 2rem 3rem;
+      font-family: var(--font-display);
+    }
+
+    .kiosk-titles h1 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .kiosk-titles p {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-top: 3px;
+    }
+
+    .kiosk-clock-block {
+      text-align: right;
+    }
+    .kiosk-clock {
+      font-family: var(--font-mono);
+      font-size: 1.9rem;
+      font-weight: 900;
+      color: #38bdf8;
+      line-height: 1;
+    }
+    .kiosk-date {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* 2. ÁREA CENTRAL DE BOTÕES TOUCH */
+    main {
+      padding: 2rem 3.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .instruction-strip {
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    .instruction-strip h2 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .instruction-strip p {
+      font-size: 1.1rem;
+      color: #cbd5e1;
+      margin-top: 4px;
+      font-weight: 500;
     }
 
     .kiosk-grid {
@@ -140,14 +136,14 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 1.75rem;
       width: 100%;
-      max-width: 1280px;
+      max-width: 1380px;
     }
 
-    /* BOTÃO TOUCH DE SERVIÇO */
-    .touch-btn {
-      background: var(--card-bg);
-      border: 2px solid var(--border);
-      border-radius: 24px;
+    /* BOTÃO TOUCH INSTITUCIONAL */
+    .kiosk-touch-btn {
+      background: var(--kiosk-card);
+      border: 2px solid var(--kiosk-border);
+      border-radius: 20px;
       padding: 2.25rem 1.75rem;
       display: flex;
       flex-direction: column;
@@ -155,92 +151,125 @@
       text-align: center;
       gap: 1.25rem;
       cursor: pointer;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
-      overflow: hidden;
     }
 
-    .touch-btn::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 6px;
-      background: var(--primary);
-      opacity: 0.8;
-    }
-
-    .touch-btn.priority::before { background: #f59e0b; }
-    .touch-btn.vaccine::before { background: #10b981; }
-    .touch-btn.dental::before { background: #8b5cf6; }
-    .touch-btn.pharmacy::before { background: #06b6d4; }
-    .touch-btn.lab::before { background: #ec4899; }
-
-    .touch-btn:hover {
-      transform: translateY(-6px) scale(1.02);
+    .kiosk-touch-btn:hover {
       border-color: #38bdf8;
-      box-shadow: 0 25px 60px rgba(2, 132, 199, 0.35);
-      background: #1e293b;
+      background: #1d355e;
+      transform: translateY(-4px);
+      box-shadow: 0 15px 35px rgba(2, 132, 199, 0.25);
     }
 
-    .touch-btn:active {
-      transform: translateY(2px) scale(0.98);
-      filter: brightness(1.2);
+    .kiosk-touch-btn:active {
+      transform: translateY(2px) scale(0.99);
+      background: #112240;
     }
 
-    .btn-icon-wrapper {
-      width: 80px;
-      height: 80px;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.05);
+    .kiosk-touch-btn.priority-accent {
+      border-color: rgba(245, 158, 11, 0.5);
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.12) 0%, var(--kiosk-card) 100%);
+    }
+    .kiosk-touch-btn.priority-accent:hover {
+      border-color: #f59e0b;
+      box-shadow: 0 15px 35px rgba(245, 158, 11, 0.25);
+    }
+
+    .btn-svg-box {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2.6rem;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #38bdf8;
       transition: all 0.2s;
     }
+    .kiosk-touch-btn.priority-accent .btn-svg-box { color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); }
 
-    .touch-btn:hover .btn-icon-wrapper {
-      transform: scale(1.1);
-      background: rgba(56, 189, 248, 0.2);
-      border-color: #38bdf8;
+    .kiosk-touch-btn:hover .btn-svg-box {
+      transform: scale(1.08);
+      background: rgba(56, 189, 248, 0.15);
     }
 
-    .btn-title {
+    .btn-title-block h3 {
       font-family: var(--font-display);
-      font-size: 1.45rem;
+      font-size: 1.4rem;
       font-weight: 800;
       color: #fff;
       line-height: 1.2;
     }
 
-    .btn-desc {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      font-weight: 600;
-      line-height: 1.4;
+    .btn-title-block p {
+      font-size: 0.92rem;
+      color: #94a3b8;
+      margin-top: 0.4rem;
+      line-height: 1.35;
+      font-weight: 500;
     }
 
-    .priority-badge {
-      background: rgba(245, 158, 11, 0.2);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      color: #fbbf24;
+    .legal-tag {
+      background: #f59e0b;
+      color: #000;
       font-size: 0.75rem;
-      font-weight: 800;
+      font-weight: 900;
       padding: 0.25rem 0.65rem;
-      border-radius: 999px;
+      border-radius: 6px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      margin-bottom: 0.25rem;
+      display: inline-block;
     }
+
+    /* 3. FOOTER DE ACESSIBILIDADE E SUPORTE DO TOTEM */
+    footer {
+      background: var(--kiosk-surface);
+      border-top: 1px solid var(--kiosk-border);
+      padding: 1.15rem 3.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .kiosk-help {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .kiosk-access-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .btn-kiosk-tool {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--kiosk-border);
+      color: #fff;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-kiosk-tool:hover { background: rgba(255, 255, 255, 0.15); }
 
     /* MODAL DE IMPRESSÃO TÉRMICA DO TICKET */
     .print-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(5, 8, 17, 0.88);
-      backdrop-filter: blur(25px);
-      z-index: 1000;
+      background: rgba(7, 13, 24, 0.92);
+      backdrop-filter: blur(20px);
+      z-index: 2000;
       display: none;
       align-items: center;
       justify-content: center;
@@ -248,26 +277,24 @@
     }
     .print-overlay.open { display: flex; }
 
-    /* CUPOM TÉRMICO FÍSICO ESTILIZADO */
     .thermal-receipt {
       background: #ffffff;
       color: #0f172a;
       width: 100%;
-      max-width: 380px;
-      border-radius: 12px;
+      max-width: 360px;
+      border-radius: 8px;
       padding: 2rem;
-      box-shadow: 0 35px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 35px 80px rgba(0, 0, 0, 0.8);
       text-align: center;
       position: relative;
-      animation: paperFeed 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: paperSlide 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    @keyframes paperFeed {
-      0% { transform: translateY(-100px) scale(0.9); opacity: 0; }
-      100% { transform: translateY(0) scale(1); opacity: 1; }
+    @keyframes paperSlide {
+      from { transform: translateY(-80px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
-    /* Borda serrilhada de impressora térmica */
     .thermal-receipt::after {
       content: '';
       position: absolute;
@@ -275,15 +302,16 @@
       left: 0; right: 0;
       height: 10px;
       background: radial-gradient(circle, transparent, transparent 50%, #ffffff 50%, #ffffff 100%);
-      background-size: 16px 16px;
+      background-size: 14px 14px;
     }
 
     .receipt-header h4 {
       font-family: var(--font-display);
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 900;
       color: #0f172a;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .receipt-header p {
       font-size: 0.78rem;
@@ -297,37 +325,30 @@
       margin: 1.25rem 0;
     }
 
-    .receipt-label {
-      font-size: 0.8rem;
-      font-weight: 800;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
     .receipt-ticket {
       font-family: var(--font-mono);
       font-size: 4.8rem;
       font-weight: 900;
       color: #0284c7;
       line-height: 1;
-      margin: 0.5rem 0;
       letter-spacing: -2px;
+      margin: 0.5rem 0;
     }
 
     .receipt-service {
       font-family: var(--font-display);
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 800;
       color: #1e293b;
     }
 
     .receipt-meta {
+      display: flex;
+      justify-content: space-between;
       font-size: 0.78rem;
       color: #64748b;
       margin-top: 0.75rem;
-      display: flex;
-      justify-content: space-between;
+      font-family: var(--font-mono);
     }
 
     .receipt-instructions {
@@ -348,114 +369,144 @@
       color: #fff;
       border: none;
       padding: 0.9rem;
-      border-radius: 10px;
+      border-radius: 8px;
       font-family: var(--font-display);
       font-size: 1rem;
       font-weight: 800;
       cursor: pointer;
-      transition: all 0.2s;
     }
     .btn-collect-ticket:hover { background: #0369a1; }
   </style>
 </head>
 <body>
 
-  <!-- BARRA DE NAVEGAÇÃO DA TRÍADE (TOTEM -> TV -> MÉDICO) -->
-  <div class="triad-nav-bar">
-    <div class="triad-label">
-      <span>● Ecossistema Hospitalar de Senhas</span>
+  <!-- HEADER INSTITUCIONAL -->
+  <header>
+    <div class="kiosk-entity">
+      <div class="coat-badge">SE</div>
+      <div class="kiosk-titles">
+        <h1>Prefeitura Municipal de Brejo Grande</h1>
+        <p>Fundo Municipal de Saúde · Unidade Básica de Saúde Maria Pureza da Silva</p>
+      </div>
     </div>
-    <div class="triad-links">
-      <a href="/gestao-publica/saude/totem/" class="btn-triad active">
-        <span>1. Totem de Entrada</span>
-      </a>
-      <a href="/gestao-publica/saude/painel-chamadas/tv/" target="_blank" class="btn-triad">
-        <span>2. SmartTV da Sala ↗</span>
-      </a>
-      <a href="/gestao-publica/saude/painel-chamadas/" target="_blank" class="btn-triad">
-        <span>3. Console do Médico ↗</span>
-      </a>
-    </div>
-  </div>
 
-  <!-- HEADER INSTITUCIONAL DO TOTEM -->
-  <header class="totem-header">
-    <div class="gov-badge">
-      <span>Fundo Municipal de Saúde · Brejo Grande / SE</span>
+    <div class="kiosk-clock-block">
+      <div class="kiosk-clock" id="kiosk-clock">10:55:00</div>
+      <div class="kiosk-date" id="kiosk-date">Terça-feira, 10 de Novembro de 2026</div>
     </div>
-    <h1 class="totem-title">Retirada de Senha de Atendimento</h1>
-    <p class="totem-subtitle">Toque na tela na opção desejada para emitir seu comprovante</p>
   </header>
 
-  <!-- GRID TOUCH DOS SERVIÇOS -->
-  <main class="totem-body">
+  <!-- ÁREA DE BOTÕES TOUCH -->
+  <main>
+    <div class="instruction-strip">
+      <h2>Retirada de Senha de Atendimento</h2>
+      <p>Toque na opção desejada para emitir o seu comprovante impresso</p>
+    </div>
+
     <div class="kiosk-grid">
       <!-- 1. ATENDIMENTO GERAL -->
-      <button class="touch-btn" onclick="issueTicket('GER', 'Atendimento Clínico Geral', 'Consulta Médica & Enfermagem')">
-        <div class="btn-icon-wrapper">🩺</div>
-        <div class="btn-title">Atendimento Geral</div>
-        <div class="btn-desc">Consultas médicas, avaliação de enfermagem e acolhimento</div>
+      <button class="kiosk-touch-btn" onclick="issueTicket('GER', 'Atendimento Clínico Geral', 'Consultas Médicas & Acolhimento Inicial')">
+        <div class="btn-svg-box">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        </div>
+        <div class="btn-title-block">
+          <h3>Atendimento Geral</h3>
+          <p>Consultas médicas com clínico geral, triagem inicial e acolhimento</p>
+        </div>
       </button>
 
-      <!-- 2. ATENDIMENTO PRIORITÁRIO -->
-      <button class="touch-btn priority" onclick="issueTicket('PRE', 'Atendimento Prioritário', 'Lei Federal 10.048/2000')">
-        <div class="btn-icon-wrapper">⭐</div>
-        <div class="priority-badge">Prioridade Legal</div>
-        <div class="btn-title">Atendimento Prioritário</div>
-        <div class="btn-desc">Idosos 80+, gestantes, lactantes, autistas e pessoas com deficiência</div>
+      <!-- 2. PRIORITÁRIO LEI 10.048 -->
+      <button class="kiosk-touch-btn priority-accent" onclick="issueTicket('PRE', 'Atendimento Prioritário', 'Prioridade Legal Lei 10.048/2000')">
+        <div class="btn-svg-box">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <div class="btn-title-block">
+          <span class="legal-tag">Prioridade por Lei</span>
+          <h3>Atendimento Prioritário</h3>
+          <p>Idosos 80+, gestantes, lactantes, pessoas autistas e com deficiência</p>
+        </div>
       </button>
 
       <!-- 3. VACINAÇÃO -->
-      <button class="touch-btn vaccine" onclick="issueTicket('VAC', 'Sala de Vacinação', 'Imunização & Campanhas')">
-        <div class="btn-icon-wrapper">💉</div>
-        <div class="btn-title">Vacinação</div>
-        <div class="btn-desc">Vacinas de rotina infantil, adulto e campanhas (Influenza e Dengue)</div>
+      <button class="kiosk-touch-btn" onclick="issueTicket('VAC', 'Sala de Vacinação', 'Imunização Nacional & Campanhas')">
+        <div class="btn-svg-box">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg>
+        </div>
+        <div class="btn-title-block">
+          <h3>Sala de Vacinação</h3>
+          <p>Vacinas de rotina infantil e adulto, gripe, dengue e campanhas</p>
+        </div>
       </button>
 
       <!-- 4. ODONTOLOGIA -->
-      <button class="touch-btn dental" onclick="issueTicket('ODO', 'Consultório Odontológico', 'Saúde Bucal e-SUS APS')">
-        <div class="btn-icon-wrapper">🦷</div>
-        <div class="btn-title">Odontologia</div>
-        <div class="btn-desc">Avaliação dentária, restauração, extração e prevenção bucal</div>
+      <button class="kiosk-touch-btn" onclick="issueTicket('ODO', 'Consultório Odontológico', 'Saúde Bucal e-SUS APS')">
+        <div class="btn-svg-box">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 4 6 4 10c0 5 2.5 12 8 12s8-7 8-12c0-4-2.5-8-8-8Z"/><path d="M8 10h8"/></svg>
+        </div>
+        <div class="btn-title-block">
+          <h3>Odontologia</h3>
+          <p>Avaliação bucal, restaurações, extrações e prevenção odontológica</p>
+        </div>
       </button>
 
       <!-- 5. FARMÁCIA MUNICIPAL -->
-      <button class="touch-btn pharmacy" onclick="issueTicket('FAR', 'Farmácia Básica', 'Dispensação de Medicamentos')">
-        <div class="btn-icon-wrapper">💊</div>
-        <div class="btn-title">Farmácia Básica</div>
-        <div class="btn-desc">Retirada de medicamentos contínuos e antibióticos com receita médica</div>
+      <button class="kiosk-touch-btn" onclick="issueTicket('FAR', 'Farmácia Básica', 'Dispensação de Medicamentos')">
+        <div class="btn-svg-box">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+        </div>
+        <div class="btn-title-block">
+          <h3>Farmácia Básica</h3>
+          <p>Dispensação de medicamentos padronizados pelo SUS com receita</p>
+        </div>
       </button>
 
-      <!-- 6. COLETA E LABORATÓRIO -->
-      <button class="touch-btn lab" onclick="issueTicket('EXA', 'Coleta de Exames', 'Laboratório Municipal')">
-        <div class="btn-icon-wrapper">🧪</div>
-        <div class="btn-title">Exames e Coleta</div>
-        <div class="btn-desc">Exames de sangue, urina, teste do pezinho e preventivos</div>
+      <!-- 6. EXAMES E LABORATÓRIO -->
+      <button class="kiosk-touch-btn" onclick="issueTicket('EXA', 'Coleta de Exames', 'Laboratório Municipal e-SUS')">
+        <div class="btn-svg-box">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>
+        </div>
+        <div class="btn-title-block">
+          <h3>Coleta e Exames</h3>
+          <p>Exames laboratoriais, coleta de sangue, preventivo e triagens</p>
+        </div>
       </button>
     </div>
   </main>
+
+  <!-- FOOTER DO TOTEM -->
+  <footer>
+    <div class="kiosk-help">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      <span>Precisa de auxílio? Solicite apoio ao orientador de fluxo da recepção da unidade.</span>
+    </div>
+
+    <div class="kiosk-access-buttons">
+      <button class="btn-kiosk-tool" onclick="alert('Modo de Alto Contraste ativado para o Totem.')">Alto Contraste</button>
+      <button class="btn-kiosk-tool" onclick="alert('Áudio-guia em Português ativado.')">Áudio Acessível</button>
+    </div>
+  </footer>
 
   <!-- MODAL DE IMPRESSÃO DO TICKET -->
   <div class="print-overlay" id="print-modal">
     <div class="thermal-receipt">
       <div class="receipt-header">
         <h4>UBS Maria Pureza da Silva</h4>
-        <p>FMS Brejo Grande / SE · e-SUS APS</p>
+        <p>Prefeitura de Brejo Grande · FMS</p>
       </div>
 
       <div class="receipt-divider"></div>
 
-      <div class="receipt-label">Sua Senha de Atendimento</div>
+      <div style="font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Senha de Atendimento</div>
       <div class="receipt-ticket" id="receipt-num">PRE-043</div>
       <div class="receipt-service" id="receipt-type">Atendimento Prioritário</div>
 
       <div class="receipt-meta">
         <span id="receipt-date">10/11/2026</span>
-        <span id="receipt-time">10:52:14</span>
+        <span id="receipt-time">11:05:22</span>
       </div>
 
       <div class="receipt-instructions">
-        📢 <strong>Aguarde a chamada no painel da SmartTV na sala de espera.</strong> Seu número será anunciado por áudio e voz.
+        Aguarde a chamada no painel da SmartTV na sala de espera. O seu número será anunciado por voz.
       </div>
 
       <button class="btn-collect-ticket" onclick="closePrintModal()">Retirar Comprovante</button>
@@ -463,73 +514,72 @@
   </div>
 
   <script>
-    // 1. SINCRONISMO CROSS-TAB VIA BROADCASTCHANNEL
+    // 1. RELÓGIO AO VIVO DO TOTEM
+    function updateKioskClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('kiosk-clock').textContent = `${h}:${m}:${s}`;
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const dStr = now.toLocaleDateString('pt-BR', options);
+      document.getElementById('kiosk-date').textContent = dStr.charAt(0).toUpperCase() + dStr.slice(1);
+    }
+    setInterval(updateKioskClock, 1000);
+    updateKioskClock();
+
+    // 2. SINCRONISMO CROSS-TAB (BROADCASTCHANNEL)
     const queueChannel = new BroadcastChannel('vertyx_health_queue');
 
-    // Contadores sequenciais por tipo
-    const counters = {
-      GER: 100,
-      PRE: 42,
-      VAC: 14,
-      ODO: 8,
-      FAR: 25,
-      EXA: 19
-    };
+    const counters = { GER: 100, PRE: 42, VAC: 14, ODO: 8, FAR: 25, EXA: 19 };
+    let autoTimer = null;
 
-    let autoCloseTimer = null;
-
-    // 2. FUNÇÃO DE EMISSÃO DA SENHA
     function issueTicket(prefix, title, desc) {
       counters[prefix] = (counters[prefix] || 0) + 1;
       const numStr = String(counters[prefix]).padStart(3, '0');
       const fullTicket = `${prefix}-${numStr}`;
 
       const now = new Date();
-      const dateStr = now.toLocaleDateString('pt-BR');
       const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
-      // Atualiza o comprovante térmico visual
       document.getElementById('receipt-num').textContent = fullTicket;
       document.getElementById('receipt-type').textContent = title;
-      document.getElementById('receipt-date').textContent = dateStr;
+      document.getElementById('receipt-date').textContent = now.toLocaleDateString('pt-BR');
       document.getElementById('receipt-time').textContent = timeStr;
 
-      // Exibe o modal
       document.getElementById('print-modal').classList.add('open');
 
-      // Toca som de impressão
+      // Toca som mecânico de corte térmico
       playPrintSound();
 
-      // Fala mensagem de confirmação
-      speakConfirmation(fullTicket, title);
+      // Fala confirmação por voz
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(`Senha ${fullTicket} emitida. Por favor, retire seu comprovante.`);
+        utter.lang = 'pt-BR';
+        utter.rate = 1.0;
+        window.speechSynthesis.speak(utter);
+      }
 
-      // Dispara evento para o Console do Médico e SmartTV
-      const ticketPayload = {
+      // Dispara para o Console do Médico e SmartTV
+      queueChannel.postMessage({
         type: 'NEW_TICKET',
         ticket: fullTicket,
         service: title,
         prefix: prefix,
         time: timeStr,
         timestamp: Date.now()
-      };
-      queueChannel.postMessage(ticketPayload);
+      });
 
-      // Salva no localStorage para sincronia permanente
-      saveToQueueStorage(ticketPayload);
-
-      // Fecha automaticamente após 6 segundos
-      clearTimeout(autoCloseTimer);
-      autoCloseTimer = setTimeout(() => {
-        closePrintModal();
-      }, 6000);
+      clearTimeout(autoTimer);
+      autoTimer = setTimeout(closePrintModal, 6000);
     }
 
     function closePrintModal() {
       document.getElementById('print-modal').classList.remove('open');
-      clearTimeout(autoCloseTimer);
+      clearTimeout(autoTimer);
     }
 
-    // 3. SÍNTESE DE ÁUDIO DE IMPRESSÃO
     function playPrintSound() {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -537,31 +587,14 @@
         const gain = ctx.createGain();
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(800, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.15);
+        osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.12);
         gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.25);
+        osc.stop(ctx.currentTime + 0.2);
       } catch (e) {}
-    }
-
-    function speakConfirmation(ticket, service) {
-      if (!('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(`Senha ${ticket} emitida. Por favor, retire seu comprovante e aguarde na sala de espera.`);
-      utter.lang = 'pt-BR';
-      utter.rate = 1.0;
-      window.speechSynthesis.speak(utter);
-    }
-
-    function saveToQueueStorage(payload) {
-      try {
-        const currentQueue = JSON.parse(localStorage.getItem('vertyx_waiting_queue') || '[]');
-        currentQueue.push(payload);
-        localStorage.setItem('vertyx_waiting_queue', JSON.stringify(currentQueue));
-      } catch(e) {}
     }
   </script>
 </body>
