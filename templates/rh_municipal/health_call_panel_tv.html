@@ -915,6 +915,12 @@
       } else if (data.type === 'NEW_TICKET') {
         // Alguém emitiu senha no Totem de entrada!
         addNewTicketToQueueList(data);
+      } else if (data.type === 'NO_SHOW') {
+        const bannerTextEl = document.getElementById('triage-text');
+        bannerTextEl.textContent = `Atenção: Senha ${data.ticket} registrada como Não Compareceu`;
+        setTimeout(() => {
+          bannerTextEl.textContent = 'Aguardando próxima chamada de atendimento';
+        }, 6000);
       }
     };
 

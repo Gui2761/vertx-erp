@@ -195,11 +195,31 @@
       gap: 0.85rem;
     }
 
-    .btn-call-large {
-      background: linear-gradient(135deg, #0284c7, #2563eb);
+    /* STATUS BADGE NOVO SGA */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .status-idle { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+    .status-calling { background: rgba(234, 179, 8, 0.18); color: #fbbf24; border: 1px solid rgba(234, 179, 8, 0.45); animation: pulseStatus 1.5s infinite alternate; }
+    .status-inservice { background: rgba(34, 197, 94, 0.18); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.45); }
+    @keyframes pulseStatus {
+      from { box-shadow: 0 0 4px rgba(234, 179, 8, 0.2); }
+      to { box-shadow: 0 0 16px rgba(234, 179, 8, 0.6); }
+    }
+
+    .btn-action-start {
+      background: linear-gradient(135deg, #059669, #10b981);
       color: #fff;
       border: none;
-      padding: 1.2rem;
+      padding: 1.1rem;
       border-radius: 14px;
       font-family: var(--font-display);
       font-size: 1.15rem;
@@ -209,14 +229,46 @@
       align-items: center;
       justify-content: center;
       gap: 0.75rem;
-      box-shadow: 0 10px 25px rgba(2, 132, 199, 0.4);
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
       transition: all 0.2s;
     }
+    .btn-action-start:hover { filter: brightness(1.1); transform: translateY(-2px); }
 
-    .btn-call-large:hover {
-      filter: brightness(1.1);
-      transform: translateY(-2px);
+    .btn-action-finish {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: none;
+      padding: 1.1rem;
+      border-radius: 14px;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      box-shadow: 0 10px 25px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s;
     }
+    .btn-action-finish:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+    .btn-danger-sub {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      padding: 0.85rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-danger-sub:hover { background: #ef4444; color: #fff; }
 
     .btn-sub-row {
       display: grid;
@@ -413,51 +465,91 @@
     </div>
   </header>
 
-  <!-- OPERATIONAL GRID -->
+  <!-- OPERATIONAL GRID NOVO SGA -->
   <main class="workspace-grid">
-    <!-- CONTROLES DO MÉDICO -->
+    <!-- CONTROLES DO MÉDICO / NOVO SGA ATTENDANCE -->
     <div class="control-card">
       <div class="section-title">
-        <span>Controle de Chamada Imediata</span>
-        <span style="font-size: 0.8rem; color: #4ade80; font-weight: 700;">● Online · Sincronizado</span>
+        <span>Atendimento Clínico · Novo SGA</span>
+        <span class="status-pill status-idle" id="desk-status-pill">● Consultório Livre</span>
       </div>
 
       <!-- VISUALIZADOR DA SENHA ATUAL -->
       <div class="current-call-display">
-        <div class="current-call-label">Paciente em Atendimento no Consultório 03</div>
-        <div class="current-call-ticket" id="doc-ticket">PRE-042</div>
-        <div class="current-call-name" id="doc-name">Maria Santos da Silva</div>
+        <div class="current-call-label" id="doc-status-text">Nenhum Paciente em Atendimento</div>
+        <div class="current-call-ticket" id="doc-ticket">---</div>
+        <div class="current-call-name" id="doc-name">Aguardando chamada de senha...</div>
         <div class="current-call-details">
-          <span>Manchester: <strong>Amarelo</strong></span>
-          <span>Tempo decorrido: <strong id="elapsed-time">04:12</strong></span>
-          <span>CNS: <strong>704.8910.3847.192</strong></span>
+          <span>Manchester: <strong id="doc-triage-label">---</strong></span>
+          <span>Tempo decorrido: <strong id="elapsed-time">00:00</strong></span>
+          <span>Local: <strong>Consultório 03</strong></span>
         </div>
       </div>
 
-      <!-- BOTÕES DE AÇÃO -->
-      <div class="action-button-group">
-        <button class="btn-call-large" onclick="doctorCallNext()">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
-          CHAMAR PRÓXIMO PACIENTE DA FILA (Espaço)
-        </button>
+      <!-- BOTÕES DE AÇÃO DINÂMICOS CONFORME ESTADO DO NOVO SGA -->
+      <div class="action-button-group" id="action-buttons-container">
+        <!-- ESTADO 1: IDLE -->
+        <div id="group-idle" style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <button class="btn-action-start" onclick="doctorCallNext()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+            CHAMAR PRÓXIMO PACIENTE (Espaço)
+          </button>
+          <div class="btn-sub-row">
+            <button class="btn-sub" onclick="doctorCallPriority()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              Chamar Prioritário (P)
+            </button>
+            <button class="btn-sub" onclick="alert('Selecione uma senha diretamente na fila ao lado para chamada manual.')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              Chamada Manual
+            </button>
+          </div>
+        </div>
 
-        <div class="btn-sub-row">
-          <button class="btn-sub" onclick="doctorRepeat()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            Rechamar (R)
+        <!-- ESTADO 2: CALLED (CHAMANDO NA TV) -->
+        <div id="group-called" style="display: none; flex-direction: column; gap: 0.85rem;">
+          <button class="btn-action-start" onclick="startAttendance()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            INICIAR ATENDIMENTO (I)
           </button>
-          <button class="btn-sub" onclick="doctorCallPriority()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            Chamar Prioritário (P)
+          <div class="btn-sub-row">
+            <button class="btn-sub" onclick="doctorRepeat()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Rechamar no Painel (R)
+            </button>
+            <button class="btn-danger-sub" onclick="markNoShow()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Não Compareceu (N)
+            </button>
+          </div>
+        </div>
+
+        <!-- ESTADO 3: IN_SERVICE (EM CONSULTA) -->
+        <div id="group-inservice" style="display: none; flex-direction: column; gap: 0.85rem;">
+          <button class="btn-action-finish" onclick="finishAndCallNext()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/><line x1="23" x2="23" y1="4" y2="20"/></svg>
+            ENCERRAR E CHAMAR PRÓXIMO (Enter)
           </button>
+          <div class="btn-sub-row">
+            <button class="btn-sub" onclick="finishAttendance()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Encerrar Consulta (E)
+            </button>
+            <button class="btn-sub" onclick="transferPatient()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18 6-6-6-6"/><path d="M3 12h18"/></svg>
+              Encaminhar Setor (T)
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- LEGENDA DE ATALHOS -->
+      <!-- LEGENDA DE ATALHOS NOVO SGA -->
       <div class="keyboard-legend">
-        <span><span class="kbd-key">Espaço</span> Próximo</span>
+        <span><span class="kbd-key">Espaço</span> Chamar</span>
+        <span><span class="kbd-key">I</span> Iniciar</span>
         <span><span class="kbd-key">R</span> Rechamar</span>
-        <span><span class="kbd-key">P</span> Prioridade</span>
+        <span><span class="kbd-key">E</span> Encerrar</span>
+        <span><span class="kbd-key">Enter</span> Encerrar+Próx</span>
       </div>
     </div>
 
@@ -545,18 +637,202 @@
   </main>
 
   <script>
-    // 1. SINCRONISMO CROSS-TAB (BROADCASTCHANNEL)
+    // =========================================================
+    // MOTOR DE ATENDIMENTO NOVO SGA (FLUXO REAL DE 3 ESTADOS)
+    // IDLE -> CALLED -> IN_SERVICE -> FINISH
+    // =========================================================
+
     const queueChannel = new BroadcastChannel('vertyx_health_queue');
 
-    // Escuta novas senhas emitidas no Totem de autoatendimento (Tela 1)
-    queueChannel.onmessage = (event) => {
-      const data = event.data;
-      if (!data) return;
+    let currentTicket = null;
+    let currentPatient = null;
+    let currentTriage = null;
+    let attendanceState = 'IDLE'; // 'IDLE' | 'CALLED' | 'IN_SERVICE'
+    let timerInterval = null;
+    let elapsedSeconds = 0;
 
-      if (data.type === 'NEW_TICKET') {
-        addNewTicketToDoctorQueue(data);
+    function setAttendanceState(state) {
+      attendanceState = state;
+      const pill = document.getElementById('desk-status-pill');
+      const statusText = document.getElementById('doc-status-text');
+      const gIdle = document.getElementById('group-idle');
+      const gCalled = document.getElementById('group-called');
+      const gInService = document.getElementById('group-inservice');
+
+      if (state === 'IDLE') {
+        pill.className = 'status-pill status-idle';
+        pill.textContent = '● Consultório Livre';
+        statusText.textContent = 'Nenhum Paciente em Atendimento';
+        document.getElementById('doc-ticket').textContent = '---';
+        document.getElementById('doc-name').textContent = 'Aguardando chamada de senha...';
+        document.getElementById('doc-triage-label').textContent = '---';
+        document.getElementById('elapsed-time').textContent = '00:00';
+
+        gIdle.style.display = 'flex';
+        gCalled.style.display = 'none';
+        gInService.style.display = 'none';
+
+        clearInterval(timerInterval);
+        elapsedSeconds = 0;
+        currentTicket = null;
+        currentPatient = null;
+      } else if (state === 'CALLED') {
+        pill.className = 'status-pill status-calling';
+        pill.textContent = '🔔 Chamando na TV...';
+        statusText.textContent = 'Paciente Chamado · Aguardando Entrada no Consultório';
+
+        gIdle.style.display = 'none';
+        gCalled.style.display = 'flex';
+        gInService.style.display = 'none';
+
+        clearInterval(timerInterval);
+        elapsedSeconds = 0;
+        document.getElementById('elapsed-time').textContent = '00:00';
+      } else if (state === 'IN_SERVICE') {
+        pill.className = 'status-pill status-inservice';
+        pill.textContent = '⏱ Em Consulta Médica';
+        statusText.textContent = 'Paciente em Atendimento no Consultório 03';
+
+        gIdle.style.display = 'none';
+        gCalled.style.display = 'none';
+        gInService.style.display = 'flex';
+
+        clearInterval(timerInterval);
+        elapsedSeconds = 0;
+        timerInterval = setInterval(() => {
+          elapsedSeconds++;
+          const m = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+          const s = String(elapsedSeconds % 60).padStart(2, '0');
+          document.getElementById('elapsed-time').textContent = `${m}:${s}`;
+        }, 1000);
       }
-    };
+    }
+
+    // 1. CHAMAR PRÓXIMO DA FILA (ESTADO: CALLED)
+    function doctorCallNext() {
+      const queue = document.getElementById('doc-queue');
+      const first = queue.firstElementChild;
+      if (!first) {
+        alert('Não há pacientes aguardando na fila deste consultório.');
+        return;
+      }
+
+      const ticket = first.querySelector('.ticket-badge').textContent;
+      const name = first.querySelector('.patient-details h4').textContent;
+      const triageEl = first.querySelector('.triage-indicator');
+      const color = triageEl.classList.contains('yellow') ? 'yellow' : triageEl.classList.contains('red') ? 'red' : 'green';
+
+      currentTicket = ticket;
+      currentPatient = name;
+      currentTriage = color;
+
+      document.getElementById('doc-ticket').textContent = ticket;
+      document.getElementById('doc-name').textContent = name;
+      document.getElementById('doc-triage-label').textContent = triageEl.textContent;
+
+      first.remove();
+      updateQueueTotal();
+
+      setAttendanceState('CALLED');
+      dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", color, `Classificação Manchester: ${triageEl.textContent}`);
+    }
+
+    // 2. INICIAR ATENDIMENTO (ESTADO: IN_SERVICE)
+    function startAttendance() {
+      if (!currentTicket) return;
+      setAttendanceState('IN_SERVICE');
+    }
+
+    // 3. RECHAMAR NO PAINEL
+    function doctorRepeat() {
+      if (!currentTicket) return;
+      dispatchCallEvent(currentTicket, currentPatient, "Consultório 03", "Dra. Beatriz Carvalho", currentTriage, "Rechamada de Atendimento");
+    }
+
+    // 4. NÃO COMPARECEU (RETORNA A IDLE)
+    function markNoShow() {
+      if (!currentTicket) return;
+      if (confirm(`Confirmar ausência do paciente ${currentPatient} (${currentTicket})? A senha será registrada como Não Compareceu.`)) {
+        queueChannel.postMessage({
+          type: 'NO_SHOW',
+          ticket: currentTicket,
+          room: "Consultório 03"
+        });
+        setAttendanceState('IDLE');
+      }
+    }
+
+    // 5. ENCERRAR ATENDIMENTO
+    function finishAttendance() {
+      if (!currentTicket) return;
+      alert(`Consulta do paciente ${currentPatient} (${currentTicket}) encerrada com sucesso no e-SUS APS! Tempo de atendimento: ${document.getElementById('elapsed-time').textContent}`);
+      setAttendanceState('IDLE');
+    }
+
+    // 6. ENCERRAR E CHAMAR PRÓXIMO (O PODEROSO ATALHO DO NOVO SGA)
+    function finishAndCallNext() {
+      if (!currentTicket) {
+        doctorCallNext();
+        return;
+      }
+      finishAttendance();
+      setTimeout(doctorCallNext, 300);
+    }
+
+    // 7. ENCAMINHAR / TRANSFERIR SETOR
+    function transferPatient() {
+      if (!currentTicket) return;
+      const dest = prompt("Selecione o setor de destino para transferir a senha:\n1 - Sala de Vacinas\n2 - Farmácia Básica\n3 - Coleta e Exames\n4 - Regulação / Marcação", "2");
+      if (dest) {
+        const sectors = { "1": "Sala de Vacinas", "2": "Farmácia Básica", "3": "Coleta e Exames", "4": "Regulação e Exames" };
+        const target = sectors[dest] || "Farmácia Básica";
+        alert(`Paciente ${currentPatient} transferido(a) com sucesso para a fila da ${target}!`);
+        setAttendanceState('IDLE');
+      }
+    }
+
+    // 8. CHAMAR PRIORITÁRIO
+    function doctorCallPriority() {
+      const queue = document.getElementById('doc-queue');
+      const priorityCard = Array.from(queue.children).find(card => card.querySelector('.triage-indicator.yellow') || card.querySelector('.ticket-badge').textContent.startsWith('PRE'));
+      if (priorityCard) {
+        const btn = priorityCard.querySelector('.btn-row-call');
+        btn.click();
+      } else {
+        doctorCallNext();
+      }
+    }
+
+    function callSpecific(btn, ticket, name, triage) {
+      currentTicket = ticket;
+      currentPatient = name;
+      currentTriage = triage;
+
+      document.getElementById('doc-ticket').textContent = ticket;
+      document.getElementById('doc-name').textContent = name;
+      document.getElementById('doc-triage-label').textContent = triage.toUpperCase();
+
+      const card = btn.closest('.queue-card');
+      if (card) card.remove();
+      updateQueueTotal();
+
+      setAttendanceState('CALLED');
+      const color = triage === 'red' ? 'red' : triage === 'yellow' ? 'yellow' : 'green';
+      const label = `Classificação Manchester: ${triage.toUpperCase()}`;
+      dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", color, label);
+    }
+
+    function dispatchCallEvent(ticket, name, room, doctor, color, label) {
+      queueChannel.postMessage({
+        type: 'CALL_TICKET',
+        ticket: ticket,
+        patient: name,
+        room: room,
+        doctor: doctor,
+        triageColor: color,
+        triageLabel: label
+      });
+    }
 
     function addNewTicketToDoctorQueue(data) {
       const queue = document.getElementById('doc-queue');
@@ -595,82 +871,48 @@
       updateQueueTotal();
     }
 
-    function dispatchCallEvent(ticket, name, room, doctor, color, label) {
-      queueChannel.postMessage({
-        type: 'CALL_TICKET',
-        ticket: ticket,
-        patient: name,
-        room: room,
-        doctor: doctor,
-        triageColor: color,
-        triageLabel: label
-      });
-    }
-
-    function callSpecific(btn, ticket, name, triage) {
-      document.getElementById('doc-ticket').textContent = ticket;
-      document.getElementById('doc-name').textContent = name;
-      const card = btn.closest('.queue-card');
-      if (card) card.remove();
-      updateQueueTotal();
-
-      const color = triage === 'red' ? 'red' : triage === 'yellow' ? 'yellow' : 'green';
-      const label = `Classificação Manchester: ${triage.toUpperCase()}`;
-      dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", color, label);
-    }
-
-    function doctorCallNext() {
-      const queue = document.getElementById('doc-queue');
-      const first = queue.firstElementChild;
-      if (first) {
-        const ticket = first.querySelector('.ticket-badge').textContent;
-        const name = first.querySelector('.patient-details h4').textContent;
-        const triageEl = first.querySelector('.triage-indicator');
-        const color = triageEl.classList.contains('yellow') ? 'yellow' : triageEl.classList.contains('red') ? 'red' : 'green';
-
-        document.getElementById('doc-ticket').textContent = ticket;
-        document.getElementById('doc-name').textContent = name;
-        first.remove();
-        updateQueueTotal();
-
-        dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", color, `Classificação Manchester: ${triageEl.textContent}`);
+    queueChannel.onmessage = (event) => {
+      const data = event.data;
+      if (!data) return;
+      if (data.type === 'NEW_TICKET') {
+        addNewTicketToDoctorQueue(data);
       }
-    }
-
-    function doctorRepeat() {
-      const ticket = document.getElementById('doc-ticket').textContent;
-      const name = document.getElementById('doc-name').textContent;
-      dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", "yellow", "Classificação Manchester: Amarelo (Urgente)");
-    }
-
-    function doctorCallPriority() {
-      // Procura primeiro prioritário
-      const queue = document.getElementById('doc-queue');
-      const priorityCard = Array.from(queue.children).find(card => card.querySelector('.triage-indicator.yellow') || card.querySelector('.ticket-badge').textContent.startsWith('PRE'));
-      if (priorityCard) {
-        const btn = priorityCard.querySelector('.btn-row-call');
-        btn.click();
-      } else {
-        doctorCallNext();
-      }
-    }
+    };
 
     function updateQueueTotal() {
       const count = document.getElementById('doc-queue').children.length;
       document.getElementById('queue-total').textContent = `${count} Pacientes`;
     }
 
-    // Atalhos de teclado
+    // ATALHOS DE TECLADO NOVO SGA
     window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
       if (e.code === 'Space') {
         e.preventDefault();
-        doctorCallNext();
+        if (attendanceState === 'IDLE') {
+          doctorCallNext();
+        } else if (attendanceState === 'CALLED') {
+          startAttendance();
+        }
+      } else if (e.key.toLowerCase() === 'i') {
+        if (attendanceState === 'CALLED') startAttendance();
       } else if (e.key.toLowerCase() === 'r') {
         doctorRepeat();
+      } else if (e.key.toLowerCase() === 'e') {
+        if (attendanceState === 'IN_SERVICE') finishAttendance();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (attendanceState === 'IN_SERVICE') finishAndCallNext();
       } else if (e.key.toLowerCase() === 'p') {
-        doctorCallPriority();
+        if (attendanceState === 'IDLE') doctorCallPriority();
+      } else if (e.key.toLowerCase() === 'n') {
+        if (attendanceState === 'CALLED') markNoShow();
       }
     });
+
+    // Inicia em estado IDLE padrão
+    setAttendanceState('IDLE');
   </script>
 </body>
 </html>
