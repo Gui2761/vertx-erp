@@ -66,6 +66,7 @@ urlpatterns = [
     path('saude/regulacao/', phase_g_views.health_regulation, name='saude_regulation'),
     path('saude/painel-chamadas/', phase_g_views.health_call_panel, name='saude_call_panel'),
     path('saude/painel-chamadas/tv/', phase_g_views.health_call_panel_tv, name='saude_call_panel_tv'),
+    path('saude/totem/', phase_g_views.health_totem, name='saude_totem'),
     path('saude/georreferenciamento-acs/', phase_g_views.health_acs_map, name='saude_acs_map'),
     path('cidadao/central/', phase_e_views.citizen_portal_inbox, name='citizen_portal_inbox'),
     path('saude/manifest.webmanifest', phase_g_views.health_manifest, name='saude_manifest'),

@@ -866,6 +866,12 @@ def health_call_panel_tv(request):
 
 
 @require_GET
+def health_totem(request):
+    """Totem Touchscreen de Autoatendimento para emissão de senhas de pacientes (Edital Brejo Grande)."""
+    return render(request, 'rh_municipal/health_totem.html')
+
+
+@require_GET
 def health_call_panel(request):
     """Console de Operação do Médico e Recepção da UBS (Fila em Tempo Real)."""
     context = _context(

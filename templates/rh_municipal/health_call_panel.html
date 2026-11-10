@@ -391,6 +391,18 @@
 </head>
 <body>
 
+  <!-- BARRA SUPERIOR DE TROCA DE TELAS (TRIAD HUB) -->
+  <div class="triad-nav-bar" style="background: rgba(11, 17, 32, 0.95); border-bottom: 1px solid var(--border-color); padding: 0.5rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 1000; position: relative;">
+    <div style="font-size: 0.78rem; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px;">
+      ● Ecossistema Hospitalar de Senhas
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="/gestao-publica/saude/totem/" target="_blank" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #cbd5e1; padding: 0.35rem 0.85rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; text-decoration: none;">1. Totem de Entrada ↗</a>
+      <a href="/gestao-publica/saude/painel-chamadas/tv/" target="_blank" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #cbd5e1; padding: 0.35rem 0.85rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; text-decoration: none;">2. SmartTV da Sala ↗</a>
+      <a href="/gestao-publica/saude/painel-chamadas/" style="background: #0284c7; border: 1px solid #0284c7; color: #fff; padding: 0.35rem 0.85rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; text-decoration: none;">3. Console do Médico</a>
+    </div>
+  </div>
+
   <!-- TOP BAR -->
   <header class="top-bar">
     <div class="brand-group">
@@ -551,12 +563,78 @@
   </main>
 
   <script>
+    // 1. SINCRONISMO CROSS-TAB (BROADCASTCHANNEL)
+    const queueChannel = new BroadcastChannel('vertyx_health_queue');
+
+    // Escuta novas senhas emitidas no Totem de autoatendimento (Tela 1)
+    queueChannel.onmessage = (event) => {
+      const data = event.data;
+      if (!data) return;
+
+      if (data.type === 'NEW_TICKET') {
+        addNewTicketToDoctorQueue(data);
+      }
+    };
+
+    function addNewTicketToDoctorQueue(data) {
+      const queue = document.getElementById('doc-queue');
+      const card = document.createElement('div');
+      card.className = 'queue-card';
+      card.style.borderColor = '#38bdf8';
+      card.style.boxShadow = '0 0 15px rgba(56, 189, 248, 0.3)';
+
+      const isPriority = data.prefix === 'PRE';
+      const triageClass = isPriority ? 'yellow' : 'green';
+      const triageText = isPriority ? 'Amarelo' : 'Verde';
+
+      card.innerHTML = `
+        <div class="patient-col">
+          <span class="ticket-badge" style="color:#38bdf8; border-color:#38bdf8;">${data.ticket}</span>
+          <div class="patient-details">
+            <h4>${data.service}</h4>
+            <div class="patient-meta">
+              <span>Emitido no Totem</span>
+              <span>Horário: ${data.time}</span>
+              <span>Aguardando Chamada</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap: 1rem;">
+          <span class="triage-indicator ${triageClass}">${triageText}</span>
+          <button class="btn-row-call" onclick="callSpecific(this, '${data.ticket}', '${data.service}', '${triageClass}')">Chamar</button>
+        </div>
+      `;
+
+      if (isPriority) {
+        queue.insertBefore(card, queue.firstChild);
+      } else {
+        queue.appendChild(card);
+      }
+      updateQueueTotal();
+    }
+
+    function dispatchCallEvent(ticket, name, room, doctor, color, label) {
+      queueChannel.postMessage({
+        type: 'CALL_TICKET',
+        ticket: ticket,
+        patient: name,
+        room: room,
+        doctor: doctor,
+        triageColor: color,
+        triageLabel: label
+      });
+    }
+
     function callSpecific(btn, ticket, name, triage) {
       document.getElementById('doc-ticket').textContent = ticket;
       document.getElementById('doc-name').textContent = name;
       const card = btn.closest('.queue-card');
       if (card) card.remove();
       updateQueueTotal();
+
+      const color = triage === 'red' ? 'red' : triage === 'yellow' ? 'yellow' : 'green';
+      const label = `Classificação Manchester: ${triage.toUpperCase()}`;
+      dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", color, label);
     }
 
     function doctorCallNext() {
@@ -565,21 +643,34 @@
       if (first) {
         const ticket = first.querySelector('.ticket-badge').textContent;
         const name = first.querySelector('.patient-details h4').textContent;
+        const triageEl = first.querySelector('.triage-indicator');
+        const color = triageEl.classList.contains('yellow') ? 'yellow' : triageEl.classList.contains('red') ? 'red' : 'green';
+
         document.getElementById('doc-ticket').textContent = ticket;
         document.getElementById('doc-name').textContent = name;
         first.remove();
         updateQueueTotal();
+
+        dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", color, `Classificação Manchester: ${triageEl.textContent}`);
       }
     }
 
     function doctorRepeat() {
       const ticket = document.getElementById('doc-ticket').textContent;
       const name = document.getElementById('doc-name').textContent;
-      alert(`Rechamando na SmartTV da sala de espera:\nSenha: ${ticket} · ${name}`);
+      dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", "yellow", "Classificação Manchester: Amarelo (Urgente)");
     }
 
     function doctorCallPriority() {
-      alert("Prioridade absoluta chamada no consultório!");
+      // Procura primeiro prioritário
+      const queue = document.getElementById('doc-queue');
+      const priorityCard = Array.from(queue.children).find(card => card.querySelector('.triage-indicator.yellow') || card.querySelector('.ticket-badge').textContent.startsWith('PRE'));
+      if (priorityCard) {
+        const btn = priorityCard.querySelector('.btn-row-call');
+        btn.click();
+      } else {
+        doctorCallNext();
+      }
     }
 
     function updateQueueTotal() {
