@@ -857,3 +857,32 @@ def health_worker(request):
     response['Service-Worker-Allowed'] = '/gestao-publica/saude/'
     response['Cache-Control'] = 'no-store'
     return response
+
+
+@require_GET
+def health_call_panel_tv(request):
+    """Tela Fullscreen para SmartTV de sala de espera com sintetizador de voz nativo (Edital Brejo Grande)."""
+    return render(request, 'rh_municipal/health_call_panel_tv.html')
+
+
+@login_required
+@require_GET
+def health_call_panel(request):
+    """Painel de controle e monitoramento do Totem de Atendimento."""
+    return render(request, 'rh_municipal/health_call_panel_tv.html')
+
+
+@require_GET
+def health_acs_map(request):
+    """Georreferenciamento territorial e visitas dos ACS com Leaflet.js (Edital Brejo Grande)."""
+    context = _context(
+        request,
+        can_health_dashboard=True,
+        can_health_field=True,
+    ) if request.user.is_authenticated else {}
+    context.update({
+        'title': 'Georreferenciamento ACS',
+        'subtitle': 'Monitoramento territorial de visitas domiciliares da Atenção Primária',
+    })
+    return render(request, 'rh_municipal/health_acs_map.html', context)
+

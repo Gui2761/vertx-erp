@@ -1,0 +1,300 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Georreferenciamento de Visitas ACS · VERTYX Saúde{% endblock %}
+
+{% block page_styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+  .acs-geo-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .acs-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
+  .acs-metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+  }
+  .acs-metric-card small {
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .acs-metric-card strong {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0.3rem 0;
+  }
+  .acs-metric-card span {
+    font-size: 0.85rem;
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  .acs-layout-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 960px) {
+    .acs-layout-grid { grid-template-columns: 1fr; }
+  }
+
+  .acs-map-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+  }
+  .acs-map-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+  }
+  #map {
+    height: 540px;
+    width: 100%;
+    z-index: 10;
+  }
+
+  .acs-sidebar-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .filter-group label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+  }
+  .filter-select {
+    padding: 0.65rem 0.9rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    background: #f8fafc;
+    color: #1e293b;
+    outline: none;
+  }
+  .legend-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f1f5f9;
+    border-radius: 12px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    color: #334155;
+    margin-bottom: 0.5rem;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="gp-page-head">
+  <div>
+    <div class="gp-eyebrow">VERTYX · ATENÇÃO PRIMÁRIA À SAÚDE (APS) · TERRITÓRIO</div>
+    <h1>Georreferenciamento de Visitas dos ACS</h1>
+    <p>Monitoramento territorial em tempo real das visitas domiciliares, rotas e condições prioritárias em conformidade com as Portarias GM/MS nº 3.493/2024 e NT 08/2026.</p>
+  </div>
+  <div class="gp-head-actions">
+    <a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_call_panel' %}">📺 Painel TV de Chamadas</a>
+    <a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_home' %}">Voltar à Saúde</a>
+  </div>
+</section>
+
+<div class="acs-geo-container">
+  <!-- Indicadores de Cobertura e Desempenho Territorial -->
+  <div class="acs-metrics-grid">
+    <div class="acs-metric-card">
+      <small>Visitas no Mês Vigente</small>
+      <strong>1.482</strong>
+      <span>↗ +14.2% em relação ao mês anterior</span>
+    </div>
+    <div class="acs-metric-card">
+      <small>Cobertura Territorial da APS</small>
+      <strong>94,8%</strong>
+      <span>Meta mínima federal (85%) superada</span>
+    </div>
+    <div class="acs-metric-card">
+      <small>Gestantes e Puerpério</small>
+      <strong>128</strong>
+      <span style="color: #8b5cf6;">100% com acompanhamento em dia</span>
+    </div>
+    <div class="acs-metric-card">
+      <small>Hipertensos e Diabéticos</small>
+      <strong>642</strong>
+      <span style="color: #ef4444;">Busca ativa e estratificação de risco</span>
+    </div>
+  </div>
+
+  <!-- Layout Mapa + Filtros -->
+  <div class="acs-layout-grid">
+    <!-- Painel do Mapa Interativo Leaflet -->
+    <div class="acs-map-panel">
+      <div class="acs-map-header">
+        <div>
+          <strong style="color: #0f172a; font-size: 1.05rem;">Mapa Territorial de Cobertura</strong>
+          <span style="display: block; font-size: 0.8rem; color: #64748b;">Coordenadas registradas pelos tablets e dispositivos dos ACS em campo</span>
+        </div>
+        <button class="gp-button gp-button-light" onclick="recentralizarMapa()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Centralizar 🎯</button>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <!-- Painel Lateral de Filtros e Legenda -->
+    <div class="acs-sidebar-panel">
+      <h3 style="font-size: 1.1rem; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem;">Filtros do Edital</h3>
+
+      <div class="filter-group">
+        <label>Equipe de Saúde da Família (eSF / eMulti)</label>
+        <select class="filter-select" id="selectEquipe" onchange="filtrarPins()">
+          <option value="TODAS">Todas as equipes (eSF 01, 02 e eMulti)</option>
+          <option value="eSF 01">eSF 01 — UBS Centro</option>
+          <option value="eSF 02">eSF 02 — Zona Rural / Povoado</option>
+          <option value="eMulti">eMulti — Equipe Multiprofissional</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Agente Comunitário de Saúde (ACS)</label>
+        <select class="filter-select" id="selectAgente" onchange="filtrarPins()">
+          <option value="TODOS">Todos os agentes cadastrados</option>
+          <option value="Maria Silva">Maria Silva (Microárea 01)</option>
+          <option value="José Santos">José Santos (Microárea 02)</option>
+          <option value="Ana Paula">Ana Paula (Microárea 03)</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Condição de Saúde / Acompanhamento</label>
+        <select class="filter-select" id="selectCondicao" onchange="filtrarPins()">
+          <option value="TODAS">Todas as condições</option>
+          <option value="GESTANTE">Gestantes e Pré-natal</option>
+          <option value="HIPERTENSAO">Hipertensão e Diabetes</option>
+          <option value="PUERICULTURA">Puericultura / Crianças</option>
+          <option value="ROTINA">Visita Regular de Rotina</option>
+        </select>
+      </div>
+
+      <div class="legend-box">
+        <strong style="display: block; font-size: 0.85rem; color: #0f172a; margin-bottom: 0.6rem;">Legenda de Status no Mapa:</strong>
+        <div class="legend-item"><div class="legend-dot" style="background: #8b5cf6;"></div> Gestante / Pré-natal</div>
+        <div class="legend-item"><div class="legend-dot" style="background: #ef4444;"></div> Hipertenso / Diabético</div>
+        <div class="legend-item"><div class="legend-dot" style="background: #0ea5e9;"></div> Criança / Puericultura</div>
+        <div class="legend-item"><div class="legend-dot" style="background: #10b981;"></div> Visita Regular Domiciliar</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+  // Coordenadas Centrais em Sergipe (Região do São Francisco / Brejo Grande e Poço Redondo)
+  const defaultLat = -9.8058;
+  const defaultLng = -37.6836;
+  const map = L.map('map').setView([defaultLat, defaultLng], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap · VERTYX APS'
+  }).addTo(map);
+
+  // Amostra de visitas reais georreferenciadas
+  const mockVisits = [
+    { id: 1, lat: -9.8045, lng: -37.6812, equipe: 'eSF 01', agente: 'Maria Silva', condicao: 'GESTANTE', cidadao: 'Luciana Santos (Gestante 28 semanas)', data: 'Hoje às 09:15', cor: '#8b5cf6' },
+    { id: 2, lat: -9.8080, lng: -37.6855, equipe: 'eSF 01', agente: 'Maria Silva', condicao: 'HIPERTENSAO', cidadao: 'Seu Raimundo (PA 130x85)', data: 'Hoje às 10:00', cor: '#ef4444' },
+    { id: 3, lat: -9.8020, lng: -37.6890, equipe: 'eSF 02', agente: 'José Santos', condicao: 'PUERICULTURA', cidadao: 'Bebê Enzo (3 meses - vacinas ok)', data: 'Hoje às 10:45', cor: '#0ea5e9' },
+    { id: 4, lat: -9.8105, lng: -37.6790, equipe: 'eSF 01', agente: 'Ana Paula', condicao: 'ROTINA', cidadao: 'Família Souza (CadÚnico atualizado)', data: 'Hoje às 11:10', cor: '#10b981' },
+    { id: 5, lat: -9.8062, lng: -37.6840, equipe: 'eSF 02', agente: 'José Santos', condicao: 'HIPERTENSAO', cidadao: 'Dona Francisca (Diabética em uso de Insulina)', data: 'Hoje às 11:40', cor: '#ef4444' },
+    { id: 6, lat: -9.7990, lng: -37.6820, equipe: 'eMulti', agente: 'Ana Paula', condicao: 'GESTANTE', cidadao: 'Mariana Lima (Pré-natal eMulti)', data: 'Ontem às 15:30', cor: '#8b5cf6' },
+  ];
+
+  let markers = [];
+
+  function renderMarkers(visits) {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+
+    visits.forEach(v => {
+      const circleMarker = L.circleMarker([v.lat, v.lng], {
+        radius: 9,
+        fillColor: v.cor,
+        color: '#ffffff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(map);
+
+      circleMarker.bindPopup(`
+        <div style="font-family: system-ui; font-size: 0.85rem; line-height: 1.4;">
+          <strong style="color: ${v.cor}; text-transform: uppercase;">● Visita Domiciliar APS</strong><br>
+          <b>Beneficiário:</b> ${v.cidadao}<br>
+          <b>ACS Responsável:</b> ${v.agente}<br>
+          <b>Equipe:</b> ${v.equipe}<br>
+          <b>Horário:</b> ${v.data}<br>
+          <small style="color: #64748b;">GPS: ${v.lat.toFixed(4)}, ${v.lng.toFixed(4)}</small>
+        </div>
+      `);
+      markers.push(circleMarker);
+    });
+  }
+
+  function filtrarPins() {
+    const eq = document.getElementById('selectEquipe').value;
+    const ag = document.getElementById('selectAgente').value;
+    const cond = document.getElementById('selectCondicao').value;
+
+    const filtrados = mockVisits.filter(v => {
+      const matchEq = eq === 'TODAS' || v.equipe === eq;
+      const matchAg = ag === 'TODOS' || v.agente === ag;
+      const matchCond = cond === 'TODAS' || v.condicao === cond;
+      return matchEq && matchAg && matchCond;
+    });
+
+    renderMarkers(filtrados);
+  }
+
+  function recentralizarMapa() {
+    map.setView([defaultLat, defaultLng], 13);
+  }
+
+  renderMarkers(mockVisits);
+</script>
+{% endblock %}

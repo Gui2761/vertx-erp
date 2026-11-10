@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Chamadas UBS · VERTYX Saúde Pública</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090f1d;
+      --card-bg: rgba(18, 27, 47, 0.85);
+      --card-border: rgba(45, 62, 98, 0.6);
+      --accent-blue: #2563eb;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-gold: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: radial-gradient(circle at 50% 20%, #132240 0%, var(--bg) 80%);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.2rem 2.5rem;
+      background: rgba(9, 15, 29, 0.7);
+      border-bottom: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand-badge {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.1rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+    .header-title h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .header-title p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .header-time {
+      text-align: right;
+    }
+    .clock-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem;
+      font-weight: 900;
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+    .date-display {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: capitalize;
+    }
+
+    /* Main Grid */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 2rem;
+      padding: 2rem 2.5rem;
+    }
+
+    /* Central Call Card */
+    .current-call-card {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(16px);
+      transition: all 0.3s ease;
+    }
+    .current-call-card.calling {
+      animation: pulseHighlight 1s infinite alternate;
+      border-color: #38bdf8;
+    }
+    @keyframes pulseHighlight {
+      0% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
+      100% { box-shadow: 0 0 50px rgba(56, 189, 248, 0.8); }
+    }
+    .call-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.4rem;
+      border-radius: 9999px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 1.5rem;
+      background: rgba(37, 99, 235, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      color: #60a5fa;
+    }
+    .call-type-badge.prioritario {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+    }
+    .call-ticket-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -2px;
+      color: #ffffff;
+      text-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      margin-bottom: 1rem;
+    }
+    .call-destiny-label {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .call-destiny-room {
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: #38bdf8;
+      letter-spacing: -1px;
+      margin-bottom: 0.5rem;
+    }
+    .call-doctor-name {
+      font-size: 1.3rem;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    /* History / Side Column */
+    .history-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(16px);
+    }
+    .history-header {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.8rem;
+    }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      flex: 1;
+    }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 1.2rem 1.5rem;
+      border-radius: 16px;
+      transition: background 0.2s ease;
+    }
+    .history-ticket {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+    .history-meta {
+      text-align: right;
+    }
+    .history-room {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+    .history-time {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Bottom News Ticker / Footer */
+    footer {
+      background: #030712;
+      border-top: 1px solid var(--card-border);
+      padding: 0.8rem 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      font-size: 0.95rem;
+    }
+    .ticker-tag {
+      background: #ef4444;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .ticker-content {
+      flex: 1;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .ticker-content span {
+      display: inline-block;
+      animation: tickerMarquee 35s linear infinite;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+    @keyframes tickerMarquee {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    /* Quick Test / Control Float Panel */
+    .controls-panel {
+      position: fixed;
+      bottom: 4.5rem;
+      right: 2.5rem;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid #38bdf8;
+      border-radius: 16px;
+      padding: 1rem 1.2rem;
+      display: flex;
+      gap: 0.8rem;
+      align-items: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+      z-index: 100;
+      opacity: 0.2;
+      transition: opacity 0.3s ease;
+    }
+    .controls-panel:hover {
+      opacity: 1;
+    }
+    .ctrl-btn {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+    .ctrl-btn:hover { background: #1d4ed8; }
+    .ctrl-btn.gold { background: #d97706; }
+    .ctrl-btn.gold:hover { background: #b45309; }
+    .ctrl-btn.secondary { background: #334155; }
+    .ctrl-btn.secondary:hover { background: #475569; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-brand">
+      <div class="brand-badge">VERTYX SAÚDE</div>
+      <div class="header-title">
+        <h1>FUNDO MUNICIPAL DE SAÚDE · SERGIPE</h1>
+        <p>Unidade Básica de Saúde Dr. João da Silva · e-SUS APS Integrado</p>
+      </div>
+    </div>
+    <div class="header-time">
+      <div class="clock-display" id="clockDisplay">--:--:--</div>
+      <div class="date-display" id="dateDisplay">Carregando data...</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Card Central de Chamada Atual -->
+    <section class="current-call-card" id="callCard">
+      <div class="call-type-badge prioritario" id="callType">Atendimento Prioritário</div>
+      <div class="call-ticket-number" id="ticketNumber">P-015</div>
+      <div class="call-destiny-label">Dirija-se ao</div>
+      <div class="call-destiny-room" id="roomNumber">Consultório 03</div>
+      <div class="call-doctor-name" id="doctorName">Dr. Carlos Eduardo · Clínica Médica</div>
+    </section>
+
+    <!-- Histórico de Chamadas Anteriores -->
+    <aside class="history-card">
+      <div class="history-header">
+        <span>Últimas Chamadas</span>
+        <span style="font-size: 0.8rem; color: #38bdf8;">Fila Ativa</span>
+      </div>
+      <div class="history-list" id="historyList">
+        <div class="history-item">
+          <div>
+            <div class="history-ticket">A-042</div>
+            <div class="history-time">Normal · há 3 min</div>
+          </div>
+          <div class="history-meta">
+            <div class="history-room">Consultório 01</div>
+            <div class="history-time">Triagem / Enfermagem</div>
+          </div>
+        </div>
+
+        <div class="history-item">
+          <div>
+            <div class="history-ticket">P-014</div>
+            <div class="history-time">Prioritário · há 7 min</div>
+          </div>
+          <div class="history-meta">
+            <div class="history-room">Consultório 02</div>
+            <div class="history-time">Pediatria</div>
+          </div>
+        </div>
+
+        <div class="history-item">
+          <div>
+            <div class="history-ticket">A-041</div>
+            <div class="history-time">Normal · há 12 min</div>
+          </div>
+          <div class="history-meta">
+            <div class="history-room">Vacinação</div>
+            <div class="history-time">Sala de Imunização</div>
+          </div>
+        </div>
+
+        <div class="history-item">
+          <div>
+            <div class="history-ticket">A-040</div>
+            <div class="history-time">Normal · há 18 min</div>
+          </div>
+          <div class="history-meta">
+            <div class="history-room">Odontologia</div>
+            <div class="history-time">eSB - Saúde Bucal</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Barra de Notícias e Campanhas da Saúde Municipal -->
+  <footer>
+    <div class="ticker-tag">Aviso da Saúde</div>
+    <div class="ticker-content">
+      <span>
+        Campanha de Vacinação contra a Influenza e COVID-19 em todas as Unidades de Saúde do Município · Horário de Atendimento das 07:00 às 17:00 · Traga seu Cartão do SUS e Documento com CPF · Exames laboratoriais de rotina de segunda a quinta-feira com agendamento prévio · VERTYX Saúde Pública integrado ao e-SUS APS e Portaria GM/MS nº 3.493/2024.
+      </span>
+    </div>
+  </footer>
+
+  <!-- Console Flutuante de Simulação (Para Apresentações Comerciais) -->
+  <div class="controls-panel" title="Painel de Controle Rápido para Demonstração">
+    <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 700;">CONTROLE:</span>
+    <button class="ctrl-btn" onclick="chamarProximo('NORMAL')">Chamar Normal</button>
+    <button class="ctrl-btn gold" onclick="chamarProximo('PRIORITARIO')">Chamar Prioritário</button>
+    <button class="ctrl-btn secondary" onclick="falarChamada(document.getElementById('ticketNumber').innerText, document.getElementById('roomNumber').innerText)">Repetir Voz 🔊</button>
+    <button class="ctrl-btn secondary" onclick="toggleFullscreen()">Tela Cheia ⛶</button>
+  </div>
+
+  <script>
+    // Relógio em tempo real
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clockDisplay').textContent = now.toLocaleTimeString('pt-BR');
+      const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      document.getElementById('dateDisplay').textContent = now.toLocaleDateString('pt-BR', options);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    let seqNormal = 43;
+    let seqPrioritario = 16;
+    const consultorios = [
+      { room: 'Consultório 01', doc: 'Dra. Aline Santos · Clínica Geral' },
+      { room: 'Consultório 02', doc: 'Dr. Roberto Maia · Pediatria' },
+      { room: 'Consultório 03', doc: 'Dr. Carlos Eduardo · Clínica Médica' },
+      { room: 'Sala de Curativos', doc: 'Equipe de Enfermagem' },
+      { room: 'Odontologia', doc: 'Dra. Fernanda Lima · eSB Saúde Bucal' }
+    ];
+
+    // Sintetizador de Voz Nativo Web Speech API
+    function falarChamada(ticket, room) {
+      if ('speechSynthesis' in window) {
+        // Bipe sonoro suave sintetizado via Web Audio API
+        tocarSinalSonoro();
+
+        setTimeout(() => {
+          window.speechSynthesis.cancel();
+          const cleanTicket = ticket.replace('-', ' ');
+          const texto = `Atenção. Senha ${cleanTicket}. Favor dirigir-se ao ${room}.`;
+          const utterance = new SpeechSynthesisUtterance(texto);
+          utterance.lang = 'pt-BR';
+          utterance.rate = 0.95;
+          utterance.pitch = 1.05;
+          window.speechSynthesis.speak(utterance);
+        }, 500);
+      }
+    }
+
+    // Sinal Sonoro "Ding-Dong" usando Web Audio API nativa
+    function tocarSinalSonoro() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        // Frequência do Ding (880Hz) seguido do Dong (587Hz)
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.6);
+      } catch (e) {
+        console.warn('AudioContext não iniciado:', e);
+      }
+    }
+
+    // Função de Chamada
+    function chamarProximo(tipo) {
+      const card = document.getElementById('callCard');
+      const ticketEl = document.getElementById('ticketNumber');
+      const typeEl = document.getElementById('callType');
+      const roomEl = document.getElementById('roomNumber');
+      const docEl = document.getElementById('doctorName');
+
+      // Guarda o chamado anterior no histórico
+      const oldTicket = ticketEl.textContent;
+      const oldRoom = roomEl.textContent;
+      adicionarAoHistorico(oldTicket, oldRoom);
+
+      let novoTicket = '';
+      if (tipo === 'PRIORITARIO') {
+        novoTicket = 'P-' + String(seqPrioritario++).padStart(3, '0');
+        typeEl.className = 'call-type-badge prioritario';
+        typeEl.textContent = 'Atendimento Prioritário';
+      } else {
+        novoTicket = 'A-' + String(seqNormal++).padStart(3, '0');
+        typeEl.className = 'call-type-badge';
+        typeEl.textContent = 'Atendimento Normal';
+      }
+
+      const sorteio = consultorios[Math.floor(Math.random() * consultorios.length)];
+      ticketEl.textContent = novoTicket;
+      roomEl.textContent = sorteio.room;
+      docEl.textContent = sorteio.doc;
+
+      // Animação de destaque
+      card.classList.add('calling');
+      setTimeout(() => card.classList.remove('calling'), 4000);
+
+      // Dispara voz
+      falarChamada(novoTicket, sorteio.room);
+    }
+
+    function adicionarAoHistorico(ticket, room) {
+      const historyList = document.getElementById('historyList');
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `
+        <div>
+          <div class="history-ticket">${ticket}</div>
+          <div class="history-time">Chamado agora</div>
+        </div>
+        <div class="history-meta">
+          <div class="history-room">${room}</div>
+          <div class="history-time">Concluído</div>
+        </div>
+      `;
+      historyList.insertBefore(item, historyList.firstChild);
+      if (historyList.children.length > 5) {
+        historyList.removeChild(historyList.lastChild);
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => alert(err.message));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+  </script>
+</body>
+</html>
