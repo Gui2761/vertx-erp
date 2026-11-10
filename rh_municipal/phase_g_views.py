@@ -865,11 +865,18 @@ def health_call_panel_tv(request):
     return render(request, 'rh_municipal/health_call_panel_tv.html')
 
 
-@login_required
 @require_GET
 def health_call_panel(request):
-    """Painel de controle e monitoramento do Totem de Atendimento."""
-    return render(request, 'rh_municipal/health_call_panel_tv.html')
+    """Console de Operação do Médico e Recepção da UBS (Fila em Tempo Real)."""
+    context = _context(
+        request,
+        can_health_dashboard=True,
+    ) if request.user.is_authenticated else {}
+    context.update({
+        'title': 'Console de Chamadas UBS',
+        'subtitle': 'Gerenciamento de fila e sincronização com SmartTV',
+    })
+    return render(request, 'rh_municipal/health_call_panel.html', context)
 
 
 @require_GET

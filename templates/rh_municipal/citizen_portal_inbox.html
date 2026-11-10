@@ -1,108 +1,232 @@
 {% extends 'rh_municipal/public_base.html' %}
-{% block title %}Central do Cidadão · Gestão Pública Digital{% endblock %}
+{% block title %}Central do Cidadão · Gestão Pública Digital Poço Redondo{% endblock %}
 
 {% block page_styles %}
 <style>
-  .citizen-container {
-    max-width: 1040px;
+  :root {
+    --gov-blue-dark: #071d41;
+    --gov-blue: #1351b4;
+    --gov-blue-vivid: #0c326f;
+    --gov-blue-light: #e7effb;
+    --gov-yellow: #ffcd07;
+    --gov-green: #168821;
+    --gov-red: #e52207;
+    --gov-gray-warm: #f8fafc;
+    --gov-text: #1b263b;
+    --gov-border: #cbd5e1;
+  }
+
+  /* Barra de Acessibilidade Padrão Gov.br */
+  .govbr-top-bar {
+    background: #000000;
+    color: #ffffff;
+    padding: 0.35rem 1.5rem;
+    font-size: 0.72rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 12px 12px 0 0;
+  }
+  .govbr-top-links {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  .govbr-top-links a {
+    color: #cbd5e1;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .govbr-top-links a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+  }
+
+  .citizen-app-container {
+    max-width: 1080px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 1.75rem;
   }
-  /* Card Gov.br Banner */
-  .govbr-auth-banner {
-    background: linear-gradient(135deg, #0b2240 0%, #1351b4 100%);
-    border-radius: 20px;
-    padding: 2rem 2.5rem;
+
+  /* Hero Banner Oficial Gov.br (Edital Poço Redondo Item 1.1.6) */
+  .govbr-hero-banner {
+    background: linear-gradient(135deg, #071d41 0%, #1351b4 100%);
+    border-radius: 0 0 24px 24px;
+    padding: 2.2rem 2.5rem;
     color: #ffffff;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 10px 25px -5px rgba(19, 81, 180, 0.3);
+    box-shadow: 0 15px 30px -10px rgba(19, 81, 180, 0.35);
+    flex-wrap: wrap;
+    gap: 1.5rem;
   }
-  .govbr-auth-copy h2 {
-    font-size: 1.6rem;
-    font-weight: 800;
-    margin-bottom: 0.4rem;
+  .govbr-brand-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .govbr-logo-text {
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: -1px;
     color: #ffffff;
   }
-  .govbr-auth-copy p {
-    color: #e0e7ff;
-    font-size: 0.95rem;
-    max-width: 540px;
+  .govbr-badge-gold {
+    background: var(--gov-yellow);
+    color: #071d41;
+    font-weight: 900;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .govbr-hero-copy h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+    color: #ffffff;
+  }
+  .govbr-hero-copy p {
+    color: #e2e8f0;
+    font-size: 0.92rem;
+    max-width: 580px;
     line-height: 1.5;
   }
-  .btn-govbr {
+
+  .btn-govbr-official {
     background: #1351b4;
     border: 2px solid #ffffff;
     color: #ffffff;
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 800;
-    padding: 0.85rem 1.75rem;
+    padding: 0.9rem 1.8rem;
     border-radius: 9999px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
     text-decoration: none;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.25s ease;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
     white-space: nowrap;
   }
-  .btn-govbr:hover {
+  .btn-govbr-official:hover {
     background: #ffffff;
     color: #1351b4;
     transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
   }
-  .govbr-icon-svg {
-    width: 22px;
-    height: 22px;
+  .btn-govbr-official:active {
+    transform: translateY(1px);
   }
 
-  /* Seletor de Município por Geolocalização */
-  .geo-municipio-card {
+  /* Cartão de Geolocalização Municipal (Itens 1.1.2 e 1.1.3 do Edital) */
+  .geo-location-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 1.25rem 1.5rem;
+    border-radius: 18px;
+    padding: 1.25rem 1.6rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    flex-wrap: wrap;
     gap: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
   }
-  .geo-badge {
-    display: inline-flex;
+  .geo-org-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    display: flex;
     align-items: center;
-    gap: 0.4rem;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+  .geo-live-pill {
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
     color: #166534;
-    padding: 0.3rem 0.75rem;
+    padding: 0.4rem 0.9rem;
     border-radius: 9999px;
     font-size: 0.8rem;
-    font-weight: 700;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
   }
 
-  /* Inbox Abas (Edital Poço Redondo Item 1.1.8) */
-  .inbox-card {
+  /* Grid de Acesso Rápido a Serviços */
+  .citizen-shortcuts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
+  .shortcut-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    border-radius: 18px;
+    padding: 1.25rem 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+  }
+  .shortcut-card:hover {
+    transform: translateY(-2px);
+    border-color: #0284c7;
+    box-shadow: 0 8px 15px -3px rgba(2, 132, 199, 0.1);
+  }
+  .shortcut-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  .shortcut-card h4 {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.2rem;
+  }
+  .shortcut-card p {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin: 0;
+  }
+
+  /* Inbox de Protocolos (Item 1.1.8 do Edital de Poço Redondo: "Em aberto" e "Arquivado") */
+  .inbox-card-wrapper {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
     overflow: hidden;
   }
-  .inbox-tabs-header {
+  .inbox-tab-bar {
     display: flex;
     border-bottom: 2px solid #f1f5f9;
+    background: #f8fafc;
     padding: 0 1.5rem;
-    background: #fafafa;
+    align-items: center;
   }
-  .inbox-tab-btn {
-    padding: 1.2rem 1.75rem;
-    font-size: 0.95rem;
-    font-weight: 700;
+  .inbox-btn-tab {
+    padding: 1.3rem 2rem;
+    font-size: 1rem;
+    font-weight: 800;
     color: #64748b;
     border: none;
     background: none;
@@ -111,94 +235,193 @@
     transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.75rem;
   }
-  .inbox-tab-btn:hover {
+  .inbox-btn-tab:hover {
     color: #0f172a;
   }
-  .inbox-tab-btn.active {
-    color: #2563eb;
-    border-bottom-color: #2563eb;
+  .inbox-btn-tab.active {
+    color: #1351b4;
+    border-bottom-color: #1351b4;
     background: #ffffff;
   }
-  .tab-badge {
-    padding: 0.2rem 0.5rem;
+  .inbox-badge-count {
+    padding: 0.2rem 0.6rem;
     border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 800;
+    font-size: 0.78rem;
+    font-weight: 900;
     background: #e2e8f0;
     color: #334155;
   }
-  .inbox-tab-btn.active .tab-badge {
+  .inbox-btn-tab.active .inbox-badge-count {
     background: #dbeafe;
-    color: #1d4ed8;
+    color: #1e40af;
   }
 
-  .inbox-tab-content {
-    padding: 1.5rem;
+  .inbox-pane-body {
+    padding: 1.75rem;
     display: none;
   }
-  .inbox-tab-content.active {
+  .inbox-pane-body.active {
     display: block;
   }
 
-  /* Item de Protocolo / Demanda */
-  .protocol-item {
+  /* Cartão de Demanda com Linha do Tempo Estilo Rastreio */
+  .demand-protocol-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
     transition: all 0.2s;
   }
-  .protocol-item:hover {
+  .demand-protocol-card:hover {
     border-color: #94a3b8;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+    box-shadow: 0 8px 16px -2px rgba(0,0,0,0.06);
   }
-  .protocol-badge {
+  .demand-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .status-tag {
     display: inline-block;
-    padding: 0.25rem 0.65rem;
-    border-radius: 6px;
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
     font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-  .badge-pending { background: #fef3c7; color: #92400e; }
-  .badge-resolved { background: #dcfce7; color: #166534; }
-  .badge-progress { background: #e0e7ff; color: #3730a3; }
+  .tag-orange { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .tag-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+  .tag-green { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+
+  /* Timeline de Tramitação */
+  .stepper-timeline {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    margin: 1.5rem 0 1rem 0;
+    padding: 0 1rem;
+  }
+  .stepper-timeline::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 2rem;
+    right: 2rem;
+    height: 3px;
+    background: #e2e8f0;
+    z-index: 1;
+  }
+  .step-node {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .step-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #64748b;
+  }
+  .step-node.completed .step-circle {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #ffffff;
+  }
+  .step-node.active .step-circle {
+    background: #1351b4;
+    border-color: #1351b4;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(19, 81, 180, 0.5);
+  }
+  .step-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    text-align: center;
+  }
+
+  /* Modal de Autenticação Gov.br Oficial */
+  .govbr-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(7, 29, 65, 0.75);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .govbr-modal-box {
+    background: #ffffff;
+    border-radius: 24px;
+    max-width: 480px;
+    width: 100%;
+    padding: 2.2rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    position: relative;
+  }
+  .modal-close-btn {
+    position: absolute;
+    top: 1.2rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: #64748b;
+    cursor: pointer;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="gp-page-head">
-  <div>
-    <div class="gp-eyebrow">VERTYX · GESTÃO PÚBLICA DIGITAL · PLATAFORMA SAAS</div>
-    <h1>Central de Atendimento ao Cidadão</h1>
-    <p>Ambiente digital unificado de relacionamento, protocolos digitais e transparência em conformidade com o Pregão Eletrônico nº 14/2026 (Poço Redondo/SE).</p>
-  </div>
-  <div class="gp-head-actions">
-    <a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:home' %}">Voltar ao Painel Geral</a>
-  </div>
-</section>
+<div class="citizen-app-container">
 
-<div class="citizen-container">
+  <!-- Barra de Acessibilidade Governamental Gov.br -->
+  <div class="govbr-top-bar">
+    <div class="govbr-top-links">
+      <span>BRASIL</span>
+      <span>·</span>
+      <a href="javascript:void(0)" onclick="alert('Atalho de acessibilidade: Ir para o conteúdo principal.')">Ir para o conteúdo (1)</a>
+      <a href="javascript:void(0)" onclick="alert('Atalho de acessibilidade: Ir para os serviços.')">Ir para o menu (2)</a>
+    </div>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <a href="javascript:void(0)" style="color: #cbd5e1; text-decoration: none;">Acessibilidade</a>
+      <a href="javascript:void(0)" style="color: #cbd5e1; text-decoration: none;">Alto Contraste ◑</a>
+    </div>
+  </div>
 
-  <!-- Banner Login Gov.br (Edital Poço Redondo Item 1.1.6) -->
-  <div class="govbr-auth-banner">
-    <div class="govbr-auth-copy">
-      <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #93c5fd; margin-bottom: 0.3rem;">Identificação Oficial</div>
-      <h2>Acesso Único com Gov.br</h2>
-      <p>Acesse seus processos, certidões e agendamentos de saúde de forma unificada utilizando a sua conta oficial do Governo Federal com proteção por CPF e biometria.</p>
+  <!-- Hero Banner Gov.br (Edital Poço Redondo Item 1.1.6) -->
+  <div class="govbr-hero-banner">
+    <div class="govbr-hero-copy">
+      <div class="govbr-brand-title">
+        <span class="govbr-logo-text">gov.br</span>
+        <span class="govbr-badge-gold">NÍVEL OURO · OFICIAL</span>
+      </div>
+      <h2>Portal de Serviços Digitais ao Cidadão</h2>
+      <p>Acesse consultas na UBS, solicite certidões, vistorias e acompanhe seus protocolos em tempo real de forma segura utilizando sua identidade digital Gov.br.</p>
     </div>
     <div>
-      <a href="javascript:void(0)" onclick="simularLoginGovBr()" class="btn-govbr">
-        <svg class="govbr-icon-svg" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="12" cy="12" r="10" fill="#fff" opacity="0.2"/>
+      <a href="javascript:void(0)" onclick="abrirModalGovBr()" class="btn-govbr-official">
+        <svg style="width: 24px; height: 24px;" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="12" r="10" fill="#ffffff" opacity="0.2"/>
           <path d="M12 6c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10.5c-2.5 0-4.5-2-4.5-4.5S9.5 7.5 12 7.5s4.5 2 4.5 4.5-2 4.5-4.5 4.5z"/>
         </svg>
         Entrar com gov.br
@@ -206,116 +429,276 @@
     </div>
   </div>
 
-  <!-- Localização e Administração Pública Selecionada (Edital Poço Redondo Item 1.1.2 e 1.1.3) -->
-  <div class="geo-municipio-card">
-    <div style="display: flex; align-items: center; gap: 1rem;">
-      <span style="font-size: 1.8rem;">📍</span>
+  <!-- Localização da Administração Municipal (Itens 1.1.2 e 1.1.3 do Edital) -->
+  <div class="geo-location-card">
+    <div style="display: flex; align-items: center; gap: 1.1rem;">
+      <div class="geo-org-avatar">🏛️</div>
       <div>
-        <strong style="font-size: 1.05rem; color: #0f172a;">Prefeitura Municipal de Poço Redondo / SE</strong>
-        <span style="display: block; font-size: 0.85rem; color: #64748b;">Administração Pública mais próxima identificada por geolocalização do dispositivo</span>
+        <strong style="font-size: 1.1rem; color: #0f172a;">Prefeitura Municipal de Poço Redondo / SE</strong>
+        <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Administração identificada por geolocalização · Atende PM, FMS (Saúde) e FMAS (Assistência)</p>
       </div>
     </div>
-    <div class="geo-badge">
-      <span>●</span> Órgão Habilitado no VERTYX
+    <div class="geo-live-pill">
+      <span>●</span> Município Habilitado no VERTYX
     </div>
   </div>
 
-  <!-- Inbox em Duas Abas: "Em aberto" e "Arquivado" (Edital Poço Redondo Item 1.1.8) -->
-  <div class="inbox-card">
-    <div class="inbox-tabs-header">
-      <button class="inbox-tab-btn active" id="btnTabAberto" onclick="trocarAba('aberto')">
-        Em aberto <span class="tab-badge">2</span>
+  <!-- Acesso Rápido aos Serviços de Saúde e Prefeitura -->
+  <div class="citizen-shortcuts-grid">
+    <a href="javascript:void(0)" onclick="abrirServico('CONSULTA')" class="shortcut-card">
+      <div class="shortcut-icon" style="background: #e0f2fe; color: #0284c7;">🩺</div>
+      <div>
+        <h4>Agendar Consulta</h4>
+        <p>UBS Centro e Clínicas</p>
+      </div>
+    </a>
+
+    <a href="javascript:void(0)" onclick="abrirServico('VACINAS')" class="shortcut-card">
+      <div class="shortcut-icon" style="background: #dcfce7; color: #16a34a;">💉</div>
+      <div>
+        <h4>Caderneta de Vacinas</h4>
+        <p>Histórico oficial SUS</p>
+      </div>
+    </a>
+
+    <a href="javascript:void(0)" onclick="abrirServico('CERTIDAO')" class="shortcut-card">
+      <div class="shortcut-icon" style="background: #fef3c7; color: #d97706;">📑</div>
+      <div>
+        <h4>Certidão Negativa (CND)</h4>
+        <p>Emissão instantânea</p>
+      </div>
+    </a>
+
+    <a href="javascript:void(0)" onclick="abrirServico('ILUMINACAO')" class="shortcut-card">
+      <div class="shortcut-icon" style="background: #f3e8ff; color: #9333ea;">💡</div>
+      <div>
+        <h4>Obras & Iluminação</h4>
+        <p>Abertura de chamado</p>
+      </div>
+    </a>
+  </div>
+
+  <!-- Inbox do Cidadão em 2 Abas: "Em aberto" e "Arquivado" (Item 1.1.8 do Edital) -->
+  <div class="inbox-card-wrapper">
+    <div class="inbox-tab-bar">
+      <button class="inbox-btn-tab active" id="tabBtnAberto" onclick="alternarAbaInbox('aberto')">
+        Em aberto <span class="inbox-badge-count">2</span>
       </button>
-      <button class="inbox-tab-btn" id="btnTabArquivado" onclick="trocarAba('arquivado')">
-        Arquivado <span class="tab-badge">4</span>
+      <button class="inbox-btn-tab" id="tabBtnArquivado" onclick="alternarAbaInbox('arquivado')">
+        Arquivado <span class="inbox-badge-count">4</span>
       </button>
-      <div style="margin-left: auto; display: flex; align-items: center;">
-        <button class="gp-button" style="padding: 0.45rem 1rem; font-size: 0.85rem;" onclick="abrirNovoProtocolo()">+ Novo Protocolo</button>
+      <div style="margin-left: auto;">
+        <button class="gp-button" style="background: #1351b4; padding: 0.55rem 1.25rem; font-size: 0.88rem; font-weight: 800;" onclick="abrirNovoChamado()">+ Nova Solicitação</button>
       </div>
     </div>
 
-    <!-- Conteúdo Aba 1: Em aberto -->
-    <div class="inbox-tab-content active" id="tabContentAberto">
-      <div class="protocol-item">
-        <div>
-          <span class="protocol-badge badge-pending">Em Análise Técnica</span>
-          <h4 style="font-size: 1.1rem; color: #0f172a; margin: 0.4rem 0;">Protocolo nº 2026.044/PM-01 · Solicitação de Manutenção de Iluminação Pública</h4>
-          <p style="font-size: 0.85rem; color: #64748b;">Avenida Alcino Alves Costa, Centro · Setor de Obras e Serviços Públicos</p>
+    <!-- Conteúdo da Aba 1: "Em aberto" (Demandas Pendentes) -->
+    <div class="inbox-pane-body active" id="paneAberto">
+      
+      <!-- Demanda 1 -->
+      <div class="demand-protocol-card">
+        <div class="demand-header">
+          <div>
+            <span class="status-tag tag-orange">Em Análise Técnica</span>
+            <h3 style="font-size: 1.15rem; color: #0f172a; margin: 0.4rem 0 0.2rem 0;">Protocolo nº 2026.044/PM-01 · Manutenção de Iluminação Pública</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Avenida Alcino Alves Costa, 363, Centro · Secretaria de Obras e Serviços Urbanos</p>
+          </div>
+          <div style="text-align: right;">
+            <small style="color: #94a3b8; display: block;">Protocolado em 08/11/2026</small>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #0284c7;">Prazo legal: 5 dias úteis</span>
+          </div>
         </div>
-        <div style="text-align: right;">
-          <span style="display: block; font-size: 0.8rem; color: #94a3b8;">Aberto em 08/11/2026</span>
-          <a class="text-link" href="javascript:void(0)" style="font-size: 0.9rem; font-weight: 700;">Ver tramitação →</a>
+
+        <!-- Timeline de Rastreio -->
+        <div class="stepper-timeline">
+          <div class="step-node completed">
+            <div class="step-circle">✓</div>
+            <div class="step-label">Protocolado</div>
+          </div>
+          <div class="step-node completed">
+            <div class="step-circle">✓</div>
+            <div class="step-label">Triagem</div>
+          </div>
+          <div class="step-node active">
+            <div class="step-circle">3</div>
+            <div class="step-label">Vistoria em Campo</div>
+          </div>
+          <div class="step-node">
+            <div class="step-circle">4</div>
+            <div class="step-label">Conclusão</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem; border-top: 1px solid #f1f5f9; padding-top: 0.8rem;">
+          <button class="gp-button gp-button-light" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" onclick="alert('Último despacho:\n\nEquipe de manutenção elétrica escalada para o turno da manhã (Ordem de Serviço nº 1.482).')">Ver Despacho Oficial</button>
+          <button class="gp-button gp-button-light" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" onclick="alert('Comprovante em PDF gerado com assinatura digital ICP-Brasil.')">Comprovante 📄</button>
         </div>
       </div>
 
-      <div class="protocol-item">
-        <div>
-          <span class="protocol-badge badge-progress">Em Andamento na UBS</span>
-          <h4 style="font-size: 1.1rem; color: #0f172a; margin: 0.4rem 0;">Protocolo nº 2026.012/FMS-08 · Agendamento de Consulta Especializada (Cardiologia)</h4>
-          <p style="font-size: 0.85rem; color: #64748b;">Fundo Municipal de Saúde · Regulação Municipal SUS / TFD</p>
+      <!-- Demanda 2 -->
+      <div class="demand-protocol-card">
+        <div class="demand-header">
+          <div>
+            <span class="status-tag tag-blue">Aguardando Confirmação UBS</span>
+            <h3 style="font-size: 1.15rem; color: #0f172a; margin: 0.4rem 0 0.2rem 0;">Protocolo nº 2026.012/FMS-08 · Regulação de Consulta Cardiológica (TFD)</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Fundo Municipal de Saúde · Hospital Regional de Nossa Senhora da Glória / Aracaju</p>
+          </div>
+          <div style="text-align: right;">
+            <small style="color: #94a3b8; display: block;">Protocolado em 04/11/2026</small>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #16a34a;">Vaga Aprovada no SISREG</span>
+          </div>
         </div>
-        <div style="text-align: right;">
-          <span style="display: block; font-size: 0.8rem; color: #94a3b8;">Aberto em 04/11/2026</span>
-          <a class="text-link" href="javascript:void(0)" style="font-size: 0.9rem; font-weight: 700;">Ver comprovante →</a>
+
+        <!-- Timeline de Rastreio -->
+        <div class="stepper-timeline">
+          <div class="step-node completed">
+            <div class="step-circle">✓</div>
+            <div class="step-label">Solicitado na UBS</div>
+          </div>
+          <div class="step-node completed">
+            <div class="step-circle">✓</div>
+            <div class="step-label">Regulação Médica</div>
+          </div>
+          <div class="step-node completed">
+            <div class="step-circle">✓</div>
+            <div class="step-label">Vaga Alocada</div>
+          </div>
+          <div class="step-node active">
+            <div class="step-circle">4</div>
+            <div class="step-label">Transporte TFD</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem; border-top: 1px solid #f1f5f9; padding-top: 0.8rem;">
+          <button class="gp-button gp-button-light" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" onclick="alert('Guia de Encaminhamento TFD gerada.\nVeículo sanitário confirmado para 14/11 às 05:30 com saída da UBS Centro.')">Ver Guia de Transporte 🚐</button>
         </div>
       </div>
+
     </div>
 
-    <!-- Conteúdo Aba 2: Arquivado -->
-    <div class="inbox-tab-content" id="tabContentArquivado">
-      <div class="protocol-item">
-        <div>
-          <span class="protocol-badge badge-resolved">Concluído e Resolvido</span>
-          <h4 style="font-size: 1.1rem; color: #0f172a; margin: 0.4rem 0;">Protocolo nº 2026.008/PM-03 · Certidão Negativa de Débitos Municipais (CND)</h4>
-          <p style="font-size: 0.85rem; color: #64748b;">Secretaria Municipal de Finanças · Documento assinado digitalmente com QR Code</p>
+    <!-- Conteúdo da Aba 2: "Arquivado" (Demandas Resolvidas) -->
+    <div class="inbox-pane-body" id="paneArquivado">
+      
+      <div class="demand-protocol-card">
+        <div class="demand-header">
+          <div>
+            <span class="status-tag tag-green">✓ Resolvido e Homologado</span>
+            <h3 style="font-size: 1.15rem; color: #0f172a; margin: 0.4rem 0 0.2rem 0;">Protocolo nº 2026.008/PM-03 · Certidão Negativa de Débitos Municipais (CND)</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Secretaria Municipal de Finanças e Tributos · Autenticidade verificada</p>
+          </div>
+          <div style="text-align: right;">
+            <small style="color: #166534; font-weight: 700; display: block;">Concluído em 02/11/2026</small>
+            <span style="font-size: 0.8rem; color: #64748b;">Código: CND-7819-2026</span>
+          </div>
         </div>
-        <div style="text-align: right;">
-          <span style="display: block; font-size: 0.8rem; color: #166534; font-weight: 700;">Resolvido em 02/11/2026</span>
-          <a class="text-link" href="javascript:void(0)" style="font-size: 0.9rem; font-weight: 700;">Baixar PDF assinado 📄</a>
+        <p style="font-size: 0.85rem; color: #334155; background: #f8fafc; padding: 0.6rem 0.9rem; border-radius: 8px;">
+          Certidão Negativa emitida sem pendências financeiras. Validade de 90 dias a contar da emissão.
+        </p>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.8rem;">
+          <button class="gp-button" style="background: #166534; padding: 0.35rem 0.85rem; font-size: 0.8rem;" onclick="alert('Download do PDF assinado digitalmente com certificado ICP-Brasil.')">Baixar CND Assinada (PDF) 📥</button>
         </div>
       </div>
 
-      <div class="protocol-item">
-        <div>
-          <span class="protocol-badge badge-resolved">Concluído e Resolvido</span>
-          <h4 style="font-size: 1.1rem; color: #0f172a; margin: 0.4rem 0;">Protocolo nº 2026.002/FMAS-01 · Inscrição no Programa de Atenção Integral à Família (PAIF)</h4>
-          <p style="font-size: 0.85rem; color: #64748b;">Fundo Municipal de Assistência Social · CRAS Municipal</p>
+      <div class="demand-protocol-card">
+        <div class="demand-header">
+          <div>
+            <span class="status-tag tag-green">✓ Resolvido e Homologado</span>
+            <h3 style="font-size: 1.15rem; color: #0f172a; margin: 0.4rem 0 0.2rem 0;">Protocolo nº 2026.002/FMAS-01 · Inscrição no Programa PAIF (Assistência Social)</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Fundo Municipal de Assistência Social · CRAS Poço Redondo</p>
+          </div>
+          <div style="text-align: right;">
+            <small style="color: #166534; font-weight: 700; display: block;">Concluído em 24/10/2026</small>
+            <span style="font-size: 0.8rem; color: #64748b;">CadÚnico atualizado</span>
+          </div>
         </div>
-        <div style="text-align: right;">
-          <span style="display: block; font-size: 0.8rem; color: #166534; font-weight: 700;">Resolvido em 24/10/2026</span>
-          <a class="text-link" href="javascript:void(0)" style="font-size: 0.9rem; font-weight: 700;">Ver parecer →</a>
-        </div>
+        <p style="font-size: 0.85rem; color: #334155; background: #f8fafc; padding: 0.6rem 0.9rem; border-radius: 8px;">
+          Entrevista e acompanhamento psicossocial realizados pela equipe do CRAS. Família inserida no programa social municipal.
+        </p>
       </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Interativo de Autenticação Gov.br Oficial -->
+<div class="govbr-modal-overlay" id="modalGovBr">
+  <div class="govbr-modal-box">
+    <button class="modal-close-btn" onclick="fecharModalGovBr()">✕</button>
+    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.2rem;">
+      <span style="font-size: 2rem; font-weight: 900; color: #1351b4;">gov.br</span>
+      <span style="font-size: 0.8rem; background: #ffcd07; color: #071d41; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 800;">AUTENTICAÇÃO OFICIAL</span>
+    </div>
+
+    <h3 style="font-size: 1.25rem; color: #0f172a; margin-bottom: 0.5rem;">Identifique-se no gov.br com:</h3>
+    <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem;">Digite seu CPF para consultar suas demandas, prontuário SUS e serviços municipais de Poço Redondo.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
+      <label style="font-size: 0.8rem; font-weight: 800; color: #475569;">Número do CPF</label>
+      <input type="text" id="cpfInput" placeholder="000.000.000-00" style="padding: 0.85rem; border: 2px solid #cbd5e1; border-radius: 12px; font-size: 1.1rem; font-family: monospace; outline: none;" value="123.456.789-00">
+    </div>
+
+    <button class="btn-govbr-official" style="width: 100%; justify-content: center;" onclick="confirmarLoginGovBr()">
+      Continuar com Gov.br
+    </button>
+
+    <div style="margin-top: 1.5rem; border-top: 1px solid #e2e8f0; padding-top: 1rem; text-align: center; font-size: 0.78rem; color: #94a3b8;">
+      Segurança e Privacidade garantidas pela Lei Geral de Proteção de Dados (LGPD nº 13.709/2018).
     </div>
   </div>
 </div>
 
 <script>
-  function trocarAba(aba) {
-    const btnAberto = document.getElementById('btnTabAberto');
-    const btnArquivado = document.getElementById('btnTabArquivado');
-    const contentAberto = document.getElementById('tabContentAberto');
-    const contentArquivado = document.getElementById('tabContentArquivado');
+  function alternarAbaInbox(aba) {
+    const btnA = document.getElementById('tabBtnAberto');
+    const btnB = document.getElementById('tabBtnArquivado');
+    const paneA = document.getElementById('paneAberto');
+    const paneB = document.getElementById('paneArquivado');
 
     if (aba === 'aberto') {
-      btnAberto.classList.add('active');
-      btnArquivado.classList.remove('active');
-      contentAberto.classList.add('active');
-      contentArquivado.classList.remove('active');
+      btnA.classList.add('active');
+      btnB.classList.remove('active');
+      paneA.classList.add('active');
+      paneB.classList.remove('active');
     } else {
-      btnArquivado.classList.add('active');
-      btnAberto.classList.remove('active');
-      contentArquivado.classList.add('active');
-      contentAberto.classList.remove('active');
+      btnB.classList.add('active');
+      btnA.classList.remove('active');
+      paneB.classList.add('active');
+      paneA.classList.remove('active');
     }
   }
 
-  function simularLoginGovBr() {
-    alert('Integração Gov.br (Governo Federal):\n\nConexão segura OIDC estabelecida para autenticação por CPF e biometria digital conforme o item 1.1.6 do Termo de Referência.');
+  function abrirModalGovBr() {
+    document.getElementById('modalGovBr').style.display = 'flex';
   }
 
-  function abrirNovoProtocolo() {
-    alert('Abertura de Protocolo Digital Municipal:\n\nSelecione o órgão de destino: Prefeitura Municipal, Fundo de Saúde (FMS) ou Assistência Social (FMAS).');
+  function fecharModalGovBr() {
+    document.getElementById('modalGovBr').style.display = 'none';
+  }
+
+  function confirmarLoginGovBr() {
+    const cpf = document.getElementById('cpfInput').value;
+    fecharModalGovBr();
+    alert(`Autenticação Gov.br Concluída com Sucesso!\n\nCPF: ${cpf}\nNível de Confiabilidade: NÍVEL OURO (Biometria Facial)\nIdentidade Digital vinculada ao Município de Poço Redondo / SE.`);
+  }
+
+  function abrirNovoChamado() {
+    const assunto = prompt('Abertura de Protocolo Digital Municipal:\n\nInforme o assunto da sua solicitação:\n1. Saúde (UBS / TFD / Medicamentos)\n2. Obras / Iluminação / Saneamento\n3. Assistência Social (CRAS / CadÚnico)\n4. Finanças / Certidões Tributárias\n\nDigite o número ou descrição:');
+    if (assunto) {
+      alert(`Protocolo gerado com sucesso!\n\nNúmero: 2026.${Math.floor(100 + Math.random() * 900)}/PM-01\nSituação: Em análise pela Secretaria Competente.\nVocê receberá atualizações no seu celular e nesta Inbox.`);
+    }
+  }
+
+  function abrirServico(tipo) {
+    if (tipo === 'CONSULTA') {
+      alert('Agendamento de Consultas UBS:\n\nUnidades disponíveis com vagas abertas:\n- UBS Centro Histórico: Clínica Médica e Odontologia\n- UBS Zona Rural: Pediatria e Preventivo\n\nSelecione no calendário para confirmar.');
+    } else if (tipo === 'VACINAS') {
+      alert('Caderneta Nacional de Vacinação Digital (e-SUS APS):\n\n- COVID-19 Bivalente: Aplicada em 15/04/2026 (Lote 23B89)\n- Influenza Trivalente: Aplicada em 10/05/2026 (Lote 44C12)\n- Febre Amarela: Válida para a vida toda\n\nSelo digital de autenticidade ativo.');
+    } else if (tipo === 'CERTIDAO') {
+      alert('Emissão de Certidão Negativa de Débitos (CND):\n\nCPF verificado. Nenhuma pendência fiscal localizada no Município de Poço Redondo.\nCertidão gerada com chancela digital ICP-Brasil.');
+    } else if (tipo === 'ILUMINACAO') {
+      abrirNovoChamado();
+    }
   }
 </script>
 {% endblock %}
