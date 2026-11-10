@@ -32,12 +32,60 @@
 .pricing-reference .pricing-section .section-heading>p{font-size:15px;margin-top:16px}
 .pricing-reference .billing-note{margin-bottom:30px}
 .pricing-reference .plans-grid{gap:22px}
-.pricing-reference .plan-card{border-radius:12px;padding:29px 24px;box-shadow:0 7px 22px #15244709}
+.pricing-reference .plan-card{
+  border-radius:14px;
+  padding:29px 24px;
+  box-shadow:0 7px 22px #15244709;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+  will-change: transform, box-shadow;
+  outline: none;
+  position: relative;
+}
+.pricing-reference .plan-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 42px rgba(37, 99, 235, 0.16), 0 0 0 1.5px #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+.pricing-reference .plan-card:focus-visible {
+  outline: 3px solid #3b82f6;
+  outline-offset: 4px;
+}
+.pricing-reference .plan-card:active,
+.pricing-reference .plan-card.is-pressed {
+  transform: translateY(-2px) scale(0.985) !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12) !important;
+  transition: transform 0.08s ease, box-shadow 0.08s ease !important;
+}
 .pricing-reference .plan-card.featured{padding:28px 23px;border-color:var(--blue)}
 :root:not([data-theme="dark"]) .pricing-reference .plan-card.featured,
 [data-theme="light"] .pricing-reference .plan-card.featured {
   background: #fff;
   box-shadow: 0 12px 30px #245de620;
+}
+.pricing-reference .plan-card.featured:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 24px 50px rgba(37, 99, 235, 0.28), 0 0 0 2px #2563eb !important;
+}
+.pricing-reference .plan-card:hover .button {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+}
+.pricing-reference .plan-card .button svg {
+  transition: transform 0.2s ease;
+}
+.pricing-reference .plan-card:hover .button svg {
+  transform: translateX(4px);
+}
+.pricing-reference .plan-demo-link {
+  position: relative;
+  z-index: 2;
+  transition: color 0.15s ease, text-decoration 0.15s ease;
+}
+.pricing-reference .plan-demo-link:hover {
+  text-decoration: underline;
 }
 .pricing-reference .popular-label{border-radius:10px 10px 0 0;font-size:10px}
 .pricing-reference .plan-top{min-height:112px}
@@ -124,6 +172,20 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
 }
 
+[data-theme="dark"] .pricing-reference .plan-card:hover {
+  transform: translateY(-8px);
+  background: #14223d !important;
+  border-color: rgba(96, 165, 250, 0.6) !important;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.55), 0 0 30px rgba(59, 130, 246, 0.3) !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card:active,
+[data-theme="dark"] .pricing-reference .plan-card.is-pressed {
+  transform: translateY(-2px) scale(0.985) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4) !important;
+  transition: transform 0.08s ease, box-shadow 0.08s ease !important;
+}
+
 [data-theme="dark"] .pricing-reference .plan-card .plan-top h3 {
   color: #ffffff !important;
 }
@@ -165,6 +227,13 @@
   background: linear-gradient(180deg, #152747 0%, #111c30 100%) !important;
   border: 2px solid #3b82f6 !important;
   box-shadow: 0 16px 36px rgba(37, 99, 235, 0.25) !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card.featured:hover {
+  transform: translateY(-10px);
+  background: linear-gradient(180deg, #1c3563 0%, #13223d 100%) !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 26px 55px rgba(0, 0, 0, 0.65), 0 0 40px rgba(59, 130, 246, 0.45) !important;
 }
 
 [data-theme="dark"] .pricing-reference .plan-card.featured .popular-label {

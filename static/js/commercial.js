@@ -23,4 +23,30 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(!form.checkValidity())return;
     const button=event.submitter;if(button){button.setAttribute('aria-busy','true');button.textContent='Enviando solicitação…';}
   });
+
+  // Cards de planos interativos / tocáveis
+  document.querySelectorAll('.plan-card[data-cta]').forEach(card => {
+    card.addEventListener('click', (event) => {
+      // Se clicou diretamente em um link ou botão interno (ex: "Solicitar demonstração"), segue o link clicado
+      if (event.target.closest('a') || event.target.closest('button')) {
+        return;
+      }
+      const cta = card.getAttribute('data-cta');
+      if (cta) {
+        card.classList.add('is-pressed');
+        window.location.href = cta;
+      }
+    });
+
+    card.addEventListener('keydown', (event) => {
+      if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('a') && !event.target.closest('button')) {
+        event.preventDefault();
+        const cta = card.getAttribute('data-cta');
+        if (cta) {
+          card.classList.add('is-pressed');
+          window.location.href = cta;
+        }
+      }
+    });
+  });
 });
