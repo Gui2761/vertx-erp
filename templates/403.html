@@ -33,6 +33,33 @@
           {{ exception|default:'Esta rota não faz parte do plano ativo contratado para sua organização ou seu perfil de acesso não possui permissão para este recurso.' }}
         </p>
 
+        <!-- Upgrade Recommendation Card (Direct path to plan) -->
+        {% if upgrade_info and upgrade_info.plano %}
+        <div class="card p-4 mb-4 text-center text-sm-start shadow-sm" style="background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.3); border-radius: 14px;">
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1 justify-content-center justify-content-sm-start">
+                <span class="badge" style="background: rgba(37, 99, 235, 0.25); color: #3b82f6; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">
+                  <i class="bi bi-stars me-1"></i> Disponível no Plano {{ upgrade_info.plano.nome }}
+                </span>
+                <span class="text-secondary small">· Apenas R$ {{ upgrade_info.plano.preco|floatformat:2 }}/mês</span>
+              </div>
+              <h2 class="h5 fw-bold mb-1" style="color: var(--vx-ink, #ffffff);">
+                Libere o recurso "{{ upgrade_info.recurso_nome }}"
+              </h2>
+              <p class="text-secondary small mb-0" style="color: var(--vx-muted, #94a3b8) !important;">
+                Faça o upgrade do seu plano para liberar esta funcionalidade imediatamente sem perder nenhum dado já cadastrado.
+              </p>
+            </div>
+            <div class="flex-shrink-0">
+              <a href="{{ upgrade_info.upgrade_url }}" class="btn btn-success btn-lg px-4 py-2 fw-bold text-nowrap shadow-sm">
+                <i class="bi bi-arrow-up-circle-fill me-1"></i> Ver Plano {{ upgrade_info.plano.nome }}
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
         <!-- Context Pill Box (if user authenticated) -->
         {% if request.user.is_authenticated %}
         <div class="p-3 mb-4 text-start rounded" style="background: var(--vx-surface, rgba(255,255,255,0.03)); border: 1px solid var(--vx-card-border, rgba(255,255,255,0.08)); font-size: 0.88rem;">

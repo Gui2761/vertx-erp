@@ -10,10 +10,59 @@ from .access import erp_code_for_path, require_erp
 PUBLIC_COMMERCIAL_PATHS = {'/', '/planos/', '/demonstracao/', '/contato/', '/solicitacao-recebida/', '/suporte/', '/termos/', '/privacidade/', '/login/', '/cadastro/', '/cadastro/confirmacao/', '/cadastro/primeiro-acesso/', '/robots.txt'}
 
 
+def get_upgrade_info_for_path(path):
+    from .modules import required_modules_for_path
+    from .saas_models import PlanoSaaS
+    
+    required = required_modules_for_path(path, None)
+    if not required:
+        return None
+    
+    MODULE_MAP = {
+        'relatorios_completos': ('Gestão Executiva & Métricas Avançadas', 'profissional'),
+        'compras': ('Gestão de Compras & Cotações', 'profissional'),
+        'estoque_completo': ('Controle de Lotes, Validades & Inventário', 'profissional'),
+        'financeiro_completo': ('Contas Bancárias & Conciliação Avançada', 'profissional'),
+        'contratos': ('Gestão de Contratos de Assistência', 'profissional'),
+        'portal': ('Portal do Cliente', 'profissional'),
+        'pwa_tecnico': ('Aplicativo Mobile do Técnico', 'profissional'),
+        'rh_asst_basico': ('Gestão de Equipe & Ponto Eletrônico', 'profissional'),
+        'rh_asst_completo': ('Horas Extras & Fechamento de Ponto Avançado', 'empresarial'),
+        'pwa_vendedor': ('Aplicativo Mobile do Vendedor & Metas', 'empresarial'),
+    }
+    
+    feature_name = None
+    target_plan_slug = 'profissional'
+    
+    for mod in required:
+        if mod in MODULE_MAP:
+            name, plan_slug = MODULE_MAP[mod]
+            feature_name = name
+            target_plan_slug = plan_slug
+            if plan_slug == 'empresarial':
+                break
+                
+    if not feature_name:
+        feature_name = 'Recurso Avançado do Sistema'
+        target_plan_slug = 'profissional'
+        
+    plan = PlanoSaaS.objects.filter(slug=target_plan_slug, publico_ativo=True, ativo=True).first()
+    return {
+        'recurso_nome': feature_name,
+        'plano': plan,
+        'upgrade_url': f'/vertyx/empresa/plano/?upgrade={target_plan_slug}' if plan else '/vertyx/empresa/plano/',
+    }
+
+
 def _forbidden(request, message, title='Acesso Não Permitido'):
     from django.shortcuts import render
+    upgrade_info = get_upgrade_info_for_path(request.path)
     try:
-        response = render(request, '403.html', {'exception': message, 'titulo': title}, status=403)
+        response = render(request, '403.html', {
+            'exception': message,
+            'titulo': title,
+            'upgrade_info': upgrade_info,
+        }, status=403)
     except Exception:
         response = HttpResponseForbidden(message)
     response['Cache-Control'] = 'private, no-store'

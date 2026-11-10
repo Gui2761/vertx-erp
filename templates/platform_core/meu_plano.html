@@ -162,7 +162,117 @@
       </div>
       {% endfor %}
     </div>
-  <!-- Cobrança Automática e Faturas SaaS -->
+  </div>
+</div>
+
+<!-- Planos Disponíveis & Upgrade de Assinatura -->
+<div class="card p-4 mb-4 shadow-sm" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border); border-radius: 14px;">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge" style="background: rgba(37, 99, 235, 0.15); color: #3b82f6; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">
+          <i class="bi bi-stars me-1"></i> Evolução & Upgrade
+        </span>
+      </div>
+      <h2 class="h4 font-bold mb-1" style="color: var(--vx-ink);">Planos VERTYX & Upgrade Imediato</h2>
+      <p class="text-secondary small mb-0">Selecione o plano ideal para sua empresa. A ativação dos novos módulos é instantânea.</p>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-1">
+    {% for plan in available_plans %}
+    <div class="col-12 col-md-4">
+      <div class="card h-100 p-3 p-md-4 position-relative shadow-sm" style="background: var(--vx-card-bg); border: 2px solid {% if upgrade_target == plan.slug %}#2563eb{% elif subscription and subscription.plano and subscription.plano.pk == plan.pk %}#10b981{% else %}var(--vx-card-border){% endif %}; border-radius: 12px;">
+        
+        {% if upgrade_target == plan.slug %}
+        <div class="position-absolute top-0 end-0 m-3">
+          <span class="badge bg-primary px-2 py-1"><i class="bi bi-star-fill me-1"></i> Recomendado</span>
+        </div>
+        {% elif subscription and subscription.plano and subscription.plano.pk == plan.pk %}
+        <div class="position-absolute top-0 end-0 m-3">
+          <span class="badge bg-success px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i> Plano Atual</span>
+        </div>
+        {% endif %}
+
+        <div class="mb-3">
+          <h3 class="h5 font-bold mb-1" style="color: var(--vx-ink);">{{ plan.nome }}</h3>
+          <div class="h3 font-bold mb-1" style="color: var(--vx-brand, #2563eb);">
+            R$ {{ plan.preco|floatformat:2 }} <small class="text-secondary fs-6 fw-normal">/ mês</small>
+          </div>
+          <p class="text-secondary small mb-0">{{ plan.descricao|default:'Pacote de módulos para empresas em crescimento.' }}</p>
+        </div>
+
+        <hr style="border-color: var(--vx-card-border);">
+
+        <ul class="list-unstyled small mb-4 flex-grow-1" style="line-height: 1.8;">
+          <li class="d-flex align-items-center gap-2">
+            <i class="bi bi-people text-primary"></i>
+            <span>Até <strong>{{ plan.limites.usuarios|default:'Ilimitados' }}</strong> usuários</span>
+          </li>
+          <li class="d-flex align-items-center gap-2">
+            <i class="bi bi-building text-primary"></i>
+            <span>Até <strong>{{ plan.limites.filiais|default:'1' }}</strong> filial(is)</span>
+          </li>
+          {% if 'relatorios_completos' in plan.modulos %}
+          <li class="d-flex align-items-center gap-2 text-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Gestão Executiva & Métricas</span>
+          </li>
+          {% endif %}
+          {% if 'compras' in plan.modulos %}
+          <li class="d-flex align-items-center gap-2 text-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Gestão de Compras & Cotações</span>
+          </li>
+          {% endif %}
+          {% if 'contratos' in plan.modulos %}
+          <li class="d-flex align-items-center gap-2 text-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Contratos de Assistência Técnica</span>
+          </li>
+          {% endif %}
+          {% if 'estoque_completo' in plan.modulos %}
+          <li class="d-flex align-items-center gap-2 text-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Lotes, Validades & Inventário</span>
+          </li>
+          {% endif %}
+          {% if 'pwa_vendedor' in plan.modulos %}
+          <li class="d-flex align-items-center gap-2 text-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>App Vendedor & Metas Comerciais</span>
+          </li>
+          {% endif %}
+        </ul>
+
+        <div>
+          {% if subscription and subscription.plano and subscription.plano.pk == plan.pk %}
+          <button class="btn btn-outline-success w-100 py-2 disabled" disabled>
+            <i class="bi bi-check2-circle me-1"></i> Plano em Operação
+          </button>
+          {% elif request.membership and request.membership.role == 'ADMIN' %}
+          <form method="post" action="{% url 'platform_core:meu_plano' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="trocar_plano">
+            <input type="hidden" name="plano_slug" value="{{ plan.slug }}">
+            <button type="submit" class="btn {% if upgrade_target == plan.slug %}btn-primary{% else %}btn-outline-primary{% endif %} w-100 py-2 fw-semibold" onclick="return confirm('Confirmar upgrade para o Plano {{ plan.nome }}? Seus novos módulos serão liberados imediatamente.');">
+              <i class="bi bi-arrow-up-circle me-1"></i> Fazer Upgrade
+            </button>
+          </form>
+          {% else %}
+          <a href="mailto:contato@vertyx.com.br?subject=Upgrade%20{{ plan.nome }}" class="btn btn-outline-secondary w-100 py-2">
+            Solicitar ao Administrador
+          </a>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Cobrança Automática e Faturas SaaS -->
 <div class="card p-4 mb-4">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>

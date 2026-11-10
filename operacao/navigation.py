@@ -128,9 +128,24 @@ def _menu(request):
             mod = module_for_path(clean_path)
             if mod:
                 required = (mod,)
-        if required:
-            org = getattr(request, 'organization', None)
-            if org and any(not product_module_enabled(request.user, 'assistencia', code, org) for code in required):
+        org = getattr(request, 'organization', None)
+        if org:
+            from platform_core.saas_models import AssinaturaSaaS, CORE_SAAS_MODULES
+            sub = AssinaturaSaaS.objects.filter(organization=org).select_related('plano').first()
+            if sub and sub.plano:
+                plan_modules = set(sub.plano.modulos or ()) | set(CORE_SAAS_MODULES)
+                for code in required:
+                    if code and code not in plan_modules:
+                        implications = {
+                            'estoque_basico': {'estoque_completo', 'estoque'},
+                            'financeiro_basico': {'financeiro_completo', 'financeiro'},
+                            'rh_asst_basico': {'rh_asst_completo', 'rh'},
+                            'documentos_basicos': {'documentos_completos', 'documentos'},
+                            'relatorios_basicos': {'relatorios_completos'},
+                        }
+                        if not (implications.get(code, set()) & plan_modules):
+                            return False
+            if required and any(not product_module_enabled(request.user, 'assistencia', code, org) for code in required):
                 return False
         return module_enabled(module_for_path(clean_path))
 

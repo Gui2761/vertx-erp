@@ -93,11 +93,30 @@ def configuration(request, kind='empresa', public_id=None):
 @login_required
 def meu_plano(request):
     """Visualização estrita da assinatura, faturas e cotas exclusivas da organização ativa."""
-    from .saas_models import AssinaturaSaaS, CobrancaSaaS
-    from .saas_services import metricas_uso
+    from .saas_models import AssinaturaSaaS, CobrancaSaaS, PlanoSaaS
+    from .saas_services import metricas_uso, aplicar_modulos
 
     org = current_organization()
     subscription = AssinaturaSaaS.objects.filter(organization=org).select_related('plano', 'plano__erp').first()
+
+    if request.method == 'POST' and request.POST.get('action') == 'trocar_plano':
+        if getattr(request, 'membership', None) and request.membership.role == 'ADMIN':
+            novo_slug = request.POST.get('plano_slug')
+            novo_plano = PlanoSaaS.objects.filter(slug=novo_slug, publico_ativo=True, ativo=True).first()
+            if novo_plano:
+                if subscription:
+                    subscription.plano = novo_plano
+                    subscription.save()
+                else:
+                    subscription = AssinaturaSaaS.objects.create(organization=org, plano=novo_plano)
+                aplicar_modulos(org, novo_plano)
+                messages.success(request, f'Upgrade para o Plano {novo_plano.nome} realizado com sucesso! Seus novos módulos estão liberados.')
+                return redirect('platform_core:meu_plano')
+            else:
+                messages.error(request, 'Plano selecionado inválido ou indisponível.')
+        else:
+            messages.error(request, 'Apenas o Administrador da organização pode alterar o plano contratado.')
+
     metrics = metricas_uso(org, erp_code='assistencia') if subscription else {}
     
     active_modules = []
@@ -111,6 +130,8 @@ def meu_plano(request):
 
     cobrancas = CobrancaSaaS.objects.filter(organization=org).order_by('-criado_em')[:10]
     cobranca_pendente = CobrancaSaaS.objects.filter(organization=org, status=CobrancaSaaS.Status.PENDENTE).first()
+    available_plans = list(PlanoSaaS.objects.filter(publico_ativo=True, ativo=True).order_by('preco'))
+    upgrade_target = request.GET.get('upgrade', '')
 
     context = {
         'titulo': f'Minha Assinatura · {org.display_name}',
@@ -120,6 +141,8 @@ def meu_plano(request):
         'cobrancas': cobrancas,
         'cobranca_pendente': cobranca_pendente,
         'organization': org,
+        'available_plans': available_plans,
+        'upgrade_target': upgrade_target,
         'back_url': reverse('platform_core:empresa'),
     }
     return render(request, 'platform_core/meu_plano.html', context)
