@@ -1,10 +1,13 @@
 """Company metadata and explicit audited module/capability configuration."""
 from django import forms
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
 from .forms import TenantModelForm
 from .models import ConfiguracaoEmpresa, FilialEmpresa, Organization, ModuloOrganizacao, OrganizationMembership, PermissaoMembership
 from .modules import CAPABILITIES, require_capability
@@ -89,8 +92,8 @@ def configuration(request, kind='empresa', public_id=None):
 
 @login_required
 def meu_plano(request):
-    """Visualização estrita da assinatura e cotas exclusivas da organização ativa."""
-    from .saas_models import AssinaturaSaaS
+    """Visualização estrita da assinatura, faturas e cotas exclusivas da organização ativa."""
+    from .saas_models import AssinaturaSaaS, CobrancaSaaS
     from .saas_services import metricas_uso
 
     org = current_organization()
@@ -106,13 +109,57 @@ def meu_plano(request):
                 'description': pm.modulo.description or 'Módulo operacional liberado no plano.',
             })
 
+    cobrancas = CobrancaSaaS.objects.filter(organization=org).order_by('-criado_em')[:10]
+    cobranca_pendente = CobrancaSaaS.objects.filter(organization=org, status=CobrancaSaaS.Status.PENDENTE).first()
+
     context = {
         'titulo': f'Minha Assinatura · {org.display_name}',
         'subscription': subscription,
         'metrics': metrics,
         'active_modules': active_modules,
+        'cobrancas': cobrancas,
+        'cobranca_pendente': cobranca_pendente,
         'organization': org,
         'back_url': reverse('platform_core:empresa'),
     }
     return render(request, 'platform_core/meu_plano.html', context)
+
+
+@login_required
+def gerar_cobranca_pix_view(request):
+    """Gera cobrança Pix com Copia-e-Cola e QR Code para renovação da assinatura."""
+    from .saas_billing import gerar_cobranca_pix
+    org = current_organization()
+    cobranca = gerar_cobranca_pix(org)
+    messages.success(request, f'Cobrança Pix #{cobranca.pk} gerada! Utilize o QR Code ou Pix Copia e Cola para pagar.')
+    return redirect('platform_core:meu_plano')
+
+
+@login_required
+def simular_pagamento_cobranca(request, cobranca_id):
+    """Permite testar e validar o ciclo de liquidação e renovação da assinatura."""
+    from .saas_billing import simular_confirmacao_pagamento
+    org = current_organization()
+    ok = simular_confirmacao_pagamento(cobranca_id, org, actor=request.user)
+    if ok:
+        messages.success(request, f'Pagamento da fatura #{cobranca_id} confirmado com sucesso! Assinatura estendida.')
+    else:
+        messages.error(request, 'Cobrança não encontrada ou já confirmada.')
+    return redirect('platform_core:meu_plano')
+
+
+@csrf_exempt
+def webhook_asaas_saas(request):
+    """Recepção de notificações de pagamento automáticas do Asaas."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    import json
+    from .saas_billing import processar_webhook_asaas
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        return HttpResponse(status=400)
+    sucesso, msg = processar_webhook_asaas(data)
+    return JsonResponse({'status': 'ok' if sucesso else 'ignored', 'message': msg})
+
 

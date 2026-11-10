@@ -122,6 +122,7 @@ urlpatterns = [
     path('manifest-pdv.webmanifest', pwa.pdv_manifest, name='pdv_manifest'),
     path('sw.js', pwa.worker, name='worker'),
     path('configuracoes/', configuration.configuracao, name='configuracao'),
+    path('configuracoes/email/', configuration.configuracao_email, name='configuracao_email'),
     path('notificacoes/', configuration.notificacoes, name='notificacoes'),
     path('notificacoes/<int:pk>/lida/', configuration.notificacao_lida, name='notificacao_lida'),
     path('portal/', portal.home, name='portal'),

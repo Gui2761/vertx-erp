@@ -81,7 +81,7 @@ def _menu(request):
     if panel_access:
         groups[1][1].insert(1,('Painel operacional','/painel-operacional/','grid'))
     if membership.role=='ADMIN':
-        groups[-1][1].extend([('Configurações','/configuracoes/','gear'),('Estoque e Compras','/configuracoes/estoque-compras/','sliders'),('Painel operacional · Configuração','/configuracoes/painel-operacional/','sliders'),('Usuários','/contas/usuarios/','person-check')])
+        groups[-1][1].extend([('Configurações','/configuracoes/','gear'),('E-mail e Notificações','/configuracoes/email/','document'),('Estoque e Compras','/configuracoes/estoque-compras/','sliders'),('Painel operacional · Configuração','/configuracoes/painel-operacional/','sliders'),('Usuários','/contas/usuarios/','person-check')])
         groups[-1][1].append(('Empresa e módulos','/vertyx/empresa/','settings'))
         groups[-1][1].append(('Minha Assinatura','/vertyx/empresa/plano/','bookmark-check'))
     if module_enabled('relatorios_completos') and has_capability(request.user, 'executivo'):

@@ -8,6 +8,9 @@ urlpatterns = [path('', views.home, name='home'), path('organizacao/', views.sel
 urlpatterns += [
     path('empresa/', company.configuration, name='empresa'),
     path('empresa/plano/', company.meu_plano, name='meu_plano'),
+    path('empresa/plano/gerar-pix/', company.gerar_cobranca_pix_view, name='gerar_pix'),
+    path('empresa/plano/simular/<int:cobranca_id>/', company.simular_pagamento_cobranca, name='simular_pagamento'),
+    path('saas/webhook/asaas/', company.webhook_asaas_saas, name='webhook_asaas'),
     path('empresa/modulos/', company.configuration, {'kind': 'modulos'}, name='modulos'),
     path('empresa/permissoes/', company.configuration, {'kind': 'permissao'}, name='permissoes'),
     path('empresa/filiais/nova/', company.configuration, {'kind': 'filial'}, name='filial_nova'),

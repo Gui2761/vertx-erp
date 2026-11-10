@@ -48,6 +48,7 @@ PRODUCT_ROUTE_PREFIXES = (
     ('/categorias-pecas/', 'assistencia'),
     ('/checklists/', 'assistencia'),
     ('/configuracoes/', 'assistencia'),
+    ('/empresa/', 'assistencia'),
     ('/financeiro/', 'assistencia'),
     ('/bancos/', 'assistencia'),
     ('/relatorios/', 'assistencia'),

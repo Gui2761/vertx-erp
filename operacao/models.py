@@ -125,6 +125,38 @@ class Configuracao(Validado):
             if not re.fullmatch(r'[A-Za-z0-9_-]{1,12}', getattr(self,field)):
                 raise ValidationError({field:'Use apenas letras, números, hífen e sublinhado.'})
 
+class ConfiguracaoNotificacaoEmail(Validado):
+    servidor_smtp = models.CharField('Servidor SMTP (Host)', max_length=150, default='smtp.gmail.com')
+    porta_smtp = models.PositiveIntegerField('Porta SMTP', default=587)
+    email_remetente = models.EmailField('E-mail do Remetente', max_length=120, default='notificacoes@vertyx.com.br')
+    nome_remetente = models.CharField('Nome de Exibição do Remetente', max_length=100, default='VERTYX Notificações')
+    usuario_smtp = models.CharField('Usuário SMTP', max_length=120, blank=True)
+    senha_smtp = models.CharField('Senha / App Password SMTP', max_length=120, blank=True)
+    usar_tls = models.BooleanField('Usar TLS (STARTTLS)', default=True)
+    usar_ssl = models.BooleanField('Usar SSL Direto', default=False)
+    ativo = models.BooleanField('Disparos de E-mail Habilitados', default=True)
+
+    notificar_conclusao_os = models.BooleanField('Notificar cliente ao concluir Ordem de Serviço (com Laudo e DANFSE)', default=True)
+    notificar_preventiva = models.BooleanField('Notificar cliente sobre preventiva próxima do vencimento', default=True)
+    dias_antecedencia_preventiva = models.PositiveSmallIntegerField('Dias de antecedência para alerta de preventiva', default=15)
+    notificar_cobranca = models.BooleanField('Notificar cliente ao gerar cobrança / fatura financeira', default=True)
+
+    ultimo_teste_em = models.DateTimeField(null=True, blank=True, editable=False)
+    ultimo_teste_status = models.CharField(max_length=60, blank=True, editable=False)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['organization'], name='config_email_notif_org_unica')]
+
+    def __str__(self):
+        return f'Notificações por E-mail ({self.email_remetente})'
+
+    def clean(self):
+        super().clean()
+        if self.porta_smtp <= 0 or self.porta_smtp > 65535:
+            raise ValidationError({'porta_smtp': 'Porta SMTP deve estar entre 1 e 65535.'})
+        if self.usar_tls and self.usar_ssl:
+            raise ValidationError('Selecione TLS ou SSL, não ambos simultaneamente.')
+
 class Deposito(Nomeado):
     endereco = models.CharField(max_length=255, blank=True)
 

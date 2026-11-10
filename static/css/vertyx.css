@@ -418,6 +418,51 @@ label, .form-label {
   display: inline-block;
 }
 
+/* Indicador Universal de Campo Obrigatório */
+label.required::after,
+.required label::after,
+.form-group.required > label::after,
+.mb-3:has(:required) > label::after,
+.form-field:has(:required) > label::after,
+p:has(input:required) > label::after,
+p:has(select:required) > label::after,
+p:has(textarea:required) > label::after,
+div:has(> :required) > label::after {
+  content: " *";
+  color: #f43f5e !important;
+  font-weight: 900 !important;
+  font-size: 0.95rem !important;
+  line-height: 1;
+}
+
+.vx-required-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.vx-optional-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: #64748b;
+  background: rgba(100, 116, 139, 0.12);
+  border: 1px solid rgba(100, 116, 139, 0.25);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
 form p {
   margin-bottom: 1.15rem;
 }

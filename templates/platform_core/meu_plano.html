@@ -53,16 +53,30 @@
         <p class="text-muted small mb-3">{{ subscription.plano.descricao|default:'Pacote completo para assistência, estoque especializado e gestão de varejo/farmácia.' }}</p>
         
         <div class="p-3 rounded-3 mb-3" style="background-color: var(--vx-surface-subtle); border: 1px solid var(--vx-border);">
-          <div class="d-flex justify-content-between align-items-baseline">
+          <div class="d-flex justify-content-between align-items-baseline mb-2">
             <span class="text-muted small">Mensalidade:</span>
             <span class="fs-4 fw-bold text-white">
-              {% if subscription.plano.valor_mensal %}
+              {% if subscription.plano.preco %}
+                R$ {{ subscription.plano.preco|floatformat:2 }}<small class="fs-6 text-muted fw-normal"> / mês</small>
+              {% elif subscription.plano.valor_mensal %}
                 R$ {{ subscription.plano.valor_mensal|floatformat:2 }}<small class="fs-6 text-muted fw-normal"> / mês</small>
               {% else %}
                 R$ 0,00<small class="fs-6 text-muted fw-normal"> (Piloto/Homologação)</small>
               {% endif %}
             </span>
           </div>
+          <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary border-opacity-25">
+            <span class="text-muted small">Validade / Renovação:</span>
+            <span class="badge {% if subscription.vencimento_em %}bg-primary-subtle text-primary{% else %}bg-secondary-subtle text-muted{% endif %}">
+              <i class="bi bi-calendar-event me-1"></i> {{ subscription.vencimento_em|date:'d/m/Y'|default:'Vitalícia / Homologação' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2 mb-3">
+          <a href="{% url 'platform_core:gerar_pix' %}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-qr-code me-1"></i> Gerar Fatura Pix / Renovar
+          </a>
         </div>
 
         <ul class="list-unstyled small mb-0 text-muted">
@@ -148,6 +162,120 @@
       </div>
       {% endfor %}
     </div>
+  <!-- Cobrança Automática e Faturas SaaS -->
+<div class="card p-4 mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="vx-indicator-dot" style="background-color: var(--vx-brand);"></span>
+        <span class="vx-section-title">FATURAMENTO & LIQUIDAÇÃO SAAS</span>
+      </div>
+      <h2 class="h4 text-white mb-0">Cobrança Automática & Faturas</h2>
+    </div>
+    <a href="{% url 'platform_core:gerar_pix' %}" class="btn btn-sm btn-success">
+      <i class="bi bi-qr-code me-1"></i> Gerar Nova Fatura Pix
+    </a>
+  </div>
+
+  {% if cobranca_pendente %}
+  <div class="card p-4 mb-4 border-warning border-opacity-50" style="background: rgba(234, 179, 8, 0.05);">
+    <div class="row align-items-center g-4">
+      <div class="col-md-4 text-center">
+        {% if cobranca_pendente.pix_qr_code_url %}
+        <div class="p-2 bg-white rounded-3 d-inline-block shadow-sm">
+          <img src="{{ cobranca_pendente.pix_qr_code_url }}" alt="QR Code Pix" style="width: 180px; height: 180px; display: block;">
+        </div>
+        {% endif %}
+        <small class="d-block text-muted mt-2">Abra o app do seu banco e aponte a câmera</small>
+      </div>
+      <div class="col-md-8">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge bg-warning text-dark">Aguardando Pagamento</span>
+          <span class="text-muted small">Fatura #{{ cobranca_pendente.pk }} · Vencimento: {{ cobranca_pendente.vencimento|date:'d/m/Y' }}</span>
+        </div>
+        <h3 class="h2 text-white fw-bold mb-2">R$ {{ cobranca_pendente.valor|floatformat:2 }}</h3>
+        <p class="small text-muted mb-3">Após o pagamento via Pix, a compensação é instantânea via Webhook do Asaas e o acesso da sua organização é renovado automaticamente.</p>
+        
+        <label for="pixCopiaCola" class="form-label small text-muted fw-semibold mb-1">Pix Copia e Cola:</label>
+        <div class="input-group mb-3">
+          <input type="text" id="pixCopiaCola" class="form-control bg-dark border-secondary border-opacity-25 text-white font-monospace small" value="{{ cobranca_pendente.pix_copia_cola }}" readonly>
+          <button class="btn btn-outline-primary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('pixCopiaCola').value); this.innerText='Copiado!'; setTimeout(() => this.innerText='Copiar', 2000);">
+            <i class="bi bi-clipboard me-1"></i> Copiar
+          </button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <a href="{% url 'platform_core:simular_pagamento' cobranca_pendente.pk %}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-check2-circle me-1"></i> Simular Confirmação Pix (Ambiente de Testes)
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr class="text-muted small">
+          <th>Fatura</th>
+          <th>Método</th>
+          <th>Valor</th>
+          <th>Emissão</th>
+          <th>Vencimento</th>
+          <th>Status</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cob in cobrancas %}
+        <tr>
+          <td><strong class="text-white">#{{ cob.pk }}</strong></td>
+          <td>
+            {% if cob.metodo == 'PIX' %}
+              <span class="badge bg-success-subtle text-success"><i class="bi bi-qr-code me-1"></i> Pix</span>
+            {% elif cob.metodo == 'BOLETO' %}
+              <span class="badge bg-secondary-subtle text-white"><i class="bi bi-barcode me-1"></i> Boleto</span>
+            {% else %}
+              <span class="badge bg-info-subtle text-info"><i class="bi bi-credit-card me-1"></i> Cartão</span>
+            {% endif %}
+          </td>
+          <td><span class="fw-semibold text-white">R$ {{ cob.valor|floatformat:2 }}</span></td>
+          <td class="text-muted small">{{ cob.criado_em|date:'d/m/Y H:i' }}</td>
+          <td class="text-muted small">{{ cob.vencimento|date:'d/m/Y'|default:'—' }}</td>
+          <td>
+            {% if cob.status == 'PAGA' %}
+              <span class="badge bg-success"><i class="bi bi-check-lg me-1"></i> Paga</span>
+            {% elif cob.status == 'PENDENTE' %}
+              <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i> Pendente</span>
+            {% elif cob.status == 'CANCELADA' %}
+              <span class="badge bg-secondary">Cancelada</span>
+            {% else %}
+              <span class="badge bg-danger">{{ cob.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if cob.status == 'PENDENTE' %}
+              <a href="{% url 'platform_core:simular_pagamento' cob.pk %}" class="btn btn-xs btn-outline-success py-1 px-2 small" title="Simular pagamento">
+                <i class="bi bi-check2"></i> Pagar
+              </a>
+            {% elif cob.pago_em %}
+              <small class="text-muted">Pago em {{ cob.pago_em|date:'d/m/Y' }}</small>
+            {% else %}
+              <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">
+            <i class="bi bi-receipt fs-3 d-block mb-1"></i>
+            Nenhuma fatura emitida até o momento. Toque no botão acima para gerar a primeira cobrança Pix.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endblock %}
