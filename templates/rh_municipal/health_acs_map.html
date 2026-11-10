@@ -1,534 +1,996 @@
-{% extends 'rh_municipal/public_base.html' %}
-{% block title %}Georreferenciamento & Rotas ACS · VERTYX Inteligência em Saúde{% endblock %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Georreferenciamento & Inteligência Territorial ACS · VERTYX GeoHealth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 
-{% block page_styles %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<style>
-  :root {
-    --geo-brand-primary: #0284c7;
-    --geo-card-bg: #ffffff;
-    --geo-border: #e2e8f0;
-    --geo-dark-surface: #0f172a;
-  }
+  <style>
+    :root {
+      --bg-dark: #080d1a;
+      --bg-sidebar: #0f172a;
+      --bg-card: #1e293b;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-active: #0284c7;
+      --cyan: #38bdf8;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
 
-  .geo-dashboard-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 1.75rem;
-  }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
 
-  /* Barra de KPIs Governamentais da Atenção Primária */
-  .aps-kpi-strip {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 1.25rem;
-  }
-  .aps-kpi-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 18px;
-    padding: 1.4rem 1.6rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-  }
-  .aps-kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 4px;
-    background: #0284c7;
-  }
-  .aps-kpi-card.purple::before { background: #8b5cf6; }
-  .aps-kpi-card.rose::before { background: #f43f5e; }
-  .aps-kpi-card.emerald::before { background: #10b981; }
+    /* 1. TACTICAL HEADER */
+    header {
+      background: #0b1120;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.85rem 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
 
-  .aps-kpi-card small {
-    color: #64748b;
-    font-size: 0.8rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-  }
-  .aps-kpi-card strong {
-    font-size: 2.1rem;
-    font-weight: 900;
-    color: #0f172a;
-    line-height: 1.1;
-    margin: 0.4rem 0;
-  }
-  .aps-kpi-card span {
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
 
-  /* Layout Principal do Mapa e Barra Lateral */
-  .geo-workspace-grid {
-    display: grid;
-    grid-template-columns: 2.2fr 1fr;
-    gap: 1.75rem;
-    align-items: stretch;
-  }
-  @media (max-width: 1080px) {
-    .geo-workspace-grid { grid-template-columns: 1fr; }
-  }
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #0284c7, #10b981);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #fff;
+      font-size: 1.3rem;
+      box-shadow: 0 0 20px rgba(2, 132, 199, 0.4);
+    }
 
-  /* Container do Mapa */
-  .geo-map-frame {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 24px;
-    overflow: hidden;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
-    display: flex;
-    flex-direction: column;
-  }
-  .geo-map-toolbar {
-    padding: 1.1rem 1.6rem;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f8fafc;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-  .map-layer-selector {
-    display: inline-flex;
-    background: #e2e8f0;
-    padding: 0.25rem;
-    border-radius: 12px;
-  }
-  .layer-btn {
-    border: none;
-    background: transparent;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: #475569;
-    border-radius: 9px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .layer-btn.active {
-    background: #ffffff;
-    color: #0284c7;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-  }
+    .brand-headings h1 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
 
-  #geoMap {
-    height: 600px;
-    width: 100%;
-    z-index: 10;
-  }
+    .brand-headings h1 span {
+      font-size: 0.72rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
 
-  /* Barra Lateral de Filtros e Painel de Informações */
-  .geo-controls-sidebar {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 24px;
-    padding: 1.75rem;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-  .sidebar-section-title {
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: #0f172a;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #f1f5f9;
-  }
+    .brand-headings p {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
 
-  .filter-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-  }
-  .filter-field label {
-    font-size: 0.78rem;
-    font-weight: 800;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .filter-select {
-    padding: 0.7rem 1rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 12px;
-    font-size: 0.9rem;
-    color: #1e293b;
-    background: #f8fafc;
-    outline: none;
-    font-weight: 600;
-  }
+    .hud-telemetry {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
 
-  /* Painel de Rota do ACS Ativo */
-  .acs-route-status-card {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border-radius: 16px;
-    padding: 1.25rem 1.4rem;
-    color: #ffffff;
-  }
-  .acs-route-status-card h4 {
-    font-size: 0.95rem;
-    color: #38bdf8;
-    margin-bottom: 0.3rem;
-  }
-  .route-step-list {
-    margin-top: 0.8rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-  .route-step-item {
-    font-size: 0.82rem;
-    color: #cbd5e1;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-  }
-  .route-bullet {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #38bdf8;
-  }
+    .hud-metric {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
 
-  /* Legenda de Saúde da Atenção Primária */
-  .geo-legend-box {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 1.1rem;
-  }
-  .geo-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.85rem;
-    color: #334155;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-  }
-  .legend-circle {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-</style>
-{% endblock %}
+    .hud-label {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
 
-{% block content %}
-<section class="gp-page-head">
-  <div>
-    <div class="gp-eyebrow">VERTYX · ATENÇÃO PRIMÁRIA SUS · CARTOGRAFIA DIGITAL</div>
-    <h1>Georreferenciamento de Visitas e Rotas dos ACS</h1>
-    <p>Monitoramento geoespacial em tempo real de visitas domiciliares, rotas de agentes comunitários e busca ativa de condições prioritárias (Portarias GM/MS nº 3.493/2024 e NT 08/2026).</p>
-  </div>
-  <div class="gp-head-actions">
-    <a class="gp-button" href="{% url 'rh_municipal_public:saude_call_panel_tv' %}" target="_blank" style="background: #0284c7;">Abrir Painel SmartTV 📺</a>
-    <a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_call_panel' %}">Console do Médico</a>
-  </div>
-</section>
+    .hud-val {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
 
-<div class="geo-dashboard-wrapper">
-  <!-- Faixa de Indicadores de Produção Territorial -->
-  <div class="aps-kpi-strip">
-    <div class="aps-kpi-card emerald">
-      <small>Visitas Concluídas no Mês</small>
-      <strong>1.482</strong>
-      <span style="color: #16a34a;">↗ +14.2% em relação à competência anterior</span>
+    .live-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulseGreen 1.5s infinite alternate;
+    }
+    @keyframes pulseGreen {
+      from { opacity: 0.4; }
+      to { opacity: 1; }
+    }
+
+    /* 2. MAIN LAYOUT (SIDEBAR + MAP VIEWPORT) */
+    .viewport-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      height: 100%;
+      min-height: 0;
+      position: relative;
+    }
+
+    /* SIDEBAR DE CONTROLE TÁTICO */
+    aside {
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      z-index: 500;
+      overflow: hidden;
+    }
+
+    .side-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      background: #0b1120;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.9rem 0.5rem;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active {
+      color: #38bdf8;
+      border-bottom-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    .side-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .tab-pane { display: none; flex-direction: column; gap: 1.25rem; }
+    .tab-pane.active { display: flex; }
+
+    /* CARD DE AGENTE ACS */
+    .acs-agent-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .acs-agent-card:hover, .acs-agent-card.selected {
+      border-color: #38bdf8;
+      background: #253347;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .acs-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .acs-name-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .acs-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+
+    .acs-name {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+    .acs-microarea {
+      font-size: 0.75rem;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .acs-status-pill {
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+    .status-online { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+    .acs-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      background: rgba(11, 17, 32, 0.6);
+      padding: 0.75rem;
+      border-radius: 10px;
+      font-size: 0.78rem;
+    }
+
+    .stat-pair {
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-pair span { color: var(--text-dim); }
+    .stat-pair strong { color: #fff; font-family: var(--font-mono); }
+
+    .progress-bar-wrap {
+      margin-top: 0.75rem;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+    .progress-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7, #10b981);
+      border-radius: 99px;
+    }
+
+    /* ABA DE CAMADAS & RISCOS */
+    .layer-section-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .base-map-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-basemap {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      padding: 0.75rem 0.5rem;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .btn-basemap.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 0.6rem;
+    }
+    .checkbox-item:hover { border-color: rgba(56, 189, 248, 0.4); }
+
+    .checkbox-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #0284c7;
+      cursor: pointer;
+    }
+
+    .checkbox-label {
+      flex: 1;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+
+    .color-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+    }
+
+    /* ABA DE PLAYBACK */
+    .playback-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .playback-time {
+      font-family: var(--font-mono);
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #38bdf8;
+      text-align: center;
+    }
+
+    .slider-time {
+      width: 100%;
+      accent-color: #0284c7;
+      cursor: pointer;
+    }
+
+    .playback-controls {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-play {
+      flex: 1;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: none;
+      padding: 0.85rem;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    /* 3. MAP VIEWPORT */
+    #map-viewport {
+      width: 100%;
+      height: 100%;
+      background: #080d1a;
+      z-index: 1;
+    }
+
+    /* 4. FLOATING HOUSE INSPECTION DRAWER */
+    .inspection-drawer {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      width: 420px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 20px;
+      padding: 1.75rem;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      gap: 1.25rem;
+      animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .inspection-drawer.open { display: flex; }
+
+    @keyframes slideInRight {
+      from { transform: translateX(40px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 1rem;
+    }
+
+    .drawer-header h3 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .drawer-header p {
+      font-size: 0.8rem;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .drawer-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .family-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+      background: rgba(11, 17, 32, 0.7);
+      padding: 1rem;
+      border-radius: 12px;
+      font-size: 0.82rem;
+    }
+
+    .clinical-alert-box {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+      color: #fca5a5;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-pec-action {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      padding: 0.85rem;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      display: block;
+      transition: all 0.2s;
+    }
+    .btn-pec-action:hover { background: #0369a1; }
+
+    /* Custom Leaflet Markers */
+    .acs-marker-pulse {
+      width: 24px;
+      height: 24px;
+      background: #0284c7;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 15px #0284c7;
+      animation: pulseMarker 1.5s infinite;
+    }
+    @keyframes pulseMarker {
+      0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.8); }
+      70% { box-shadow: 0 0 0 16px rgba(2, 132, 199, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. TACTICAL HUD HEADER -->
+  <header>
+    <div class="brand-cluster">
+      <div class="brand-icon">G</div>
+      <div class="brand-headings">
+        <h1>VERTYX GeoHealth <span>e-SUS APS</span></h1>
+        <p>Monitoramento Territorial · Fundo Municipal de Saúde de Brejo Grande / SE</p>
+      </div>
     </div>
-    <div class="aps-kpi-card">
-      <small>Cobertura Territorial da APS</small>
-      <strong>94,8%</strong>
-      <span style="color: #0284c7;">Meta ministerial (85%) superada com excelência</span>
-    </div>
-    <div class="aps-kpi-card purple">
-      <small>Gestantes e Puerpério</small>
-      <strong>128</strong>
-      <span style="color: #7c3aed;">100% com pré-natal e visita domiciliar no prazo</span>
-    </div>
-    <div class="aps-kpi-card rose">
-      <small>Hipertensos e Diabéticos</small>
-      <strong>642</strong>
-      <span style="color: #e11d48;">Busca ativa com estratificação de risco cardiovascular</span>
-    </div>
-  </div>
 
-  <!-- Workspace de Cartografia Digital e Controles -->
-  <div class="geo-workspace-grid">
-    <!-- Painel do Mapa Interativo -->
-    <div class="geo-map-frame">
-      <div class="geo-map-toolbar">
+    <div class="hud-telemetry">
+      <div class="hud-metric">
+        <span class="hud-label">Agentes em Campo</span>
+        <span class="hud-val">
+          <span class="live-pulse-dot"></span>
+          12 Ativos (GPS Online)
+        </span>
+      </div>
+
+      <div class="hud-metric">
+        <span class="hud-label">Famílias Mapeadas</span>
+        <span class="hud-val">1.840 Domicílios</span>
+      </div>
+
+      <div class="hud-metric">
+        <span class="hud-label">Visitas Hoje</span>
+        <span class="hud-val" style="color: #38bdf8;">148 Realizadas</span>
+      </div>
+
+      <div class="hud-metric">
+        <span class="hud-label">Sincronização Ministério</span>
+        <span class="hud-val" style="color: #4ade80;">100% Portaria 3.493</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. WORKSPACE GRID (SIDEBAR + MAP) -->
+  <div class="viewport-grid">
+    <!-- SIDEBAR -->
+    <aside>
+      <div class="side-tabs">
+        <button class="tab-btn active" onclick="switchTab('agents')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Agentes
+        </button>
+        <button class="tab-btn" onclick="switchTab('layers')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          Camadas & Riscos
+        </button>
+        <button class="tab-btn" onclick="switchTab('playback')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Playback Rota
+        </button>
+      </div>
+
+      <div class="side-content">
+        <!-- ABA 1: AGENTES ACS -->
+        <div class="tab-pane active" id="pane-agents">
+          <div class="acs-agent-card selected" onclick="focusAgent('jose')">
+            <div class="acs-card-top">
+              <div class="acs-name-group">
+                <div class="acs-avatar">JS</div>
+                <div>
+                  <div class="acs-name">José Santos da Silva</div>
+                  <div class="acs-microarea">Microárea 01 · Setor Central</div>
+                </div>
+              </div>
+              <span class="acs-status-pill status-online">Em Campo</span>
+            </div>
+            <div class="acs-stats-grid">
+              <div class="stat-pair"><span>Bateria Tablet:</span><strong>92% (4G)</strong></div>
+              <div class="stat-pair"><span>Distância:</span><strong>4.8 km</strong></div>
+              <div class="stat-pair"><span>Visitas:</span><strong>22 de 25</strong></div>
+              <div class="stat-pair"><span>Última Visita:</span><strong>10:24</strong></div>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-label"><span>Meta Diária</span><span>88%</span></div>
+              <div class="progress-track"><div class="progress-fill" style="width: 88%;"></div></div>
+            </div>
+          </div>
+
+          <div class="acs-agent-card" onclick="focusAgent('ana')">
+            <div class="acs-card-top">
+              <div class="acs-name-group">
+                <div class="acs-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">AP</div>
+                <div>
+                  <div class="acs-name">Ana Paula Mendonça</div>
+                  <div class="acs-microarea">Microárea 02 · Povoado Brejão</div>
+                </div>
+              </div>
+              <span class="acs-status-pill status-online">Em Campo</span>
+            </div>
+            <div class="acs-stats-grid">
+              <div class="stat-pair"><span>Bateria Tablet:</span><strong>85% (4G)</strong></div>
+              <div class="stat-pair"><span>Distância:</span><strong>3.9 km</strong></div>
+              <div class="stat-pair"><span>Visitas:</span><strong>19 de 20</strong></div>
+              <div class="stat-pair"><span>Última Visita:</span><strong>10:18</strong></div>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-label"><span>Meta Diária</span><span>95%</span></div>
+              <div class="progress-track"><div class="progress-fill" style="width: 95%;"></div></div>
+            </div>
+          </div>
+
+          <div class="acs-agent-card" onclick="focusAgent('carlos')">
+            <div class="acs-card-top">
+              <div class="acs-name-group">
+                <div class="acs-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">CE</div>
+                <div>
+                  <div class="acs-name">Carlos Eduardo Lima</div>
+                  <div class="acs-microarea">Microárea 03 · Zona Rural</div>
+                </div>
+              </div>
+              <span class="acs-status-pill status-online">Em Campo</span>
+            </div>
+            <div class="acs-stats-grid">
+              <div class="stat-pair"><span>Bateria Tablet:</span><strong>78% (Satélite)</strong></div>
+              <div class="stat-pair"><span>Distância:</span><strong>5.4 km</strong></div>
+              <div class="stat-pair"><span>Visitas:</span><strong>14 de 20</strong></div>
+              <div class="stat-pair"><span>Última Visita:</span><strong>10:10</strong></div>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-label"><span>Meta Diária</span><span>70%</span></div>
+              <div class="progress-track"><div class="progress-fill" style="width: 70%;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABA 2: CAMADAS & RISCOS -->
+        <div class="tab-pane" id="pane-layers">
+          <div class="layer-section-title">Mapa Base</div>
+          <div class="base-map-options">
+            <button class="btn-basemap active" onclick="setBaseMap('dark')">Tactical Dark</button>
+            <button class="btn-basemap" onclick="setBaseMap('sat')">Satélite HD</button>
+            <button class="btn-basemap" onclick="setBaseMap('osm')">Topográfico</button>
+          </div>
+
+          <div class="layer-section-title">Camadas Operacionais</div>
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-microareas" checked onchange="toggleLayers()">
+            <div class="color-swatch" style="background: #38bdf8;"></div>
+            <span class="checkbox-label">Microáreas 01 e 02 (Polígonos)</span>
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-route" checked onchange="toggleLayers()">
+            <div class="color-swatch" style="background: #2563eb;"></div>
+            <span class="checkbox-label">Rota GPS ACS José Santos</span>
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-houses" checked onchange="toggleLayers()">
+            <div class="color-swatch" style="background: #10b981;"></div>
+            <span class="checkbox-label">Domicílios Cadastrados</span>
+          </label>
+
+          <div class="layer-section-title" style="margin-top: 1rem;">Alertas Epidemiológicos</div>
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-dengue" checked onchange="toggleLayers()">
+            <div class="color-swatch" style="background: #ef4444;"></div>
+            <span class="checkbox-label">Focos Suspeitos de Dengue</span>
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-hipertensao" checked onchange="toggleLayers()">
+            <div class="color-swatch" style="background: #f59e0b;"></div>
+            <span class="checkbox-label">Hipertensos Sem Acompanhamento</span>
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-gestantes" checked onchange="toggleLayers()">
+            <div class="color-swatch" style="background: #a855f7;"></div>
+            <span class="checkbox-label">Gestantes de Alto Risco</span>
+          </label>
+        </div>
+
+        <!-- ABA 3: PLAYBACK ROTA -->
+        <div class="tab-pane" id="pane-playback">
+          <div class="playback-box">
+            <div class="layer-section-title">Reprodução Histórica da Rota</div>
+            <p style="font-size: 0.8rem; color: var(--text-dim);">Acompanhe o trajeto passo-a-passo do agente pelas ruas de Brejo Grande com carimbo de horário e visitas.</p>
+            <div class="playback-time" id="playback-clock">08:00</div>
+            <input type="range" class="slider-time" id="time-slider" min="0" max="100" value="0" oninput="updatePlayback(this.value)">
+            
+            <div class="playback-controls">
+              <button class="btn-play" id="btn-play" onclick="togglePlayback()">▶ Iniciar Reprodução</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAPA VIEWPORT LEAFLET -->
+    <div id="map-viewport"></div>
+
+    <!-- DRAWER DE INSPEÇÃO DE DOMICÍLIO -->
+    <div class="inspection-drawer" id="house-drawer">
+      <div class="drawer-header">
         <div>
-          <strong style="font-size: 1.05rem; color: #0f172a;">Mapa Territorial da Estratégia Saúde da Família</strong>
-          <span style="display: block; font-size: 0.8rem; color: #64748b;">Coordenadas registradas em campo pelos tablets com sincronização e-SUS</span>
+          <h3 id="drawer-family-name">Família Oliveira Santos</h3>
+          <p id="drawer-address">Rua da Frente, 142 · Microárea 01</p>
         </div>
-
-        <div style="display: flex; gap: 0.75rem; align-items: center;">
-          <!-- Seletor de Camadas Cartográficas -->
-          <div class="map-layer-selector">
-            <button class="layer-btn active" id="btnLayerSat" onclick="alternarCamada('satelite')">🛰️ Satélite</button>
-            <button class="layer-btn" id="btnLayerDark" onclick="alternarCamada('dark')">🌙 Noturno</button>
-            <button class="layer-btn" id="btnLayerStreet" onclick="alternarCamada('ruas')">🗺️ Ruas</button>
-          </div>
-
-          <button class="gp-button gp-button-light" onclick="toggleHeatmap()" id="btnHeatmap" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">
-            🔥 Mapa de Calor
-          </button>
-          <button class="gp-button gp-button-light" onclick="recentralizar()" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">
-            Centralizar 🎯
-          </button>
-        </div>
+        <button class="drawer-close" onclick="closeDrawer()">&times;</button>
       </div>
 
-      <!-- Canvas Leaflet -->
-      <div id="geoMap"></div>
-    </div>
-
-    <!-- Barra Lateral de Filtros Avançados e Rota Ativa -->
-    <div class="geo-controls-sidebar">
-      <div class="sidebar-section-title">
-        <span>Filtros do Edital</span>
-        <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; padding: 0.2rem 0.6rem; border-radius: 99px; font-weight: 800;">e-SUS APS</span>
+      <div class="family-meta-grid">
+        <div><span>Responsável:</span><strong id="drawer-resp">Maria da Conceição Santos</strong></div>
+        <div><span>CNS Responsável:</span><strong id="drawer-cns">704.8910.3847.192</strong></div>
+        <div><span>Moradores:</span><strong>4 pessoas</strong></div>
+        <div><span>Vulnerabilidade:</span><strong style="color: #fbbf24;">Média (Bolsa Família)</strong></div>
       </div>
 
-      <div class="filter-field">
-        <label>Equipe de Saúde da Família (eSF / eMulti)</label>
-        <select class="filter-select" id="filtroEquipe" onchange="aplicarFiltros()">
-          <option value="TODAS">Todas as equipes (eSF 01, 02 e eMulti)</option>
-          <option value="eSF 01">eSF 01 — UBS Centro Histórico</option>
-          <option value="eSF 02">eSF 02 — Zona Ribeirinha / São Francisco</option>
-          <option value="eMulti">eMulti — Equipe Multiprofissional Ampliada</option>
-        </select>
-      </div>
-
-      <div class="filter-field">
-        <label>Agente Comunitário de Saúde (ACS)</label>
-        <select class="filter-select" id="filtroAgente" onchange="aplicarFiltros()">
-          <option value="TODOS">Todos os 22 ACS em campo</option>
-          <option value="José Santos" selected>José Santos (Microárea 02 — Rota Ativa)</option>
-          <option value="Maria Silva">Maria Silva (Microárea 01)</option>
-          <option value="Ana Paula">Ana Paula (Microárea 03)</option>
-        </select>
-      </div>
-
-      <div class="filter-field">
-        <label>Condição Prioritária da Família</label>
-        <select class="filter-select" id="filtroCondicao" onchange="aplicarFiltros()">
-          <option value="TODAS">Todas as condições clínicas</option>
-          <option value="GESTANTE">Gestantes e Pré-Natal (Roxo)</option>
-          <option value="CRONICO">Hipertensos e Diabéticos (Vermelho)</option>
-          <option value="CRIANCA">Puericultura e Vacinação (Azul)</option>
-          <option value="REGULAR">Visita Domiciliar Regular (Verde)</option>
-        </select>
-      </div>
-
-      <!-- Card da Rota GPS do ACS Selecionado -->
-      <div class="acs-route-status-card" id="routeCard">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h4>📍 Rota Percorrida Hoje</h4>
-          <span style="font-size: 0.75rem; background: rgba(56, 189, 248, 0.2); color: #38bdf8; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 800;">GPS ATIVO</span>
-        </div>
-        <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.2rem;">ACS: José Santos · Tablet nº 07 · Microárea 02</p>
-        <div class="route-step-list">
-          <div class="route-step-item"><div class="route-bullet"></div> 08:30 · Ponto 1: Domicílio Família Souza (Regular)</div>
-          <div class="route-step-item"><div class="route-bullet"></div> 09:15 · Ponto 2: Luciana Santos (Gestante 28 sem)</div>
-          <div class="route-step-item"><div class="route-bullet"></div> 10:00 · Ponto 3: Sr. Raimundo (PA aferida 130x85)</div>
-          <div class="route-step-item"><div class="route-bullet"></div> 11:20 · Ponto 4: Bebê Enzo (Vacinas conferidas)</div>
+      <div class="clinical-alert-box" id="drawer-alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17"/></svg>
+        <div>
+          <strong>Alerta de Saúde Prioritária</strong>
+          <div style="font-size: 0.75rem; margin-top: 2px;" id="drawer-alert-desc">1 Idoso hipertenso descompensado e 1 Gestante de 28 semanas aguardando ultrassom.</div>
         </div>
       </div>
 
-      <!-- Legenda Oficial de Saúde -->
-      <div class="geo-legend-box">
-        <strong style="display: block; font-size: 0.8rem; color: #0f172a; margin-bottom: 0.6rem; text-transform: uppercase;">Classificação Territorial:</strong>
-        <div class="geo-legend-item"><div class="legend-circle" style="background: #8b5cf6;"></div> Gestante / Acompanhamento de Pré-natal</div>
-        <div class="geo-legend-item"><div class="legend-circle" style="background: #ef4444;"></div> Hipertenso / Diabético (Risco Alto)</div>
-        <div class="geo-legend-item"><div class="legend-circle" style="background: #0284c7;"></div> Criança / Puericultura e Vacinas</div>
-        <div class="geo-legend-item"><div class="legend-circle" style="background: #10b981;"></div> Visita Regular Domiciliar Concluída</div>
+      <div style="font-size: 0.8rem; color: var(--text-dim);">
+        Última visita registrada pelo ACS <strong>José Santos</strong> hoje às 10:24. Dados sincronizados com o prontuário eletrônico e-SUS APS.
       </div>
+
+      <a href="#" class="btn-pec-action" onclick="alert('Abrindo Prontuário Eletrônico do Cidadão (PEC e-SUS) integrado ao Vertyx Saúde!')">
+        Abrir Ficha de Família e-SUS APS
+      </a>
     </div>
   </div>
-</div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script>
-  // Coordenadas Centrais do Município em Sergipe (Brejo Grande / Poço Redondo)
-  const centerLat = -9.8058;
-  const centerLng = -37.6836;
-  const map = L.map('geoMap', { zoomControl: true }).setView([centerLat, centerLng], 14);
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-  // Provedores de Camadas
-  const layerSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: '&copy; Esri &mdash; Imagens de Satélite de Alta Resolução', maxZoom: 19
-  });
-  const layerDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; CartoDB DarkMatter · VERTYX Analytics', maxZoom: 19
-  });
-  const layerStreet = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
-  });
+  <script>
+    // 1. INICIALIZAÇÃO DO MAPA LEAFLET EM BREJO GRANDE / SE
+    const bgCenter = [-10.4285, -36.4715];
+    const map = L.map('map-viewport', {
+      center: bgCenter,
+      zoom: 16,
+      zoomControl: false
+    });
 
-  // Camada inicial: Satélite
-  layerSatelite.addTo(map);
-  let camadaAtual = layerSatelite;
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-  function alternarCamada(tipo) {
-    map.removeLayer(camadaAtual);
-    document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+    // Camadas de Tile
+    const tileDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors, © CARTO'
+    }).addTo(map);
 
-    if (tipo === 'satelite') {
-      layerSatelite.addTo(map);
-      camadaAtual = layerSatelite;
-      document.getElementById('btnLayerSat').classList.add('active');
-    } else if (tipo === 'dark') {
-      layerDark.addTo(map);
-      camadaAtual = layerDark;
-      document.getElementById('btnLayerDark').classList.add('active');
-    } else {
-      layerStreet.addTo(map);
-      camadaAtual = layerStreet;
-      document.getElementById('btnLayerStreet').classList.add('active');
+    const tileSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Esri, Maxar, Earthstar Geographics'
+    });
+
+    const tileOsm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    });
+
+    function setBaseMap(type) {
+      document.querySelectorAll('.btn-basemap').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      map.removeLayer(tileDark);
+      map.removeLayer(tileSat);
+      map.removeLayer(tileOsm);
+
+      if (type === 'dark') tileDark.addTo(map);
+      else if (type === 'sat') tileSat.addTo(map);
+      else if (type === 'osm') tileOsm.addTo(map);
     }
-  }
 
-  // Polígonos de Delimitação de Microáreas Territoriais da UBS
-  const microarea01 = L.polygon([
-    [-9.8000, -37.6890],
-    [-9.8010, -37.6780],
-    [-9.8080, -37.6790],
-    [-9.8070, -37.6890]
-  ], {
-    color: '#0284c7', weight: 2, fillOpacity: 0.15, dashArray: '5, 5'
-  }).addTo(map).bindTooltip("<b>Microárea 01</b><br>eSF Centro Histórico", { permanent: false, direction: 'center' });
+    // 2. POLÍGONOS DE MICROÁREAS (SETOR 01 E 02)
+    const microarea01 = L.polygon([
+      [-10.4250, -36.4750],
+      [-10.4245, -36.4680],
+      [-10.4300, -36.4670],
+      [-10.4310, -36.4735],
+      [-10.4290, -36.4760]
+    ], {
+      color: '#38bdf8',
+      fillColor: '#38bdf8',
+      fillOpacity: 0.12,
+      weight: 2,
+      dashArray: '6, 6'
+    }).addTo(map).bindPopup('<strong>Microárea 01 · Setor Central</strong><br>ACS Responsável: José Santos da Silva<br>Total Famílias: 420');
 
-  const microarea02 = L.polygon([
-    [-9.8080, -37.6890],
-    [-9.8080, -37.6790],
-    [-9.8160, -37.6800],
-    [-9.8150, -37.6910]
-  ], {
-    color: '#10b981', weight: 2, fillOpacity: 0.15, dashArray: '5, 5'
-  }).addTo(map).bindTooltip("<b>Microárea 02</b><br>Zona Ribeirinha São Francisco", { permanent: false, direction: 'center' });
+    const microarea02 = L.polygon([
+      [-10.4245, -36.4680],
+      [-10.4230, -36.4620],
+      [-10.4290, -36.4610],
+      [-10.4300, -36.4670]
+    ], {
+      color: '#10b981',
+      fillColor: '#10b981',
+      fillOpacity: 0.12,
+      weight: 2,
+      dashArray: '6, 6'
+    }).addTo(map).bindPopup('<strong>Microárea 02 · Povoado Brejão</strong><br>ACS Responsável: Ana Paula Mendonça<br>Total Famílias: 380');
 
-  // Rota Percorrida pelo ACS José Santos (Linha de Trajeto GPS)
-  const rotaCoords = [
-    [-9.8045, -37.6812],
-    [-9.8062, -37.6840],
-    [-9.8080, -37.6855],
-    [-9.8105, -37.6830],
-    [-9.8120, -37.6860]
-  ];
-  const rotaPolyline = L.polyline(rotaCoords, {
-    color: '#38bdf8', weight: 4, opacity: 0.9, dashArray: '8, 8'
-  }).addTo(map).bindTooltip("<b>Trilha de Rota GPS</b><br>ACS José Santos · 4.2 km percorridos", { sticky: true });
+    // 3. ROTA GPS DO ACS JOSÉ SANTOS (WAYPOINTS)
+    const routeCoords = [
+      [-10.4260, -36.4735],
+      [-10.4268, -36.4730],
+      [-10.4275, -36.4725],
+      [-10.4282, -36.4720],
+      [-10.4290, -36.4715],
+      [-10.4298, -36.4705],
+      [-10.4295, -36.4695],
+      [-10.4288, -36.4690],
+      [-10.4280, -36.4695],
+      [-10.4273, -36.4702]
+    ];
 
-  // Visitas Domiciliares Georreferenciadas
-  const datasetVisitas = [
-    { id: 1, lat: -9.8045, lng: -37.6812, equipe: 'eSF 01', agente: 'Maria Silva', condicao: 'GESTANTE', cidadao: 'Luciana Santos (Gestante 28 semanas)', obs: 'PA 110x70 · Vacina DTPa aplicada · Próxima consulta em 14 dias', hora: 'Hoje às 09:15', cor: '#8b5cf6' },
-    { id: 2, lat: -9.8080, lng: -37.6855, equipe: 'eSF 01', agente: 'Maria Silva', condicao: 'CRONICO', cidadao: 'Sr. Raimundo Silva (72 anos)', obs: 'Hipertenso cadastrado · PA 130x85 aferida · Medicamento Losartana ok', hora: 'Hoje às 10:00', cor: '#ef4444' },
-    { id: 3, lat: -9.8062, lng: -37.6840, equipe: 'eSF 02', agente: 'José Santos', condicao: 'CRONICO', cidadao: 'Dona Francisca Lima (65 anos)', obs: 'Diabética · Glicemia em jejum 118 mg/dL · Orientação nutricional', hora: 'Hoje às 10:45', cor: '#ef4444' },
-    { id: 4, lat: -9.8105, lng: -37.6830, equipe: 'eSF 02', agente: 'José Santos', condicao: 'CRIANCA', cidadao: 'Bebê Enzo Gabriel (4 meses)', obs: 'Puericultura · Curva de crescimento e peso normais · Vacina Pentavalente em dia', hora: 'Hoje às 11:15', cor: '#0284c7' },
-    { id: 5, lat: -9.8120, lng: -37.6860, equipe: 'eSF 02', agente: 'José Santos', condicao: 'REGULAR', cidadao: 'Família Souza (CadÚnico atualizado)', obs: 'Visita de cadastramento individual e territorial completo', hora: 'Hoje às 11:50', cor: '#10b981' },
-    { id: 6, lat: -9.8015, lng: -37.6830, equipe: 'eMulti', agente: 'Ana Paula', condicao: 'GESTANTE', cidadao: 'Mariana Lima (Gestante de Alto Risco)', obs: 'Acompanhamento multiprofissional conjunto com médico obstetra', hora: 'Ontem às 15:30', cor: '#8b5cf6' },
-    { id: 7, lat: -9.8090, lng: -37.6810, equipe: 'eSF 01', agente: 'Ana Paula', condicao: 'CRONICO', cidadao: 'Sr. Manoel Messias (68 anos)', obs: 'Hipertenso e tabagista · Encaminhado para o grupo de cessação do fumo', hora: 'Ontem às 16:15', cor: '#ef4444' },
-  ];
+    const routeLine = L.polyline(routeCoords, {
+      color: '#38bdf8',
+      weight: 4,
+      opacity: 0.85
+    }).addTo(map);
 
-  let markersList = [];
+    // Marcador do Agente em Campo
+    const acsIcon = L.divIcon({
+      className: 'acs-marker-pulse',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+    const agentMarker = L.marker(routeCoords[routeCoords.length - 1], { icon: acsIcon }).addTo(map)
+      .bindPopup('<strong>ACS José Santos</strong><br>Status: Em atendimento agora<br>Bateria: 92% (4G)');
 
-  function desenharMarcadores(dados) {
-    markersList.forEach(m => map.removeLayer(m));
-    markersList = [];
+    // 4. CASAS MONITORADAS (DOMICÍLIOS COM DADOS CLÍNICOS)
+    const housesGroup = L.layerGroup().addTo(map);
 
-    dados.forEach(v => {
-      const marker = L.circleMarker([v.lat, v.lng], {
-        radius: 10,
-        fillColor: v.cor,
-        color: '#ffffff',
-        weight: 3,
+    const housesData = [
+      { coords: [-10.4268, -36.4730], name: 'Família Silva Oliveira', resp: 'Maria da Conceição Santos', cns: '704.8910.3847.192', alert: 'Hipertensão descompensada e Gestante de 28 semanas', risk: 'yellow' },
+      { coords: [-10.4275, -36.4725], name: 'Família Rocha Bezerra', resp: 'Sebastião Rocha', cns: '890.1234.5678.901', alert: 'Criança de 6 meses com vacina de pólio pendente', risk: 'yellow' },
+      { coords: [-10.4282, -36.4720], name: 'Família Albuquerque Lima', resp: 'Clara Albuquerque', cns: '712.3456.7890.123', alert: 'Foco potencial de Aedes aegypti identificado no quintal', risk: 'red' },
+      { coords: [-10.4290, -36.4715], name: 'Família Dantas Cavalcante', resp: 'Antonio Dantas', cns: '801.2345.6789.012', alert: 'Diabético tipo 2 com glicemia controlada após visita', risk: 'green' }
+    ];
+
+    housesData.forEach(h => {
+      const color = h.risk === 'red' ? '#ef4444' : h.risk === 'yellow' ? '#f59e0b' : '#10b981';
+      const m = L.circleMarker(h.coords, {
+        radius: 8,
+        fillColor: color,
+        color: '#fff',
+        weight: 2,
         opacity: 1,
-        fillOpacity: 0.95
-      }).addTo(map);
+        fillOpacity: 0.9
+      }).addTo(housesGroup);
 
-      marker.bindPopup(`
-        <div style="font-family: 'Plus Jakarta Sans', system-ui; min-width: 250px; line-height: 1.4;">
-          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
-            <span style="font-size: 0.72rem; font-weight: 800; color: ${v.cor}; text-transform: uppercase;">● Visita Domiciliar e-SUS</span>
-            <span style="font-size: 0.72rem; color: #64748b;">${v.hora}</span>
-          </div>
-          <strong style="font-size: 0.95rem; color: #0f172a; display: block;">${v.cidadao}</strong>
-          <p style="font-size: 0.82rem; color: #334155; margin: 0.35rem 0 0.5rem 0; background: #f8fafc; padding: 0.4rem; border-radius: 6px;">
-            ${v.obs}
-          </p>
-          <div style="font-size: 0.78rem; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 0.4rem;">
-            <b>ACS Responsável:</b> ${v.agente}<br>
-            <b>Equipe:</b> ${v.equipe}<br>
-            <span style="color: #0284c7; font-family: monospace;">GPS: ${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}</span>
-          </div>
-        </div>
-      `);
-      markersList.push(marker);
-    });
-  }
-
-  function aplicarFiltros() {
-    const eq = document.getElementById('filtroEquipe').value;
-    const ag = document.getElementById('filtroAgente').value;
-    const cond = document.getElementById('filtroCondicao').value;
-
-    const filtrados = datasetVisitas.filter(v => {
-      const mEq = eq === 'TODAS' || v.equipe === eq;
-      const mAg = ag === 'TODOS' || v.agente === ag;
-      const mCond = cond === 'TODAS' || v.condicao === cond;
-      return mEq && mAg && mCond;
+      m.on('click', () => {
+        openHouseDrawer(h);
+      });
     });
 
-    desenharMarcadores(filtrados);
+    // 5. CÍRCULOS DE CALOR / RISCO EPIDEMIOLÓGICO
+    const riskDengue = L.circle([-10.4282, -36.4720], { radius: 110, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.22, weight: 1.5 }).addTo(map);
+    const riskHipertensao = L.circle([-10.4268, -36.4730], { radius: 95, color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.22, weight: 1.5 }).addTo(map);
+    const riskGestante = L.circle([-10.4290, -36.4715], { radius: 80, color: '#a855f7', fillColor: '#a855f7', fillOpacity: 0.22, weight: 1.5 }).addTo(map);
 
-    // Mostra/oculta rota do José Santos
-    if (ag === 'José Santos' || ag === 'TODOS') {
-      if (!map.hasLayer(rotaPolyline)) rotaPolyline.addTo(map);
-      document.getElementById('routeCard').style.display = 'block';
-    } else {
-      if (map.hasLayer(rotaPolyline)) map.removeLayer(rotaPolyline);
-      document.getElementById('routeCard').style.display = 'none';
+    // FUNÇÕES DE CONTROLE DE INTERFACE
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById(`pane-${tabId}`).classList.add('active');
     }
-  }
 
-  function recentralizar() {
-    map.setView([centerLat, centerLng], 14);
-  }
+    function toggleLayers() {
+      if (document.getElementById('chk-microareas').checked) {
+        microarea01.addTo(map);
+        microarea02.addTo(map);
+      } else {
+        map.removeLayer(microarea01);
+        map.removeLayer(microarea02);
+      }
 
-  let heatmapAtivo = false;
-  function toggleHeatmap() {
-    heatmapAtivo = !heatmapAtivo;
-    const btn = document.getElementById('btnHeatmap');
-    if (heatmapAtivo) {
-      btn.style.background = '#f43f5e';
-      btn.style.color = '#ffffff';
-      btn.textContent = '🔥 Mapa de Calor Ativo';
-      // Simulação de realce de calor aumentando raio e opacidade dos marcadores
-      markersList.forEach(m => m.setRadius(24).setStyle({ fillOpacity: 0.4, weight: 0 }));
-    } else {
-      btn.style.background = '';
-      btn.style.color = '';
-      btn.textContent = '🔥 Mapa de Calor';
-      markersList.forEach(m => m.setRadius(10).setStyle({ fillOpacity: 0.95, weight: 3 }));
+      if (document.getElementById('chk-route').checked) {
+        routeLine.addTo(map);
+        agentMarker.addTo(map);
+      } else {
+        map.removeLayer(routeLine);
+        map.removeLayer(agentMarker);
+      }
+
+      if (document.getElementById('chk-houses').checked) housesGroup.addTo(map);
+      else map.removeLayer(housesGroup);
+
+      if (document.getElementById('chk-dengue').checked) riskDengue.addTo(map);
+      else map.removeLayer(riskDengue);
+
+      if (document.getElementById('chk-hipertensao').checked) riskHipertensao.addTo(map);
+      else map.removeLayer(riskHipertensao);
+
+      if (document.getElementById('chk-gestantes').checked) riskGestante.addTo(map);
+      else map.removeLayer(riskGestante);
     }
-  }
 
-  // Inicialização
-  desenharMarcadores(datasetVisitas);
-</script>
-{% endblock %}
+    function openHouseDrawer(house) {
+      document.getElementById('drawer-family-name').textContent = house.name;
+      document.getElementById('drawer-resp').textContent = house.resp;
+      document.getElementById('drawer-cns').textContent = house.cns;
+      document.getElementById('drawer-alert-desc').textContent = house.alert;
+      document.getElementById('house-drawer').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('house-drawer').classList.remove('open');
+    }
+
+    function focusAgent(name) {
+      map.setView(bgCenter, 16);
+      agentMarker.openPopup();
+    }
+
+    // PLAYBACK SIMULATOR
+    let playbackInterval = null;
+    let isPlaying = false;
+    let step = 0;
+
+    function togglePlayback() {
+      const btn = document.getElementById('btn-play');
+      if (isPlaying) {
+        clearInterval(playbackInterval);
+        isPlaying = false;
+        btn.textContent = '▶ Continuar Reprodução';
+      } else {
+        isPlaying = true;
+        btn.textContent = '⏸ Pausar';
+        playbackInterval = setInterval(() => {
+          step = (step + 1) % routeCoords.length;
+          agentMarker.setLatLng(routeCoords[step]);
+          document.getElementById('time-slider').value = (step / (routeCoords.length - 1)) * 100;
+          const hours = 8 + Math.floor(step * 0.8);
+          const minutes = (step * 24) % 60;
+          document.getElementById('playback-clock').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }, 1200);
+      }
+    }
+
+    function updatePlayback(val) {
+      const idx = Math.round((val / 100) * (routeCoords.length - 1));
+      agentMarker.setLatLng(routeCoords[idx]);
+      const hours = 8 + Math.floor(idx * 0.8);
+      const minutes = (idx * 24) % 60;
+      document.getElementById('playback-clock').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+  </script>
+</body>
+</html>

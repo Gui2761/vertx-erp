@@ -1,288 +1,603 @@
-{% extends 'rh_municipal/public_base.html' %}
-{% block title %}Console de Chamadas UBS · VERTYX Saúde Pública{% endblock %}
-
-{% block page_styles %}
-<style>
-  .desk-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.6fr;
-    gap: 1.75rem;
-  }
-  @media (max-width: 960px) {
-    .desk-grid { grid-template-columns: 1fr; }
-  }
-
-  .desk-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 20px;
-    padding: 1.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .current-consult-box {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border-radius: 16px;
-    padding: 1.5rem;
-    color: #ffffff;
-    position: relative;
-    overflow: hidden;
-  }
-  .current-consult-box::after {
-    content: '';
-    position: absolute;
-    top: -30%; right: -20%;
-    width: 150px; height: 150px;
-    background: rgba(56, 189, 248, 0.15);
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  .btn-call-giant {
-    background: linear-gradient(135deg, #0284c7, #2563eb);
-    color: #ffffff;
-    border: none;
-    border-radius: 14px;
-    padding: 1.2rem;
-    font-size: 1.15rem;
-    font-weight: 800;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.75rem;
-    box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
-    transition: all 0.2s ease;
-  }
-  .btn-call-giant:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 15px 25px -5px rgba(37, 99, 235, 0.5);
-  }
-  .btn-call-giant:active {
-    transform: translateY(1px);
-  }
-
-  .btn-call-priority {
-    background: linear-gradient(135deg, #d97706, #b45309);
-    color: #ffffff;
-    border: none;
-    border-radius: 14px;
-    padding: 1rem;
-    font-size: 1rem;
-    font-weight: 800;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.6rem;
-    box-shadow: 0 8px 16px -4px rgba(217, 119, 6, 0.35);
-    transition: all 0.2s ease;
-  }
-  .btn-call-priority:hover {
-    transform: translateY(-2px);
-  }
-
-  /* Fila de Espera ao Vivo com Triagem Manchester */
-  .queue-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  .queue-item {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.2s;
-  }
-  .queue-item:hover {
-    border-color: #cbd5e1;
-    background: #ffffff;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
-  }
-  .manchester-badge {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    display: inline-block;
-  }
-  .m-yellow { background: #eab308; box-shadow: 0 0 8px #eab308; }
-  .m-green { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
-  .m-blue { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
-  .m-red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
-</style>
-{% endblock %}
-
-{% block content %}
-<section class="gp-page-head">
-  <div>
-    <div class="gp-eyebrow">VERTYX · ATENÇÃO PRIMÁRIA SUS · FILA ELETRÔNICA</div>
-    <h1>Console de Chamadas da UBS</h1>
-    <p>Painel operacional do médico e atendente com gerenciamento de fila em tempo real, triagem Manchester e sincronização imediata com a SmartTV da sala de espera.</p>
-  </div>
-  <div class="gp-head-actions">
-    <a class="gp-button" href="{% url 'rh_municipal_public:saude_call_panel_tv' %}" target="_blank" style="background: #0284c7;">Abrir SmartTV da Sala de Espera 📺</a>
-    <a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_home' %}">Voltar à Saúde</a>
-  </div>
-</section>
-
-<div class="desk-grid">
-  <!-- Coluna 1: Controles de Atendimento -->
-  <div class="desk-card">
-    <div class="current-consult-box">
-      <small style="text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: 700;">Seu Consultório Ativo</small>
-      <h3 style="font-size: 1.4rem; color: #38bdf8; margin: 0.3rem 0;">Consultório 03 · Dra. Mariana Santos</h3>
-      <p style="font-size: 0.85rem; color: #cbd5e1;">Atenção Primária à Saúde · Equipe eSF 01</p>
-      
-      <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <small style="color: #94a3b8; display: block;">Última Senha Chamada</small>
-          <strong style="font-size: 1.8rem; font-family: monospace; color: #ffffff;" id="deskCurrentTicket">P-015</strong>
-        </div>
-        <button class="gp-button gp-button-light" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="deskRepetirVoz()">Rechamar 🔊</button>
-      </div>
-    </div>
-
-    <!-- Botões de Ação Imediata -->
-    <button class="btn-call-giant" onclick="deskChamar('NORMAL')">
-      <span>Chamar Próximo Normal</span>
-      <span style="font-size: 1.3rem;">📢</span>
-    </button>
-
-    <button class="btn-call-priority" onclick="deskChamar('PRIORITARIO')">
-      <span>Chamar Prioritário (Idoso / PCD / Gestante)</span>
-      <span style="font-size: 1.2rem;">⭐</span>
-    </button>
-
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-      <button class="gp-button gp-button-light" onclick="alert('Paciente marcado como AUSENTE no prontuário e-SUS.')">Marcar Ausente ❌</button>
-      <button class="gp-button gp-button-light" onclick="alert('Atendimento INICIADO. Prontuário aberto.')">Iniciar Consulta 🩺</button>
-    </div>
-
-    <div style="font-size: 0.8rem; color: #64748b; text-align: center; margin-top: 0.5rem;">
-      Atalhos de teclado: <b>[Espaço]</b> Próximo · <b>[P]</b> Prioritário · <b>[R]</b> Rechamar
-    </div>
-  </div>
-
-  <!-- Coluna 2: Fila de Espera em Tempo Real (Triagem Manchester) -->
-  <div class="desk-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem;">
-      <div>
-        <h3 style="font-size: 1.15rem; color: #0f172a;">Fila de Espera na Recepção</h3>
-        <span style="font-size: 0.85rem; color: #64748b;">Pacientes acolhidos aguardando chamada médica</span>
-      </div>
-      <span class="gp-badge" style="background: #dbeafe; color: #1e40af; font-weight: 800;">5 aguardando</span>
-    </div>
-
-    <div class="queue-list" id="deskQueue">
-      <div class="queue-item">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <span class="manchester-badge m-yellow" title="Amarelo: Urgente (Até 60 min)"></span>
-          <div>
-            <strong style="color: #0f172a; font-size: 0.95rem;">P-016 · Seu Benedito (74 anos)</strong>
-            <small style="display: block; color: #64748b;">Prioritário 60+ · Queixa de Cefaleia e PA 150x95</small>
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <span style="display: block; font-size: 0.8rem; color: #d97706; font-weight: 700;">Aguardando há 8 min</span>
-          <button class="gp-button gp-button-light" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; margin-top: 0.2rem;" onclick="deskChamarEspecifico('P-016')">Chamar Este</button>
-        </div>
-      </div>
-
-      <div class="queue-item">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <span class="manchester-badge m-green" title="Verde: Pouco Urgente (Até 120 min)"></span>
-          <div>
-            <strong style="color: #0f172a; font-size: 0.95rem;">A-043 · Francisca de Assis</strong>
-            <small style="display: block; color: #64748b;">Normal · Renovação de Receita Contínua</small>
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <span style="display: block; font-size: 0.8rem; color: #64748b;">Aguardando há 14 min</span>
-          <button class="gp-button gp-button-light" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; margin-top: 0.2rem;" onclick="deskChamarEspecifico('A-043')">Chamar Este</button>
-        </div>
-      </div>
-
-      <div class="queue-item">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <span class="manchester-badge m-green" title="Verde: Pouco Urgente (Até 120 min)"></span>
-          <div>
-            <strong style="color: #0f172a; font-size: 0.95rem;">A-044 · Marcos Aurélio Santos</strong>
-            <small style="display: block; color: #64748b;">Normal · Retorno de Exames Laboratoriais</small>
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <span style="display: block; font-size: 0.8rem; color: #64748b;">Aguardando há 19 min</span>
-          <button class="gp-button gp-button-light" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; margin-top: 0.2rem;" onclick="deskChamarEspecifico('A-044')">Chamar Este</button>
-        </div>
-      </div>
-
-      <div class="queue-item">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <span class="manchester-badge m-blue" title="Azul: Não Urgente (Até 240 min)"></span>
-          <div>
-            <strong style="color: #0f172a; font-size: 0.95rem;">A-045 · Carla Patrícia Lima</strong>
-            <small style="display: block; color: #64748b;">Normal · Encaminhamento de Fisioterapia</small>
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <span style="display: block; font-size: 0.8rem; color: #64748b;">Aguardando há 25 min</span>
-          <button class="gp-button gp-button-light" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; margin-top: 0.2rem;" onclick="deskChamarEspecifico('A-045')">Chamar Este</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-  let deskSeqN = 46;
-  let deskSeqP = 17;
-
-  function deskChamar(tipo) {
-    let senha = tipo === 'PRIORITARIO' ? 'P-0' + deskSeqP++ : 'A-0' + deskSeqN++;
-    deskChamarEspecifico(senha);
-  }
-
-  function deskChamarEspecifico(senha) {
-    document.getElementById('deskCurrentTicket').textContent = senha;
-    tocarDingDong();
-    if ('speechSynthesis' in window) {
-      setTimeout(() => {
-        window.speechSynthesis.cancel();
-        const texto = `Atenção. Senha ${senha.replace('-', ' ')}. Favor dirigir-se ao Consultório 03.`;
-        const utt = new SpeechSynthesisUtterance(texto);
-        utt.lang = 'pt-BR';
-        utt.rate = 0.95;
-        window.speechSynthesis.speak(utt);
-      }, 500);
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estação de Trabalho do Médico · Console Clínico UBS · VERTYX Saúde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0f1d;
+      --bg-panel: #111827;
+      --bg-card: #1f2937;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-focus: #0284c7;
+      --cyan: #38bdf8;
+      --blue: #2563eb;
+      --m-red: #ef4444;
+      --m-orange: #f97316;
+      --m-yellow: #eab308;
+      --m-green: #22c55e;
+      --m-blue: #3b82f6;
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
     }
-  }
 
-  function deskRepetirVoz() {
-    const senha = document.getElementById('deskCurrentTicket').textContent;
-    deskChamarEspecifico(senha);
-  }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: #f8fafc;
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-  function tocarDingDong() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime + 0.25);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.6);
-    } catch(e) {}
-  }
-</script>
-{% endblock %}
+    /* BARRA SUPERIOR DO MÉDICO */
+    .top-bar {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #fff;
+      font-size: 1.25rem;
+    }
+
+    .brand-text h2 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .brand-text p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    .doctor-profile {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .doc-info {
+      text-align: right;
+    }
+    .doc-name {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+    .doc-spec {
+      font-size: 0.78rem;
+      color: #38bdf8;
+    }
+
+    .btn-open-tv {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-open-tv:hover {
+      background: #38bdf8;
+      color: #000;
+    }
+
+    /* GRID OPERACIONAL */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1.7fr;
+      gap: 2rem;
+      padding: 2rem;
+      flex: 1;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* PAINEL DE CONTROLE (ESQUERDA) */
+    .control-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+    }
+
+    .current-call-display {
+      background: #0f172a;
+      border: 2px solid rgba(56, 189, 248, 0.3);
+      border-radius: 16px;
+      padding: 1.75rem;
+      text-align: center;
+    }
+
+    .current-call-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .current-call-ticket {
+      font-family: var(--font-mono);
+      font-size: 4rem;
+      font-weight: 900;
+      color: #38bdf8;
+      line-height: 1.1;
+      margin: 0.5rem 0;
+    }
+
+    .current-call-name {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .current-call-details {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .action-button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .btn-call-large {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: none;
+      padding: 1.2rem;
+      border-radius: 14px;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      box-shadow: 0 10px 25px rgba(2, 132, 199, 0.4);
+      transition: all 0.2s;
+    }
+
+    .btn-call-large:hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+    }
+
+    .btn-sub-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+
+    .btn-sub {
+      background: #1f2937;
+      border: 1px solid var(--border-color);
+      color: #e5e7eb;
+      padding: 0.85rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-sub:hover {
+      background: #374151;
+      border-color: #38bdf8;
+    }
+
+    .keyboard-legend {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-around;
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
+    .kbd-key {
+      background: #374151;
+      color: #fff;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* FILA DE ATENDIMENTO (DIREITA) */
+    .queue-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .queue-tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: #0f172a;
+      padding: 0.4rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .queue-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 0.65rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .queue-tab.active {
+      background: #1f2937;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .queue-table {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .queue-card {
+      background: #1f2937;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 1.1rem 1.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+
+    .queue-card:hover {
+      border-color: #38bdf8;
+      background: #253347;
+    }
+
+    .patient-col {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .ticket-badge {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      background: #111827;
+      padding: 0.5rem 0.85rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .patient-details h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .patient-meta {
+      display: flex;
+      gap: 0.85rem;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-top: 0.25rem;
+    }
+
+    .triage-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 8px;
+    }
+    .triage-indicator.yellow { background: rgba(234, 179, 8, 0.15); color: #fbbf24; border: 1px solid rgba(234, 179, 8, 0.4); }
+    .triage-indicator.green { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .triage-indicator.red { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    .btn-row-call {
+      background: #0284c7;
+      border: none;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+    .btn-row-call:hover {
+      background: #0369a1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="brand-group">
+      <div class="brand-mark">V</div>
+      <div class="brand-text">
+        <h2>VERTYX Saúde Pública · Console Clínico</h2>
+        <p>Unidade Básica de Saúde Maria Pureza da Silva · Brejo Grande/SE</p>
+      </div>
+    </div>
+
+    <div class="doctor-profile">
+      <div class="doc-info">
+        <div class="doc-name">Dra. Beatriz Carvalho</div>
+        <div class="doc-spec">Consultório 03 · Clínica Geral e-SUS APS</div>
+      </div>
+      <a href="/gestao-publica/saude/painel-chamadas/tv/" target="_blank" class="btn-open-tv">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+        Abrir SmartTV da Sala de Espera
+      </a>
+    </div>
+  </header>
+
+  <!-- OPERATIONAL GRID -->
+  <main class="workspace-grid">
+    <!-- CONTROLES DO MÉDICO -->
+    <div class="control-card">
+      <div class="section-title">
+        <span>Controle de Chamada Imediata</span>
+        <span style="font-size: 0.8rem; color: #4ade80; font-weight: 700;">● Online · Sincronizado</span>
+      </div>
+
+      <!-- VISUALIZADOR DA SENHA ATUAL -->
+      <div class="current-call-display">
+        <div class="current-call-label">Paciente em Atendimento no Consultório 03</div>
+        <div class="current-call-ticket" id="doc-ticket">PRE-042</div>
+        <div class="current-call-name" id="doc-name">Maria Santos da Silva</div>
+        <div class="current-call-details">
+          <span>Manchester: <strong>Amarelo</strong></span>
+          <span>Tempo decorrido: <strong id="elapsed-time">04:12</strong></span>
+          <span>CNS: <strong>704.8910.3847.192</strong></span>
+        </div>
+      </div>
+
+      <!-- BOTÕES DE AÇÃO -->
+      <div class="action-button-group">
+        <button class="btn-call-large" onclick="doctorCallNext()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+          CHAMAR PRÓXIMO PACIENTE DA FILA (Espaço)
+        </button>
+
+        <div class="btn-sub-row">
+          <button class="btn-sub" onclick="doctorRepeat()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Rechamar (R)
+          </button>
+          <button class="btn-sub" onclick="doctorCallPriority()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Chamar Prioritário (P)
+          </button>
+        </div>
+      </div>
+
+      <!-- LEGENDA DE ATALHOS -->
+      <div class="keyboard-legend">
+        <span><span class="kbd-key">Espaço</span> Próximo</span>
+        <span><span class="kbd-key">R</span> Rechamar</span>
+        <span><span class="kbd-key">P</span> Prioridade</span>
+      </div>
+    </div>
+
+    <!-- FILA DE ESPERA -->
+    <div class="queue-panel">
+      <div class="section-title">
+        <span>Fila Geral da UBS Maria Pureza</span>
+        <span class="badge-count" style="background:#0284c7; color:#fff; font-size:0.8rem; padding:0.25rem 0.75rem; border-radius:99px;" id="queue-total">4 Pacientes</span>
+      </div>
+
+      <div class="queue-tabs" style="margin-top: 1rem;">
+        <button class="queue-tab active">Consultório 03 (Clínica Médica)</button>
+        <button class="queue-tab">Triagem de Enfermagem</button>
+        <button class="queue-tab">Odontologia</button>
+      </div>
+
+      <div class="queue-table" id="doc-queue">
+        <div class="queue-card">
+          <div class="patient-col">
+            <span class="ticket-badge">PRE-043</span>
+            <div class="patient-details">
+              <h4>Geraldo Moreira Sobrinho</h4>
+              <div class="patient-meta">
+                <span>Idoso 80+</span>
+                <span>Espera: 12 min</span>
+                <span>Queixa: Picos hipertensivos</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap: 1rem;">
+            <span class="triage-indicator yellow">Amarelo</span>
+            <button class="btn-row-call" onclick="callSpecific(this, 'PRE-043', 'Geraldo Moreira Sobrinho', 'yellow')">Chamar</button>
+          </div>
+        </div>
+
+        <div class="queue-card">
+          <div class="patient-col">
+            <span class="ticket-badge">G-015</span>
+            <div class="patient-details">
+              <h4>Juliana Mendonça Lima</h4>
+              <div class="patient-meta">
+                <span>Gestante (28 semanas)</span>
+                <span>Espera: 8 min</span>
+                <span>Queixa: Consulta Pré-natal habitual</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap: 1rem;">
+            <span class="triage-indicator yellow">Amarelo</span>
+            <button class="btn-row-call" onclick="callSpecific(this, 'G-015', 'Juliana Mendonça Lima', 'yellow')">Chamar</button>
+          </div>
+        </div>
+
+        <div class="queue-card">
+          <div class="patient-col">
+            <span class="ticket-badge">N-098</span>
+            <div class="patient-details">
+              <h4>Lucas Albuquerque Pinto</h4>
+              <div class="patient-meta">
+                <span>Geral</span>
+                <span>Espera: 15 min</span>
+                <span>Queixa: Avaliação de exames laboratoriais</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap: 1rem;">
+            <span class="triage-indicator green">Verde</span>
+            <button class="btn-row-call" onclick="callSpecific(this, 'N-098', 'Lucas Albuquerque Pinto', 'green')">Chamar</button>
+          </div>
+        </div>
+
+        <div class="queue-card">
+          <div class="patient-col">
+            <span class="ticket-badge">N-099</span>
+            <div class="patient-details">
+              <h4>Tereza Cristina Barbosa</h4>
+              <div class="patient-meta">
+                <span>Geral</span>
+                <span>Espera: 18 min</span>
+                <span>Queixa: Renovação de receita contínua</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap: 1rem;">
+            <span class="triage-indicator green">Verde</span>
+            <button class="btn-row-call" onclick="callSpecific(this, 'N-099', 'Tereza Cristina Barbosa', 'green')">Chamar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function callSpecific(btn, ticket, name, triage) {
+      document.getElementById('doc-ticket').textContent = ticket;
+      document.getElementById('doc-name').textContent = name;
+      const card = btn.closest('.queue-card');
+      if (card) card.remove();
+      updateQueueTotal();
+    }
+
+    function doctorCallNext() {
+      const queue = document.getElementById('doc-queue');
+      const first = queue.firstElementChild;
+      if (first) {
+        const ticket = first.querySelector('.ticket-badge').textContent;
+        const name = first.querySelector('.patient-details h4').textContent;
+        document.getElementById('doc-ticket').textContent = ticket;
+        document.getElementById('doc-name').textContent = name;
+        first.remove();
+        updateQueueTotal();
+      }
+    }
+
+    function doctorRepeat() {
+      const ticket = document.getElementById('doc-ticket').textContent;
+      const name = document.getElementById('doc-name').textContent;
+      alert(`Rechamando na SmartTV da sala de espera:\nSenha: ${ticket} · ${name}`);
+    }
+
+    function doctorCallPriority() {
+      alert("Prioridade absoluta chamada no consultório!");
+    }
+
+    function updateQueueTotal() {
+      const count = document.getElementById('doc-queue').children.length;
+      document.getElementById('queue-total').textContent = `${count} Pacientes`;
+    }
+
+    // Atalhos de teclado
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        doctorCallNext();
+      } else if (e.key.toLowerCase() === 'r') {
+        doctorRepeat();
+      } else if (e.key.toLowerCase() === 'p') {
+        doctorCallPriority();
+      }
+    });
+  </script>
+</body>
+</html>
