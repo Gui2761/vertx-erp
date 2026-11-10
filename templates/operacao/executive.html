@@ -156,31 +156,37 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
 (function() {
-  function initCharts() {
-    if (typeof ApexCharts === 'undefined') return;
+  const activeCharts = [];
 
-    const currencyFormatter = (val) => {
-      const num = parseFloat(val) || 0;
-      return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
+  const currencyFormatter = (val) => {
+    const num = parseFloat(val) || 0;
+    return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
-    const baseTheme = {
-      theme: { mode: 'dark' },
+  function getBaseTheme(isLight) {
+    return {
+      theme: { mode: isLight ? 'light' : 'dark' },
       chart: {
         background: 'transparent',
-        foreColor: '#94a3b8',
+        foreColor: isLight ? '#475569' : '#94a3b8',
         toolbar: { show: false },
-        fontFamily: 'Inter, system-ui, sans-serif'
+        fontFamily: 'Plus Jakarta Sans, Inter, system-ui, sans-serif'
       },
       grid: {
-        borderColor: 'rgba(255, 255, 255, 0.07)',
+        borderColor: isLight ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255, 255, 255, 0.07)',
         strokeDashArray: 4
       },
       tooltip: {
-        theme: 'dark',
+        theme: isLight ? 'light' : 'dark',
         y: { formatter: currencyFormatter }
       }
     };
+  }
+
+  function initCharts() {
+    if (typeof ApexCharts === 'undefined') return;
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const baseTheme = getBaseTheme(isLight);
 
     // 1. Vendas Líquidas
     const salesScript = document.getElementById('sales-chart-data');
@@ -196,8 +202,8 @@
             series: [{ name: 'Vendas Líquidas', data: salesData.map(d => parseFloat(d.vendas) || 0) }],
             xaxis: {
               categories: salesData.map(d => d.label),
-              axisBorder: { color: 'rgba(255, 255, 255, 0.1)' },
-              axisTicks: { color: 'rgba(255, 255, 255, 0.1)' }
+              axisBorder: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' },
+              axisTicks: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' }
             },
             colors: ['#10b981'],
             plotOptions: {
@@ -207,6 +213,7 @@
           };
           const chart = new ApexCharts(salesTarget, salesOptions);
           chart.render();
+          activeCharts.push(chart);
           if (salesSvg) salesSvg.style.display = 'none';
         }
       } catch (e) {
@@ -231,8 +238,8 @@
             ],
             xaxis: {
               categories: cashData.map(d => d.label),
-              axisBorder: { color: 'rgba(255, 255, 255, 0.1)' },
-              axisTicks: { color: 'rgba(255, 255, 255, 0.1)' }
+              axisBorder: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' },
+              axisTicks: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' }
             },
             colors: ['#10b981', '#f43f5e'],
             stroke: { curve: 'smooth', width: 2 },
@@ -244,6 +251,7 @@
           };
           const chart = new ApexCharts(cashTarget, cashOptions);
           chart.render();
+          activeCharts.push(chart);
           if (cashSvg) cashSvg.style.display = 'none';
         }
       } catch (e) {
@@ -265,8 +273,8 @@
             series: [{ name: 'Receitas', data: revData.map(d => parseFloat(d.faturamento) || 0) }],
             xaxis: {
               categories: revData.map(d => d.label),
-              axisBorder: { color: 'rgba(255, 255, 255, 0.1)' },
-              axisTicks: { color: 'rgba(255, 255, 255, 0.1)' }
+              axisBorder: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' },
+              axisTicks: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' }
             },
             colors: ['#0284c7'],
             plotOptions: {
@@ -276,6 +284,7 @@
           };
           const chart = new ApexCharts(revTarget, revOptions);
           chart.render();
+          activeCharts.push(chart);
           if (revSvg) revSvg.style.display = 'none';
         }
       } catch (e) {
@@ -283,6 +292,30 @@
       }
     }
   }
+
+  // Listener para alternância de tema ao vivo
+  window.addEventListener('vertyxThemeChanged', function(e) {
+    const isLight = e.detail && e.detail.theme === 'light';
+    const newTheme = getBaseTheme(isLight);
+    const axisColor = isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)';
+
+    activeCharts.forEach(chart => {
+      try {
+        chart.updateOptions({
+          theme: newTheme.theme,
+          chart: { foreColor: newTheme.chart.foreColor },
+          grid: { borderColor: newTheme.grid.borderColor },
+          tooltip: { theme: newTheme.tooltip.theme },
+          xaxis: {
+            axisBorder: { color: axisColor },
+            axisTicks: { color: axisColor }
+          }
+        });
+      } catch(err) {
+        console.warn('Erro ao atualizar tema do gráfico:', err);
+      }
+    });
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initCharts);

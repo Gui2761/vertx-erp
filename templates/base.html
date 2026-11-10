@@ -86,7 +86,7 @@
           <span class="vx-theme-label small">Modo Claro</span>
         </button>
         <div class="d-flex align-items-center justify-content-between mb-1">
-          <span class="small text-white fw-bold text-truncate" title="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</span>
+          <span class="small fw-bold text-truncate" style="color: var(--vx-ink);" title="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</span>
           <form method="post" action="{% url 'contas:logout' %}" class="m-0">
             {% csrf_token %}
             <button class="btn btn-outline-light btn-sm py-0 px-2" style="font-size: 0.72rem;">Sair</button>
