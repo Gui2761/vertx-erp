@@ -466,21 +466,24 @@
 </head>
 <body>
 
-  <!-- 1. HEADER INSTITUCIONAL -->
+  <!-- 1. HEADER INSTITUCIONAL DINÂMICO -->
   <header>
     <div class="brand-cluster">
-      <div class="coat-badge" title="Prefeitura Municipal de Brejo Grande">SE</div>
+      <div class="coat-badge" id="pec-coat" title="{{ branding.nome_institucional|default:'Prefeitura Municipal' }}">{{ branding.uf|default:'BR' }}</div>
       <div class="brand-titles">
         <h1>Prontuário Eletrônico do Cidadão <span>e-SUS PEC SOAP</span></h1>
-        <p>Prefeitura Municipal de Brejo Grande · Fundo Municipal de Saúde · UBS Maria Pureza da Silva</p>
+        <p><span id="pec-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</span> · <span id="pec-orgao">{{ branding.orgao_gestor|default:'Secretaria de Saúde' }}</span> · <span id="pec-unit">{{ branding.unidade_nome|default:'Unidade Básica de Saúde Central' }}</span></p>
       </div>
     </div>
 
     <div class="header-actions">
       <div class="doctor-pill">
-        Dra. Beatriz Carvalho
-        <small>CRM/SE 4.821 · Consultório 03 · Equipe ESF 01</small>
+        Dr(a). Médico(a) Assistente
+        <small>Clínica Médica / Atenção Primária à Saúde</small>
       </div>
+      <a href="/gestao-publica/saude/personalizacao/" class="btn-outline" style="border-color: rgba(2,132,199,0.4); color: #38bdf8;">
+        Personalizar Marca
+      </a>
       <a href="/gestao-publica/saude/painel-chamadas/" class="btn-outline">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         Voltar à Fila de Chamadas
@@ -760,6 +763,26 @@ Abdome: Flácido, indolor à palpação profunda, sem visceromegalias ou sinais 
       // Retorna para o Console do Médico
       window.location.href = '/gestao-publica/saude/painel-chamadas/';
     }
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('pec-entity').textContent = b.nome_institucional;
+      if (b.orgao_gestor) document.getElementById('pec-orgao').textContent = b.orgao_gestor;
+      if (b.unidade_nome) document.getElementById('pec-unit').textContent = b.unidade_nome;
+      if (b.uf) document.getElementById('pec-coat').textContent = b.uf;
+      if (b.cor_primaria) document.getElementById('pec-coat').style.background = b.cor_primaria;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
   </script>
 </body>
 </html>

@@ -553,13 +553,13 @@
 </head>
 <body>
 
-  <!-- HEADER INSTITUCIONAL -->
+  <!-- HEADER INSTITUCIONAL DINÂMICO -->
   <header>
     <div class="kiosk-entity">
-      <div class="coat-badge" title="Prefeitura Municipal de Brejo Grande">SE</div>
+      <div class="coat-badge" id="branding-badge" title="{{ branding.nome_institucional|default:'Prefeitura Municipal' }}">{{ branding.uf|default:'BR' }}</div>
       <div class="kiosk-titles">
-        <h1>Prefeitura Municipal de Brejo Grande</h1>
-        <p>Fundo Municipal de Saúde · Unidade Básica de Saúde Maria Pureza da Silva</p>
+        <h1 id="branding-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</h1>
+        <p id="branding-unit">{{ branding.orgao_gestor|default:'Secretaria Municipal de Saúde' }} · {{ branding.unidade_nome|default:'Unidade Básica de Saúde Central' }}</p>
       </div>
     </div>
 
@@ -961,6 +961,25 @@
           break;
       }
     });
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('branding-entity').textContent = b.nome_institucional;
+      if (b.unidade_nome) document.getElementById('branding-unit').textContent = `${b.orgao_gestor || 'Secretaria de Saúde'} · ${b.unidade_nome}`;
+      if (b.uf) document.getElementById('branding-badge').textContent = b.uf;
+      if (b.cor_primaria) document.getElementById('branding-badge').style.background = b.cor_primaria;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
   </script>
 </body>
 </html>

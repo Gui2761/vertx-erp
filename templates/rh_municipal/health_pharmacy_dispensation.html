@@ -383,19 +383,19 @@
 </head>
 <body>
 
-  <!-- 1. HEADER INSTITUCIONAL -->
+  <!-- 1. HEADER INSTITUCIONAL DINÂMICO -->
   <header>
     <div class="brand-cluster">
-      <div class="coat-badge" title="Prefeitura Municipal de Brejo Grande">SE</div>
+      <div class="coat-badge" id="pharm-coat" title="{{ branding.nome_institucional|default:'Prefeitura Municipal' }}">{{ branding.uf|default:'BR' }}</div>
       <div class="brand-titles">
         <h1>Farmácia Básica Municipal <span>Sistema Hórus / e-SUS AF</span></h1>
-        <p>Prefeitura Municipal de Brejo Grande · Fundo Municipal de Saúde · UBS Maria Pureza da Silva</p>
+        <p><span id="pharm-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</span> · <span id="pharm-orgao">{{ branding.orgao_gestor|default:'Secretaria de Saúde' }}</span> · <span id="pharm-unit">{{ branding.unidade_nome|default:'Unidade Básica de Saúde Central' }}</span></p>
       </div>
     </div>
 
     <div class="pharm-user-info">
-      <div class="pharm-user-name">Farm. Rodrigo Fontes Maia</div>
-      <div class="pharm-user-meta">CRF/SE 2.140 · Balcão de Dispensação 01</div>
+      <div class="pharm-user-name">Farmacêutico(a) Responsável</div>
+      <div class="pharm-user-meta">Balcão de Dispensação de Medicamentos</div>
     </div>
   </header>
 
@@ -618,6 +618,26 @@
         confirmDispensation();
       }
     });
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('pharm-entity').textContent = b.nome_institucional;
+      if (b.orgao_gestor) document.getElementById('pharm-orgao').textContent = b.orgao_gestor;
+      if (b.unidade_nome) document.getElementById('pharm-unit').textContent = b.unidade_nome;
+      if (b.uf) document.getElementById('pharm-coat').textContent = b.uf;
+      if (b.cor_primaria) document.getElementById('pharm-coat').style.background = b.cor_primaria;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
   </script>
 </body>
 </html>

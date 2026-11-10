@@ -446,18 +446,22 @@
   <!-- TOP BAR -->
   <header class="top-bar">
     <div class="brand-group">
-      <div class="brand-mark">SE</div>
+      <div class="brand-mark" id="call-mark">{{ branding.uf|default:'BR' }}</div>
       <div class="brand-text">
-        <h2>Prefeitura Municipal de Brejo Grande</h2>
-        <p>Fundo Municipal de Saúde · Console Clínico e-SUS APS (Novo SGA)</p>
+        <h2 id="call-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</h2>
+        <p id="call-unit">{{ branding.orgao_gestor|default:'Secretaria Municipal de Saúde' }} · Console e-SUS APS (Novo SGA)</p>
       </div>
     </div>
 
     <div class="doctor-profile">
       <div class="doc-info">
-        <div class="doc-name">Dra. Beatriz Carvalho</div>
-        <div class="doc-spec">CRM/SE 4.821 · Consultório 03 · ESF 01</div>
+        <div class="doc-name">Dr. Médico de Plantão</div>
+        <div class="doc-spec">Consultório 01 · Equipe Saúde da Família</div>
       </div>
+      <a href="/gestao-publica/saude/personalizacao/" class="btn-open-tv" style="background: rgba(14,165,233,0.15); border-color: rgba(14,165,233,0.3); color: #38bdf8;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Personalizar Sistema
+      </a>
       <a href="/gestao-publica/saude/triagem/" class="btn-open-tv" style="background: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.3); color: #fca5a5;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
         Triagem Manchester
@@ -933,6 +937,24 @@
 
     // Inicia em estado IDLE padrão
     setAttendanceState('IDLE');
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('call-entity').textContent = b.nome_institucional;
+      if (b.orgao_gestor) document.getElementById('call-unit').textContent = `${b.orgao_gestor} · Console e-SUS APS (Novo SGA)`;
+      if (b.uf) document.getElementById('call-mark').textContent = b.uf;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
   </script>
 </body>
 </html>

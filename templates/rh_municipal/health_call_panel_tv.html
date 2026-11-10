@@ -588,15 +588,15 @@
 </head>
 <body>
 
-  <!-- 1. HEADER DO PAINEL HOSPITALAR -->
+  <!-- 1. HEADER DO PAINEL HOSPITALAR DINÂMICO -->
   <header>
     <div class="header-entity">
-      <div class="gov-coat" title="Prefeitura Municipal de Brejo Grande">
-        SE
+      <div class="gov-coat" id="tv-coat" title="{{ branding.nome_institucional|default:'Prefeitura Municipal' }}">
+        {{ branding.uf|default:'BR' }}
       </div>
       <div class="entity-titles">
-        <h1>Prefeitura Municipal de Brejo Grande</h1>
-        <p>Fundo Municipal de Saúde · Unidade Básica de Saúde Maria Pureza da Silva · Painel de Chamadas</p>
+        <h1 id="tv-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</h1>
+        <p id="tv-unit">{{ branding.orgao_gestor|default:'Secretaria Municipal de Saúde' }} · {{ branding.unidade_nome|default:'Unidade Básica de Saúde Central' }} · Painel Oficial de Chamadas</p>
       </div>
     </div>
 
@@ -738,15 +738,15 @@
     </aside>
   </main>
 
-  <!-- 3. FOOTER MARQUEE -->
+  <!-- 3. FOOTER MARQUEE INSTITUCIONAL -->
   <footer>
-    <span class="footer-badge">Avisos da Saúde</span>
+    <span class="footer-badge">Informativo</span>
     <div class="ticker-wrap">
       <div class="ticker-content">
-        <span>[CAMPANHA DE VACINAÇÃO] <strong>Vacinação contra a Dengue e Influenza:</strong> De segunda a sexta, das 07h às 17h na UBS Maria Pureza da Silva.</span>
-        <span>[PORTARIA GM/MS Nº 3.493/2024] <strong>Atenção Primária à Saúde:</strong> Mantenha seu cadastro e-SUS e cartão SUS atualizados junto ao seu ACS.</span>
-        <span>[SAÚDE DA MULHER] <strong>Pré-natal & Preventivo:</strong> Coleta de citopatológico e acompanhamento gestacional toda quarta-feira pela manhã.</span>
-        <span>[URGÊNCIA & EMERGÊNCIA] <strong>Em caso de urgência:</strong> Ligue 192 (SAMU Sergipe) ou dirija-se à Unidade de Pronto Atendimento Regional.</span>
+        <span>[CAMPANHA DE VACINAÇÃO] <strong>Imunização e Saúde Preventiva:</strong> Vacinas do calendário SUS disponíveis de segunda a sexta na Sala de Vacinação.</span>
+        <span>[PORTARIA GM/MS Nº 3.493/2024] <strong>Atenção Primária à Saúde:</strong> Mantenha seu cadastro e-SUS e dados atualizados junto à sua Equipe de Saúde da Família.</span>
+        <span>[SAÚDE DA MULHER] <strong>Pré-natal & Exames Preventivos:</strong> Acompanhamento gestacional e exames preventivos em horário regular na Unidade de Saúde.</span>
+        <span>[URGÊNCIA & EMERGÊNCIA] <strong>Em situações de urgência médica:</strong> Ligue 192 (SAMU) ou dirija-se à Unidade de Pronto Atendimento mais próxima.</span>
       </div>
     </div>
   </footer>
@@ -948,6 +948,25 @@
         window.speechSynthesis.getVoices();
       };
     }
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('tv-entity').textContent = b.nome_institucional;
+      if (b.unidade_nome) document.getElementById('tv-unit').textContent = `${b.orgao_gestor || 'Secretaria de Saúde'} · ${b.unidade_nome} · Painel Oficial de Chamadas`;
+      if (b.uf) document.getElementById('tv-coat').textContent = b.uf;
+      if (b.cor_primaria) document.getElementById('tv-coat').style.background = b.cor_primaria;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
   </script>
 </body>
 </html>

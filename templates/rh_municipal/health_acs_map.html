@@ -544,13 +544,13 @@
 </head>
 <body>
 
-  <!-- 1. TACTICAL HUD HEADER -->
+  <!-- 1. TACTICAL HUD HEADER DINÂMICO -->
   <header>
     <div class="brand-cluster">
-      <div class="brand-icon">SE</div>
+      <div class="brand-icon" id="acs-mark">{{ branding.uf|default:'BR' }}</div>
       <div class="brand-headings">
-        <h1>Prefeitura Municipal de Brejo Grande <span>e-SUS Território</span></h1>
-        <p>Fundo Municipal de Saúde · Vigilância & Monitoramento Territorial ACS (Medic CHT)</p>
+        <h1><span id="acs-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</span> <span>e-SUS Território</span></h1>
+        <p><span id="acs-orgao">{{ branding.orgao_gestor|default:'Secretaria Municipal de Saúde' }}</span> · Vigilância & Monitoramento Territorial ACS (Medic CHT)</p>
       </div>
     </div>
 
@@ -1021,6 +1021,25 @@
       const minutes = (idx * 24) % 60;
       document.getElementById('playback-clock').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('acs-entity').textContent = b.nome_institucional;
+      if (b.orgao_gestor) document.getElementById('acs-orgao').textContent = b.orgao_gestor;
+      if (b.uf) document.getElementById('acs-mark').textContent = b.uf;
+      if (b.cor_primaria) document.getElementById('acs-mark').style.background = b.cor_primaria;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
   </script>
 </body>
 </html>

@@ -559,20 +559,20 @@
 </head>
 <body>
 
-  <!-- 1. HEADER INSTITUCIONAL -->
+  <!-- 1. HEADER INSTITUCIONAL DINÂMICO -->
   <header>
     <div class="brand-cluster">
-      <div class="coat-badge" title="Prefeitura Municipal de Brejo Grande">SE</div>
+      <div class="coat-badge" id="triage-coat" title="{{ branding.nome_institucional|default:'Prefeitura Municipal' }}">{{ branding.uf|default:'BR' }}</div>
       <div class="brand-titles">
         <h1>Triagem & Classificação Manchester <span>Protocolo Oficial MS</span></h1>
-        <p>Prefeitura Municipal de Brejo Grande · Fundo Municipal de Saúde · UBS Maria Pureza da Silva</p>
+        <p><span id="triage-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</span> · <span id="triage-orgao">{{ branding.orgao_gestor|default:'Secretaria de Saúde' }}</span> · <span id="triage-unit">{{ branding.unidade_nome|default:'Unidade Básica de Saúde Central' }}</span></p>
       </div>
     </div>
 
     <div class="operator-profile">
       <div class="nurse-badge">
-        <div class="nurse-name">Enfª. Juliana Mendonça Alencar</div>
-        <div class="nurse-meta">COREN/SE 184.920 · Sala de Acolhimento e Triagem</div>
+        <div class="nurse-name">Enfermeiro(a) Classificador(a)</div>
+        <div class="nurse-meta">Sala de Acolhimento e Triagem de Risco</div>
       </div>
 
       <div class="nav-actions">
@@ -987,6 +987,26 @@
         dispatchToDoctorQueue();
       }
     });
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('triage-entity').textContent = b.nome_institucional;
+      if (b.orgao_gestor) document.getElementById('triage-orgao').textContent = b.orgao_gestor;
+      if (b.unidade_nome) document.getElementById('triage-unit').textContent = b.unidade_nome;
+      if (b.uf) document.getElementById('triage-coat').textContent = b.uf;
+      if (b.cor_primaria) document.getElementById('triage-coat').style.background = b.cor_primaria;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
   </script>
 </body>
 </html>

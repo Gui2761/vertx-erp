@@ -657,8 +657,8 @@
         <div class="gov-logo">gov.br</div>
         <div class="gov-divider"></div>
         <div class="gov-entity">
-          <h1>Prefeitura Municipal de Poço Redondo</h1>
-          <p>Secretaria Municipal de Gestão Digital e Modernização</p>
+          <h1 id="gov-entity-name">{{ branding.nome_institucional|default:"Prefeitura Municipal" }}</h1>
+          <p id="gov-entity-sub">Central Oficial de Atendimento ao Cidadão</p>
         </div>
       </div>
 
@@ -683,8 +683,8 @@
       <div class="geo-info">
         <div class="radar-icon">📍</div>
         <div class="geo-text">
-          <h3>Localização Identificada Automaticamente pelo Dispositivo</h3>
-          <p>Você está conectado a partir de: <strong>Poço Redondo - SE</strong> (Região do Alto Sertão Sergipano). Serviços municipais ativados com sucesso.</p>
+          <h3>Localização Identificada pelo Dispositivo</h3>
+          <p>Você está conectado aos serviços oficiais de: <strong id="gov-geo-city">{{ branding.municipio_uf|default:"Município Central" }}</strong>. Protocolos e serviços sincronizados com sucesso.</p>
         </div>
       </div>
       <button class="btn-change-city" onclick="openCityModal()">Alterar Município</button>
@@ -927,7 +927,7 @@
             <div>
               <span class="protocol-code" style="background:#f1f5f9; color:#475569;">HAB-2026/0441</span>
               <div class="protocol-title">
-                <h3>Carta de Habite-se Residencial · Loteamento Nova Poço Redondo</h3>
+                <h3>Carta de Habite-se Residencial · Loteamento Residencial Central</h3>
                 <p>Secretaria de Obras e Urbanismo · Concluído em 15/10/2026</p>
               </div>
             </div>
@@ -946,7 +946,7 @@
               <span class="protocol-code" style="background:#f1f5f9; color:#475569;">VAC-2026/3012</span>
               <div class="protocol-title">
                 <h3>Declaração de Vacinação Atualizada e-SUS APS</h3>
-                <p>Secretaria Municipal de Saúde · Unidade de Poço Redondo</p>
+                <p>Secretaria Municipal de Saúde · Unidade Básica de Saúde</p>
               </div>
             </div>
             <span class="protocol-status status-done">✓ Homologado</span>
@@ -1351,6 +1351,23 @@
       const badge = document.getElementById('badge-open');
       badge.textContent = parseInt(badge.textContent) + 1;
     }
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('gov-entity-name').textContent = b.nome_institucional;
+      if (b.municipio_uf) document.getElementById('gov-geo-city').textContent = b.municipio_uf;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
   </script>
 </body>
 </html>

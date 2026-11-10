@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personalização e Identidade Visual do Sistema · VERTYX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0f1d;
+      --bg-card: #111827;
+      --bg-card-hover: #1f2937;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary-color: #0284c7;
+      --accent-color: #10b981;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* TOPBAR */
+    header.custom-topbar {
+      background: rgba(17, 24, 39, 0.95);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-logo {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.1rem;
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-titles h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .brand-titles p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #1e293b;
+      color: #cbd5e1;
+      text-decoration: none;
+      padding: 0.55rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid var(--border-subtle);
+      transition: all 0.2s;
+    }
+    .btn-back:hover { background: #334155; color: #fff; }
+
+    /* LAYOUT PRINCIPAL */
+    main.custom-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 2rem;
+      padding: 2rem;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* FORMULÁRIO DE CUSTOMIZAÇÃO */
+    .form-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      height: fit-content;
+      position: sticky;
+      top: 5.5rem;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 0.75rem;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input[type="text"], select {
+      background: #0f172a;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 0.7rem 0.85rem;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+    }
+
+    .color-picker-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .color-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #0f172a;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+    }
+
+    input[type="color"] {
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .color-hex {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    /* PRESETS */
+    .presets-box {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-preset {
+      background: #1e293b;
+      border: 1px solid var(--border-subtle);
+      color: #cbd5e1;
+      padding: 0.35rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-preset:hover {
+      background: #334155;
+      color: #fff;
+    }
+
+    .btn-save-all {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.9rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.2s;
+      margin-top: 0.5rem;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+    .btn-save-all:hover {
+      background: #0369a1;
+      transform: translateY(-1px);
+    }
+
+    /* PREVIEW PANEL */
+    .preview-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .preview-header {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .preview-header h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .preview-header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .preview-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-card-header {
+      padding: 0.85rem 1.25rem;
+      background: #1e293b;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .preview-card-header h3 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .preview-badge-status {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .preview-body {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: #0b1120;
+    }
+
+    /* MOCKUP MINI-SCREENS */
+    .mini-totem {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .mini-entity-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.6rem;
+    }
+
+    .mini-coat {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: var(--primary-color);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mini-titles h4 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .mini-titles p {
+      font-size: 0.68rem;
+      color: #94a3b8;
+    }
+
+    .mini-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .mini-btn {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      padding: 0.6rem 0.4rem;
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .mini-tv-call {
+      background: #000;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .mini-tv-display {
+      background: #111827;
+      border: 2px solid var(--primary-color);
+      border-radius: 6px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .mini-tv-ticket {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #f59e0b;
+      letter-spacing: 0.05em;
+    }
+
+    .mini-tv-dest {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 0.25rem;
+    }
+
+    /* MENSAGEM DE SUCESSO TOAST */
+    .toast-msg {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #065f46;
+      border: 1px solid #10b981;
+      color: #ecfdf5;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: none;
+      align-items: center;
+      gap: 0.6rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 1000;
+    }
+
+    .nav-shortcuts {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+
+    .shortcut-pill {
+      background: #0f172a;
+      border: 1px solid var(--border-subtle);
+      color: #38bdf8;
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .shortcut-pill:hover {
+      background: #1e293b;
+      border-color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="custom-topbar">
+    <div class="brand-cluster">
+      <div class="brand-logo">VERTYX</div>
+      <div class="brand-titles">
+        <h1>Personalização e Identidade Visual do Sistema</h1>
+        <p>Configuração Dinâmica de Município, Brasão, Cores e Unidades de Saúde</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <a href="/gestao-publica/saude/painel-chamadas/" class="btn-back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar ao Console
+      </a>
+    </div>
+  </header>
+
+  <!-- CORPO PRINCIPAL -->
+  <main class="custom-layout">
+
+    <!-- FORMULÁRIO -->
+    <aside class="form-panel">
+      <div class="section-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Dados Institucionais do Cliente
+      </div>
+
+      <div class="field-group">
+        <label for="inp-nome-institucional">Nome da Entidade / Prefeitura</label>
+        <input type="text" id="inp-nome-institucional" value="{{ branding.nome_institucional|default:'Prefeitura Municipal' }}" placeholder="Ex: Prefeitura Municipal de Salvador">
+      </div>
+
+      <div class="field-group">
+        <label for="inp-orgao">Órgão / Secretaria Gestora</label>
+        <input type="text" id="inp-orgao" value="{{ branding.orgao_gestor|default:'Secretaria Municipal de Saúde' }}" placeholder="Ex: Secretaria Municipal de Saúde">
+      </div>
+
+      <div class="field-group">
+        <label for="inp-unidade">Nome da Unidade de Saúde (UBS / Pronto Atendimento)</label>
+        <input type="text" id="inp-unidade" value="{{ branding.unidade_nome|default:'Unidade Básica de Saúde Central' }}" placeholder="Ex: UBS Central Dr. João Silva">
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label for="inp-municipio">Município</label>
+          <input type="text" id="inp-municipio" value="{{ branding.municipio|default:'Município Central' }}" placeholder="Ex: Aracaju">
+        </div>
+
+        <div class="field-group">
+          <label for="inp-uf">Estado (UF)</label>
+          <input type="text" id="inp-uf" value="{{ branding.uf|default:'SE' }}" maxlength="2" style="text-transform: uppercase;" placeholder="SE">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label for="inp-cnpj">CNPJ Oficial</label>
+          <input type="text" id="inp-cnpj" value="{{ branding.cnpj|default:'' }}" placeholder="00.000.000/0001-00">
+        </div>
+
+        <div class="field-group">
+          <label for="inp-ibge">Código IBGE</label>
+          <input type="text" id="inp-ibge" value="{{ branding.codigo_ibge|default:'' }}" placeholder="Ex: 2800705">
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top: 0.5rem;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+        Identidade Visual & Cores
+      </div>
+
+      <div class="color-picker-row">
+        <div class="field-group">
+          <label for="color-primary">Cor Primária</label>
+          <div class="color-input-wrapper">
+            <input type="color" id="color-primary" value="{{ branding.cor_primaria|default:'#0284c7' }}" oninput="updateColorHex('primary')">
+            <span class="color-hex" id="hex-primary">{{ branding.cor_primaria|default:'#0284c7' }}</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="color-secondary">Cor Secundária</label>
+          <div class="color-input-wrapper">
+            <input type="color" id="color-secondary" value="{{ branding.cor_secundaria|default:'#10b981' }}" oninput="updateColorHex('secondary')">
+            <span class="color-hex" id="hex-secondary">{{ branding.cor_secundaria|default:'#10b981' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Paletas Prontas (Presets)</label>
+        <div class="presets-box">
+          <button type="button" class="btn-preset" onclick="applyPreset('Azul SUS', '#005ea6', '#10b981')">Azul SUS</button>
+          <button type="button" class="btn-preset" onclick="applyPreset('Verde Saúde', '#059669', '#0284c7')">Verde Saúde</button>
+          <button type="button" class="btn-preset" onclick="applyPreset('Grafite Dark', '#1e293b', '#38bdf8')">Grafite Pro</button>
+          <button type="button" class="btn-preset" onclick="applyPreset('Azul Real', '#1d4ed8', '#f59e0b')">Azul Real</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="inp-slogan">Mensagem Institucional / Slogan</label>
+        <input type="text" id="inp-slogan" value="{{ branding.slogan|default:'Sistema Integrado de Gestão Pública e Saúde' }}" placeholder="Ex: Cuidando da nossa gente">
+      </div>
+
+      <button type="button" class="btn-save-all" id="btn-save" onclick="saveCustomization()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Salvar e Aplicar no Sistema Todo
+      </button>
+
+      <div class="nav-shortcuts">
+        <span style="font-size: 0.75rem; color: #94a3b8; width: 100%;">Atalhos para testar com a nova marca:</span>
+        <a href="/gestao-publica/saude/totem/" target="_blank" class="shortcut-pill">Abrir Totem Kiosk ↗</a>
+        <a href="/gestao-publica/saude/painel-chamadas/tv/" target="_blank" class="shortcut-pill">Abrir SmartTV ↗</a>
+        <a href="/gestao-publica/saude/painel-chamadas/" target="_blank" class="shortcut-pill">Console Médico ↗</a>
+        <a href="/gestao-publica/saude/triagem/" target="_blank" class="shortcut-pill">Triagem ↗</a>
+        <a href="/gestao-publica/saude/pec/" target="_blank" class="shortcut-pill">Prontuário PEC ↗</a>
+        <a href="/gestao-publica/saude/farmacia-dispensacao/" target="_blank" class="shortcut-pill">Farmácia ↗</a>
+        <a href="/gestao-publica/saude/georreferenciamento-acs/" target="_blank" class="shortcut-pill">Mapa ACS ↗</a>
+        <a href="/gestao-publica/cidadao/inbox/" target="_blank" class="shortcut-pill">Portal Cidadão ↗</a>
+      </div>
+    </aside>
+
+    <!-- PREVIEW AO VIVO -->
+    <section class="preview-panel">
+      <div class="preview-header">
+        <div>
+          <h2>Pré-Visualização em Tempo Real</h2>
+          <p>Veja como as telas oficiais do sistema se adaptam instantaneamente à sua personalização.</p>
+        </div>
+        <span class="preview-badge-status">Sincronismo Ativo</span>
+      </div>
+
+      <div class="preview-grid">
+
+        <!-- 1. PREVIEW DO TOTEM -->
+        <div class="preview-card">
+          <div class="preview-card-header">
+            <h3>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              Totem Touchscreen de Autoatendimento
+            </h3>
+            <span style="font-size: 0.7rem; color: #94a3b8;">Kiosk 1080p</span>
+          </div>
+          <div class="preview-body">
+            <div class="mini-totem">
+              <div class="mini-entity-header">
+                <div class="mini-coat" id="prev-totem-coat">SE</div>
+                <div class="mini-titles">
+                  <h4 id="prev-totem-entity">Prefeitura Municipal</h4>
+                  <p id="prev-totem-unit">Unidade Básica de Saúde Central</p>
+                </div>
+              </div>
+              <div style="font-size: 0.72rem; color: #94a3b8; text-align: center; margin: 0.2rem 0;">Toque para retirar sua senha</div>
+              <div class="mini-buttons">
+                <div class="mini-btn">Clínica Médica</div>
+                <div class="mini-btn">Enfermagem</div>
+                <div class="mini-btn">Odontologia</div>
+                <div class="mini-btn">Vacinação</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. PREVIEW DA SMART TV -->
+        <div class="preview-card">
+          <div class="preview-card-header">
+            <h3>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+              SmartTV Sala de Espera (Painel de Chamadas)
+            </h3>
+            <span style="font-size: 0.7rem; color: #94a3b8;">Fullscreen</span>
+          </div>
+          <div class="preview-body">
+            <div class="mini-tv-call">
+              <div class="mini-entity-header" style="border-bottom: none;">
+                <div class="mini-coat" id="prev-tv-coat">SE</div>
+                <div class="mini-titles">
+                  <h4 id="prev-tv-entity">Prefeitura Municipal</h4>
+                  <p id="prev-tv-unit">Fundo Municipal de Saúde · Painel de Chamadas</p>
+                </div>
+              </div>
+              <div class="mini-tv-display">
+                <div style="font-size: 0.65rem; color: #94a3b8; text-transform: uppercase;">Senha Atual</div>
+                <div class="mini-tv-ticket">CLN-002</div>
+                <div class="mini-tv-dest" id="prev-tv-dest">Consultório 01 · Dr. Clínico</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. PREVIEW DO PRONTUÁRIO PEC & TRIAGEM -->
+        <div class="preview-card">
+          <div class="preview-card-header">
+            <h3>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/></svg>
+              Prontuário PEC & Triagem Manchester
+            </h3>
+            <span style="font-size: 0.7rem; color: #94a3b8;">Estação Clínica</span>
+          </div>
+          <div class="preview-body">
+            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.6rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div class="mini-coat" id="prev-pec-coat" style="width: 26px; height: 26px; font-size: 0.65rem;">SE</div>
+                  <div>
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #fff;" id="prev-pec-entity">Prefeitura Municipal</div>
+                    <div style="font-size: 0.65rem; color: #94a3b8;" id="prev-pec-unit">Unidade Básica de Saúde</div>
+                  </div>
+                </div>
+                <span style="font-size: 0.65rem; background: #0369a1; color: #fff; padding: 0.2rem 0.4rem; border-radius: 4px;">e-SUS PEC</span>
+              </div>
+              <div style="font-size: 0.7rem; color: #cbd5e1; background: #1e293b; padding: 0.5rem; border-radius: 6px;">
+                <strong>Paciente:</strong> Cidadão Identificado · <strong>Queixa:</strong> Acolhimento e Consulta Clínica
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. PREVIEW DO PORTAL DO CIDADÃO -->
+        <div class="preview-card">
+          <div class="preview-card-header">
+            <h3>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              Portal do Cidadão Gov.br
+            </h3>
+            <span style="font-size: 0.7rem; color: #94a3b8;">Cidadão / Mobile</span>
+          </div>
+          <div class="preview-body">
+            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.6rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.5rem;">
+                <div style="font-size: 0.75rem; font-weight: 800; color: #2563eb;">gov.br</div>
+                <div style="font-size: 0.7rem; font-weight: 700; color: #fff;" id="prev-gov-entity">Prefeitura Municipal</div>
+              </div>
+              <div style="background: rgba(2,132,199,0.1); border: 1px solid rgba(2,132,199,0.3); border-radius: 6px; padding: 0.5rem; font-size: 0.68rem; color: #7dd3fc;" id="prev-gov-geo">
+                📍 Serviços municipais conectados com sucesso.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast-msg" id="toast">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <span id="toast-text">Personalização aplicada com sucesso em todo o sistema!</span>
+  </div>
+
+  <script>
+    // BroadcastChannel para sincronizar imediatamente com todas as telas abertas no navegador
+    const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+
+    function updateColorHex(type) {
+      const colorVal = document.getElementById(`color-${type}`).value;
+      document.getElementById(`hex-${type}`).textContent = colorVal.toUpperCase();
+      refreshLivePreview();
+    }
+
+    function applyPreset(name, primary, secondary) {
+      document.getElementById('color-primary').value = primary;
+      document.getElementById('color-secondary').value = secondary;
+      document.getElementById('hex-primary').textContent = primary.toUpperCase();
+      document.getElementById('hex-secondary').textContent = secondary.toUpperCase();
+      refreshLivePreview();
+    }
+
+    function refreshLivePreview() {
+      const entity = document.getElementById('inp-nome-institucional').value || 'Prefeitura Municipal';
+      const orgao = document.getElementById('inp-orgao').value || 'Secretaria de Saúde';
+      const unit = document.getElementById('inp-unidade').value || 'Unidade Básica de Saúde Central';
+      const city = document.getElementById('inp-municipio').value || 'Município';
+      const uf = (document.getElementById('inp-uf').value || 'BR').toUpperCase();
+      const primaryColor = document.getElementById('color-primary').value || '#0284c7';
+
+      // Atualiza previews
+      document.querySelectorAll('.mini-coat').forEach(el => {
+        el.textContent = uf;
+        el.style.background = primaryColor;
+      });
+
+      document.getElementById('prev-totem-entity').textContent = entity;
+      document.getElementById('prev-totem-unit').textContent = unit;
+
+      document.getElementById('prev-tv-entity').textContent = entity;
+      document.getElementById('prev-tv-unit').textContent = `${orgao} · Painel de Chamadas`;
+
+      document.getElementById('prev-pec-entity').textContent = entity;
+      document.getElementById('prev-pec-unit').textContent = unit;
+
+      document.getElementById('prev-gov-entity').textContent = entity;
+      document.getElementById('prev-gov-geo').textContent = `📍 Serviços ativos para ${city} - ${uf}`;
+    }
+
+    // Ouvinte em tempo real nos inputs
+    document.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', refreshLivePreview);
+    });
+
+    // Salvar no Backend & LocalStorage
+    async function saveCustomization() {
+      const btn = document.getElementById('btn-save');
+      btn.disabled = true;
+      btn.textContent = 'Salvando dados...';
+
+      const data = {
+        nome_institucional: document.getElementById('inp-nome-institucional').value,
+        orgao_gestor: document.getElementById('inp-orgao').value,
+        unidade_nome: document.getElementById('inp-unidade').value,
+        municipio: document.getElementById('inp-municipio').value,
+        uf: (document.getElementById('inp-uf').value || 'BR').toUpperCase(),
+        cnpj: document.getElementById('inp-cnpj').value,
+        codigo_ibge: document.getElementById('inp-ibge').value,
+        cor_primaria: document.getElementById('color-primary').value,
+        cor_secundaria: document.getElementById('color-secondary').value,
+        slogan: document.getElementById('inp-slogan').value,
+      };
+
+      try {
+        const response = await fetch('/gestao-publica/saude/personalizacao/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken') || ''
+          },
+          body: JSON.stringify(data)
+        });
+
+        // Salva também no localStorage para sincronia cross-tab instantânea
+        localStorage.setItem('vertyx_branding', JSON.stringify(data));
+
+        // Envia mensagem pelo BroadcastChannel para atualizar qualquer aba aberta
+        syncChannel.postMessage({
+          type: 'BRANDING_UPDATED',
+          branding: data
+        });
+
+        showToast('Personalização salva e sincronizada em todas as telas com sucesso!');
+      } catch (err) {
+        console.warn('Salvando localmente em caso de offline:', err);
+        localStorage.setItem('vertyx_branding', JSON.stringify(data));
+        syncChannel.postMessage({
+          type: 'BRANDING_UPDATED',
+          branding: data
+        });
+        showToast('Personalização gravada no dispositivo com sucesso!');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar e Aplicar no Sistema Todo`;
+      }
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-text').textContent = text;
+      toast.style.display = 'flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 4000);
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // Inicializa ao carregar
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.nome_institucional) document.getElementById('inp-nome-institucional').value = parsed.nome_institucional;
+          if (parsed.orgao_gestor) document.getElementById('inp-orgao').value = parsed.orgao_gestor;
+          if (parsed.unidade_nome) document.getElementById('inp-unidade').value = parsed.unidade_nome;
+          if (parsed.municipio) document.getElementById('inp-municipio').value = parsed.municipio;
+          if (parsed.uf) document.getElementById('inp-uf').value = parsed.uf;
+          if (parsed.cnpj) document.getElementById('inp-cnpj').value = parsed.cnpj;
+          if (parsed.codigo_ibge) document.getElementById('inp-ibge').value = parsed.codigo_ibge;
+          if (parsed.cor_primaria) document.getElementById('color-primary').value = parsed.cor_primaria;
+          if (parsed.cor_secundaria) document.getElementById('color-secondary').value = parsed.cor_secundaria;
+          if (parsed.slogan) document.getElementById('inp-slogan').value = parsed.slogan;
+        } catch (e) {}
+      }
+      refreshLivePreview();
+    });
+  </script>
+</body>
+</html>

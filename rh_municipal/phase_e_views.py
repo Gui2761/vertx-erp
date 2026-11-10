@@ -557,7 +557,10 @@ def public_transparency(request, slug):
 @require_GET
 def citizen_portal_inbox(request):
     """Central de Atendimento ao Cidadão e Inbox de Protocolos (Edital Poço Redondo)."""
+    from .phase_g_views import get_tenant_branding
+    branding = get_tenant_branding(request)
     return render(request, 'rh_municipal/citizen_portal_inbox.html', {
         'title': 'Central do Cidadão',
         'subtitle': 'Atendimento Digital e Acompanhamento de Protocolos',
+        'branding': branding,
     })
