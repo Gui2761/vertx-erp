@@ -26,6 +26,18 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   // Cards de planos interativos / tocáveis
   document.querySelectorAll('.plan-card[data-cta]').forEach(card => {
+    // Efeito tátil imediato ao tocar ou pressionar
+    card.addEventListener('pointerdown', (event) => {
+      if (!event.target.closest('a') && !event.target.closest('button')) {
+        card.classList.add('is-pressed');
+      }
+    });
+
+    const removePressed = () => card.classList.remove('is-pressed');
+    card.addEventListener('pointerup', removePressed);
+    card.addEventListener('pointercancel', removePressed);
+    card.addEventListener('pointerleave', removePressed);
+
     card.addEventListener('click', (event) => {
       // Se clicou diretamente em um link ou botão interno (ex: "Solicitar demonstração"), segue o link clicado
       if (event.target.closest('a') || event.target.closest('button')) {
