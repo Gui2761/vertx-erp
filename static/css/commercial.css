@@ -46,3 +46,219 @@
 
 .header-actions .header-login{padding-inline:10px;font-size:12px}
 @media(max-width:1100px){.header-actions .header-login{background:transparent;color:var(--navy);border-color:var(--border);min-height:48px;padding:12px 20px;font-size:14px;font-weight:650}}
+
+/* ==========================================================================
+   THEME TOGGLE & DARK MODE SYSTEM (VERTYX COMMERCIAL)
+   ========================================================================== */
+.header-right-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--navy);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  padding: 0;
+}
+.theme-toggle-btn:hover {
+  background: rgba(36, 93, 230, 0.08);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.theme-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+}
+.theme-toggle-btn .icon-sun { display: none; }
+.theme-toggle-btn .icon-moon { display: block; }
+
+/* Canvas Ambient Animation */
+.vx-ambient-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glassmorphism for Signup and Cards */
+.signup-card, .signup-plan {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  position: relative;
+  z-index: 2;
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] {
+  --blue: #3b82f6;
+  --navy: #f8fafc;
+  --muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.12);
+  --soft: #0b111d;
+}
+
+[data-theme="dark"] body.commercial-site {
+  background: #0b111d;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .site-header {
+  background: rgba(11, 17, 29, 0.88);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .header-menu {
+  background: #0f172a;
+}
+
+[data-theme="dark"] .theme-toggle-btn {
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+[data-theme="dark"] .theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+[data-theme="dark"] .theme-toggle-btn .icon-sun { display: block; color: #fbbf24; }
+[data-theme="dark"] .theme-toggle-btn .icon-moon { display: none; }
+
+[data-theme="dark"] .menu-toggle {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+[data-theme="dark"] .button-outline {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .button-quiet {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .hero {
+  background: radial-gradient(ellipse at 88% 25%, #172554 0, transparent 55%);
+}
+
+[data-theme="dark"] .feature-card,
+[data-theme="dark"] .solutions-grid article,
+[data-theme="dark"] .plan-card,
+[data-theme="dark"] .demo-form-card,
+[data-theme="dark"] .signup-card,
+[data-theme="dark"] .signup-plan,
+[data-theme="dark"] .comparison-desktop,
+[data-theme="dark"] .product-solutions article {
+  background: rgba(17, 28, 48, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .plan-card.featured {
+  background: linear-gradient(rgba(23, 37, 84, 0.9), rgba(17, 28, 48, 0.85) 45%);
+}
+
+[data-theme="dark"] .operation-strip {
+  background: #0d1527;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .icon-tile {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .billing-switch {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .billing-switch a[aria-current=true] {
+  background: #0f172a;
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .currency {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .comparison-header {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .comparison-row {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .comparison-mobile details {
+  background: #111c30;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .site-footer {
+  background: #080d17;
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .footer-bottom {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .signup-section {
+  background: transparent;
+}
+
+[data-theme="dark"] .pricing-section {
+  background: linear-gradient(#0b111d, #111c30);
+}
+
+[data-theme="dark"] .form-control {
+  background: #070c14;
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .form-control:focus {
+  border-color: #3b82f6;
+  outline-color: #3b82f6;
+}
+
+[data-theme="dark"] .contracting-status {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+/* Mobile Responsiveness Enhancements */
+@media (max-width: 767px) {
+  .theme-toggle-btn {
+    width: 38px;
+    height: 38px;
+  }
+  .form-control {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    min-height: 48px;
+  }
+  .signup-card {
+    padding: 22px 16px;
+  }
+  .signup-grid {
+    gap: 24px;
+  }
+}

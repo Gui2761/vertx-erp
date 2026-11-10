@@ -1,3 +1,13 @@
+window.toggleCommercialTheme = function() {
+  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try {
+    localStorage.setItem('vertyx_theme', next);
+  } catch(e) {}
+  window.dispatchEvent(new CustomEvent('vertyxThemeChanged', { detail: { theme: next } }));
+};
+
 document.addEventListener('DOMContentLoaded',()=>{
   const toggle=document.querySelector('[data-menu-toggle]');
   const menu=document.querySelector('#public-menu');

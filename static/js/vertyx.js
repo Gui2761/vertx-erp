@@ -48,3 +48,42 @@ document.addEventListener('submit',async event=>{
     form.dataset.pdvIdentityLocked='true';form.requestSubmit();
   }
 });
+
+// Global Vertyx Theme Management (Dark / Light Mode)
+window.getVertyxTheme = function() {
+  try {
+    return localStorage.getItem('vertyx_theme') || 'dark';
+  } catch (e) {
+    return 'dark';
+  }
+};
+
+window.applyVertyxTheme = function(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  try {
+    localStorage.setItem('vertyx_theme', theme);
+  } catch (e) {}
+
+  document.querySelectorAll('.vx-theme-toggle-btn').forEach(btn => {
+    const label = btn.querySelector('.vx-theme-label');
+    if (label) {
+      label.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
+    }
+  });
+
+  window.dispatchEvent(new CustomEvent('vertyxThemeChanged', { detail: { theme: theme } }));
+};
+
+window.toggleVertyxTheme = function() {
+  const current = document.documentElement.getAttribute('data-theme') || window.getVertyxTheme();
+  const next = current === 'light' ? 'dark' : 'light';
+  window.applyVertyxTheme(next);
+};
+
+(() => {
+  const current = window.getVertyxTheme();
+  document.documentElement.setAttribute('data-theme', current);
+  document.addEventListener('DOMContentLoaded', () => {
+    window.applyVertyxTheme(window.getVertyxTheme());
+  });
+})();
