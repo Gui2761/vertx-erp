@@ -18,7 +18,7 @@
       })();
     </script>
     <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
-    <link rel="stylesheet" href="{% static 'css/vertyx.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vertyx.css' %}?v=20261110_ui3">
 <meta name="theme-color" content="#0b111d"><link rel="manifest" href="{% if pdv_experience %}{% url 'operacao:pdv_manifest_scoped' %}{% elif seller_experience %}{% url 'operacao:seller_manifest' %}{% elif technician_experience %}{% url 'operacao:technician_manifest' %}{% else %}{% url 'operacao:manifest' %}{% endif %}">
 {% if technician_experience %}<link rel="stylesheet" href="{% static 'css/technician.css' %}">{% endif %}
 {% if pdv_experience or seller_experience or request.resolver_match.url_name == 'seller_management' %}<link rel="stylesheet" href="{% static 'css/seller.css' %}?v=seller-console-6">{% endif %}
@@ -32,7 +32,7 @@
     
     <!-- Sidebar Header (Brand & Toggles) -->
     <div class="d-flex align-items-center justify-content-between w-100 pb-2 border-bottom border-secondary border-opacity-10 vx-navbar-header">
-      <a class="navbar-brand d-inline-flex align-items-center p-0 m-0" href="{% if pdv_experience %}{% url 'operacao:pdv_home' %}{% elif seller_experience %}{% url 'operacao:seller_home' %}{% elif request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}">
+      <a class="navbar-brand d-inline-flex align-items-center p-0 m-0" href="{% if pdv_experience %}{% url 'operacao:pdv_home' %}{% elif seller_experience %}{% url 'operacao:seller_home' %}{% elif request.membership and request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}">
         <img src="{% static 'img/vertyx-logo-white.png' %}" alt="VERTYX" height="26" class="vx-navbar-logo vx-logo-dark">
         <img src="{% static 'img/vertyx-logo.png' %}" alt="VERTYX" height="26" class="vx-navbar-logo vx-logo-light">
         <img src="{% static 'img/vertyx-icon.png' %}" alt="VERTYX" height="28" class="vx-navbar-mini-logo d-none">
@@ -72,7 +72,7 @@
         <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-shop text-info me-2"></i>VERTYX PDV</span><ul>{% for link in pdv_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}">{{ link.label }}</a></li>{% endfor %}</ul></li>
         {% elif seller_experience %}
         <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-person-badge text-success me-2"></i>VERTYX VENDEDOR</span><ul>{% for link in seller_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
-        {% elif request.membership.role == 'TECNICO' %}
+        {% elif request.membership and request.membership.role == 'TECNICO' %}
         <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-wrench-adjustable text-warning me-2"></i>ASSISTÊNCIA EM CAMPO</span><ul>{% for link in technician_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
         {% elif executive_navigation %}
           <li class="nav-item mb-2">
@@ -122,21 +122,21 @@
           {% endfor %}
         {% else %}
         <li class="nav-item"><a class="nav-link" href="{% url 'platform_core:home' %}">Voltar para VERTYX</a></li>
-        {% if request.membership.role == 'CLIENTE' %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:portal' %}">Portal do cliente</a></li>{% elif request.resolver_match.app_name != 'platform_core' %}
+        {% if request.membership and request.membership.role == 'CLIENTE' %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:portal' %}">Portal do cliente</a></li>{% elif request.resolver_match.app_name != 'platform_core' %}
         <li class="nav-item"><a class="nav-link" href="{% url 'core:painel' %}">Painel</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'ordens:lista' %}">Ordens de Serviço</a></li>
         {% if can_operational_panel %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:operational_panel' %}">Painel operacional</a></li>{% endif %}
         {% modulo_permitido 'planejamento' as planejamento_permitido %}
-        <li class="nav-item">{% if planejamento_permitido %}<a class="nav-link" href="{% url 'operacao:calendario' %}">Planejamento</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Planejamento</span>{% endif %}</li>
+        {% if planejamento_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:calendario' %}">Planejamento</a></li>{% endif %}
         <li class="nav-item"><a class="nav-link" href="{% url 'clientes:cliente_list' %}">Clientes e Unidades</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'equipamentos:equipamento_list' %}">Equipamentos</a></li>
         {% if user.is_administrador or user.is_gestor %}<li class="nav-item"><a class="nav-link" href="{% url 'contas:tecnico_list' %}">Técnicos</a></li>{% endif %}
         {% modulo_permitido 'estoque' as estoque_permitido %}{% modulo_permitido 'orcamentos' as orcamentos_permitido %}{% modulo_permitido 'contratos' as contratos_permitido %}{% modulo_permitido 'financeiro' as financeiro_permitido %}{% modulo_permitido 'relatorios' as relatorios_permitido %}
-        <li class="nav-item">{% if estoque_permitido %}<a class="nav-link" href="{% url 'gestao:peca_lista' %}">Peças e Estoque</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Peças e Estoque</span>{% endif %}</li>
-        <li class="nav-item">{% if orcamentos_permitido %}<a class="nav-link" href="{% url 'gestao:orcamento_lista' %}">Orçamentos</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Orçamentos</span>{% endif %}</li>
-        <li class="nav-item">{% if contratos_permitido %}<a class="nav-link" href="{% url 'gestao:contrato_lista' %}">Contratos</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Contratos</span>{% endif %}</li>
-        <li class="nav-item">{% if financeiro_permitido %}<a class="nav-link" href="{% url 'gestao:financeiro' %}">Financeiro</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Financeiro</span>{% endif %}</li>
-        <li class="nav-item">{% if relatorios_permitido %}<a class="nav-link" href="{% url 'gestao:relatorios' %}">Relatórios</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Relatórios</span>{% endif %}</li>
+        {% if estoque_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'gestao:peca_lista' %}">Peças e Estoque</a></li>{% endif %}
+        {% if orcamentos_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'gestao:orcamento_lista' %}">Orçamentos</a></li>{% endif %}
+        {% if contratos_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'gestao:contrato_lista' %}">Contratos</a></li>{% endif %}
+        {% if financeiro_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'gestao:financeiro' %}">Financeiro</a></li>{% endif %}
+        {% if relatorios_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'gestao:relatorios' %}">Relatórios</a></li>{% endif %}
         {% if user.is_administrador %}
         <li class="nav-item"><a class="nav-link" href="{% url 'contas:usuario_list' %}">Usuários</a></li>
         {% endif %}
@@ -178,7 +178,7 @@
                 {{ user.get_full_name|default:user.username }}
               </div>
               <div class="text-secondary text-truncate" style="font-size: 0.72rem;" title="{{ request.organization.display_name }}">
-                {{ request.organization.display_name }} · <span class="badge bg-primary-subtle text-primary p-0 px-1" style="font-size: 0.65rem;">{{ request.membership.get_role_display|default:request.membership.role }}</span>
+                {{ request.organization.display_name }} · <span class="badge bg-primary-subtle text-primary p-0 px-1" style="font-size: 0.65rem;">{% if request.membership %}{{ request.membership.get_role_display|default:request.membership.role }}{% else %}Membro{% endif %}</span>
               </div>
             </div>
           </div>
@@ -211,7 +211,7 @@
 
 <div class="vx-main" id="conteudo">
   {% if user.is_authenticated and contingencia_jornada_contratual %}<div class="alert alert-warning" role="status">Modo de contingência: Jornada Contratual suspensa. Histórico preservado; atendimentos continuam pelo fluxo da OS.</div>{% endif %}
-  {% if user.is_authenticated %}<nav class="vx-breadcrumb" aria-label="Localização">{% if pdv_experience %}<a href="{% url 'operacao:pdv_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:pdv_home' %}">PDV</a>{% elif seller_experience %}<a href="{% url 'operacao:seller_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:seller_home' %}">Minha rotina</a>{% elif request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
+  {% if user.is_authenticated %}<nav class="vx-breadcrumb" aria-label="Localização">{% if pdv_experience %}<a href="{% url 'operacao:pdv_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:pdv_home' %}">PDV</a>{% elif seller_experience %}<a href="{% url 'operacao:seller_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:seller_home' %}">Minha rotina</a>{% elif request.membership and request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
   {% if uploads_disabled %}<div class="alert alert-info" role="status">Homologação sem armazenamento de arquivos: fotos, documentos e logos estão desativados. Cadastros e operações sem anexos continuam disponíveis.</div>{% endif %}
   {% for message in messages %}
     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
@@ -225,7 +225,7 @@
   {% if pdv_experience or seller_experience %}<p class="sv-connection" data-connection-status role="status" aria-live="polite">As operações exigem conexão e são confirmadas ao salvar.</p>{% endif %}
 </div>
 
-{% if request.membership.role == 'TECNICO' %}<nav class="vx-bottom" aria-label="Atalhos do técnico">{% for link in technician_navigation %}{% if link.url == '/tecnico/' %}<a href="{{ link.url }}">Atender</a>{% elif link.url == '/planejamento/' %}<a href="{{ link.url }}">Agenda</a>{% elif link.url == '/ordens/' %}<a href="{{ link.url }}">OS</a>{% elif link.url == '/notificacoes/' %}<a href="{{ link.url }}">Alertas</a>{% endif %}{% endfor %}</nav>{% endif %}
+{% if request.membership and request.membership.role == 'TECNICO' %}<nav class="vx-bottom" aria-label="Atalhos do técnico">{% for link in technician_navigation %}{% if link.url == '/tecnico/' %}<a href="{{ link.url }}">Atender</a>{% elif link.url == '/planejamento/' %}<a href="{{ link.url }}">Agenda</a>{% elif link.url == '/ordens/' %}<a href="{{ link.url }}">OS</a>{% elif link.url == '/notificacoes/' %}<a href="{{ link.url }}">Alertas</a>{% endif %}{% endfor %}</nav>{% endif %}
 <script src="{% static 'vendor/bootstrap.bundle.min.js' %}"></script>
 {% if seller_experience %}<nav class="sv-bottom" aria-label="Atalhos do vendedor">{% for link in seller_navigation %}{% if link.url == '/vendedor/' %}<a href="{{ link.url }}">Rotina</a>{% elif link.url == '/vendedor/vendas/' %}<a href="{{ link.url }}">Vendas</a>{% elif link.url == '/vendedor/meta/' %}<a href="{{ link.url }}">Meta</a>{% elif link.url == '/vendedor/ponto/' %}<a href="{{ link.url }}">Ponto</a>{% elif link.url == '/vendedor/alertas/' %}<a href="{{ link.url }}">Alertas</a>{% endif %}{% endfor %}</nav>{% endif %}
 <script src="{% static 'js/pdv-outbox.js' %}" defer></script>
