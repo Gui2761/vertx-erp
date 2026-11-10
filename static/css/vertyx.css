@@ -256,16 +256,16 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   }
 
   .vx-desktop-collapse-btn {
-    border-color: var(--vx-border);
-    color: var(--vx-muted);
-    background: transparent;
+    border: 1px solid var(--vx-border) !important;
+    color: var(--vx-muted) !important;
+    background-color: transparent !important;
     transition: all 0.15s ease;
   }
 
   .vx-desktop-collapse-btn:hover {
-    color: var(--vx-ink);
-    background: var(--vx-surface-hover);
-    border-color: var(--vx-brand);
+    color: var(--vx-ink) !important;
+    background-color: var(--vx-surface-hover) !important;
+    border-color: var(--vx-brand) !important;
   }
 
   .vx-nav .navbar-brand {
@@ -802,16 +802,44 @@ ul.errorlist {
   border-color: var(--vx-brand) !important;
 }
 
-.btn-outline-secondary, .btn-outline-dark, .btn-outline-light, .btn-secondary, .btn-dark {
+.btn-outline-secondary, .btn-outline-dark, .btn-outline-light {
+  border: 1px solid var(--vx-border, #2a3b55) !important;
+  color: var(--vx-ink-secondary, #cbd5e1) !important;
+  background-color: transparent !important;
+}
+
+.btn-outline-secondary:hover, .btn-outline-dark:hover, .btn-outline-light:hover {
+  background-color: var(--vx-surface-hover, #243248) !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+.btn-secondary, .btn-dark {
   border: 1px solid #2a3b55 !important;
   color: #cbd5e1 !important;
   background-color: #182337 !important;
 }
 
-.btn-outline-secondary:hover, .btn-outline-dark:hover, .btn-outline-light:hover, .btn-secondary:hover, .btn-dark:hover {
+.btn-secondary:hover, .btn-dark:hover {
   background-color: #243248 !important;
   border-color: #3b82f6 !important;
   color: #ffffff !important;
+}
+
+/* Input Group Buttons (Password Toggle, Search, etc.) */
+.input-group .btn,
+.input-group .btn-outline-secondary,
+#togglePasswordBtn {
+  background-color: transparent !important;
+  border-color: var(--vx-input-border, #1f293d) !important;
+  color: var(--vx-muted, #94a3b8) !important;
+}
+
+.input-group .btn:hover,
+.input-group .btn-outline-secondary:hover,
+#togglePasswordBtn:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: var(--vx-ink, #ffffff) !important;
 }
 
 .btn-outline-danger, .btn-danger {
@@ -1249,14 +1277,78 @@ body:not(:has(.vx-nav)) .vx-main {
   color: #0f172a !important;
   background-color: #f1f5f9 !important;
 }
-[data-theme="light"] .btn-outline-secondary {
+[data-theme="light"] .btn-outline-secondary,
+[data-theme="light"] .btn-outline-dark,
+[data-theme="light"] .btn-outline-light {
   color: #475569 !important;
   border-color: #cbd5e1 !important;
+  background-color: transparent !important;
 }
-[data-theme="light"] .btn-outline-secondary:hover {
+
+[data-theme="light"] .btn-outline-secondary:hover,
+[data-theme="light"] .btn-outline-dark:hover,
+[data-theme="light"] .btn-outline-light:hover {
   background-color: #f1f5f9 !important;
   color: #0f172a !important;
+  border-color: #94a3b8 !important;
 }
+
+[data-theme="light"] .btn-secondary,
+[data-theme="light"] .btn-dark {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .btn-secondary:hover,
+[data-theme="light"] .btn-dark:hover {
+  background-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+/* Light Mode Input Groups (Password Toggle, Search, etc.) */
+[data-theme="light"] .input-group .btn,
+[data-theme="light"] .input-group .btn-outline-secondary,
+[data-theme="light"] #togglePasswordBtn {
+  background-color: transparent !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .input-group .btn:hover,
+[data-theme="light"] .input-group .btn-outline-secondary:hover,
+[data-theme="light"] #togglePasswordBtn:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Light Mode Desktop Collapse Button */
+[data-theme="light"] .vx-desktop-collapse-btn {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .vx-desktop-collapse-btn:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #2563eb !important;
+  color: #0f172a !important;
+}
+
+/* Light Mode Floating / General Theme Switcher Button */
+[data-theme="light"] .vx-theme-toggle-btn {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .vx-theme-toggle-btn:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+}
+
 [data-theme="light"] .border-secondary {
   border-color: #e2e8f0 !important;
 }
