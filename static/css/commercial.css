@@ -121,8 +121,17 @@
   border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
-[data-theme="dark"] .header-menu {
-  background: #0f172a;
+@media (min-width: 1101px) {
+  [data-theme="dark"] .header-menu {
+    background: transparent;
+  }
+}
+
+@media (max-width: 1100px) {
+  [data-theme="dark"] .header-menu {
+    background: #0f172a;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
 }
 
 [data-theme="dark"] .theme-toggle-btn {
