@@ -905,3 +905,22 @@ def health_acs_map(request):
     })
     return render(request, 'rh_municipal/health_acs_map.html', context)
 
+
+@require_GET
+def health_triage_manchester(request):
+    """Estação de Triagem e Classificação de Risco Manchester (Enfermagem e-SUS APS)."""
+    return render(request, 'rh_municipal/health_triage_manchester.html')
+
+
+@require_GET
+def health_pec_soap(request):
+    """Prontuário Eletrônico do Cidadão (PEC e-SUS) Atendimento Clínico SOAP com Prescrição Digital."""
+    return render(request, 'rh_municipal/health_pec_soap.html')
+
+
+@require_GET
+def health_pharmacy_dispensation(request):
+    """Farmácia Básica Municipal - Dispensação de Medicamentos Hórus / e-SUS AF por Lote e Validade FEFO."""
+    return render(request, 'rh_municipal/health_pharmacy_dispensation.html')
+
+

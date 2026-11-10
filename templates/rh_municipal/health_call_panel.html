@@ -458,13 +458,25 @@
         <div class="doc-name">Dra. Beatriz Carvalho</div>
         <div class="doc-spec">CRM/SE 4.821 · Consultório 03 · ESF 01</div>
       </div>
+      <a href="/gestao-publica/saude/triagem/" class="btn-open-tv" style="background: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.3); color: #fca5a5;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+        Triagem Manchester
+      </a>
+      <a href="/gestao-publica/saude/pec/" class="btn-open-tv" style="background: rgba(2,132,199,0.15); border-color: rgba(2,132,199,0.3); color: #38bdf8;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/></svg>
+        Prontuário PEC
+      </a>
+      <a href="/gestao-publica/saude/farmacia-dispensacao/" class="btn-open-tv" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: #34d399;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+        Farmácia Básica
+      </a>
       <a href="/gestao-publica/saude/profissionais/" class="btn-open-tv" style="background: rgba(255,255,255,0.08); border-color: var(--border-color); color: #cbd5e1;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Corpo Clínico
       </a>
       <a href="/gestao-publica/saude/painel-chamadas/tv/" target="_blank" class="btn-open-tv">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
-        Abrir SmartTV
+        SmartTV
       </a>
     </div>
   </header>
@@ -530,6 +542,10 @@
 
         <!-- ESTADO 3: IN_SERVICE (EM CONSULTA) -->
         <div id="group-inservice" style="display: none; flex-direction: column; gap: 0.85rem;">
+          <a href="/gestao-publica/saude/pec/" class="btn-action-start" style="text-decoration: none; background: #0284c7; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/></svg>
+            ABRIR PRONTUÁRIO ELETRÔNICO PEC (SOAP)
+          </a>
           <button class="btn-action-finish" onclick="finishAndCallNext()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/><line x1="23" x2="23" y1="4" y2="20"/></svg>
             ENCERRAR E CHAMAR PRÓXIMO (Enter)
