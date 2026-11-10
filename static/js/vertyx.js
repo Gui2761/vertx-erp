@@ -13,13 +13,34 @@ document.addEventListener('DOMContentLoaded',()=>{
     report();addEventListener('online',report);addEventListener('offline',report);
     document.addEventListener('submit',event=>{if(!navigator.onLine){event.preventDefault();report();connection.scrollIntoView({block:'nearest'});}},true);
   }
-  const sidebar=document.querySelector('[data-sidebar-toggle]');
-  if(sidebar){
-    const apply=(collapsed)=>{document.body.classList.toggle('vx-sidebar-collapsed',collapsed);sidebar.setAttribute('aria-expanded',String(!collapsed));sidebar.setAttribute('aria-label',collapsed?'Expandir menu lateral':'Recolher menu lateral');};
+  const sidebarToggles=document.querySelectorAll('[data-sidebar-toggle]');
+  if(sidebarToggles.length){
+    const apply=(collapsed)=>{
+      document.body.classList.toggle('vx-sidebar-collapsed',collapsed);
+      sidebarToggles.forEach(btn=>{
+        btn.setAttribute('aria-expanded',String(!collapsed));
+        btn.setAttribute('aria-label',collapsed?'Expandir menu lateral':'Recolher menu lateral');
+        btn.setAttribute('title',collapsed?'Expandir menu lateral':'Recolher menu lateral');
+      });
+    };
     try{apply(localStorage.getItem('vertyx.sidebarCollapsed')==='true');}catch{}
-    sidebar.addEventListener('click',()=>{const collapsed=!document.body.classList.contains('vx-sidebar-collapsed');apply(collapsed);try{localStorage.setItem('vertyx.sidebarCollapsed',String(collapsed));}catch{}});
+    sidebarToggles.forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const collapsed=!document.body.classList.contains('vx-sidebar-collapsed');
+        apply(collapsed);
+        try{localStorage.setItem('vertyx.sidebarCollapsed',String(collapsed));}catch{}
+      });
+    });
   }
-  document.querySelectorAll('.navbar-nav a').forEach(a=>{if(a.pathname===location.pathname)a.setAttribute('aria-current','page');});
+  document.querySelectorAll('.navbar-nav a').forEach(a=>{
+    const curPath=location.pathname;
+    if(a.pathname===curPath || (a.pathname!=='/' && a.pathname!=='/assistencia/' && a.pathname.length > 2 && curPath.startsWith(a.pathname))){
+      a.classList.add('active');
+      a.setAttribute('aria-current','page');
+      const details=a.closest('details');
+      if(details){details.open=true;}
+    }
+  });
   document.querySelectorAll('.sv-bottom a').forEach(a=>{if(a.pathname===location.pathname || (a.pathname==='/pdv/' && location.pathname.startsWith('/pdv/')))a.setAttribute('aria-current','page');});
   if(document.body.classList.contains('vx-seller')&&location.hash==='#abrir-meu-caixa'){const panel=document.getElementById('abrir-meu-caixa');if(panel){panel.open=true;panel.scrollIntoView({block:'center'});}}
   document.querySelectorAll('form').forEach(form=>form.addEventListener('submit',event=>{
