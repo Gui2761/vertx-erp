@@ -18,11 +18,29 @@
 .pricing-hero-description{font-size:17px;line-height:1.5;color:#edf1fc;margin-top:25px;max-width:495px}
 .pricing-action{background:var(--pricing-green);color:#fff;min-height:54px;padding:15px 30px;min-width:300px;font-size:16px;border-radius:7px;margin-top:31px;box-shadow:0 8px 22px #1019312b}
 .pricing-action:hover{background:var(--pricing-green-hover)}
-.pricing-product{padding:35px 17px 0;min-width:0}
-.pricing-product .laptop{margin:0;filter:drop-shadow(0 22px 20px #030c2038)}
-.pricing-product .laptop-screen{aspect-ratio:1.59;padding:7px;background:#121a29;border-color:#7b87a0;border-radius:11px 11px 3px 3px}
-.pricing-product .laptop-base{height:13px;margin:0 -16px}
-.pricing-product>p{font-size:10px;color:#d0d9ed;text-align:center;margin-top:19px;line-height:1.6}
+/* Sincronização dos mockups na página de planos */
+.preview-dark {
+  display: none !important;
+}
+.preview-light {
+  display: block !important;
+}
+[data-theme="dark"] .preview-dark {
+  display: block !important;
+}
+[data-theme="dark"] .preview-light {
+  display: none !important;
+}
+.pricing-product{position:relative;isolation:isolate;padding:25px 38px 45px 0;min-width:0}
+.pricing-product .laptop{width:100%;position:relative;margin:0;filter:drop-shadow(0 22px 20px #030c2038)}
+.pricing-product .laptop-screen{aspect-ratio:1.59;padding:7px;background:#121a29;border:1px solid #7b87a0;border-radius:11px 11px 3px 3px;overflow:hidden}
+.pricing-product .laptop-screen img{width:100%;height:100%;object-fit:cover;object-position:top}
+.pricing-product .laptop-base{height:13px;margin:0 -16px;background:linear-gradient(#e4e8f1,#bbc4d3);border-radius:1px 1px 25px 25px;position:relative}
+.pricing-product .laptop-base:after{content:"";position:absolute;width:70px;height:4px;background:#99a4b4;border-radius:0 0 8px 8px;left:calc(50% - 35px)}
+.pricing-product .phone-device{position:absolute;right:0;bottom:24px;width:130px;padding:6px;background:#192332;border:2px solid #41516b;border-radius:25px;box-shadow:0 22px 38px #1229473d;overflow:hidden;z-index:2}
+.pricing-product .phone-device:before{content:"";position:absolute;top:7px;left:34%;height:6px;width:32%;border-radius:0 0 8px 8px;background:#192332;z-index:1}
+.pricing-product .phone-device img{border-radius:17px;aspect-ratio:390/844;object-fit:cover;object-position:top;width:100%;height:100%}
+.pricing-product .visual-caption,.pricing-product>p{font-size:10px;color:#d0d9ed;text-align:center;margin-top:19px;line-height:1.6}
 .pricing-reference .pricing-section{padding-top:67px}
 :root:not([data-theme="dark"]) .pricing-reference .pricing-section,
 [data-theme="light"] .pricing-reference .pricing-section {
@@ -110,6 +128,8 @@
   .pricing-hero-description{font-size:15px}
   .pricing-action{min-width:0;width:100%;max-width:330px;font-size:14px;padding-inline:20px}
   .pricing-reference .plans-grid{gap:38px 22px}
+  .pricing-product{padding-right:25px}
+  .pricing-product .phone-device{width:115px;bottom:26px}
 }
 @media(max-width:767px){
   .pricing-hero{padding:40px 0 34px}
@@ -117,7 +137,8 @@
   .pricing-hero-title{font-size:38px;line-height:1.12}
   .pricing-hero-description{font-size:15px;line-height:1.65;margin-top:20px}
   .pricing-action{margin-top:24px;max-width:none;min-height:52px}
-  .pricing-product{padding:0 15px}
+  .pricing-product{padding:10px 25px 30px 0;max-width:520px;margin:0 auto}
+  .pricing-product .phone-device{width:100px;bottom:18px}
   .pricing-product>p{font-size:9px;margin-top:16px}
   .pricing-reference .pricing-section{padding-top:48px}
   .pricing-reference .pricing-section .section-heading h2{font-size:31px}
@@ -125,7 +146,11 @@
   .pricing-reference .plan-top{min-height:0}
   .pricing-reference .plan-price .custom-price{font-size:32px}
 }
-@media(max-width:360px){.pricing-hero-title{font-size:33px}.pricing-hero-description{font-size:14px}}
+@media(max-width:360px){
+  .pricing-hero-title{font-size:33px}
+  .pricing-hero-description{font-size:14px}
+  .pricing-product .phone-device{width:82px;bottom:14px}
+}
 
 /* ==========================================================================
    PRICING PAGE - DARK THEME OVERRIDES

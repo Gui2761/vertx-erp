@@ -671,3 +671,18 @@
   transition: transform 0.08s ease, box-shadow 0.08s ease !important;
 }
 
+/* Sincronização dos mockups (laptop e celular) com o tema claro / escuro */
+.preview-dark {
+  display: none !important;
+}
+.preview-light {
+  display: block !important;
+}
+[data-theme="dark"] .preview-dark {
+  display: block !important;
+}
+[data-theme="dark"] .preview-light {
+  display: none !important;
+}
+
+
