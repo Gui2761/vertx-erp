@@ -74,7 +74,7 @@ def _menu(request):
         ('COMERCIAL',[('Orçamentos','/orcamentos/','file-earmark-ruled'),('Vendas e loja','/vendas/','bag'),('Clientes','/clientes/','people')]),
         ('ESTOQUE',[('Painel do estoque','/estoque/painel/','box-seam'),('Produtos','/estoque/','box-seam'),('Movimentações','/estoque/movimentar/','arrow-left-right'),('Lotes / Validades','/estoque/lotes/','hourglass-split'),('Depósitos','/depositos/','buildings'),('Inventário','/inventarios/','list-check'),('Reservas','/estoque/reservas/','bookmark-check'),('Transferências','/transferencias/','arrows'),('Peças necessárias para OS','/estoque/necessidades/','stock')]),
         ('COMPRAS',[('Necessidade de Compra','/estoque/relatorios/','cart-check'),('Compras','/compras/','cart'),('Cotações','/compras/?cotacoes=1','chat-square-text'),('Pedidos','/compras/?status=PEDIDO','truck'),('Recebimentos','/compras/?status=PEDIDO','box-arrow-in-down'),('Fornecedores','/estoque/fornecedores/','person-vcard')]),
-        ('FINANCEIRO',[('Dashboard','/financeiro/','cash-stack'),('Contas a receber','/financeiro/lancamentos/?tipo=RECEBER','arrow-down-circle'),('Contas a pagar','/financeiro/lancamentos/?tipo=PAGAR','arrow-up-circle'),('Caixa','/bancos/?tipo=CAIXA','bank'),('Bancos','/bancos/?tipo=BANCO','bank'),('Movimentações','/financeiro/movimentacoes/','arrows'),('Conciliação','/bancos/extrato/','arrows'),('Categorias','/financeiro/categorias/','document'),('Centros de custo','/financeiro/centros-custo/','document'),('Relatórios','/relatorios/','chart'),('Fiscal','/fiscal/','file-earmark-check')]),
+        ('FINANCEIRO',[('Dashboard','/financeiro/','cash-stack'),('Contas a receber','/financeiro/lancamentos/?tipo=RECEBER','arrow-down-circle'),('Contas a pagar','/financeiro/lancamentos/?tipo=PAGAR','arrow-up-circle'),('Caixa','/bancos/?tipo=CAIXA','bank'),('Bancos','/bancos/?tipo=BANCO','bank'),('API Bancária (Pix · Boleto)','/bancos/integracao/','bank'),('Movimentações','/financeiro/movimentacoes/','arrows'),('Conciliação','/bancos/extrato/','arrows'),('Categorias','/financeiro/categorias/','document'),('Centros de custo','/financeiro/centros-custo/','document'),('Relatórios','/relatorios/','chart'),('Central Fiscal (NF-e · NFC-e · CBS/IBS)','/fiscal/hub/','file-earmark-check'),('Notas Recebidas (DF-e)','/fiscal/recebidas/','document'),('Fiscal','/fiscal/','file-earmark-check')]),
         ('CADASTROS',[('Clientes e Unidades','/clientes/','people'),('Equipamentos','/equipamentos/','heart-pulse'),('Técnicos','/contas/tecnicos/','person-gear'),('Documentos','/documentos/','folder'),('Acessos ao portal','/portal-acessos/','person-lock')]),
         ('RELATÓRIOS',[('Relatórios','/relatorios/','bar-chart')]),
         ('CONFIGURAÇÕES',[('Notificações','/notificacoes/','bell')])]
@@ -130,20 +130,18 @@ def _menu(request):
                 required = (mod,)
         org = getattr(request, 'organization', None)
         if org:
-            from platform_core.saas_models import AssinaturaSaaS, CORE_SAAS_MODULES
+            from platform_core.modules import (
+                MODULE_IMPLIED_BY, effective_legacy_plan_codes, platform_module_override,
+            )
+            from platform_core.saas_models import AjusteModuloSaaS, AssinaturaSaaS
             sub = AssinaturaSaaS.objects.filter(organization=org).select_related('plano').first()
             if sub and sub.plano:
-                plan_modules = set(sub.plano.modulos or ()) | set(CORE_SAAS_MODULES)
+                plan_modules = effective_legacy_plan_codes(org, sub.plano)
                 for code in required:
+                    if code and platform_module_override(org, code) == AjusteModuloSaaS.Modo.DENY:
+                        return False
                     if code and code not in plan_modules:
-                        implications = {
-                            'estoque_basico': {'estoque_completo', 'estoque'},
-                            'financeiro_basico': {'financeiro_completo', 'financeiro'},
-                            'rh_asst_basico': {'rh_asst_completo', 'rh'},
-                            'documentos_basicos': {'documentos_completos', 'documentos'},
-                            'relatorios_basicos': {'relatorios_completos'},
-                        }
-                        if not (implications.get(code, set()) & plan_modules):
+                        if not (MODULE_IMPLIED_BY.get(code, set()) & plan_modules):
                             return False
             if required and any(not product_module_enabled(request.user, 'assistencia', code, org) for code in required):
                 return False

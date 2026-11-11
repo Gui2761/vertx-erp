@@ -775,3 +775,5 @@ from .pdv_offline_models import SincronizacaoPDV  # noqa: E402,F401
 from .fiscal_models import PerfilFiscalEstabelecimento, ConfiguracaoFiscal, CredencialFiscal, VinculoCredencialFiscal, SerieFiscal, RegraTributariaFiscal, DetalhesNFSe, DetalhesNFe, DetalhesNFCe, SolicitacaoFiscal, ReservaNumeracaoFiscal, TentativaFiscal, EventoFiscal  # noqa: E402,F401
 from .nfce_models import ConfiguracaoNFCe, TributacaoProdutoNFCe, ArtefatoNFCe, PagamentoFiscalNFCe  # noqa: E402,F401
 from .import_models import LoteImportacao, LinhaImportacao  # noqa: E402,F401
+from .banking_models import IntegracaoBancaria, CobrancaBancaria, WebhookBancarioEvento  # noqa: E402,F401
+from .dfe_models import ConfiguracaoDFeRecebimento, NotaFiscalRecebida, ManifestacaoDFeEvento  # noqa: E402,F401
