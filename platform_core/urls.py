@@ -29,6 +29,7 @@ urlpatterns += [
     path('saas/clientes/novo/plano/', saas_views.novo_cliente, {'step': 2}, name='saas_new_client_step2'),
     path('saas/clientes/<uuid:public_id>/', saas_views.cliente_detalhe, name='saas_client_detail'),
     path('saas/clientes/<uuid:public_id>/editar/', saas_views.editar_cliente, name='saas_client_edit'),
+    path('saas/clientes/<uuid:public_id>/modulos/', saas_views.modulos_cliente, name='saas_client_modules'),
     path('saas/clientes/<uuid:public_id>/plano/', saas_views.alterar_plano_cliente, name='saas_client_change_plan'),
     path('saas/clientes/<uuid:public_id>/status/<str:action>/', saas_views.status_cliente, name='saas_client_status'),
     path('saas/clientes/<uuid:public_id>/compartilhar-acesso/', saas_views.compartilhar_acesso, name='saas_share_access'),

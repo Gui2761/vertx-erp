@@ -453,3 +453,39 @@ class CobrancaSaaS(models.Model):
             }
         )
 
+
+class AjusteModuloSaaS(models.Model):
+    """Explicit per-client module grant or block managed by VERTYX SaaS Admin."""
+    class Modo(models.TextChoices):
+        ALLOW = 'LIBERADO', 'Liberado manualmente'
+        DENY = 'BLOQUEADO', 'Bloqueado manualmente'
+
+    organization = models.ForeignKey(
+        'platform_core.Organization',
+        on_delete=models.CASCADE,
+        related_name='ajustes_modulos_saas',
+    )
+    codigo = models.CharField(max_length=40, choices=sorted(MODULE_LABELS.items()))
+    modo = models.CharField(max_length=12, choices=Modo.choices)
+    motivo = models.CharField(max_length=255, blank=True)
+    atualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='ajustes_modulos_saas',
+    )
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['codigo']
+        verbose_name = 'ajuste manual de módulo SaaS'
+        verbose_name_plural = 'ajustes manuais de módulos SaaS'
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'codigo'], name='ajuste_modulo_saas_org_codigo_unico'),
+        ]
+
+    def __str__(self):
+        return f'{self.organization_id}:{self.codigo}={self.modo}'
+
+

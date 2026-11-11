@@ -31,12 +31,13 @@ from .saas_forms import (
     DadosEmpresaForm, ERPCatalogForm, ERPProductModuleForm, ERPProductResourceForm,
     PrimeiroAdministradorPlataformaForm,
     NovaPrefeituraHomologacaoForm,
-    EditarClienteForm, PlanoSaaSForm,
+    EditarClienteForm, EditarModulosClienteForm, PlanoSaaSForm,
 )
 from .saas_services import (
     alterar_plano, alterar_status_cliente, atualizar_cliente,
-    alterar_status_contrato,
-    criar_cliente, mrr_amount, plano_snapshot, registrar, verificar_limite,
+    atualizar_modulos_cliente, alterar_status_contrato,
+    client_module_catalog_context, criar_cliente, mrr_amount, plano_snapshot, registrar,
+    restaurar_modulos_cliente, verificar_limite,
     bootstrap_administrador_prefeitura, metricas_uso, metricas_uso_por_produto, reemitir_primeiro_acesso,
     uso_quota, criar_prefeitura_homologacao,
 )
@@ -516,9 +517,11 @@ def cliente_detalhe(request, public_id):
                            organization=organization, role='ADMIN', status='ATIVO').exists())
     quota_usage = metricas_uso(organization)
     product_quota_usage = metricas_uso_por_produto(organization)
+    module_catalog = client_module_catalog_context(organization)
     return _render(request, 'platform_core/saas/client_detail.html', {
         'organization': organization, 'subscription': subscription,
         'admin': admins[0] if admins else None, 'modules': modules,
+        'module_catalog': module_catalog,
         'audits': audits, 'created_access': success, 'can_reissue_access': can_reissue,
         'quota_usage': quota_usage,
         'product_quota_usage': product_quota_usage,
@@ -597,7 +600,68 @@ def editar_cliente(request, public_id):
         else:
             messages.success(request, 'Cadastro atualizado; o histórico do cliente foi preservado.')
             return redirect('platform_core:saas_client_detail', public_id=organization.public_id)
-    return _render(request, 'platform_core/saas/form.html', {'form': form, 'title': 'Editar cliente', 'back': reverse('platform_core:saas_client_detail', args=[organization.public_id])}, status=400 if request.method == 'POST' else 200)
+    return _render(request, 'platform_core/saas/edit_client.html', {
+        'form': form,
+        'organization': organization,
+        'subscription': AssinaturaSaaS.objects.filter(organization=organization).select_related('plano').first(),
+        'module_catalog': client_module_catalog_context(organization),
+        'title': 'Editar cliente',
+        'back': reverse('platform_core:saas_client_detail', args=[organization.public_id]),
+    }, status=400 if request.method == 'POST' else 200)
+
+
+@require_POST
+def modulos_cliente(request, public_id):
+    denied = _guard(request)
+    if denied:
+        return denied
+    organization = get_object_or_404(Organization, public_id=public_id)
+    target = (
+        reverse('platform_core:saas_client_edit', args=[organization.public_id])
+        if request.POST.get('next') == 'edit'
+        else reverse('platform_core:saas_client_detail', args=[organization.public_id])
+    )
+    if request.POST.get('acao') == 'restaurar':
+        try:
+            restaurar_modulos_cliente(
+                actor=request.user,
+                organization=organization,
+                reason=request.POST.get('motivo', ''),
+            )
+        except (ValidationError, IntegrityError) as exc:
+            _audit_redirect_error(request, exc)
+        else:
+            messages.success(request, 'Módulos restaurados para o padrão do plano/contrato do cliente.')
+        return redirect(target)
+
+    form = EditarModulosClienteForm(request.POST)
+    if not form.is_valid():
+        return HttpResponse('Informe módulos ou produtos ERP válidos antes de salvar.', status=400)
+    selected_erp_codes = (
+        form.cleaned_data.get('erps', [])
+        if request.POST.get('sync_erps') == '1'
+        else None
+    )
+    try:
+        summary = atualizar_modulos_cliente(
+            actor=request.user,
+            organization=organization,
+            selected_modules=form.cleaned_data.get('modulos', []),
+            reason=form.cleaned_data.get('motivo', ''),
+            selected_erp_codes=selected_erp_codes,
+        )
+    except (ValidationError, IntegrityError) as exc:
+        _audit_redirect_error(request, exc)
+    else:
+        messages.success(
+            request,
+            (
+                f"Módulos do cliente salvos: {len(summary['enabled'])} ativo(s)"
+                f" ({len(summary['added_manual'])} liberado(s) manualmente, "
+                f"{len(summary['removed_manual'])} removido(s) manualmente)."
+            ),
+        )
+    return redirect(target)
 
 
 @require_http_methods(['GET', 'POST'])
