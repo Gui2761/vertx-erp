@@ -8,8 +8,18 @@
 {% if resource == 'contrato' %}<a class="btn btn-outline-primary" href="{% url 'gestao:planejamento' %}">Planejamento dos contratos</a>{% endif %}
 {% if resource == 'lancamento' %}<a class="btn btn-outline-secondary" href="{% url 'gestao:financeiro' %}">Painel financeiro</a><a class="btn btn-outline-primary" href="?tipo=RECEBER">A receber</a><a class="btn btn-outline-primary" href="?tipo=PAGAR">A pagar</a><a class="btn btn-outline-danger" href="?status=VENCIDO">Vencidos</a>{% endif %}
 {% if resource == 'extrato' and can_write %}<a class="btn btn-primary" href="{% url 'operacao:extrato_importar' %}">Importar OFX / CSV</a>{% endif %}
+{% if resource == 'banco' %}
+<a class="btn {% if not request.GET.tipo %}btn-dark{% else %}btn-outline-dark{% endif %}" href="/bancos/">Todos</a>
+<a class="btn {% if request.GET.tipo == 'CAIXA' %}btn-success{% else %}btn-outline-success{% endif %}" href="/bancos/?tipo=CAIXA">Caixas PDV</a>
+<a class="btn {% if request.GET.tipo == 'BANCO' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="/bancos/?tipo=BANCO">Contas Bancárias</a>
+<a class="btn {% if request.GET.tipo == 'CARTAO' %}btn-secondary{% else %}btn-outline-secondary{% endif %}" href="/bancos/?tipo=CARTAO">Cartões</a>
+{% if can_write %}
+<a class="btn btn-outline-success" href="/bancos/novo/?tipo=CAIXA">＋ Cadastrar Caixa PDV</a>
+{% endif %}
+{% endif %}
 </div>
 <form method="get" class="d-flex gap-2 flex-wrap mb-3"><input class="form-control" name="q" value="{{ q }}" aria-label="Buscar" placeholder="Buscar">
+{% if request.GET.tipo %}<input type="hidden" name="tipo" value="{{ request.GET.tipo }}">{% endif %}
 {% if resource == 'lancamento' %}
 <select class="form-select w-auto" name="origem" aria-label="Origem do lançamento">
 <option value="">Todas as origens</option>
@@ -20,10 +30,9 @@
 <option value="COMPRA" {% if request.GET.origem == 'COMPRA' %}selected{% endif %}>Compra</option>
 <option value="MANUAL" {% if request.GET.origem == 'MANUAL' %}selected{% endif %}>Manual</option>
 </select>
-{% if request.GET.tipo %}<input type="hidden" name="tipo" value="{{ request.GET.tipo }}">{% endif %}
 {% if request.GET.status %}<input type="hidden" name="status" value="{{ request.GET.status }}">{% endif %}
 {% endif %}
 <button class="btn btn-outline-secondary">Buscar</button><a class="btn btn-outline-secondary" href="?">Limpar</a></form>
-<div class="table-responsive"><table class="table table-striped align-middle"><thead><tr>{% for header in headers %}<th>{{ header }}</th>{% endfor %}<th>Ações</th></tr></thead><tbody>{% for row in rows %}<tr>{% for cell in row.cells %}<td>{{ cell }}</td>{% endfor %}<td><a class="btn btn-sm btn-outline-primary" href="{{ row.url }}">Abrir</a></td></tr>{% empty %}<tr><td colspan="10">Nenhum registro encontrado nesta organização.</td></tr>{% endfor %}</tbody></table></div>
+<div class="table-responsive"><table class="table table-striped align-middle"><thead><tr>{% for header in headers %}<th>{{ header }}</th>{% endfor %}<th>Ações</th></tr></thead><tbody>{% for row in rows %}<tr>{% for cell in row.cells %}<td>{{ cell }}</td>{% endfor %}<td><div class="d-flex gap-1 flex-wrap"><a class="btn btn-sm btn-outline-primary" href="{{ row.url }}">Abrir</a>{% if resource == 'banco' and can_write and row.obj %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'operacao:banco_editar' row.obj.pk %}">Editar</a>{% if row.obj.tipo == 'BANCO' %}<form method="post" action="{% url 'operacao:banco_acao' row.obj.pk 'tornar_caixa' %}" style="display:inline;">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-success" title="Configurar como Caixa PDV">Tornar Caixa</button></form>{% elif row.obj.tipo == 'CAIXA' %}<form method="post" action="{% url 'operacao:banco_acao' row.obj.pk 'tornar_banco' %}" style="display:inline;">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-secondary" title="Configurar como Conta Bancária">Tornar Banco</button></form>{% endif %}{% endif %}</div></td></tr>{% empty %}<tr><td colspan="10">Nenhum registro encontrado nesta organização.</td></tr>{% endfor %}</tbody></table></div>
 {% include 'paginacao.html' %}
 {% endblock %}

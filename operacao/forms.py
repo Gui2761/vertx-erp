@@ -70,13 +70,21 @@ class ContaBancariaForm(ContaBancariaForm):
         self.fields['deposito_padrao'].required = False
         self.fields['deposito_padrao'].label = 'Depósito padrão do caixa'
         self.fields['deposito_padrao'].help_text = 'Obrigatório para contas do tipo Caixa. Vendas e baixas de estoque usarão este depósito automaticamente.'
+        if not self.instance.pk:
+            current_tipo = self.initial.get('tipo') or getattr(self.instance, 'tipo', None)
+            if current_tipo == 'CAIXA' and not self.initial.get('deposito_padrao') and depot_options.exists():
+                self.initial['deposito_padrao'] = depot_options.first()
         # Keep the existing field ordering intuitive in the shared finance form.
         self.order_fields(['nome', 'tipo', 'deposito_padrao', 'banco', 'agencia', 'numero', 'titular', 'saldo_inicial', 'permite_saldo_negativo', 'ativo'])
 
     def clean(self):
         data = super().clean()
         if data.get('tipo') == 'CAIXA' and not data.get('deposito_padrao'):
-            self.add_error('deposito_padrao', 'Selecione o depósito padrão para este caixa.')
+            active_depots = m.Deposito.objects.filter(ativo=True)
+            if active_depots.count() == 1:
+                data['deposito_padrao'] = active_depots.first()
+            else:
+                self.add_error('deposito_padrao', 'Selecione o depósito padrão para este caixa.')
         elif data.get('tipo') == 'CAIXA' and not data['deposito_padrao'].ativo:
             self.add_error('deposito_padrao', 'O depósito padrão do caixa precisa estar ativo.')
         return data

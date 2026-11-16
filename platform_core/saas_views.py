@@ -757,8 +757,16 @@ def catalogo_produtos(request):
     denied = _guard(request)
     if denied:
         return denied
-    products = ERPCatalog.objects.prefetch_related('modules__resources').order_by('name', 'pk')
-    return _render(request, 'platform_core/saas/catalog.html', {'products': products})
+    qs = ERPCatalog.objects.prefetch_related('modules__resources').order_by('-operational', 'name', 'pk')
+    show_all = request.GET.get('todos') == '1'
+    if not show_all:
+        qs = qs.filter(active=True)
+    return _render(request, 'platform_core/saas/catalog.html', {
+        'products': qs,
+        'show_all': show_all,
+        'total_count': ERPCatalog.objects.count(),
+        'active_count': ERPCatalog.objects.filter(active=True).count(),
+    })
 
 
 @require_http_methods(['GET', 'POST'])

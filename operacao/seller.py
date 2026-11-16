@@ -168,7 +168,9 @@ def terminal(request):
             logger.warning('PDV opening rejected: scoped record missing; exception_type=%s organization_id=%s user_id=%s', type(exc).__name__, getattr(current_organization(), 'pk', None), request.user.pk)
             report_operation_error('O caixa ou um vínculo necessário não está disponível nesta organização. Atualize a página e confira o cadastro do caixa.')
     sessions=m.SessaoCaixa.objects.filter(operador=request.user,fechado_em__isnull=True).select_related('conta')
-    return render(request,'operacao/seller_terminal.html',{'sessions':sessions,'contas':m.ContaBancaria.objects.filter(ativo=True,tipo='CAIXA',deposito_padrao__ativo=True,deposito_padrao__organization_id=current_organization().pk).select_related('deposito_padrao'),'request_id':uuid.uuid4(),'opening_error':opening_error,'opening_conta':opening_conta,'opening_contado':opening_contado,'opening_request_id':opening_request_id,'drafts':m.Venda.objects.filter(sessao_caixa__operador=request.user,status='RASCUNHO',sessao_caixa__fechado_em__isnull=True).order_by('-pk')[:10],'cash_supervisor':has_capability(request.user,'caixa_supervisor')})
+    contas = m.ContaBancaria.objects.filter(ativo=True,tipo='CAIXA',deposito_padrao__ativo=True,deposito_padrao__organization_id=current_organization().pk).select_related('deposito_padrao')
+    bancos_disponiveis = list(m.ContaBancaria.objects.filter(ativo=True, organization_id=current_organization().pk).exclude(pk__in=contas.values_list('pk', flat=True))) if not contas.exists() else []
+    return render(request,'operacao/seller_terminal.html',{'sessions':sessions,'contas':contas,'bancos_disponiveis':bancos_disponiveis,'request_id':uuid.uuid4(),'opening_error':opening_error,'opening_conta':opening_conta,'opening_contado':opening_contado,'opening_request_id':opening_request_id,'drafts':m.Venda.objects.filter(sessao_caixa__operador=request.user,status='RASCUNHO',sessao_caixa__fechado_em__isnull=True).order_by('-pk')[:10],'cash_supervisor':has_capability(request.user,'caixa_supervisor')})
 
 def sale_context(request,sale,session):
     query=request.GET.get('q','').strip()[:100]

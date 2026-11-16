@@ -101,8 +101,11 @@ def lista(request, resource):
         else:
             qs = qs.filter(**{field + '__icontains': search})
     page = Paginator(qs.order_by('-pk'), 25).get_page(request.GET.get('page'))
-    rows = [{'cells': [value(obj, col) for col in cols], 'url': reverse('operacao:' + resource + '_detalhe', args=[obj.pk])} for obj in page]
-    return render(request, 'fiscal/legacy_list.html' if resource == 'fiscal' else 'gestao/lista.html', {'titulo': title, 'headers': [field_label(model, col) for col in cols], 'rows': rows, 'page_obj': page, 'query': page_query(request), 'q': search, 'resource': resource, 'can_write': permitted(request.user, write), 'new_url': reverse('operacao:' + resource + '_novo') if permitted(request.user, write) else ''})
+    rows = [{'cells': [value(obj, col) for col in cols], 'url': reverse('operacao:' + resource + '_detalhe', args=[obj.pk]), 'obj': obj} for obj in page]
+    new_url = reverse('operacao:' + resource + '_novo') if permitted(request.user, write) else ''
+    if new_url and resource == 'banco' and request.GET.get('tipo') in ['BANCO', 'CAIXA', 'CARTAO']:
+        new_url += f"?tipo={request.GET['tipo']}"
+    return render(request, 'fiscal/legacy_list.html' if resource == 'fiscal' else 'gestao/lista.html', {'titulo': title, 'headers': [field_label(model, col) for col in cols], 'rows': rows, 'page_obj': page, 'query': page_query(request), 'q': search, 'resource': resource, 'can_write': permitted(request.user, write), 'new_url': new_url})
 
 @login_required
 @require_http_methods(['GET', 'POST'])
@@ -115,7 +118,9 @@ def editar(request, resource, pk=None):
         return HttpResponse('Registro confirmado/histórico preservado; edição indisponível.', status=400)
     if not pk and hasattr(obj, 'criado_por_id'):
         obj.criado_por = request.user
-    initial = {name: request.GET[name] for name in ['cliente', 'unidade', 'equipamento', 'ordem', 'contrato', 'orcamento', 'fiscal', 'lancamento', 'venda', 'chamado', 'tecnico', 'fornecedor'] if name in request.GET}
+    initial = {name: request.GET[name] for name in ['cliente', 'unidade', 'equipamento', 'ordem', 'contrato', 'orcamento', 'fiscal', 'lancamento', 'venda', 'chamado', 'tecnico', 'fornecedor', 'tipo'] if name in request.GET}
+    if not pk and resource == 'banco' and request.GET.get('tipo') in ['BANCO', 'CAIXA', 'CARTAO']:
+        obj.tipo = request.GET['tipo']
     form = cls(request.POST if request.method == 'POST' else None, request.FILES or None, instance=obj, initial=initial)
     if resource == 'documento' and effective_role(request.user) == 'TECNICO':
         from ordens.services import visiveis
@@ -280,6 +285,24 @@ def acao(request, resource, pk, action):
         elif resource == 'fiscal':
             from fiscal.services import executar
             executar(request.user, pk, action, request.POST.get('justificativa', ''))
+        elif resource == 'banco':
+            if action == 'tornar_caixa':
+                if not obj.deposito_padrao_id:
+                    depot = m.Deposito.objects.filter(ativo=True).first()
+                    if not depot:
+                        return HttpResponse('É necessário cadastrar ao menos um depósito ativo antes de ativar um Caixa PDV.', status=400)
+                    obj.deposito_padrao = depot
+                obj.tipo = 'CAIXA'
+                obj.save(update_fields=['tipo', 'deposito_padrao'] if obj.pk else None)
+                messages.success(request, f'Conta "{obj.nome}" configurada com sucesso como Caixa PDV (Depósito: {obj.deposito_padrao.nome}).')
+                return redirect('operacao:banco_lista')
+            elif action == 'tornar_banco':
+                obj.tipo = 'BANCO'
+                obj.save(update_fields=['tipo'] if obj.pk else None)
+                messages.success(request, f'Conta "{obj.nome}" alterada para Banco.')
+                return redirect('operacao:banco_lista')
+            else:
+                return HttpResponse('Ação inválida.', status=400)
         else:
             return HttpResponse('Ação inválida.', status=400)
     except (ValidationError, ValueError) as exc:
