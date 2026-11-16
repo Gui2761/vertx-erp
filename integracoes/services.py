@@ -125,6 +125,8 @@ def normalized(kind,values):
     if kind=='equipamentos':result['cliente']=document(result['cliente'])
     if kind=='estoque' and result.get('fornecedor'):result['fornecedor']=document(result['fornecedor'])
     if result.get('email'):result['email']=result['email'].lower()
+    if result.get('ncm'):result['ncm']=re.sub(r'[^0-9]','',str(result['ncm']))
+    if result.get('cep'):result['cep']=re.sub(r'[^0-9]','',str(result['cep']))
     return result
 
 def identities(kind,data):

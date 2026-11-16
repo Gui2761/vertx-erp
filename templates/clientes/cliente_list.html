@@ -3,7 +3,12 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h3>Clientes e Unidades</h3>
-  {% if user.is_administrador or user.is_gestor %}<a href="{% url 'clientes:cliente_create' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Novo cliente</a>{% endif %}
+  {% if user.is_administrador or user.is_gestor %}
+  <div class="d-flex gap-2">
+    <a href="{% url 'operacao:migration_upload' 'clientes' %}" class="btn btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Importar Excel</a>
+    <a href="{% url 'clientes:cliente_create' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Novo cliente</a>
+  </div>
+  {% endif %}
 </div>
 
 <form method="get" class="row g-2 mb-3">
