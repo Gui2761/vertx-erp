@@ -494,6 +494,31 @@
         <span class="status-pill status-idle" id="desk-status-pill">● Consultório Livre</span>
       </div>
 
+      <!-- SELETOR DINÂMICO DE MÉDICO & SALA / CONSULTÓRIO -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;background:rgba(255,255,255,0.03);padding:0.75rem 1rem;border-radius:12px;border:1px solid var(--border-soft)">
+        <div style="display:flex;flex-direction:column;gap:0.3rem">
+          <label style="font-size:0.75rem;font-weight:800;color:var(--text-muted);text-transform:uppercase">👨‍⚕️ Médico / Profissional</label>
+          <select id="console-operator-prof" style="background:#0b1727;border:1px solid var(--border-soft);color:#fff;padding:0.45rem 0.65rem;border-radius:8px;font-size:0.85rem" onchange="onOperatorChange()">
+            <option value="">-- Operador da Sessão --</option>
+            {% for p in snapshot.professionals %}
+            {% if p.ativo %}
+            <option value="{{ p.id }}">{{ p.nome }} ({{ p.conselho }})</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.3rem">
+          <label style="font-size:0.75rem;font-weight:800;color:var(--text-muted);text-transform:uppercase">🚪 Sala / Consultório</label>
+          <select id="console-operator-room" style="background:#0b1727;border:1px solid var(--border-soft);color:#fff;padding:0.45rem 0.65rem;border-radius:8px;font-size:0.85rem" onchange="onRoomChange()">
+            {% for loc in snapshot.locals %}
+            <option value="{{ loc.id }}">{{ loc.nome }}</option>
+            {% empty %}
+            <option value="">Consultório 01</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
       <!-- VISUALIZADOR DA SENHA ATUAL -->
       <div class="current-call-display">
         <div class="current-call-label" id="doc-status-text">Nenhum Paciente em Atendimento</div>
@@ -502,7 +527,7 @@
         <div class="current-call-details">
           <span>Manchester: <strong id="doc-triage-label">---</strong></span>
           <span>Tempo decorrido: <strong id="elapsed-time">00:00</strong></span>
-          <span>Local: <strong>Consultório 03</strong></span>
+          <span>Local: <strong id="doc-active-room-name">Consultório 01</strong></span>
         </div>
       </div>
 
@@ -749,6 +774,11 @@
     }
 
     async function postQueueAction(payload) {
+      const profSel = document.getElementById('console-operator-prof');
+      const roomSel = document.getElementById('console-operator-room');
+      if (profSel && profSel.value && !payload.profissional_id) payload.profissional_id = profSel.value;
+      if (roomSel && roomSel.value && !payload.local_id) payload.local_id = roomSel.value;
+
       const res = await fetch(QUEUE_ACTION_URL, {
         method: 'POST',
         headers: {
@@ -764,6 +794,21 @@
       }
       if (data.snapshot) renderDoctorSnapshot(data.snapshot);
       return data;
+    }
+
+    function onOperatorChange() {
+      const profSel = document.getElementById('console-operator-prof');
+      if (profSel) localStorage.setItem('vertyx_call_prof_id', profSel.value);
+    }
+
+    function onRoomChange() {
+      const roomSel = document.getElementById('console-operator-room');
+      if (roomSel) {
+        localStorage.setItem('vertyx_call_room_id', roomSel.value);
+        const selText = roomSel.options[roomSel.selectedIndex]?.text;
+        const display = document.getElementById('doc-active-room-name');
+        if (display && selText) display.textContent = selText;
+      }
     }
 
     async function callSpecificTicket(publicId) {
@@ -913,6 +958,20 @@
 
     // Inicia em estado IDLE padrão
     setAttendanceState('IDLE');
+
+    // Restaura operador médico e consultório salvos na sessão
+    try {
+      const savedProf = localStorage.getItem('vertyx_call_prof_id');
+      const profSel = document.getElementById('console-operator-prof');
+      if (savedProf && profSel && savedProf !== '') profSel.value = savedProf;
+
+      const savedRoom = localStorage.getItem('vertyx_call_room_id');
+      const roomSel = document.getElementById('console-operator-room');
+      if (savedRoom && roomSel && savedRoom !== '') {
+        roomSel.value = savedRoom;
+        onRoomChange();
+      }
+    } catch(e) {}
     // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
     function applyDynamicBranding(b) {
       if (!b) return;

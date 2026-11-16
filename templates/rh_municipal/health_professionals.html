@@ -43,6 +43,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
 
     .brand-wrap {
@@ -94,7 +96,8 @@
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
     .btn-action-outline {
@@ -117,11 +120,31 @@
       border-color: #38bdf8;
     }
 
+    /* BANNERS DE MENSAGEM */
+    .alert-msg-container {
+      max-width: 1500px;
+      margin: 1.25rem auto 0;
+      padding: 0 2.25rem;
+      width: 100%;
+    }
+    .alert-msg {
+      padding: 0.85rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .alert-success { background: rgba(16, 185, 129, 0.18); border: 1px solid #10b981; color: #6ee7b7; }
+    .alert-error { background: rgba(239, 68, 68, 0.18); border: 1px solid #ef4444; color: #fca5a5; }
+
     /* CORPO PRINCIPAL EM GRID */
     main {
       max-width: 1500px;
       margin: 0 auto;
-      padding: 2.25rem;
+      padding: 2rem 2.25rem;
       width: 100%;
       display: grid;
       grid-template-columns: 1.15fr 1.85fr;
@@ -154,6 +177,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
 
     .form-grid {
@@ -240,6 +265,23 @@
     .btn-submit-doctor:hover {
       background: var(--gov-blue-hover);
       transform: translateY(-2px);
+    }
+
+    .btn-cancel-edit {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--gov-border);
+      padding: 0.65rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: none;
+      text-align: center;
+    }
+    .btn-cancel-edit:hover {
+      background: rgba(255,255,255,0.06);
+      color: #fff;
     }
 
     /* TABELA DE MÉDICOS CADASTRADOS */
@@ -357,6 +399,7 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       white-space: nowrap;
+      display: inline-block;
     }
     .badge-active { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
     .badge-pause { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
@@ -378,6 +421,58 @@
       color: #fff;
       border-color: var(--gov-blue);
     }
+    .btn-pause {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+    }
+    .btn-pause:hover {
+      background: #d97706;
+      color: #fff;
+      border-color: #d97706;
+    }
+    .btn-activate {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+    .btn-activate:hover {
+      background: #059669;
+      color: #fff;
+      border-color: #059669;
+    }
+
+    /* SEÇÃO DE GESTÃO DE SALAS */
+    .rooms-section {
+      max-width: 1500px;
+      margin: 0 auto 3rem;
+      padding: 0 2.25rem;
+      width: 100%;
+    }
+    .rooms-panel {
+      background: var(--gov-surface);
+      border: 1px solid var(--gov-border);
+      border-radius: 18px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .room-card {
+      background: #0b1727;
+      border: 1px solid var(--gov-border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+    }
   </style>
 </head>
 <body>
@@ -393,94 +488,117 @@
     </div>
 
     <div class="header-actions">
-      <a href="/gestao-publica/saude/painel-chamadas/" class="btn-action-outline">
+      <a href="{% url 'rh_municipal_public:saude_call_panel' %}" class="btn-action-outline">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
         Ir para Console do Médico
+      </a>
+      <a href="{% url 'rh_municipal_public:saude_call_panel_tv' %}" target="_blank" class="btn-action-outline">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+        SmartTV da Fila
+      </a>
+      <a href="{% url 'rh_municipal_public:saude_home' %}" class="btn-action-outline">
+        Voltar à Saúde SUS
       </a>
     </div>
   </header>
 
+  <!-- MENSAGENS DO DJANGO -->
+  {% if messages %}
+  <div class="alert-msg-container">
+    {% for msg in messages %}
+    <div class="alert-msg {% if msg.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+      <span>{{ msg }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <!-- CONTEÚDO PRINCIPAL (FORMULÁRIO + TABELA) -->
   <main>
-    <!-- FORMULÁRIO DE CADASTRO -->
+    <!-- FORMULÁRIO DE CADASTRO / EDIÇÃO -->
     <section class="form-card">
       <div class="card-title">
-        <span>Cadastrar Novo Médico / Profissional</span>
+        <span id="form-heading-text">Cadastrar Novo Médico / Profissional</span>
         <span style="font-size:0.75rem; color:#38bdf8; font-weight:700;">Habilitação e-SUS APS</span>
       </div>
 
-      <form id="doctor-form" onsubmit="handleSaveDoctor(event)">
+      <form method="post" id="doctor-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" id="doctor-form-action" value="create_doctor">
+        <input type="hidden" name="doctor_id" id="doctor-form-id" value="">
+
         <div class="form-grid">
           <div class="field-group">
             <label>Nome Completo do Profissional</label>
-            <input type="text" id="doc-fullname" placeholder="Ex: Dr. Roberto Alencar Fontes" required>
+            <input type="text" name="nome" id="doc-fullname" placeholder="Ex: Dr. Roberto Alencar Fontes" required>
           </div>
 
           <div class="field-row-2">
             <div class="field-group">
               <label>CPF (Normalizado)</label>
-              <input type="text" id="doc-cpf" placeholder="000.000.000-00" required>
+              <input type="text" name="cpf" id="doc-cpf" placeholder="000.000.000-00">
             </div>
             <div class="field-group">
               <label>Conselho & Número / UF</label>
-              <input type="text" id="doc-crm" placeholder="CRM/SE 5.482" required>
+              <div style="display:flex;gap:0.35rem">
+                <input type="text" name="conselho" id="doc-conselho" value="CRM" style="max-width:80px;text-align:center" required>
+                <input type="text" name="registro_conselho" id="doc-crm" placeholder="5.482/SE" required style="flex:1">
+              </div>
             </div>
           </div>
 
           <div class="field-row-2">
             <div class="field-group">
-              <label>Especialidade Médica</label>
-              <select id="doc-specialty" required>
+              <label>Especialidade Médica / CBO</label>
+              <select name="especialidade" id="doc-specialty" required>
                 <option value="Clínica Médica Geral / APS">Clínica Médica Geral / APS</option>
                 <option value="Medicina de Família e Comunidade">Medicina de Família e Comunidade</option>
                 <option value="Pediatria">Pediatria</option>
                 <option value="Ginecologia e Obstetrícia">Ginecologia e Obstetrícia</option>
                 <option value="Odontologia e Saúde Bucal">Odontologia e Saúde Bucal</option>
                 <option value="Enfermagem e Acolhimento">Enfermagem e Acolhimento</option>
+                <option value="Fisioterapia">Fisioterapia</option>
+                <option value="Psicologia">Psicologia</option>
               </select>
             </div>
 
             <div class="field-group">
               <label>Consultório / Sala Designada</label>
-              <select id="doc-room" required>
+              <select name="sala_nome" id="doc-room">
+                {% for r in rooms %}
+                <option value="{{ r.nome }}">{{ r.nome }} ({{ r.unidade_saude.unidade.nome }})</option>
+                {% empty %}
                 <option value="Consultório 01">Consultório 01 · Térreo</option>
-                <option value="Consultório 02">Consultório 02 · Pediatria</option>
-                <option value="Consultório 03" selected>Consultório 03 · 1º Andar</option>
-                <option value="Consultório 04">Consultório 04 · Especialidades</option>
-                <option value="Sala de Odontologia">Sala de Odontologia</option>
-                <option value="Sala de Triagem / Manchester">Sala de Triagem / Manchester</option>
+                <option value="Consultório 02">Consultório 02</option>
+                <option value="Sala de Triagem 01">Sala de Triagem 01</option>
+                {% endfor %}
               </select>
             </div>
           </div>
 
-          <div class="field-row-2">
-            <div class="field-group">
-              <label>Unidade Básica de Lotação</label>
-              <select id="doc-unit">
-                <option value="Unidade Básica de Saúde Central">Unidade Básica de Saúde Central (Sede)</option>
-                <option value="Unidade Básica de Saúde Sul">Unidade Básica de Saúde Sul</option>
-                <option value="Centro de Especialidades Médicas">Centro de Especialidades Médicas</option>
-              </select>
-            </div>
-
-            <div class="field-group">
-              <label>Carga Horária Semanal</label>
-              <select id="doc-hours">
-                <option value="40h - Dedicação Exclusiva">40h · Dedicação Exclusiva</option>
-                <option value="30h - Atendimento Diário">30h · Atendimento Diário</option>
-                <option value="20h - Turnos Específicos">20h · Turnos Específicos</option>
-              </select>
-            </div>
+          <div class="field-group">
+            <label>Unidade Básica de Lotação</label>
+            <select name="unidade_id" id="doc-unit">
+              {% for u in units %}
+              <option value="{{ u.pk }}">{{ u.unidade.nome }} ({{ u.tipo }})</option>
+              {% empty %}
+              <option value="">Nenhuma unidade cadastrada</option>
+              {% endfor %}
+            </select>
           </div>
 
           <label class="checkbox-row">
-            <input type="checkbox" id="doc-active" checked>
+            <input type="checkbox" name="ativo" id="doc-active" value="true" checked>
             <span>Habilitar imediatamente para chamadas na SmartTV da sala de espera</span>
           </label>
 
-          <button type="submit" class="btn-submit-doctor">
+          <button type="submit" class="btn-submit-doctor" id="btn-submit-doctor">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Salvar e Ativar Profissional na Fila
+            <span id="btn-submit-text">Salvar e Ativar Profissional na Fila</span>
+          </button>
+
+          <button type="button" class="btn-cancel-edit" id="btn-cancel-edit" onclick="resetFormToCreate()">
+            Cancelar Edição
           </button>
         </div>
       </form>
@@ -490,21 +608,21 @@
     <section class="table-panel">
       <div class="card-title">
         <span>Corpo Clínico Alocado · {{ branding.unidade_nome|default:"Unidade Municipal de Saúde" }}</span>
-        <span class="crm-badge" id="total-doctors-badge">{{ professionals|length }} Profissionais Cadastrados</span>
+        <span class="crm-badge" id="total-doctors-badge">{{ professionals|length }} Profissionais</span>
       </div>
 
       <div class="roster-summary">
         <div class="summary-item">
-          <span class="summary-label">Profissionais Listados</span>
-          <span class="summary-val" id="active-count">{{ professionals|length }}</span>
+          <span class="summary-label">Total Cadastrado</span>
+          <span class="summary-val">{{ professionals|length }}</span>
         </div>
         <div class="summary-item">
           <span class="summary-label">Consultórios / Salas</span>
-          <span class="summary-val">{{ locals|length }}</span>
+          <span class="summary-val">{{ rooms|length }}</span>
         </div>
         <div class="summary-item">
-          <span class="summary-label">Pacientes em Espera</span>
-          <span class="summary-val" style="color:#fbbf24;">{{ queue_snapshot.waiting|length|default:"0" }}</span>
+          <span class="summary-label">Unidades Ativas</span>
+          <span class="summary-val" style="color:#10b981;">{{ units|length }}</span>
         </div>
       </div>
 
@@ -513,11 +631,11 @@
           <thead>
             <tr>
               <th>Profissional</th>
-              <th>Registro Conselho</th>
-              <th>Especialidade / CBO</th>
+              <th>Conselho & CRM</th>
+              <th>Especialidade</th>
               <th>Unidade</th>
-              <th>Status</th>
-              <th>Ação</th>
+              <th>Status Fila</th>
+              <th style="text-align:right">Ações Operacionais</th>
             </tr>
           </thead>
           <tbody id="doctors-tbody">
@@ -526,19 +644,43 @@
               <td>
                 <div class="doc-name-cell">
                   <strong>{{ prof.servidor.nome }}</strong>
-                  <span>{{ prof.unidade_saude.unidade.nome|default:"Atenção Primária / Municipal" }}</span>
+                  <span>Matrícula: {{ prof.servidor.matricula|default:"--" }}</span>
                 </div>
               </td>
               <td><span class="crm-badge">{{ prof.conselho }} {{ prof.registro_conselho|default:"Sem conselho" }}</span></td>
               <td>{{ prof.especialidade|default:prof.ocupacao|default:"Saúde Pública" }}</td>
               <td><span class="room-badge">{{ prof.unidade_saude.unidade.nome|default:"Rede SUS" }}</span></td>
-              <td><span class="status-badge {% if prof.ativo %}badge-active{% else %}badge-pause{% endif %}">{% if prof.ativo %}● Ativo na Fila{% else %}⏸ Inativo{% endif %}</span></td>
               <td>
-                <a href="{% url 'rh_municipal_public:saude_call_panel' %}" class="btn-table-action">Abrir Console</a>
+                <span class="status-badge {% if prof.ativo %}badge-active{% else %}badge-pause{% endif %}">
+                  {% if prof.ativo %}● Ativo na Fila{% else %}⏸ Inativo / Pausado{% endif %}
+                </span>
+              </td>
+              <td style="text-align:right">
+                <div style="display:inline-flex;gap:0.4rem;align-items:center;justify-content:flex-end;flex-wrap:wrap">
+                  <!-- Botão 1-Clique: Alternar Ativo / Inativo (Pausar ou Reativar) -->
+                  <form method="post" style="display:inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_status">
+                    <input type="hidden" name="doctor_id" value="{{ prof.pk }}">
+                    <button type="submit" class="btn-table-action {% if prof.ativo %}btn-pause{% else %}btn-activate{% endif %}" title="{% if prof.ativo %}Pausar profissional (não receberá chamadas na TV){% else %}Reativar profissional para a escala{% endif %}">
+                      {% if prof.ativo %}Pausar{% else %}Reativar{% endif %}
+                    </button>
+                  </form>
+
+                  <!-- Botão Editar Dados -->
+                  <button type="button" class="btn-table-action" onclick="editDoctor('{{ prof.pk }}', '{{ prof.servidor.nome|escapejs }}', '{{ prof.servidor.cpf|default:''|escapejs }}', '{{ prof.conselho|escapejs }}', '{{ prof.registro_conselho|escapejs }}', '{{ prof.especialidade|default:prof.ocupacao|escapejs }}', '{{ prof.unidade_saude_id }}', {{ prof.ativo|yesno:'true,false' }})" title="Editar cadastro e especialidade">
+                    Editar
+                  </button>
+
+                  <!-- Botão Abrir Console do Médico -->
+                  <a href="{% url 'rh_municipal_public:saude_call_panel' %}" class="btn-table-action" style="background:#0284c7;border-color:#0284c7;color:#fff;">
+                    Console
+                  </a>
+                </div>
               </td>
             </tr>
             {% empty %}
-            <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:1.5rem;">Nenhum profissional vinculado ainda nesta organização.</td></tr>
+            <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:1.5rem;">Nenhum profissional vinculado ainda nesta organização. Preencha o formulário ao lado para cadastrar o primeiro médico.</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -546,62 +688,110 @@
     </section>
   </main>
 
-  <script>
-    function handleSaveDoctor(e) {
-      e.preventDefault();
-      const name = document.getElementById('doc-fullname').value;
-      const crm = document.getElementById('doc-crm').value;
-      const specialty = document.getElementById('doc-specialty').value;
-      const room = document.getElementById('doc-room').value;
-      const hours = document.getElementById('doc-hours').value;
-      const isActive = document.getElementById('doc-active').checked;
+  <!-- SEÇÃO INFERIOR: GESTÃO DE SALAS & CONSULTÓRIOS -->
+  <section class="rooms-section">
+    <div class="rooms-panel">
+      <div class="card-title">
+        <div>
+          <span>Salas de Atendimento & Consultórios da Rede</span>
+          <p style="font-size:0.8rem;color:var(--text-muted);font-weight:400;margin-top:2px">Consultórios, salas de triagem e guichês onde os médicos chamam os pacientes.</p>
+        </div>
+      </div>
 
-      const tbody = document.getElementById('doctors-tbody');
-      const tr = document.createElement('tr');
-      tr.style.background = 'rgba(56, 189, 248, 0.08)';
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:2rem;">
+        <!-- Formulário Rápido de Nova Sala -->
+        <form method="post" style="background:#0b1727;border:1px solid var(--gov-border);border-radius:12px;padding:1.25rem;display:flex;flex-direction:column;gap:0.85rem">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create_room">
+          <strong style="font-size:0.95rem;color:#fff">Adicionar Nova Sala / Consultório</strong>
 
-      tr.innerHTML = `
-        <td>
-          <div class="doc-name-cell">
-            <strong>${name}</strong>
-            <span>${hours}</span>
+          <div class="field-group">
+            <label>Nome da Sala</label>
+            <input type="text" name="nome" placeholder="Ex: Consultório 04 - Pediatria" required>
           </div>
-        </td>
-        <td><span class="crm-badge">${crm}</span></td>
-        <td>${specialty}</td>
-        <td><span class="room-badge">${room}</span></td>
-        <td><span class="status-badge ${isActive ? 'badge-active' : 'badge-pause'}">${isActive ? '● Ativo na Fila' : '⏸ Em Pausa'}</span></td>
-        <td>
-          <a href="/gestao-publica/saude/painel-chamadas/" class="btn-table-action">Abrir Console</a>
-        </td>
-      `;
 
-      tbody.insertBefore(tr, tbody.firstChild);
+          <div class="field-group">
+            <label>Tipo de Sala</label>
+            <select name="tipo">
+              <option value="CONSULTORIO">Consultório Médico</option>
+              <option value="TRIAGEM">Sala de Triagem / Manchester</option>
+              <option value="SALA_VACINA">Sala de Vacinação</option>
+              <option value="ODONTOLOGIA">Consultório Odontológico</option>
+              <option value="FARMACIA">Balcão Farmácia Básica</option>
+              <option value="GUICHE">Guichê de Recepção</option>
+            </select>
+          </div>
 
-      // Salva no localStorage para sincronia com o Console do Médico
-      try {
-        const doctors = JSON.parse(localStorage.getItem('vertyx_registered_doctors') || '[]');
-        doctors.push({ name, crm, specialty, room, hours, active: isActive });
-        localStorage.setItem('vertyx_registered_doctors', JSON.stringify(doctors));
-      } catch(err) {}
+          <div class="field-group">
+            <label>Unidade de Saúde</label>
+            <select name="unidade_id">
+              {% for u in units %}
+              <option value="{{ u.pk }}">{{ u.unidade.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
 
-      alert(`Profissional cadastrado com sucesso no Fundo Municipal de Saúde!\n${name} (${crm}) alocado(a) no ${room}.\nO médico já pode realizar chamadas que ecoarão na SmartTV.`);
+          <button type="submit" class="btn-submit-doctor" style="padding:0.75rem;font-size:0.9rem">
+            + Cadastrar Sala
+          </button>
+        </form>
+
+        <!-- Lista de Salas Cadastradas -->
+        <div class="rooms-grid">
+          {% for room in rooms %}
+          <div class="room-card">
+            <div>
+              <strong style="display:block;font-size:0.95rem;color:#fff">{{ room.nome }}</strong>
+              <small style="color:var(--text-muted)">{{ room.get_tipo_display }} · {{ room.unidade_saude.unidade.nome }}</small>
+            </div>
+            <form method="post" style="display:inline">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="toggle_room">
+              <input type="hidden" name="room_id" value="{{ room.pk }}">
+              <button type="submit" class="btn-table-action {% if room.ativo %}btn-pause{% else %}btn-activate{% endif %}" style="padding:0.35rem 0.65rem;font-size:0.72rem">
+                {% if room.ativo %}Ativa{% else %}Inativa{% endif %}
+              </button>
+            </form>
+          </div>
+          {% empty %}
+          <p style="color:var(--text-muted);grid-column:1/-1">Nenhuma sala cadastrada. Ao cadastrar o primeiro médico, as salas padrão serão geradas automaticamente.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // PREENCHIMENTO DO FORMULÁRIO PARA EDIÇÃO DE MÉDICO
+    function editDoctor(id, nome, cpf, conselho, registro, especialidade, unidadeId, ativo) {
+      document.getElementById('form-heading-text').textContent = 'Editar Dados do Médico/Profissional';
+      document.getElementById('doctor-form-action').value = 'edit_doctor';
+      document.getElementById('doctor-form-id').value = id;
+      document.getElementById('doc-fullname').value = nome;
+      document.getElementById('doc-cpf').value = cpf || '';
+      document.getElementById('doc-conselho').value = conselho || 'CRM';
+      document.getElementById('doc-crm').value = registro || '';
+      document.getElementById('doc-specialty').value = especialidade || 'Clínica Médica Geral / APS';
+      if (unidadeId) document.getElementById('doc-unit').value = unidadeId;
+      document.getElementById('doc-active').checked = ativo;
+      document.getElementById('btn-submit-text').textContent = 'Atualizar Dados do Profissional';
+      document.getElementById('btn-cancel-edit').style.display = 'block';
+
+      // Rola suavemente até o formulário
+      document.getElementById('doctor-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetFormToCreate() {
+      document.getElementById('form-heading-text').textContent = 'Cadastrar Novo Médico / Profissional';
+      document.getElementById('doctor-form-action').value = 'create_doctor';
+      document.getElementById('doctor-form-id').value = '';
       document.getElementById('doctor-form').reset();
+      document.getElementById('doc-conselho').value = 'CRM';
+      document.getElementById('doc-active').checked = true;
+      document.getElementById('btn-submit-text').textContent = 'Salvar e Ativar Profissional na Fila';
+      document.getElementById('btn-cancel-edit').style.display = 'none';
     }
 
-    function toggleDoctorStatus(btn) {
-      const tr = btn.closest('tr');
-      const statusBadge = tr.querySelector('.status-badge');
-      if (statusBadge.classList.contains('badge-pause')) {
-        statusBadge.className = 'status-badge badge-active';
-        statusBadge.textContent = '● Ativo na Fila';
-        btn.textContent = 'Pausar';
-      } else {
-        statusBadge.className = 'status-badge badge-pause';
-        statusBadge.textContent = '⏸ Em Pausa';
-        btn.textContent = 'Ativar';
-      }
-    }
     // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
     function applyDynamicBranding(b) {
       if (!b) return;

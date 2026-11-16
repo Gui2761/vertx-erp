@@ -26,7 +26,7 @@ from .phase_g_forms import (
     HealthTeamForm, HealthTFDForm, HealthTFDTransitionForm, HealthUnitForm, PatientForm,
 )
 from . import phase_g_models as health
-from .models import AcessoMunicipal
+from .models import AcessoMunicipal, Servidor, CargoMunicipal, VinculoFuncional, UnidadeMunicipal
 from .public_services import accesses_for, has_municipal_permission
 from .phase_e_services import public_module_available
 from .public_views import _context
@@ -1025,10 +1025,235 @@ def health_professionals_screen(request):
         raise PermissionDenied('Acesso a profissionais de saúde não autorizado.')
     org = current_organization()
     branding = get_tenant_branding(request)
+
+    if request.method == 'POST':
+        if not (_can(request.user, 'saude.professionals.manage') or _can(request.user, 'saude.dashboard.view')):
+            raise PermissionDenied('Você não tem permissão para cadastrar ou alterar profissionais de saúde.')
+        action = request.POST.get('action') or 'create_doctor'
+
+        if action == 'toggle_status':
+            doctor_id = request.POST.get('doctor_id')
+            prof = health.ProfissionalSaudeMunicipal.objects.filter(organization=org, pk=doctor_id).first()
+            if prof:
+                prof.ativo = not prof.ativo
+                prof.save(update_fields=['ativo'])
+                if prof.servidor:
+                    prof.servidor.ativo = prof.ativo
+                    prof.servidor.save(update_fields=['ativo'])
+                status_txt = "ativado e disponível para chamadas na SmartTV" if prof.ativo else "inativado/pausado (fora da escala)"
+                svc._audit(
+                    request.user, org, 'PROFISSIONAL_SAUDE_STATUS',
+                    prof._meta.label_lower, prof.pk,
+                    details={'nome': prof.servidor.nome if prof.servidor else '', 'ativo': prof.ativo}
+                )
+                messages.success(request, f'Profissional {prof.servidor.nome if prof.servidor else ""} {status_txt}.')
+            else:
+                messages.error(request, 'Profissional não encontrado nesta Prefeitura.')
+            return redirect('rh_municipal_public:saude_professionals_screen')
+
+        elif action == 'create_doctor':
+            nome = request.POST.get('nome', '').strip()
+            cpf = ''.join(ch for ch in request.POST.get('cpf', '') if ch.isdigit())
+            conselho = request.POST.get('conselho', 'CRM').strip()
+            registro_conselho = request.POST.get('registro_conselho', '').strip()
+            especialidade = request.POST.get('especialidade', 'Clínica Médica Geral / APS').strip()
+            unidade_id = request.POST.get('unidade_id')
+            sala_nome = request.POST.get('sala_nome', '').strip()
+            is_active = request.POST.get('ativo') in ('true', '1', 'on', True)
+
+            if not nome:
+                messages.error(request, 'Informe o nome completo do médico/profissional.')
+                return redirect('rh_municipal_public:saude_professionals_screen')
+
+            unit = None
+            if unidade_id:
+                unit = health.UnidadeSaudeMunicipal.objects.filter(organization=org, pk=unidade_id, ativo=True).first()
+            if unit is None:
+                unit = health.UnidadeSaudeMunicipal.objects.filter(organization=org, ativo=True).order_by('id').first()
+
+            if unit is None:
+                messages.error(request, 'Nenhuma Unidade de Saúde cadastrada nesta Prefeitura.')
+                return redirect('rh_municipal_public:saude_professionals_screen')
+
+            # Ensure default catalog of rooms if unit is empty
+            rt.ensure_default_queue_catalog(org, unit)
+
+            # If user provided a new room name, ensure it exists in LocalAtendimentoSaude
+            if sala_nome:
+                existing_room = health.LocalAtendimentoSaude.objects.filter(organization=org, unidade_saude=unit, nome__iexact=sala_nome).first()
+                if not existing_room:
+                    next_num = health.LocalAtendimentoSaude.objects.filter(organization=org, unidade_saude=unit, tipo='CONSULTORIO').count() + 1
+                    hier = svc._health_hierarchy(unit)
+                    health.LocalAtendimentoSaude.objects.create(
+                        organization=org, unidade_saude=unit,
+                        tipo='CONSULTORIO', numero=next_num, nome=sala_nome, ativo=True, **hier,
+                    )
+
+            # Ensure Servidor exists for this doctor
+            hier = svc._health_hierarchy(unit)
+            servidor = None
+            if cpf:
+                servidor = Servidor.objects.filter(organization=org, cpf=cpf).first()
+            if not servidor and registro_conselho:
+                mat = f"MED-{registro_conselho.replace('/', '').replace('.', '')[-6:]}"
+                servidor = Servidor.objects.filter(organization=org, matricula=mat).first()
+
+            if not servidor:
+                cargo = CargoMunicipal.objects.filter(organization=org, codigo__in=['MED', 'MEDICO']).first()
+                if not cargo:
+                    cargo = CargoMunicipal.objects.filter(organization=org).first()
+                if not cargo:
+                    cargo = CargoMunicipal.objects.create(
+                        organization=org, codigo='MED', nome='Médico Clínico Geral', carga_horaria_semanal=40,
+                    )
+                vinculo = VinculoFuncional.objects.filter(organization=org).first()
+                if not vinculo:
+                    vinculo = VinculoFuncional.objects.create(
+                        organization=org, codigo='CONTRATADO', nome='Contrato Temporário / Plantão',
+                    )
+                import uuid
+                matricula = f"M-{uuid.uuid4().hex[:6].upper()}" if not registro_conselho else f"MED-{registro_conselho.replace('/', '').replace('.', '')[-6:]}"
+                servidor = Servidor.objects.create(
+                    organization=org,
+                    matricula=matricula,
+                    nome=nome,
+                    cpf=cpf,
+                    cargo=cargo,
+                    vinculo=vinculo,
+                    ativo=is_active,
+                    **hier,
+                )
+            else:
+                servidor.nome = nome
+                servidor.ativo = is_active
+                servidor.save(update_fields=['nome', 'ativo'])
+
+            prof, created = health.ProfissionalSaudeMunicipal.objects.get_or_create(
+                organization=org,
+                servidor=servidor,
+                unidade_saude=unit,
+                defaults={
+                    'ocupacao': especialidade or 'Médico Clínico',
+                    'conselho': conselho or 'CRM',
+                    'registro_conselho': registro_conselho,
+                    'especialidade': especialidade,
+                    'ativo': is_active,
+                    **hier,
+                }
+            )
+            if not created:
+                prof.ocupacao = especialidade
+                prof.conselho = conselho
+                prof.registro_conselho = registro_conselho
+                prof.especialidade = especialidade
+                prof.ativo = is_active
+                prof.save(update_fields=['ocupacao', 'conselho', 'registro_conselho', 'especialidade', 'ativo'])
+
+            svc._audit(
+                request.user, org, 'PROFISSIONAL_SAUDE_SALVO',
+                prof._meta.label_lower, prof.pk,
+                details={'nome': nome, 'conselho': conselho, 'registro': registro_conselho, 'ativo': is_active}
+            )
+            messages.success(request, f'Médico/Profissional {nome} cadastrado com sucesso e vinculado à unidade {unit.unidade.nome}.')
+            return redirect('rh_municipal_public:saude_professionals_screen')
+
+        elif action == 'edit_doctor':
+            doctor_id = request.POST.get('doctor_id')
+            prof = health.ProfissionalSaudeMunicipal.objects.filter(organization=org, pk=doctor_id).first()
+            if not prof:
+                messages.error(request, 'Profissional não encontrado.')
+                return redirect('rh_municipal_public:saude_professionals_screen')
+
+            nome = request.POST.get('nome', '').strip()
+            conselho = request.POST.get('conselho', '').strip()
+            registro = request.POST.get('registro_conselho', '').strip()
+            especialidade = request.POST.get('especialidade', '').strip()
+            unidade_id = request.POST.get('unidade_id')
+            is_active = request.POST.get('ativo') in ('true', '1', 'on', True)
+
+            if nome and prof.servidor:
+                prof.servidor.nome = nome
+                prof.servidor.ativo = is_active
+                prof.servidor.save(update_fields=['nome', 'ativo'])
+
+            if conselho:
+                prof.conselho = conselho
+            if registro:
+                prof.registro_conselho = registro
+            if especialidade:
+                prof.especialidade = especialidade
+                prof.ocupacao = especialidade
+            if unidade_id:
+                u = health.UnidadeSaudeMunicipal.objects.filter(organization=org, pk=unidade_id, ativo=True).first()
+                if u:
+                    prof.unidade_saude = u
+            prof.ativo = is_active
+            prof.save()
+
+            svc._audit(
+                request.user, org, 'PROFISSIONAL_SAUDE_EDITADO',
+                prof._meta.label_lower, prof.pk,
+                details={'nome': prof.servidor.nome if prof.servidor else '', 'ativo': prof.ativo}
+            )
+            messages.success(request, f'Dados do profissional {prof.servidor.nome if prof.servidor else ""} atualizados com sucesso.')
+            return redirect('rh_municipal_public:saude_professionals_screen')
+
+        elif action == 'create_room':
+            unidade_id = request.POST.get('unidade_id')
+            room_tipo = request.POST.get('tipo', 'CONSULTORIO')
+            room_nome = request.POST.get('nome', '').strip()
+            if not room_nome:
+                messages.error(request, 'Informe o nome da sala / consultório.')
+                return redirect('rh_municipal_public:saude_professionals_screen')
+            unit = health.UnidadeSaudeMunicipal.objects.filter(organization=org, pk=unidade_id, ativo=True).first() if unidade_id else health.UnidadeSaudeMunicipal.objects.filter(organization=org, ativo=True).first()
+            if not unit:
+                messages.error(request, 'Unidade de saúde não encontrada.')
+                return redirect('rh_municipal_public:saude_professionals_screen')
+            hier = svc._health_hierarchy(unit)
+            next_num = health.LocalAtendimentoSaude.objects.filter(organization=org, unidade_saude=unit, tipo=room_tipo).count() + 1
+            room = health.LocalAtendimentoSaude.objects.create(
+                organization=org, unidade_saude=unit, tipo=room_tipo,
+                numero=next_num, nome=room_nome, ativo=True, **hier,
+            )
+            svc._audit(
+                request.user, org, 'LOCAL_ATENDIMENTO_CRIADO',
+                room._meta.label_lower, room.pk,
+                details={'nome': room.nome, 'tipo': room.tipo, 'unidade': unit.pk}
+            )
+            messages.success(request, f'Sala/Consultório "{room.nome}" cadastrado com sucesso.')
+            return redirect('rh_municipal_public:saude_professionals_screen')
+
+        elif action == 'toggle_room':
+            room_id = request.POST.get('room_id')
+            room = health.LocalAtendimentoSaude.objects.filter(organization=org, pk=room_id).first()
+            if room:
+                room.ativo = not room.ativo
+                room.save(update_fields=['ativo'])
+                svc._audit(
+                    request.user, org, 'LOCAL_ATENDIMENTO_STATUS',
+                    room._meta.label_lower, room.pk,
+                    details={'nome': room.nome, 'ativo': room.ativo}
+                )
+                messages.success(request, f'Sala "{room.nome}" {"ativada" if room.ativo else "desativada"}.')
+            return redirect('rh_municipal_public:saude_professionals_screen')
+
     profs = scoped_queryset(
         request.user,
         health.ProfissionalSaudeMunicipal.objects.filter(organization=org),
     ).select_related('servidor', 'unidade_saude__unidade', 'equipe').order_by('servidor__nome')[:100]
+
+    units = scoped_queryset(
+        request.user,
+        health.UnidadeSaudeMunicipal.objects.filter(organization=org, ativo=True),
+    ).select_related('unidade')
+    first_unit = units.first()
+    if first_unit:
+        rt.ensure_default_queue_catalog(org, first_unit)
+
+    rooms = health.LocalAtendimentoSaude.objects.filter(
+        organization=org,
+    ).select_related('unidade_saude__unidade').order_by('unidade_saude', 'tipo', 'numero')
+
     context = _context(
         request, can_health_dashboard=True,
         can_health_professionals=True,
@@ -1036,8 +1261,10 @@ def health_professionals_screen(request):
     context.update({
         'branding': branding,
         'professionals': profs,
-        'title': 'Profissionais de Saúde',
-        'subtitle': 'Corpo clínico e equipes vinculados às Unidades de Saúde',
+        'units': units,
+        'rooms': rooms,
+        'title': 'Profissionais & Consultórios de Saúde',
+        'subtitle': 'Corpo clínico, salas de atendimento e escalas vinculados às Unidades de Saúde',
     })
     return render(request, 'rh_municipal/health_professionals.html', context)
 
