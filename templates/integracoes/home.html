@@ -1,6 +1,76 @@
 {% extends 'integracoes/base.html' %}
 {% block migration_content %}
-<section class="mig-intro"><span class="mig-eyebrow">MIGRAR DADOS</span><h2>O que você quer importar?</h2><p>Baixe o modelo, preencha e envie seu arquivo. Você confere os dados antes de importar.</p><div class="mig-note">Seus dados anteriores permanecem preservados. Nenhum registro é excluído automaticamente.</div></section>
-<div class="mig-grid">{% for kind in kinds %}<article class="mig-card"><span class="mig-icon"><i class="bi bi-{{ kind.icon }}"></i></span><h3>{{ kind.title }}</h3><p>{{ kind.description }}</p><a class="btn btn-primary" href="{% url 'operacao:migration_upload' kind.key %}">Importar {{ kind.title|lower }} <span aria-hidden="true">→</span></a><a class="mig-model" href="{% url 'operacao:migration_template' kind.key %}">Baixar modelo Excel</a></article>{% endfor %}{% for kind in planned %}<article class="mig-card planned"><span class="badge text-bg-light">Próxima etapa</span><h3>{{ kind.title }}</h3><p>{{ kind.description }}</p><span class="text-muted">Ainda não disponível nesta fase</span></article>{% endfor %}</div>
-<section class="mig-panel"><h2>Histórico de importações</h2><p>Os relatórios anteriores ficam guardados para consulta.</p><div class="table-responsive"><table class="table"><thead><tr><th>Arquivo</th><th>Tipo</th><th>Situação</th><th>Recebido em</th><th></th></tr></thead><tbody>{% for batch in history %}<tr><td>{{ batch.nome_arquivo }}</td><td>{{ batch.tipo|capfirst }}</td><td>{{ batch.status_label }}</td><td>{{ batch.criado_em|date:'d/m/Y H:i' }}</td><td>{% if batch.status == 'MAPEAR' %}<a href="{% url 'operacao:migration_mapping' batch.public_id %}">Continuar</a>{% elif batch.status == 'CONFERIR' %}<a href="{% url 'operacao:migration_preview' batch.public_id %}">Conferir</a>{% elif batch.status == 'IMPORTANDO' %}<a href="{% url 'operacao:migration_progress' batch.public_id %}">Continuar importação</a>{% else %}<a href="{% url 'operacao:migration_result' batch.public_id %}">Ver relatório</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Você ainda não enviou arquivos nesta organização.</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="mig-intro">
+  <span class="mig-eyebrow">ESTEIRA DE CARGA MASSIVA</span>
+  <h2>O que você deseja importar?</h2>
+  <p>Baixe a planilha modelo oficial (.xlsx), preencha seus dados e envie o arquivo. O sistema valida os campos e permite conferir antes de gravar no banco.</p>
+  <div class="mig-note">
+    <i class="bi bi-shield-check me-1"></i> <strong>Segurança e Isolamento:</strong> Seus dados existentes permanecem 100% preservados. O sistema impede duplicidades de forma inteligente via hash criptográfico.
+  </div>
+</section>
+
+<div class="mig-grid">
+  {% for kind in kinds %}
+  <article class="mig-card">
+    <span class="mig-icon"><i class="bi bi-{{ kind.icon }}"></i></span>
+    <h3>{{ kind.title }}</h3>
+    <p>{{ kind.description }}</p>
+    <a class="btn btn-primary" href="{% url 'operacao:migration_upload' kind.key %}">
+      Importar {{ kind.title }} <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+    <a class="mig-model" href="{% url 'operacao:migration_template' kind.key %}">
+      <i class="bi bi-download"></i> Baixar modelo Excel
+    </a>
+  </article>
+  {% endfor %}
+  {% for kind in planned %}
+  <article class="mig-card planned">
+    <span class="badge text-bg-light">Próxima etapa</span>
+    <h3>{{ kind.title }}</h3>
+    <p>{{ kind.description }}</p>
+    <span class="text-muted">Ainda não disponível nesta fase</span>
+  </article>
+  {% endfor %}
+</div>
+
+<section class="mig-panel">
+  <h2>Histórico de importações e cargas</h2>
+  <p>Os registros e comprovantes de cada lote enviado permanecem disponíveis para auditoria da empresa.</p>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Arquivo</th>
+          <th>Tipo</th>
+          <th>Situação</th>
+          <th>Recebido em</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for batch in history %}
+        <tr>
+          <td><span class="fw-semibold text-break">{{ batch.nome_arquivo }}</span></td>
+          <td>{{ batch.tipo|capfirst }}</td>
+          <td><span class="mig-status {{ batch.status|lower }}">{{ batch.status_label }}</span></td>
+          <td>{{ batch.criado_em|date:'d/m/Y H:i' }}</td>
+          <td>
+            {% if batch.status == 'MAPEAR' %}
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'operacao:migration_mapping' batch.public_id %}">Continuar mapeamento</a>
+            {% elif batch.status == 'CONFERIR' %}
+            <a class="btn btn-sm btn-outline-warning" href="{% url 'operacao:migration_preview' batch.public_id %}">Conferir linhas</a>
+            {% elif batch.status == 'IMPORTANDO' %}
+            <a class="btn btn-sm btn-outline-info" href="{% url 'operacao:migration_progress' batch.public_id %}">Continuar importação</a>
+            {% else %}
+            <a class="btn btn-sm btn-outline-success" href="{% url 'operacao:migration_result' batch.public_id %}">Ver relatório</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center py-4 text-muted">Você ainda não enviou arquivos nesta organização.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 {% endblock %}

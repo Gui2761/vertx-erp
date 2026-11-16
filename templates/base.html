@@ -86,7 +86,7 @@
             {% if group.links %}
               <li class="vx-nav-group">
                 {% if administrative_navigation %}
-                  <details class="vx-module"{% if forloop.counter <= 2 or group.title == 'Operacional' or group.title == 'Vendas' %} open{% endif %}>
+                  <details class="vx-module"{% if group.is_active %} open{% endif %}>
                     <summary>
                       <span>
                         {% if group.title == 'Operacional' %}<i class="bi bi-activity text-primary me-2"></i>
@@ -95,6 +95,7 @@
                         {% elif group.title == 'Estoque' %}<i class="bi bi-boxes text-warning me-2"></i>
                         {% elif group.title == 'Compras' %}<i class="bi bi-cart3 text-secondary me-2"></i>
                         {% elif group.title == 'Financeiro' %}<i class="bi bi-cash-stack text-success me-2"></i>
+                        {% elif group.title == 'Cadastros' %}<i class="bi bi-folder2 text-primary me-2"></i>
                         {% elif group.title == 'RH' %}<i class="bi bi-people text-info me-2"></i>
                         {% elif group.title == 'Relatórios' %}<i class="bi bi-bar-chart-line text-warning me-2"></i>
                         {% elif group.title == 'Configurações' %}<i class="bi bi-gear text-secondary me-2"></i>
@@ -109,7 +110,7 @@
                 <ul>
                   {% for link in group.links %}
                     <li class="nav-item">
-                      <a class="nav-link" href="{{ link.url }}" title="{{ link.label }}" aria-label="{{ link.label }}">
+                      <a class="nav-link{% if link.is_active %} active{% endif %}" href="{{ link.url }}" title="{{ link.label }}" aria-label="{{ link.label }}">
                         <svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg>
                         <span class="vx-nav-label">{{ link.label }}</span>
                       </a>
