@@ -8,9 +8,9 @@
   <div class="col-12 col-sm-10 col-md-7 col-lg-5 col-xl-4 px-2" style="max-width: 440px;">
     <div class="card vx-login-card border-0 shadow-lg">
       <div class="card-header text-center pt-4 pb-3 border-0 bg-transparent">
-        <a href="{% url 'commercial:home' %}" class="d-inline-block text-decoration-none" title="Página Inicial">
-          <img src="{% static 'img/vertyx-logo-white.png' %}?v=20261117_hd" alt="VERTYX" height="42" class="mb-2 vx-logo-dark" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
-          <img src="{% static 'img/vertyx-logo.png' %}?v=20261117_hd" alt="VERTYX" height="42" class="mb-2 vx-logo-light" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
+        <a href="{% url 'commercial:home' %}" class="vx-brand-lockup d-inline-flex align-items-center justify-content-center text-decoration-none mb-2" title="Página Inicial" aria-label="VERTYX · Início">
+          <img src="{% static 'commercial/brand.svg' %}" width="40" height="40" alt="VERTYX" class="vx-brand-icon">
+          <span class="vx-brand-text">VERTYX</span><span class="vx-brand-dot"></span>
         </a>
         <div class="small text-muted fw-medium">Acesso Corporativo Seguro · Multi-Tenant</div>
       </div>

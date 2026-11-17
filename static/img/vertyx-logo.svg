@@ -1,18 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 56" width="220" height="56">
-  <defs>
-    <linearGradient id="iconGradDark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#1e40af"/>
-    </linearGradient>
-  </defs>
-  <!-- Icon Badge -->
-  <g transform="translate(4, 4)">
-    <rect width="48" height="48" rx="13" fill="url(#iconGradDark)"/>
-    <path d="M11 13h7l6 18 6-18h7L27 37h-6z" fill="#ffffff"/>
-    <path d="m24 31 6-18h7L27 37h-6z" fill="#93c5fd"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 216 48" width="216" height="48">
+  <!-- Official VERTYX Brand Badge (Same as Landing Page) -->
+  <g transform="translate(0, 0)">
+    <rect width="48" height="48" rx="13" fill="#245de6"/>
+    <polygon points="11,13 18,13 24,31 30,13 37,13 27,37 21,37" fill="#ffffff"/>
+    <polygon points="24,31 30,13 37,13 27,37 21,37" fill="#a9c6ff"/>
   </g>
-  <!-- Brand Wordmark -->
-  <text x="64" y="37" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="27" fill="#0f172a" letter-spacing="0.05em">VERTYX</text>
-  <!-- Brand Dot -->
-  <rect x="202" y="29" width="7" height="7" rx="2" fill="#2563eb"/>
+  <!-- Wordmark -->
+  <text x="60" y="34" font-family="'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif" font-weight="800" font-size="30" letter-spacing="-0.03em" fill="#10213c">VERTYX</text>
+  <!-- Circular Brand Dot -->
+  <circle cx="204" cy="33" r="3.2" fill="#245de6"/>
 </svg>

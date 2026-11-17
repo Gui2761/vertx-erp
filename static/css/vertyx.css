@@ -206,10 +206,101 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   padding: 1rem 1.5rem;
 }
 
+/* ==========================================================================
+   VERTYX Official Brand Lockup (100% Unificado com a Tela Inicial Comercial)
+   ========================================================================== */
+.vx-brand-lockup {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none !important;
+  font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  font-size: 24px;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  line-height: 1;
+  color: #10213c !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.vx-brand-lockup:hover {
+  opacity: 0.92;
+}
+
+[data-theme="dark"] .vx-brand-lockup {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .vx-brand-lockup {
+  color: #10213c !important;
+}
+
+.vx-brand-lockup .vx-brand-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.vx-brand-lockup .vx-brand-text {
+  display: inline-block;
+  line-height: 1;
+}
+
+.vx-brand-lockup .vx-brand-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: #245de6;
+  border-radius: 50%;
+  margin-left: 2px;
+  align-self: flex-end;
+  margin-bottom: 2px;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .vx-brand-lockup .vx-brand-dot {
+  background: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+}
+
+/* Tamanho no Card de Login */
+.vx-login-card .vx-brand-lockup {
+  font-size: 28px;
+  gap: 11px;
+}
+.vx-login-card .vx-brand-lockup .vx-brand-icon {
+  width: 40px;
+  height: 40px;
+}
+.vx-login-card .vx-brand-lockup .vx-brand-dot {
+  width: 6px;
+  height: 6px;
+  margin-bottom: 3px;
+}
+
+/* Tamanho no Navbar do ERP */
+.vx-nav .vx-brand-lockup {
+  font-size: 21px;
+  gap: 8px;
+}
+.vx-nav .vx-brand-lockup .vx-brand-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+.vx-nav .vx-brand-lockup .vx-brand-dot {
+  width: 4.5px;
+  height: 4.5px;
+  margin-bottom: 2px;
+}
+
 .vx-navbar-logo {
   height: 28px;
   width: auto;
-  object-fit: contain;
 }
 
 .vx-user-pill {

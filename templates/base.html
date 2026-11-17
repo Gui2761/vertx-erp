@@ -33,9 +33,11 @@
     <!-- Sidebar Header (Brand & Toggles) -->
     <div class="d-flex align-items-center justify-content-between w-100 pb-2 border-bottom border-secondary border-opacity-10 vx-navbar-header">
       <a class="navbar-brand d-inline-flex align-items-center p-0 m-0" href="{% if pdv_experience and request.membership and request.membership.role in 'ADMIN GESTOR' or pdv_experience and user.is_administrador or pdv_experience and user.is_gestor %}{% url 'core:painel' %}{% elif pdv_experience %}{% url 'operacao:pdv_home' %}{% elif seller_experience and request.membership and request.membership.role in 'ADMIN GESTOR' or seller_experience and user.is_administrador or seller_experience and user.is_gestor %}{% url 'core:painel' %}{% elif seller_experience %}{% url 'operacao:seller_home' %}{% elif request.membership and request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}" title="{% if pdv_experience or seller_experience %}Voltar à Página Geral (ERP){% else %}VERTYX{% endif %}">
-        <img src="{% static 'img/vertyx-logo-white.png' %}?v=20261117_hd" alt="VERTYX" height="28" class="vx-navbar-logo vx-logo-dark" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
-        <img src="{% static 'img/vertyx-logo.png' %}?v=20261117_hd" alt="VERTYX" height="28" class="vx-navbar-logo vx-logo-light" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
-        <img src="{% static 'img/vertyx-icon.png' %}?v=20261117_hd" alt="VERTYX" height="28" class="vx-navbar-mini-logo d-none" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
+        <span class="vx-brand-lockup vx-navbar-logo d-inline-flex align-items-center">
+          <img src="{% static 'commercial/brand.svg' %}" width="28" height="28" alt="" class="vx-brand-icon">
+          <span class="vx-brand-text">VERTYX</span><span class="vx-brand-dot"></span>
+        </span>
+        <img src="{% static 'commercial/brand.svg' %}" alt="VERTYX" width="28" height="28" class="vx-navbar-mini-logo d-none">
       </a>
       
       <!-- Desktop Collapse Toggle Button -->
