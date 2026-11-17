@@ -553,3 +553,41 @@
     min-width: 620px;
   }
 }
+
+/* File Upload Selector Button Styling */
+.migration-assistant input[type="file"],
+.mig-panel input[type="file"] {
+  background-color: var(--vx-input-bg, #0b111d) !important;
+  border: 1px solid var(--vx-input-border, rgba(255, 255, 255, 0.15)) !important;
+  color: var(--vx-input-color, #f1f5f9) !important;
+  border-radius: var(--vx-radius-sm, 8px) !important;
+  padding: 0.35rem 0.65rem !important;
+  cursor: pointer;
+}
+
+.migration-assistant input[type="file"]::file-selector-button,
+.migration-assistant input[type="file"]::-webkit-file-upload-button,
+.mig-panel input[type="file"]::file-selector-button,
+.mig-panel input[type="file"]::-webkit-file-upload-button {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #3b82f6 !important;
+  border-radius: 6px !important;
+  padding: 0.4rem 1rem !important;
+  margin: -0.15rem 0.85rem -0.15rem -0.45rem !important;
+  font-weight: 600 !important;
+  font-size: 0.84rem !important;
+  letter-spacing: 0.01em !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
+}
+
+.migration-assistant input[type="file"]::file-selector-button:hover,
+.migration-assistant input[type="file"]::-webkit-file-upload-button:hover,
+.mig-panel input[type="file"]::file-selector-button:hover,
+.mig-panel input[type="file"]::-webkit-file-upload-button:hover {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5) !important;
+}

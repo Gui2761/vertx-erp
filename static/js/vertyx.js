@@ -148,6 +148,7 @@ window.getVertyxTheme = function() {
 
 window.applyVertyxTheme = function(theme) {
   document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-bs-theme', theme);
   try {
     localStorage.setItem('vertyx_theme', theme);
   } catch (e) {}

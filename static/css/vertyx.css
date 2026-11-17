@@ -879,6 +879,58 @@ input[type="date"], input[type="search"], input[type="tel"], input[type="url"], 
   transition: all 0.15s ease !important;
 }
 
+/* File Upload Input & Selector Button */
+.form-control[type="file"],
+input[type="file"] {
+  background-color: var(--vx-input-bg) !important;
+  border: 1px solid var(--vx-input-border) !important;
+  color: var(--vx-input-color) !important;
+  border-radius: var(--vx-radius-sm) !important;
+  font-size: 0.88rem !important;
+  padding: 0.35rem 0.65rem !important;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.form-control[type="file"]::file-selector-button,
+.form-control[type="file"]::-webkit-file-upload-button,
+input[type="file"]::file-selector-button,
+input[type="file"]::-webkit-file-upload-button {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #3b82f6 !important;
+  border-radius: var(--vx-radius-sm) !important;
+  padding: 0.4rem 1rem !important;
+  margin: -0.15rem 0.85rem -0.15rem -0.45rem !important;
+  font-weight: 600 !important;
+  font-size: 0.84rem !important;
+  letter-spacing: 0.01em !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.form-control[type="file"]::file-selector-button:hover,
+.form-control[type="file"]::-webkit-file-upload-button:hover,
+input[type="file"]::file-selector-button:hover,
+input[type="file"]::-webkit-file-upload-button:hover {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+[data-theme="light"] .form-control[type="file"]::file-selector-button,
+[data-theme="light"] .form-control[type="file"]::-webkit-file-upload-button,
+[data-theme="light"] input[type="file"]::file-selector-button,
+[data-theme="light"] input[type="file"]::-webkit-file-upload-button {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #2563eb !important;
+}
+
 .form-select, select {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
   background-repeat: no-repeat !important;
