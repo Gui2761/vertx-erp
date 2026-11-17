@@ -82,36 +82,23 @@
 
 {% if stock_summary.repor %}<a class="alert alert-warning d-block text-decoration-none mb-4" href="{% url 'operacao:stock_occurrences' %}?tipo=REPOSICAO"><strong>ATENÇÃO — {{ stock_summary.repor }} PRODUTOS PRECISAM DE REPOSIÇÃO</strong></a>{% endif %}
 
-<div class="row g-4 mb-4">
-  <div class="{% if sales_chart %}col-12 col-xl-8{% else %}col-12 col-xl-7{% endif %}">
-    {% if sales_chart %}
-    <section class="card p-4 h-100" aria-label="Gráfico de vendas">
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <span class="vx-indicator-dot" style="background-color: var(--vx-brand);"></span>
-        <span class="vx-section-title">VENDAS LÍQUIDAS</span>
-      </div>
-      <p class="small text-muted mb-3">Vendas confirmadas, descontadas devoluções formais, agrupadas pela janela selecionada.</p>
-      {{ sales_chart|json_script:"sales-chart-data" }}
-      <div id="apex-vendas-chart" class="mb-2"></div>
-      <svg id="svg-vendas-chart" class="vx-exec-chart" viewBox="0 0 640 210" role="img" aria-label="Vendas líquidas por período">
-        <line x1="25" y1="175" x2="620" y2="175" stroke="rgba(255,255,255,0.08)"/>
-        {% for row in sales_chart %}<rect x="{{ row.x|add:'-9' }}" y="{{ row.y }}" width="18" height="{{ row.height }}" rx="4" fill="#10b981"><title>{{ row.label }} · R$ {{ row.vendas|floatformat:2 }}</title></rect>{% endfor %}
-        <text x="25" y="202" font-size="11" fill="#64748b">{{ sales_chart.0.label }}</text><text x="620" y="202" text-anchor="end" font-size="11" fill="#64748b">{% with last=sales_chart|last %}{{ last.label }}{% endwith %}</text>
-      </svg>
-      {% if advanced_analytics %}<p class="mb-0 mt-2 text-muted">Total no período: <strong class="text-white">R$ {{ sales_chart_total|floatformat:2 }}</strong>. Período anterior: R$ {{ sales_comparison_previous|floatformat:2 }}.{% if sales_comparison_percent is not None %} Variação: {{ sales_comparison_percent }}%.{% endif %}</p>{% endif %}
-    </section>
-    {% else %}
-    <section class="card p-4 h-100 d-flex flex-column justify-content-center align-items-center text-center">
-      <i class="bi bi-graph-up-arrow text-secondary mb-2" style="font-size: 2.5rem;"></i>
-      <h3 class="h6 text-secondary mb-1">Métricas Operacionais</h3>
-      <p class="small text-muted mb-0">Selecione uma janela de datas ou registre vendas no PDV para atualizar os gráficos em tempo real.</p>
-    </section>
-    {% endif %}
+{% if sales_chart %}
+<section class="card p-4 mb-4" aria-label="Gráfico de vendas">
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <span class="vx-indicator-dot" style="background-color: var(--vx-brand);"></span>
+    <span class="vx-section-title">VENDAS LÍQUIDAS</span>
   </div>
-  <div class="{% if sales_chart %}col-12 col-xl-4{% else %}col-12 col-xl-5{% endif %}">
-    {% include 'operacao/_vertyx_upsell_card.html' %}
-  </div>
-</div>
+  <p class="small text-muted mb-3">Vendas confirmadas, descontadas devoluções formais, agrupadas pela janela selecionada.</p>
+  {{ sales_chart|json_script:"sales-chart-data" }}
+  <div id="apex-vendas-chart" class="mb-2"></div>
+  <svg id="svg-vendas-chart" class="vx-exec-chart" viewBox="0 0 640 210" role="img" aria-label="Vendas líquidas por período">
+    <line x1="25" y1="175" x2="620" y2="175" stroke="rgba(255,255,255,0.08)"/>
+    {% for row in sales_chart %}<rect x="{{ row.x|add:'-9' }}" y="{{ row.y }}" width="18" height="{{ row.height }}" rx="4" fill="#10b981"><title>{{ row.label }} · R$ {{ row.vendas|floatformat:2 }}</title></rect>{% endfor %}
+    <text x="25" y="202" font-size="11" fill="#64748b">{{ sales_chart.0.label }}</text><text x="620" y="202" text-anchor="end" font-size="11" fill="#64748b">{% with last=sales_chart|last %}{{ last.label }}{% endwith %}</text>
+  </svg>
+  {% if advanced_analytics %}<p class="mb-0 mt-2 text-muted">Total no período: <strong class="text-white">R$ {{ sales_chart_total|floatformat:2 }}</strong>. Período anterior: R$ {{ sales_comparison_previous|floatformat:2 }}.{% if sales_comparison_percent is not None %} Variação: {{ sales_comparison_percent }}%.{% endif %}</p>{% endif %}
+</section>
+{% endif %}
 
 {% if stock_chart_enabled %}
 <section class="card p-4 mb-4" aria-label="Gráfico de disponibilidade do estoque">
