@@ -109,13 +109,26 @@ def cadastro_inicial(request):
             return redirect('operacao:cadastro_inicial')
 
         elif acao == 'parametros_fiscais':
-            fiscal_cfg.ambiente_fiscal = request.POST.get('ambiente_fiscal', fiscal_cfg.ambiente_fiscal)
+            novo_ambiente = request.POST.get('ambiente_fiscal', fiscal_cfg.ambiente_fiscal)
+            fiscal_cfg.ambiente_fiscal = novo_ambiente
             fiscal_cfg.provedor_fiscal = request.POST.get('provedor_fiscal', fiscal_cfg.provedor_fiscal).strip()
             fiscal_cfg.municipio_fiscal = request.POST.get('municipio_fiscal', fiscal_cfg.municipio_fiscal).strip()
             fiscal_cfg.codigo_servico = request.POST.get('codigo_servico', fiscal_cfg.codigo_servico).strip()
             try:
                 fiscal_cfg.save()
-                messages.success(request, '✅ Parâmetros fiscais e de ambiente atualizados!')
+                # Sincroniza credencial ativa para o novo ambiente
+                target_amb = 'HOMOLOGACAO' if novo_ambiente == 'SANDBOX' else 'PRODUCAO'
+                for c in CredencialFiscal.objects.filter(organization=org, ativa=True):
+                    c._service_write = True
+                    c.ambiente = target_amb
+                    c.save()
+                # Atualiza auditoria
+                ret = empresa_cfg.retencoes_informativas or {}
+                if 'certificado_a1' in ret and isinstance(ret['certificado_a1'], dict):
+                    ret['certificado_a1']['ambiente'] = target_amb
+                    empresa_cfg.retencoes_informativas = ret
+                    empresa_cfg.save(update_fields=['retencoes_informativas'])
+                messages.success(request, f'✅ Parâmetros fiscais atualizados! Ambiente ativo: {fiscal_cfg.get_ambiente_fiscal_display()}.')
             except Exception as err:
                 messages.error(request, f'Erro ao salvar parâmetros fiscais: {err}')
             return redirect('operacao:cadastro_inicial')
