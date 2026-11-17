@@ -5,7 +5,10 @@
 <main class="container-fluid">
   <header class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
     <div><p class="text-primary fw-semibold mb-1">VERTYX PDV</p><h1>PDV · Caixas</h1><p class="text-muted mb-0">Gerencie sessões de caixa da organização atual.</p></div>
-    <a class="btn btn-outline-primary" href="{% url 'operacao:pdv_home' %}">Central do PDV</a>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-outline-info fw-semibold d-inline-flex align-items-center gap-1" href="{% url 'core:painel' %}"><i class="bi bi-arrow-left-circle"></i> Voltar à Página Geral (ERP)</a>
+      <a class="btn btn-outline-primary" href="{% url 'operacao:pdv_home' %}">Central do PDV</a>
+    </div>
   </header>
 
   {% if setup_needed or setup_missing_deposit %}

@@ -32,7 +32,7 @@
     
     <!-- Sidebar Header (Brand & Toggles) -->
     <div class="d-flex align-items-center justify-content-between w-100 pb-2 border-bottom border-secondary border-opacity-10 vx-navbar-header">
-      <a class="navbar-brand d-inline-flex align-items-center p-0 m-0" href="{% if pdv_experience %}{% url 'operacao:pdv_home' %}{% elif seller_experience %}{% url 'operacao:seller_home' %}{% elif request.membership and request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}">
+      <a class="navbar-brand d-inline-flex align-items-center p-0 m-0" href="{% if pdv_experience and request.membership and request.membership.role in 'ADMIN GESTOR' or pdv_experience and user.is_administrador or pdv_experience and user.is_gestor %}{% url 'core:painel' %}{% elif pdv_experience %}{% url 'operacao:pdv_home' %}{% elif seller_experience and request.membership and request.membership.role in 'ADMIN GESTOR' or seller_experience and user.is_administrador or seller_experience and user.is_gestor %}{% url 'core:painel' %}{% elif seller_experience %}{% url 'operacao:seller_home' %}{% elif request.membership and request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}" title="{% if pdv_experience or seller_experience %}Voltar à Página Geral (ERP){% else %}VERTYX{% endif %}">
         <img src="{% static 'img/vertyx-logo-white.png' %}" alt="VERTYX" height="26" class="vx-navbar-logo vx-logo-dark">
         <img src="{% static 'img/vertyx-logo.png' %}" alt="VERTYX" height="26" class="vx-navbar-logo vx-logo-light">
         <img src="{% static 'img/vertyx-icon.png' %}" alt="VERTYX" height="28" class="vx-navbar-mini-logo d-none">
@@ -72,9 +72,9 @@
     <div class="collapse navbar-collapse" id="menuPrincipal">
       <ul class="navbar-nav me-auto flex-wrap w-100">
         {% if pdv_experience %}
-        <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-shop text-info me-2"></i>VERTYX PDV</span><ul>{% for link in pdv_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}">{{ link.label }}</a></li>{% endfor %}</ul></li>
+        <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-shop text-info me-2"></i>VERTYX PDV</span><ul class="d-flex align-items-center flex-wrap gap-2">{% if not request.membership or request.membership.role in 'ADMIN GESTOR' or user.is_administrador or user.is_gestor or user.is_staff or user.is_superuser %}<li class="nav-item"><a class="nav-link vx-back-to-erp-btn" href="{% url 'core:painel' %}" title="Retornar para o ERP Completo (Página Geral)"><i class="bi bi-arrow-left-circle-fill"></i> <span>Voltar à Página Geral (ERP)</span></a></li>{% endif %}{% for link in pdv_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}">{{ link.label }}</a></li>{% endfor %}</ul></li>
         {% elif seller_experience %}
-        <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-person-badge text-success me-2"></i>VERTYX VENDEDOR</span><ul>{% for link in seller_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
+        <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-person-badge text-success me-2"></i>VERTYX VENDEDOR</span><ul class="d-flex align-items-center flex-wrap gap-2">{% if not request.membership or request.membership.role in 'ADMIN GESTOR' or user.is_administrador or user.is_gestor or user.is_staff or user.is_superuser %}<li class="nav-item"><a class="nav-link vx-back-to-erp-btn" href="{% url 'core:painel' %}" title="Retornar para o ERP Completo (Página Geral)"><i class="bi bi-arrow-left-circle-fill"></i> <span>Voltar à Página Geral (ERP)</span></a></li>{% endif %}{% for link in seller_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
         {% elif request.membership and request.membership.role == 'TECNICO' %}
         <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-wrench-adjustable text-warning me-2"></i>ASSISTÊNCIA EM CAMPO</span><ul>{% for link in technician_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
         {% elif executive_navigation %}
@@ -205,13 +205,22 @@
             </div>
           </div>
 
-          <!-- Quick Logout Button -->
-          <form method="post" action="{% url 'contas:logout' %}" class="m-0 flex-shrink-0">
-            {% csrf_token %}
-            <button class="btn btn-outline-danger btn-sm p-1 px-2" title="Sair do Sistema" style="border-radius: 6px; font-size: 0.8rem;">
-              <i class="bi bi-box-arrow-right"></i>
-            </button>
-          </form>
+          <div class="d-flex align-items-center gap-1 m-0 flex-shrink-0">
+            {% if pdv_experience or seller_experience %}
+              {% if not request.membership or request.membership.role in 'ADMIN GESTOR' or user.is_administrador or user.is_gestor or user.is_staff or user.is_superuser %}
+              <a href="{% url 'core:painel' %}" class="btn btn-outline-info btn-sm p-1 px-2" title="Voltar à Página Geral (ERP)" style="border-radius: 6px; font-size: 0.8rem; font-weight: 600;">
+                <i class="bi bi-arrow-left-circle me-1"></i> ERP
+              </a>
+              {% endif %}
+            {% endif %}
+            <!-- Quick Logout Button -->
+            <form method="post" action="{% url 'contas:logout' %}" class="m-0">
+              {% csrf_token %}
+              <button class="btn btn-outline-danger btn-sm p-1 px-2" title="Sair do Sistema" style="border-radius: 6px; font-size: 0.8rem;">
+                <i class="bi bi-box-arrow-right"></i>
+              </button>
+            </form>
+          </div>
         </div>
 
       </div>
@@ -233,7 +242,7 @@
 
 <div class="vx-main" id="conteudo">
   {% if user.is_authenticated and contingencia_jornada_contratual %}<div class="alert alert-warning" role="status">Modo de contingência: Jornada Contratual suspensa. Histórico preservado; atendimentos continuam pelo fluxo da OS.</div>{% endif %}
-  {% if user.is_authenticated %}<nav class="vx-breadcrumb" aria-label="Localização">{% if pdv_experience %}<a href="{% url 'operacao:pdv_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:pdv_home' %}">PDV</a>{% elif seller_experience %}<a href="{% url 'operacao:seller_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:seller_home' %}">Minha rotina</a>{% elif request.membership and request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
+  {% if user.is_authenticated %}<nav class="vx-breadcrumb" aria-label="Localização">{% if pdv_experience %}<a href="{% url 'platform_core:home' %}">VERTYX</a><span>›</span><a href="{% url 'core:painel' %}">Assistência (Página Geral)</a><span>›</span><a href="{% url 'operacao:pdv_home' %}">PDV</a>{% elif seller_experience %}<a href="{% url 'platform_core:home' %}">VERTYX</a><span>›</span><a href="{% url 'core:painel' %}">Assistência (Página Geral)</a><span>›</span><a href="{% url 'operacao:seller_home' %}">Minha rotina</a>{% elif request.membership and request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
   {% if uploads_disabled %}<div class="alert alert-info" role="status">Homologação sem armazenamento de arquivos: fotos, documentos e logos estão desativados. Cadastros e operações sem anexos continuam disponíveis.</div>{% endif %}
   {% for message in messages %}
     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
