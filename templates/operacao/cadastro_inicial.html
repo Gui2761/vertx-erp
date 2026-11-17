@@ -34,41 +34,50 @@
   </div>
 
   <!-- Alertas de Status Rápido -->
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
+  <div class="row row-cols-2 row-cols-md-5 g-3 mb-4">
+    <div class="col">
       <div class="card p-3 rounded-3 h-100" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
         <div class="d-flex align-items-center justify-content-between">
-          <span class="small text-secondary">CNPJ & Jurídico</span>
+          <span class="small text-secondary">CNPJ & Razão</span>
           {% if tem_cnpj %}<i class="bi bi-check-circle-fill text-success fs-5"></i>{% else %}<i class="bi bi-exclamation-circle-fill text-warning fs-5"></i>{% endif %}
         </div>
-        <div class="fw-bold mt-2" style="color: var(--vx-ink, #ffffff);">{% if tem_cnpj %}{{ org.cnpj_formatado }}{% else %}Pendente{% endif %}</div>
+        <div class="fw-bold mt-2 text-truncate" style="color: var(--vx-ink, #ffffff);">{% if tem_cnpj %}{{ org.cnpj_formatado }}{% else %}Pendente{% endif %}</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col">
       <div class="card p-3 rounded-3 h-100" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
         <div class="d-flex align-items-center justify-content-between">
-          <span class="small text-secondary">Endereço & Sede</span>
+          <span class="small text-secondary">Sede & UF</span>
           {% if tem_endereco %}<i class="bi bi-check-circle-fill text-success fs-5"></i>{% else %}<i class="bi bi-exclamation-circle-fill text-warning fs-5"></i>{% endif %}
         </div>
         <div class="fw-bold mt-2 text-truncate" style="color: var(--vx-ink, #ffffff);">{% if tem_endereco %}{{ org.cidade }}/{{ org.uf }}{% else %}Não informado{% endif %}</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col">
       <div class="card p-3 rounded-3 h-100" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
         <div class="d-flex align-items-center justify-content-between">
-          <span class="small text-secondary">Contas & Caixas</span>
+          <span class="small text-secondary">Contas & Pix</span>
           {% if tem_banco %}<i class="bi bi-check-circle-fill text-success fs-5"></i>{% else %}<i class="bi bi-exclamation-circle-fill text-warning fs-5"></i>{% endif %}
         </div>
-        <div class="fw-bold mt-2" style="color: var(--vx-ink, #ffffff);">{{ contas.count }} conta(s) ativa(s)</div>
+        <div class="fw-bold mt-2" style="color: var(--vx-ink, #ffffff);">{{ contas.count }} conta(s)</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col">
       <div class="card p-3 rounded-3 h-100" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
         <div class="d-flex align-items-center justify-content-between">
-          <span class="small text-secondary">Fiscal & Tributário</span>
+          <span class="small text-secondary">Regime Fiscal</span>
           {% if tem_fiscal %}<i class="bi bi-check-circle-fill text-success fs-5"></i>{% else %}<i class="bi bi-shield-check text-info fs-5"></i>{% endif %}
         </div>
-        <div class="fw-bold mt-2" style="color: var(--vx-ink, #ffffff);">{{ fiscal_cfg.get_ambiente_fiscal_display }}</div>
+        <div class="fw-bold mt-2 text-truncate" style="color: var(--vx-ink, #ffffff);">{{ fiscal_cfg.get_ambiente_fiscal_display }}</div>
+      </div>
+    </div>
+    <div class="col col-12 col-md-auto flex-grow-1">
+      <div class="card p-3 rounded-3 h-100" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
+        <div class="d-flex align-items-center justify-content-between">
+          <span class="small text-secondary">Certificado A1</span>
+          {% if tem_certificado %}<i class="bi bi-patch-check-fill text-success fs-5"></i>{% else %}<i class="bi bi-shield-slash text-warning fs-5"></i>{% endif %}
+        </div>
+        <div class="fw-bold mt-2 text-truncate" style="color: var(--vx-ink, #ffffff);">{% if tem_certificado %}Instalado (Ativo){% else %}Não cadastrado{% endif %}</div>
       </div>
     </div>
   </div>
@@ -186,7 +195,7 @@
 
       <!-- Bloco 2: Certificado Digital A1 & Fiscal -->
       <div class="card p-4 rounded-3 mb-4 shadow-sm" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
           <div class="d-flex align-items-center gap-2">
             <i class="bi bi-shield-lock text-warning fs-5"></i>
             <h2 class="h5 fw-bold mb-0" style="color: var(--vx-ink, #ffffff);">2. Certificado Digital A1 & Fiscal</h2>
@@ -199,6 +208,107 @@
           O Certificado Digital modelo <strong>A1 (.pfx / .p12)</strong> permite a emissão de Notas Fiscais de Serviços (NFS-e), Notas de Produtos (NF-e) e Cupom Fiscal (NFC-e) na Loja e Assistência.
         </p>
 
+        <!-- STATUS DO CERTIFICADO A1 INSTALADO -->
+        {% if cert_info and cert_info.ativo %}
+        <div class="p-3 rounded-3 mb-3 border border-success border-opacity-30" style="background: rgba(16, 185, 129, 0.06);">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 px-2.5 py-1">
+                <i class="bi bi-patch-check-fill me-1"></i> Certificado A1 Vinculado e Ativo
+              </span>
+              {% if cert_info.emissor %}
+              <span class="badge bg-secondary bg-opacity-25 text-secondary small">{{ cert_info.emissor }}</span>
+              {% endif %}
+            </div>
+            <form method="post" class="d-inline" onsubmit="return confirm('Deseja realmente desvincular este certificado digital?');">
+              {% csrf_token %}
+              <input type="hidden" name="acao" value="remover_certificado">
+              <button type="submit" class="btn btn-sm btn-outline-danger py-0.5 px-2" style="font-size: 0.72rem;">
+                <i class="bi bi-trash"></i> Desvincular Certificado
+              </button>
+            </form>
+          </div>
+          <div class="row g-2 small">
+            <div class="col-12 col-md-6">
+              <span class="text-secondary" style="font-size: 0.75rem;">Titular / Razão Social:</span><br>
+              <strong class="text-white">{{ cert_info.titular|default:org.razao_social }}</strong>
+            </div>
+            <div class="col-12 col-md-6">
+              <span class="text-secondary" style="font-size: 0.75rem;">CNPJ Vinculado:</span><br>
+              <strong class="text-white font-monospace">{{ cert_info.cnpj|default:org.cnpj }}</strong>
+            </div>
+            <div class="col-12 col-md-6">
+              <span class="text-secondary" style="font-size: 0.75rem;">Validade:</span><br>
+              <strong class="text-white"><i class="bi bi-calendar-event text-info me-1"></i>Válido até {{ cert_info.valido_ate }}</strong>
+            </div>
+            <div class="col-12 col-md-6">
+              <span class="text-secondary" style="font-size: 0.75rem;">Armazenamento no Cofre:</span><br>
+              <span class="text-info font-monospace" style="font-size: 0.72rem;"><i class="bi bi-safe text-info me-1"></i>{{ cert_info.referencia_cofre|default:"Cofre Seguro Criptografado" }}</span>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- FORMULÁRIO DE CADASTRO / UPLOAD DO CERTIFICADO A1 -->
+        <div class="p-3 rounded-3 mb-3 border {% if cert_info and cert_info.ativo %}border-secondary border-opacity-25{% else %}border-info border-opacity-35{% endif %}" style="background: rgba(14, 165, 233, 0.03);">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h3 class="h6 fw-bold mb-0 text-white d-flex align-items-center gap-1.5">
+              <i class="bi bi-file-earmark-lock text-info"></i>
+              {% if cert_info and cert_info.ativo %}Substituir / Atualizar Certificado A1{% else %}Cadastrar Certificado Digital A1 (.pfx / .p12){% endif %}
+            </h3>
+            <span class="badge bg-info bg-opacity-15 text-info" style="font-size: 0.68rem;">Padrão ICP-Brasil</span>
+          </div>
+
+          <form method="post" id="form-cert-upload" class="mb-0">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="salvar_certificado">
+            <input type="hidden" name="certificado_base64" id="id_cert_base64">
+            <input type="hidden" name="certificado_nome" id="id_cert_nome">
+
+            <div class="row g-2.5">
+              <div class="col-12 col-md-7">
+                <label class="form-label small text-secondary fw-semibold mb-1">Arquivo do Certificado Digital A1 (.pfx / .p12)</label>
+                <input type="file" id="id_cert_file" accept=".pfx,.p12" class="form-control form-control-sm">
+                <div class="form-text text-secondary" style="font-size: 0.72rem;">Arquivo fornecido pela autoridade certificadora (Certisign, Serasa, Soluti, etc.).</div>
+              </div>
+              <div class="col-12 col-md-5">
+                <label class="form-label small text-secondary fw-semibold mb-1">Senha do Certificado</label>
+                <div class="input-group input-group-sm">
+                  <input type="password" id="id_cert_senha" name="certificado_senha" class="form-control" placeholder="Senha do arquivo .pfx">
+                  <button class="btn btn-outline-secondary" type="button" onclick="toggleCertPassword()" title="Mostrar/ocultar senha">
+                    <i class="bi bi-eye" id="toggleCertPasswordIcon"></i>
+                  </button>
+                </div>
+                <div class="form-text text-secondary" style="font-size: 0.72rem;">Senha cadastrada na emissão do certificado.</div>
+              </div>
+            </div>
+
+            <div id="cert-preview-box" class="alert alert-info py-2 px-3 mt-2.5 mb-2 d-none d-flex align-items-center justify-content-between" style="font-size: 0.78rem;">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill text-info"></i>
+                <span id="cert-preview-text">Arquivo selecionado</span>
+              </div>
+              <span class="badge bg-info text-dark">Pronto para envio</span>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3 pt-2 border-top border-secondary border-opacity-15">
+              <button type="submit" id="btn-submit-cert" class="btn btn-primary btn-sm px-3 fw-bold d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-cloud-arrow-up-fill"></i> Salvar e Validar Certificado A1
+              </button>
+
+              <button type="button" onclick="document.getElementById('form-gerar-teste').submit();" class="btn btn-outline-warning btn-sm py-1 px-2.5" style="font-size: 0.74rem;" title="Gera certificado A1 ICP-Brasil simulado para testes rápidos de homologação">
+                <i class="bi bi-magic me-1"></i> Gerar Certificado de Testes (Homologação)
+              </button>
+            </div>
+          </form>
+          <!-- Form auxiliar para geração de certificado de teste -->
+          <form method="post" id="form-gerar-teste" class="d-none">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="gerar_certificado_teste">
+          </form>
+        </div>
+
+        <!-- FORMULÁRIO DE PARÂMETROS FISCAIS -->
         <form method="post">
           {% csrf_token %}
           <input type="hidden" name="acao" value="parametros_fiscais">
@@ -213,18 +323,15 @@
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label small text-secondary fw-semibold">Código IBGE do Município Fiscal</label>
-              <input type="text" name="municipio_fiscal" value="{{ fiscal_cfg.municipio_fiscal }}" class="form-control" placeholder="Ex: 2800308 (Aracaju/SE)">
+              <input type="text" name="municipio_fiscal" value="{{ fiscal_cfg.municipio_fiscal|default:'2802106' }}" class="form-control" placeholder="Ex: 2802106 (Estância/SE) ou 2800308 (Aracaju/SE)">
             </div>
-            <div class="col-12">
+            <div class="col-12 col-md-8">
               <label class="form-label small text-secondary fw-semibold">Provedor / Adaptador Fiscal</label>
-              <input type="text" name="provedor_fiscal" value="{{ fiscal_cfg.provedor_fiscal }}" class="form-control" placeholder="SEFAZ_SVRS / ADN_NACIONAL_NFSE">
+              <input type="text" name="provedor_fiscal" value="{{ fiscal_cfg.provedor_fiscal|default:'SEFAZ_SVRS / ADN_NACIONAL_NFSE' }}" class="form-control" placeholder="SEFAZ_SVRS / ADN_NACIONAL_NFSE">
             </div>
-          </div>
-
-          <div class="alert alert-info bg-info bg-opacity-10 border-info border-opacity-25 mt-3 mb-0 p-3 small text-info d-flex align-items-center gap-2">
-            <i class="bi bi-info-circle fs-5 flex-shrink-0"></i>
-            <div>
-              <strong>Segurança e Cofre de Certificados:</strong> O upload do arquivo do certificado A1 é efetuado na <a href="{% url 'operacao:fiscal_hub' %}" class="alert-link">Central Fiscal</a> em cofre seguro com criptografia de ponta a ponta.
+            <div class="col-12 col-md-4">
+              <label class="form-label small text-secondary fw-semibold">Código de Serviço (NFS-e)</label>
+              <input type="text" name="codigo_servico" value="{{ fiscal_cfg.codigo_servico|default:'010701' }}" class="form-control" placeholder="Ex: 010701">
             </div>
           </div>
 
@@ -389,4 +496,56 @@
   </div>
 
 </main>
+
+<script>
+function toggleCertPassword() {
+  const pwd = document.getElementById('id_cert_senha');
+  const icon = document.getElementById('toggleCertPasswordIcon');
+  if (!pwd || !icon) return;
+  if (pwd.type === 'password') {
+    pwd.type = 'text';
+    icon.classList.remove('bi-eye');
+    icon.classList.add('bi-eye-slash');
+  } else {
+    pwd.type = 'password';
+    icon.classList.remove('bi-eye-slash');
+    icon.classList.add('bi-eye');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const fileInput = document.getElementById('id_cert_file');
+  const base64Input = document.getElementById('id_cert_base64');
+  const nomeInput = document.getElementById('id_cert_nome');
+  const previewBox = document.getElementById('cert-preview-box');
+  const previewText = document.getElementById('cert-preview-text');
+  const formCert = document.getElementById('form-cert-upload');
+
+  if (fileInput) {
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (nomeInput) nomeInput.value = file.name;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        if (base64Input) base64Input.value = evt.target.result;
+        if (previewBox && previewText) {
+          previewBox.classList.remove('d-none');
+          previewText.innerHTML = `<strong>Arquivo:</strong> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (formCert) {
+    formCert.addEventListener('submit', function(e) {
+      if (!base64Input || !base64Input.value) {
+        e.preventDefault();
+        alert('Por favor, selecione o arquivo do certificado digital (.pfx ou .p12) antes de salvar.');
+      }
+    });
+  }
+});
+</script>
 {% endblock %}
