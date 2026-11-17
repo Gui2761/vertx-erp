@@ -326,8 +326,24 @@
               <input type="text" name="municipio_fiscal" value="{{ fiscal_cfg.municipio_fiscal|default:'2802106' }}" class="form-control" placeholder="Ex: 2802106 (Estância/SE) ou 2800308 (Aracaju/SE)">
             </div>
             <div class="col-12 col-md-8">
-              <label class="form-label small text-secondary fw-semibold">Provedor / Adaptador Fiscal</label>
-              <input type="text" name="provedor_fiscal" value="{{ fiscal_cfg.provedor_fiscal|default:'SEFAZ_SVRS / ADN_NACIONAL_NFSE' }}" class="form-control" placeholder="SEFAZ_SVRS / ADN_NACIONAL_NFSE">
+              <label class="form-label small text-secondary fw-semibold">Provedor / Autorizador Fiscal (SEFAZ)</label>
+              <select name="provedor_fiscal" class="form-select">
+                <option value="SEFAZ_SVRS / ADN_NACIONAL_NFSE" {% if fiscal_cfg.provedor_fiscal == 'SEFAZ_SVRS / ADN_NACIONAL_NFSE' or not fiscal_cfg.provedor_fiscal %}selected{% endif %}>
+                  🏛️ SEFAZ (SVRS - Sergipe) + ADN Nacional (Padrão Oficial NF-e / NFC-e / NFS-e)
+                </option>
+                <option value="SEFAZ_SVRS" {% if fiscal_cfg.provedor_fiscal == 'SEFAZ_SVRS' %}selected{% endif %}>
+                  🏛️ SEFAZ SVRS (Produtos e Balcão - NF-e e NFC-e)
+                </option>
+                <option value="ADN_NACIONAL_NFSE" {% if fiscal_cfg.provedor_fiscal == 'ADN_NACIONAL_NFSE' %}selected{% endif %}>
+                  🏛️ ADN Nacional (Serviços e Manutenção - NFS-e)
+                </option>
+                <option value="SIMULADOR" {% if fiscal_cfg.provedor_fiscal == 'SIMULADOR' %}selected{% endif %}>
+                  🧪 Simulador Local de Testes (Homologação)
+                </option>
+              </select>
+              <div class="form-text text-secondary" style="font-size: 0.72rem;">
+                Órgão emissor oficial: no estado de Sergipe, a <strong>SEFAZ/SE</strong> utiliza a infraestrutura <strong>SVRS</strong> para validar e autorizar as notas fiscais.
+              </div>
             </div>
             <div class="col-12 col-md-4">
               <label class="form-label small text-secondary fw-semibold">Código de Serviço (NFS-e)</label>
