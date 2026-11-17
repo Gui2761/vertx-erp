@@ -84,6 +84,27 @@ class R2ConfigurationTests(SimpleTestCase):
                 self.assertEqual(module.STORAGES['default']['OPTIONS']['location'], 'media')
                 self.assertEqual('FILE_UPLOAD_HANDLERS' in vars(module), not complete)
 
+    def test_r2_head_object_403_or_404_interprets_as_non_existent(self):
+        from botocore.exceptions import ClientError
+        from platform_core.storage import AuthenticatedS3Storage
+        storage = AuthenticatedS3Storage(bucket_name='vertyx-homologacao')
+        for status, code in [(403, 'Other'), (403, 'AccessDenied'), (404, '404'), (404, 'NoSuchKey')]:
+            with self.subTest(status=status, code=code):
+                error = ClientError({'Error': {'Code': code, 'Message': 'synthetic'},
+                                     'ResponseMetadata': {'HTTPStatusCode': status}}, 'HeadObject')
+                with patch.object(storage.connection.meta.client, 'head_object', side_effect=error):
+                    self.assertFalse(storage.exists('synthetic/path/file.xlsx'))
+
+    def test_r2_head_object_500_raises_storage_unavailable(self):
+        from botocore.exceptions import ClientError
+        from platform_core.storage import AuthenticatedS3Storage, StorageUnavailable
+        storage = AuthenticatedS3Storage(bucket_name='vertyx-homologacao')
+        error = ClientError({'Error': {'Code': 'InternalError', 'Message': 'synthetic'},
+                             'ResponseMetadata': {'HTTPStatusCode': 500}}, 'HeadObject')
+        with patch.object(storage.connection.meta.client, 'head_object', side_effect=error):
+            with self.assertRaises(StorageUnavailable):
+                storage.exists('synthetic/path/file.xlsx')
+
 
 class R2ProtectedFilesTests(TestCase):
     # Reuse synthetic fixtures, without re-running inherited test methods.

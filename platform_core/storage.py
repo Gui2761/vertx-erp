@@ -65,8 +65,21 @@ class AuthenticatedS3Storage(S3Storage):
             return super()._save(name, content)
 
     def exists(self, name):
-        with storage_operation('storage_exists_failed'):
+        try:
             return super().exists(name)
+        except ClientError as err:
+            status = err.response.get('ResponseMetadata', {}).get('HTTPStatusCode')
+            code = str(err.response.get('Error', {}).get('Code', ''))
+            # Cloudflare R2 e provedores S3 alternativos retornam HTTP 403 (AccessDenied/Forbidden)
+            # no HeadObject para arquivos que ainda não existem quando o token não possui permissão
+            # global de listagem de bucket. Para o Django, isso significa que o arquivo não existe.
+            if status in (404, 403) or code in ['404', 'NoSuchKey', 'NotFound', '403', 'AccessDenied', 'Forbidden']:
+                return False
+            with storage_operation('storage_exists_failed'):
+                raise
+        except BotoCoreError:
+            with storage_operation('storage_exists_failed'):
+                raise
 
     def size(self, name):
         with storage_operation('storage_metadata_failed'):
