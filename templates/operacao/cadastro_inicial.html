@@ -1,0 +1,364 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cadastro Inicial da Empresa · VERTYX ERP{% endblock %}
+
+{% block content %}
+<main class="container-fluid px-3 px-md-4 py-4" style="max-width: 1280px;">
+
+  <!-- Header Executivo de Onboarding -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom border-secondary border-opacity-10">
+    <div>
+      <div class="d-inline-flex align-items-center gap-2 px-2.5 py-1 rounded-pill bg-info bg-opacity-10 text-info small fw-bold mb-2">
+        <i class="bi bi-gear-wide-connected"></i> CONFIGURAÇÃO INICIAL DO SISTEMA
+      </div>
+      <h1 class="h2 fw-bold mb-1" style="color: var(--vx-ink, #ffffff);">Cadastro Inicial da Empresa</h1>
+      <p class="text-secondary mb-0 small">
+        Centralize os dados jurídicos, certificado digital, contas bancárias e carga inicial de dados da <strong>{{ org.display_name }}</strong> em um só local.
+      </p>
+    </div>
+
+    <!-- Indicador de Prontidão -->
+    <div class="card p-3 border-0 rounded-3 text-end" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b) !important; min-width: 240px;">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="small text-secondary fw-semibold">Prontidão Operacional:</span>
+        <span class="small fw-bold text-info">{{ percentual_pronto }}%</span>
+      </div>
+      <div class="progress" style="height: 6px; background: rgba(255,255,255,0.08);">
+        <div class="progress-bar bg-info" role="progressbar" style="width: {{ percentual_pronto }}%;" aria-valuenow="{{ percentual_pronto }}" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+      <small class="text-secondary mt-1" style="font-size: 0.72rem;">
+        {% if percentual_pronto == 100 %}🎉 Sistema 100% pronto para operar!{% else %}Complete os blocos abaixo para faturamento e emissão.{% endif %}
+      </small>
+    </div>
+  </div>
+
+  <!-- Alertas de Status Rápido -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card p-3 rounded-3 h-100" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
+        <div class="d-flex align-items-center justify-content-between">
+          <span class="small text-secondary">CNPJ & Jurídico</span>
+          {% if tem_cnpj %}<i class="bi bi-check-circle-fill text-success fs-5"></i>{% else %}<i class="bi bi-exclamation-circle-fill text-warning fs-5"></i>{% endif %}
+        </div>
+        <div class="fw-bold mt-2" style="color: var(--vx-ink, #ffffff);">{% if tem_cnpj %}{{ org.cnpj_formatado }}{% else %}Pendente{% endif %}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card p-3 rounded-3 h-100" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
+        <div class="d-flex align-items-center justify-content-between">
+          <span class="small text-secondary">Endereço & Sede</span>
+          {% if tem_endereco %}<i class="bi bi-check-circle-fill text-success fs-5"></i>{% else %}<i class="bi bi-exclamation-circle-fill text-warning fs-5"></i>{% endif %}
+        </div>
+        <div class="fw-bold mt-2 text-truncate" style="color: var(--vx-ink, #ffffff);">{% if tem_endereco %}{{ org.cidade }}/{{ org.uf }}{% else %}Não informado{% endif %}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card p-3 rounded-3 h-100" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
+        <div class="d-flex align-items-center justify-content-between">
+          <span class="small text-secondary">Contas & Caixas</span>
+          {% if tem_banco %}<i class="bi bi-check-circle-fill text-success fs-5"></i>{% else %}<i class="bi bi-exclamation-circle-fill text-warning fs-5"></i>{% endif %}
+        </div>
+        <div class="fw-bold mt-2" style="color: var(--vx-ink, #ffffff);">{{ contas.count }} conta(s) ativa(s)</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card p-3 rounded-3 h-100" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
+        <div class="d-flex align-items-center justify-content-between">
+          <span class="small text-secondary">Fiscal & Tributário</span>
+          {% if tem_fiscal %}<i class="bi bi-check-circle-fill text-success fs-5"></i>{% else %}<i class="bi bi-shield-check text-info fs-5"></i>{% endif %}
+        </div>
+        <div class="fw-bold mt-2" style="color: var(--vx-ink, #ffffff);">{{ fiscal_cfg.get_ambiente_fiscal_display }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Coluna Esquerda: Dados da Empresa e Fiscal -->
+    <div class="col-12 col-xl-7">
+      
+      <!-- Bloco 1: Identificação da Empresa -->
+      <div class="card p-4 rounded-3 mb-4 shadow-sm" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <i class="bi bi-building text-info fs-5"></i>
+          <h2 class="h5 fw-bold mb-0" style="color: var(--vx-ink, #ffffff);">1. Identificação Jurídica da Empresa</h2>
+        </div>
+        <p class="text-secondary small mb-3">Preencha os dados oficiais da PJ que aparecerão em notas fiscais, contratos e ordens de serviço.</p>
+
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="dados_empresa">
+
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label small text-secondary fw-semibold">Razão Social *</label>
+              <input type="text" name="razao_social" value="{{ org.razao_social }}" class="form-control" required>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small text-secondary fw-semibold">Nome Fantasia</label>
+              <input type="text" name="nome_fantasia" value="{{ org.nome_fantasia }}" class="form-control">
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label small text-secondary fw-semibold">CNPJ *</label>
+              <input type="text" name="cnpj" value="{{ org.cnpj_formatado }}" class="form-control" placeholder="00.000.000/0000-00" required>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small text-secondary fw-semibold">Inscrição Estadual (IE)</label>
+              <input type="text" name="inscricao_estadual" value="{{ empresa_cfg.inscricao_estadual }}" class="form-control" placeholder="Isento ou dígitos">
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small text-secondary fw-semibold">Inscrição Municipal (IM)</label>
+              <input type="text" name="inscricao_municipal" value="{{ empresa_cfg.inscricao_municipal }}" class="form-control" placeholder="Prefeitura">
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small text-secondary fw-semibold">E-mail Principal</label>
+              <input type="email" name="email" value="{{ org.email }}" class="form-control" placeholder="contato@tecnolmed.com.br">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small text-secondary fw-semibold">Telefone / WhatsApp</label>
+              <input type="text" name="telefone" value="{{ org.telefone }}" class="form-control" placeholder="(79) 99999-9999">
+            </div>
+
+            <div class="col-12 col-md-8">
+              <label class="form-label small text-secondary fw-semibold">Endereço Completo</label>
+              <input type="text" name="endereco" value="{{ org.endereco }}" class="form-control" placeholder="Rua, Número, Bairro">
+            </div>
+            <div class="col-8 col-md-3">
+              <label class="form-label small text-secondary fw-semibold">Cidade</label>
+              <input type="text" name="cidade" value="{{ org.cidade }}" class="form-control" placeholder="Aracaju">
+            </div>
+            <div class="col-4 col-md-1">
+              <label class="form-label small text-secondary fw-semibold">UF</label>
+              <input type="text" name="uf" value="{{ org.uf }}" class="form-control text-uppercase" maxlength="2" placeholder="SE">
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small text-secondary fw-semibold">Regime Tributário (CRT)</label>
+              <select name="crt" class="form-select">
+                <option value="1" {% if empresa_cfg.crt == '1' %}selected{% endif %}>1 - Simples Nacional (Padrão Pequenas Empresas)</option>
+                <option value="2" {% if empresa_cfg.crt == '2' %}selected{% endif %}>2 - Simples Nacional (Excesso de Sublimite)</option>
+                <option value="3" {% if empresa_cfg.crt == '3' %}selected{% endif %}>3 - Regime Normal (Lucro Presumido / Real)</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small text-secondary fw-semibold">Natureza da Operação Padrão</label>
+              <input type="text" name="regime_tributario" value="{{ empresa_cfg.regime_tributario }}" class="form-control" placeholder="Prestação de Serviços / Venda de Peças">
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end mt-4">
+            <button type="submit" class="btn btn-primary px-4 fw-semibold">
+              <i class="bi bi-check2-circle me-1"></i> Salvar Dados da Empresa
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Bloco 2: Certificado Digital A1 & Fiscal -->
+      <div class="card p-4 rounded-3 mb-4 shadow-sm" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock text-warning fs-5"></i>
+            <h2 class="h5 fw-bold mb-0" style="color: var(--vx-ink, #ffffff);">2. Certificado Digital A1 & Fiscal</h2>
+          </div>
+          <a href="{% url 'operacao:fiscal_hub' %}" class="btn btn-sm btn-outline-info">
+            <i class="bi bi-box-arrow-up-right me-1"></i> Abrir Central Fiscal Completa
+          </a>
+        </div>
+        <p class="text-secondary small mb-3">
+          O Certificado Digital modelo <strong>A1 (.pfx / .p12)</strong> permite a emissão de Notas Fiscais de Serviços (NFS-e), Notas de Produtos (NF-e) e Cupom Fiscal (NFC-e) na Loja e Assistência.
+        </p>
+
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="parametros_fiscais">
+
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label small text-secondary fw-semibold">Ambiente de Emissão Fiscal</label>
+              <select name="ambiente_fiscal" class="form-select">
+                <option value="SANDBOX" {% if fiscal_cfg.ambiente_fiscal == 'SANDBOX' %}selected{% endif %}>🧪 Sandbox / Homologação (Sem validade jurídica - Testes)</option>
+                <option value="PRODUCAO" {% if fiscal_cfg.ambiente_fiscal == 'PRODUCAO' %}selected{% endif %}>🔒 Produção (SEFAZ Real e ADN Nacional)</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small text-secondary fw-semibold">Código IBGE do Município Fiscal</label>
+              <input type="text" name="municipio_fiscal" value="{{ fiscal_cfg.municipio_fiscal }}" class="form-control" placeholder="Ex: 2800308 (Aracaju/SE)">
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-secondary fw-semibold">Provedor / Adaptador Fiscal</label>
+              <input type="text" name="provedor_fiscal" value="{{ fiscal_cfg.provedor_fiscal }}" class="form-control" placeholder="SEFAZ_SVRS / ADN_NACIONAL_NFSE">
+            </div>
+          </div>
+
+          <div class="alert alert-info bg-info bg-opacity-10 border-info border-opacity-25 mt-3 mb-0 p-3 small text-info d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle fs-5 flex-shrink-0"></i>
+            <div>
+              <strong>Segurança e Cofre de Certificados:</strong> O upload do arquivo do certificado A1 é efetuado na <a href="{% url 'operacao:fiscal_hub' %}" class="alert-link">Central Fiscal</a> em cofre seguro com criptografia de ponta a ponta.
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-outline-warning px-4 fw-semibold">
+              <i class="bi bi-arrow-repeat me-1"></i> Salvar Parâmetros Fiscais
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Coluna Direita: Contas Bancárias & Carga Massiva Tecnolmed -->
+    <div class="col-12 col-xl-5">
+
+      <!-- Bloco 3: Contas Bancárias & Chaves Pix -->
+      <div class="card p-4 rounded-3 mb-4 shadow-sm" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-bank text-success fs-5"></i>
+            <h2 class="h5 fw-bold mb-0" style="color: var(--vx-ink, #ffffff);">3. Contas Bancárias & Pix</h2>
+          </div>
+          <span class="badge bg-success bg-opacity-25 text-success small">{{ contas.count }} cadastrada(s)</span>
+        </div>
+        <p class="text-secondary small mb-3">
+          Contas correntes e caixas de recebimento para o PDV, emissão de boletos e Pix imediato na loja.
+        </p>
+
+        <!-- Lista de Contas Existentes -->
+        {% if contas %}
+          <div class="list-group mb-3">
+            {% for conta in contas %}
+              <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 border border-secondary border-opacity-10 rounded-2 mb-2" style="background: rgba(255,255,255,0.02);">
+                <div>
+                  <div class="fw-bold small" style="color: var(--vx-ink, #ffffff);">
+                    {{ conta.nome }} · <span class="badge bg-secondary small" style="font-size: 0.65rem;">{{ conta.get_tipo_display }}</span>
+                  </div>
+                  <div class="text-secondary" style="font-size: 0.75rem;">
+                    Banco: {{ conta.banco|default:"—" }} | Ag: {{ conta.agencia|default:"—" }} | Conta: {{ conta.numero|default:"—" }}
+                  </div>
+                </div>
+                <div class="text-end">
+                  <div class="small fw-semibold text-success">R$ {{ conta.saldo_inicial|floatformat:2 }}</div>
+                  <small class="text-secondary" style="font-size: 0.68rem;">Saldo inicial</small>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-secondary bg-secondary bg-opacity-10 border-0 p-3 small text-secondary text-center mb-3">
+            Nenhuma conta bancária cadastrada ainda. Cadastre a conta principal abaixo.
+          </div>
+        {% endif %}
+
+        <!-- Formulário Rápido de Nova Conta -->
+        <details class="mt-2">
+          <summary class="btn btn-sm btn-outline-success w-100 py-2 fw-semibold">
+            <i class="bi bi-plus-circle me-1"></i> Cadastrar Nova Conta / Caixa
+          </summary>
+          <form method="post" class="mt-3 p-3 rounded-2 border border-secondary border-opacity-25" style="background: rgba(0,0,0,0.2);">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="nova_conta_bancaria">
+
+            <div class="row g-2">
+              <div class="col-12 col-md-8">
+                <label class="form-label small text-secondary">Identificação da Conta *</label>
+                <input type="text" name="conta_nome" class="form-control form-control-sm" placeholder="Ex: Conta Principal - Banco do Brasil" required>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small text-secondary">Tipo</label>
+                <select name="conta_tipo" class="form-select form-select-sm">
+                  <option value="BANCO">Banco / Corrente</option>
+                  <option value="CAIXA">Caixa Físico</option>
+                  <option value="CARTAO">Cartão / Gateway</option>
+                </select>
+              </div>
+
+              <div class="col-12 col-md-5">
+                <label class="form-label small text-secondary">Instituição / Banco</label>
+                <input type="text" name="conta_banco" class="form-control form-control-sm" placeholder="Banco do Brasil / Inter">
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label small text-secondary">Agência</label>
+                <input type="text" name="conta_agencia" class="form-control form-control-sm" placeholder="1234">
+              </div>
+              <div class="col-6 col-md-4">
+                <label class="form-label small text-secondary">Conta com dígito</label>
+                <input type="text" name="conta_numero" class="form-control form-control-sm" placeholder="12345-6">
+              </div>
+
+              <div class="col-12 col-md-8">
+                <label class="form-label small text-secondary">Titular da Conta</label>
+                <input type="text" name="conta_titular" value="{{ org.razao_social }}" class="form-control form-control-sm">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small text-secondary">Saldo Inicial (R$)</label>
+                <input type="text" name="conta_saldo_inicial" value="0,00" class="form-control form-control-sm">
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-3">
+              <button type="submit" class="btn btn-sm btn-success px-3 fw-semibold">
+                Salvar Conta Bancária
+              </button>
+            </div>
+          </form>
+        </details>
+      </div>
+
+      <!-- Bloco 4: Carga Massiva Tecnolmed (Atalhos Oficiais) -->
+      <div class="card p-4 rounded-3 shadow-sm" style="background: var(--vx-surface, #111a2e); border: 1px solid var(--vx-card-border, #1e293b);">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-spreadsheet text-primary fs-5"></i>
+            <h2 class="h5 fw-bold mb-0" style="color: var(--vx-ink, #ffffff);">4. Carga de Dados (Planilhas)</h2>
+          </div>
+          <span class="badge bg-primary bg-opacity-25 text-primary small">Tecnolmed</span>
+        </div>
+        <p class="text-secondary small mb-3">
+          Traga os dados do seu sistema anterior de forma rápida usando nossas planilhas pré-formatadas.
+        </p>
+
+        <div class="d-flex flex-column gap-2 mb-3">
+          <div class="p-2.5 rounded-2 d-flex align-items-center justify-content-between border border-secondary border-opacity-10" style="background: rgba(255,255,255,0.02);">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-people text-info"></i>
+              <span class="small fw-semibold" style="color: var(--vx-ink, #ffffff);">1. Clientes & Hospitais</span>
+            </div>
+            <a href="{% url 'operacao:migration_template' 'clientes' %}" class="btn btn-sm btn-outline-info py-0 px-2" style="font-size: 0.72rem;">
+              <i class="bi bi-download"></i> Modelo .xlsx
+            </a>
+          </div>
+
+          <div class="p-2.5 rounded-2 d-flex align-items-center justify-content-between border border-secondary border-opacity-10" style="background: rgba(255,255,255,0.02);">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-box-seam text-warning"></i>
+              <span class="small fw-semibold" style="color: var(--vx-ink, #ffffff);">2. Peças & Produtos</span>
+            </div>
+            <a href="{% url 'operacao:migration_template' 'produtos' %}" class="btn btn-sm btn-outline-warning py-0 px-2" style="font-size: 0.72rem;">
+              <i class="bi bi-download"></i> Modelo .xlsx
+            </a>
+          </div>
+
+          <div class="p-2.5 rounded-2 d-flex align-items-center justify-content-between border border-secondary border-opacity-10" style="background: rgba(255,255,255,0.02);">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-boxes text-success"></i>
+              <span class="small fw-semibold" style="color: var(--vx-ink, #ffffff);">3. Estoque Inicial</span>
+            </div>
+            <a href="{% url 'operacao:migration_template' 'estoque' %}" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 0.72rem;">
+              <i class="bi bi-download"></i> Modelo .xlsx
+            </a>
+          </div>
+        </div>
+
+        <a href="{% url 'operacao:migration_home' %}" class="btn btn-primary w-100 py-2 fw-semibold">
+          <i class="bi bi-cloud-arrow-up me-1"></i> Abrir Central de Importação Excel
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+{% endblock %}

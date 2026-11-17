@@ -95,8 +95,8 @@ class Peca(Validado):
     custo_aquisicao = models.DecimalField('Custo de aquisição', max_digits=14, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)])
     preco_venda = models.DecimalField('Preço de venda', max_digits=14, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)])
     fornecedor = models.ForeignKey(Fornecedor, on_delete=models.PROTECT, null=True, blank=True)
-    lote = models.CharField(max_length=100, blank=True)
-    validade = models.DateField(null=True, blank=True)
+    lote = models.CharField('Lote de referência', max_length=100, blank=True)
+    validade = models.DateField('Data de validade', null=True, blank=True)
     controla_validade = models.BooleanField('Exige validade nas entradas por lote', default=False)
     ativo = models.BooleanField(default=True)
 

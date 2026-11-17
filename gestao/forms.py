@@ -28,15 +28,40 @@ class Estilizado(TenantModelForm):
 
 
 class PecaForm(Estilizado):
+    validade = forms.DateField(
+        label='Data de validade',
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        help_text='Data de expiração ou vida útil (fundamental para insumos clínicos, reagentes, baterias e calibração).'
+    )
+
     class Meta:
         model = m.Peca
-        fields = ['sku', 'descricao', 'descricao_curta', 'imagem', 'fabricante', 'marca', 'referencia', 'categoria', 'subcategoria', 'gtin', 'codigo_barras', 'unidade_medida', 'unidade_compra', 'fator_compra', 'unidade_venda', 'fator_venda', 'fracionavel', 'exige_lote', 'estoque_minimo', 'estoque_maximo', 'controla_validade', 'localizacao', 'custo_aquisicao', 'preco_venda', 'fornecedor', 'registro_anvisa', 'ncm', 'cest', 'origem_fiscal', 'cfop', 'cst', 'csosn', 'cst_csosn', 'observacoes', 'ativo']
+        fields = [
+            'sku', 'descricao', 'descricao_curta', 'imagem', 'fabricante', 'marca', 'referencia',
+            'categoria', 'subcategoria', 'gtin', 'codigo_barras',
+            'unidade_medida', 'unidade_compra', 'fator_compra', 'unidade_venda', 'fator_venda', 'fracionavel',
+            'exige_lote', 'lote', 'controla_validade', 'validade',
+            'estoque_minimo', 'estoque_maximo', 'localizacao', 'custo_aquisicao', 'preco_venda', 'fornecedor',
+            'registro_anvisa', 'ncm', 'cest', 'origem_fiscal', 'cfop', 'cst', 'csosn', 'cst_csosn',
+            'observacoes', 'ativo'
+        ]
+        labels = {
+            'sku': 'Código interno / SKU',
+            'descricao': 'Descrição',
+            'descricao_curta': 'Descrição curta',
+            'lote': 'Lote de referência',
+            'controla_validade': 'Exige controle de validade (FEFO)',
+            'validade': 'Data de validade',
+            'registro_anvisa': 'Registro ANVISA',
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['imagem'].queryset = m.Peca._meta.get_field('imagem').remote_field.model.objects.filter(tipo='IMAGEM',peca=self.instance) if self.instance.pk else m.Peca._meta.get_field('imagem').remote_field.model.objects.none()
-        for key in ['fator_compra','fator_venda']:
-            self.fields[key].required = False
+        for key in ['fator_compra','fator_venda', 'validade', 'lote']:
+            if key in self.fields:
+                self.fields[key].required = False
         if not self.instance.pk and not self.is_bound:
             from operacao.models import Configuracao
             config = Configuracao.objects.first()

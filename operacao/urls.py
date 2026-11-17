@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from . import planning, portal, pwa, configuration
+from . import planning, portal, pwa, configuration, onboarding
 from . import stock_views
 from . import operational_panel
 from . import pdv
@@ -126,6 +126,7 @@ urlpatterns = [
     path('manifest-pdv.webmanifest', pwa.pdv_manifest, name='pdv_manifest'),
     path('sw.js', pwa.worker, name='worker'),
     path('configuracoes/', configuration.configuracao, name='configuracao'),
+    path('cadastro-inicial/', onboarding.cadastro_inicial, name='cadastro_inicial'),
     path('configuracoes/email/', configuration.configuracao_email, name='configuracao_email'),
     path('notificacoes/', configuration.notificacoes, name='notificacoes'),
     path('notificacoes/<int:pk>/lida/', configuration.notificacao_lida, name='notificacao_lida'),
