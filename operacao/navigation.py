@@ -64,7 +64,7 @@ def _menu(request):
     if membership and membership.role in ['PLANEJADOR','ATENDIMENTO'] and not (match and match.app_name=='platform_core'):
         links=[{'label':'Planejamento','url':'/planejamento/','icon':'calendar'}]
         if panel_access:
-            links.append({'label':'Painel operacional','url':'/painel-operacional/','icon':'grid'})
+            links.append({'label':'Painel de TV (Operações)','url':'/painel-operacional/','icon':'grid'})
         return {'can_operational_panel':panel_access,'executive_navigation':[{'title':'ASSISTÊNCIA','links':links}]}
     if not membership or membership.role not in ['ADMIN','GESTOR']:
         return {'can_operational_panel':panel_access}
@@ -79,7 +79,7 @@ def _menu(request):
         ('RELATÓRIOS',[('Relatórios','/relatorios/','bar-chart')]),
         ('CONFIGURAÇÕES',[('Configurações','/configuracoes/','gear'),('Usuários','/contas/usuarios/','person-check'),('Minha Assinatura','/vertyx/empresa/plano/','bookmark-check'),('Notificações','/notificacoes/','bell')])]
     if panel_access:
-        groups[1][1].insert(1,('Painel operacional','/painel-operacional/','grid'))
+        groups[1][1].insert(1,('Painel de TV (Operações)','/painel-operacional/','grid'))
     if module_enabled('relatorios_completos') and has_capability(request.user, 'executivo'):
         groups[0][1].append(('Gestão executiva','/gestao/executiva/','chart'))
     pdv_links=[('Terminal do PDV','/pdv/','cart'),('Gestão de Caixas','/pdv/?gestao=1','bank'),('Histórico de Vendas','/pdv/historico/','document')]

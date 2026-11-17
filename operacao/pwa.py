@@ -4,9 +4,24 @@ from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 
+def _get_org_name(request):
+    org = getattr(request, 'organization', None)
+    if org and getattr(org, 'display_name', None):
+        return org.display_name
+    user = getattr(request, 'user', None)
+    if user and user.is_authenticated:
+        m = user.memberships.filter(status='ATIVO').select_related('organization').first()
+        if m and m.organization:
+            return m.organization.display_name
+    return 'VERTYX'
+
+
 def manifest(request):
     # Keep the installed application's identity; the server selects the role.
-    return JsonResponse({'id': '/tecnico/', 'name': 'VERTYX Assistência', 'short_name': 'VERTYX', 'lang': 'pt-BR', 'start_url': reverse('platform_core:home'), 'scope': '/', 'display': 'standalone', 'background_color': '#f4f7fa', 'theme_color': '#006f74', 'icons': [{'src': '/static/pwa/icon-192.png', 'sizes': '192x192', 'type': 'image/png'}, {'src': '/static/pwa/icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any maskable'}]}, content_type='application/manifest+json')
+    org_name = _get_org_name(request)
+    display_title = f"{org_name} Assistência" if org_name != 'VERTYX' else "VERTYX Assistência"
+    short_title = org_name if org_name != 'VERTYX' else "VERTYX"
+    return JsonResponse({'id': '/tecnico/', 'name': display_title, 'short_name': short_title, 'lang': 'pt-BR', 'start_url': reverse('platform_core:home'), 'scope': '/', 'display': 'standalone', 'background_color': '#f4f7fa', 'theme_color': '#006f74', 'icons': [{'src': '/static/pwa/icon-192.png', 'sizes': '192x192', 'type': 'image/png'}, {'src': '/static/pwa/icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any maskable'}]}, content_type='application/manifest+json')
 
 
 def pdv_manifest(request):
@@ -42,11 +57,14 @@ def technician_manifest(request):
 
 def admin_manifest(request):
     """PWA manifest for Administrators, Managers and ERP desktop/mobile install."""
+    org_name = _get_org_name(request)
+    display_title = f"{org_name} · Gestão ERP" if org_name != 'VERTYX' else "VERTYX Admin & Gestão"
+    short_title = f"{org_name} Admin" if org_name != 'VERTYX' else "VERTYX Admin"
     return JsonResponse({
         'id': '/admin-app/',
-        'name': 'VERTYX Admin & Gestão',
-        'short_name': 'VERTYX Admin',
-        'description': 'Painel Administrativo, Gestão, Loja e Assistência Técnica VERTYX ERP',
+        'name': display_title,
+        'short_name': short_title,
+        'description': f'Painel Administrativo, Gestão, Loja e Assistência Técnica {org_name}',
         'lang': 'pt-BR',
         'start_url': '/',
         'scope': '/',

@@ -21,7 +21,11 @@ def require_planning(user, writing=False):
 
 def can_tv(user):
     member = membership_for(user)
-    return bool(member and member.role != 'CLIENTE' and has_erp_access(user) and MembershipERP.objects.filter(membership=member, erp__code='assistencia', enabled=True, visualizar_painel_operacional=True).exists())
+    if not member or member.role == 'CLIENTE' or not has_erp_access(user):
+        return False
+    if member.role in ['ADMIN', 'GESTOR']:
+        return True
+    return MembershipERP.objects.filter(membership=member, erp__code='assistencia', enabled=True, visualizar_painel_operacional=True).exists()
 
 def require_tv(user):
     if not can_tv(user):
