@@ -30,8 +30,18 @@ document.addEventListener('DOMContentLoaded',()=>{
       sidebarToggles.forEach(btn=>{
         btn.setAttribute('aria-expanded',String(!collapsed));
         btn.setAttribute('aria-label',collapsed?'Expandir menu lateral':'Recolher menu lateral');
-        btn.setAttribute('title',collapsed?'Expandir menu lateral':'Recolher menu lateral');
+        btn.setAttribute('title',collapsed?'Expandir menu lateral':'Recolher menu lateral (Modo Ícones MarketUP)');
+        const icon = btn.querySelector('i');
+        if (icon) {
+          icon.className = collapsed ? 'bi bi-layout-sidebar-inset-reverse' : 'bi bi-layout-sidebar-inset';
+        }
       });
+      if(!collapsed){
+        document.querySelectorAll('.vx-nav-sublist').forEach(s=>{
+          s.style.top='';
+          s.style.left='';
+        });
+      }
     };
     try{apply(localStorage.getItem('vertyx.sidebarCollapsed')==='true');}catch{}
     sidebarToggles.forEach(btn=>{
@@ -40,6 +50,34 @@ document.addEventListener('DOMContentLoaded',()=>{
         apply(collapsed);
         try{localStorage.setItem('vertyx.sidebarCollapsed',String(collapsed));}catch{}
       });
+    });
+
+    // MarketUP Collapsed Dock Flyout Positioning
+    const groups = document.querySelectorAll('.vx-nav-group');
+    groups.forEach(group=>{
+      const sublist = group.querySelector('.vx-nav-sublist');
+      const summary = group.querySelector('summary');
+      if(summary){
+        summary.addEventListener('click', (e)=>{
+          if(document.body.classList.contains('vx-sidebar-collapsed')){
+            e.preventDefault();
+          }
+        });
+      }
+      if(!sublist) return;
+      const positionFlyout = ()=>{
+        if(!document.body.classList.contains('vx-sidebar-collapsed')) return;
+        const rect = group.getBoundingClientRect();
+        const subHeight = sublist.offsetHeight || 220;
+        let top = rect.top;
+        if(top + subHeight > window.innerHeight - 12){
+          top = Math.max(12, window.innerHeight - subHeight - 12);
+        }
+        sublist.style.top = top + 'px';
+        sublist.style.left = (rect.right + 6) + 'px';
+      };
+      group.addEventListener('mouseenter', positionFlyout);
+      group.addEventListener('focusin', positionFlyout);
     });
   }
   document.querySelectorAll('.navbar-nav a').forEach(a=>{

@@ -27,7 +27,7 @@
 {% if executive_navigation or technician_navigation or seller_navigation or pdv_navigation %}{% include 'operacao/menu_symbols.html' %}{% endif %}
 <a class="vx-skip" href="#conteudo">Pular para o conteúdo</a>
 {% if user.is_authenticated %}
-<nav class="navbar navbar-expand-xl navbar-dark bg-dark vx-nav" aria-label="Navegação principal">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark vx-nav" aria-label="Navegação principal">
   <div class="container-fluid">
     
     <!-- Sidebar Header (Brand & Toggles) -->
@@ -39,12 +39,12 @@
       </a>
       
       <!-- Desktop Collapse Toggle Button -->
-      <button class="btn btn-sm btn-outline-secondary d-none d-xl-flex align-items-center justify-content-center p-1 px-2 vx-desktop-collapse-btn" type="button" data-sidebar-toggle aria-label="Recolher menu lateral" title="Recolher menu lateral" style="border-radius: 6px;">
+      <button class="btn btn-sm btn-outline-secondary d-none d-lg-flex align-items-center justify-content-center p-1 px-2 vx-desktop-collapse-btn" type="button" data-sidebar-toggle aria-label="Recolher menu lateral" title="Recolher menu lateral (Modo Ícones MarketUP)" style="border-radius: 6px;">
         <i class="bi bi-layout-sidebar-inset"></i>
       </button>
 
       <!-- Mobile Toggles -->
-      <div class="d-flex align-items-center gap-2 d-xl-none">
+      <div class="d-flex align-items-center gap-2 d-lg-none">
         <button type="button" class="btn btn-outline-info btn-sm px-2 py-1" data-install hidden title="Instalar aplicativo VERTYX Admin">
           <i class="bi bi-download"></i>
         </button>
@@ -96,30 +96,35 @@
 
           {% for group in executive_navigation %}
             {% if group.links %}
-              <li class="vx-nav-group">
+              <li class="vx-nav-group{% if group.is_active %} vx-nav-group-active{% endif %}" data-group="{{ group.title }}">
                 {% if administrative_navigation %}
                   <details class="vx-module"{% if group.is_active %} open{% endif %}>
-                    <summary>
-                      <span>
-                        {% if group.title == 'Operacional' %}<i class="bi bi-activity text-primary me-2"></i>
-                        {% elif group.title == 'Vendas' %}<i class="bi bi-bag-check text-success me-2"></i>
-                        {% elif group.title == 'PDV' %}<i class="bi bi-shop text-info me-2"></i>
-                        {% elif group.title == 'Estoque' %}<i class="bi bi-boxes text-warning me-2"></i>
-                        {% elif group.title == 'Compras' %}<i class="bi bi-cart3 text-secondary me-2"></i>
-                        {% elif group.title == 'Financeiro' %}<i class="bi bi-cash-stack text-success me-2"></i>
-                        {% elif group.title == 'Cadastros' %}<i class="bi bi-folder2 text-primary me-2"></i>
-                        {% elif group.title == 'RH' %}<i class="bi bi-people text-info me-2"></i>
-                        {% elif group.title == 'Relatórios' %}<i class="bi bi-bar-chart-line text-warning me-2"></i>
-                        {% elif group.title == 'Configurações' %}<i class="bi bi-gear text-secondary me-2"></i>
-                        {% else %}<i class="bi bi-folder2 text-secondary me-2"></i>
-                        {% endif %}
+                    <summary title="{{ group.title }}">
+                      <span class="vx-summary-inner">
+                        <span class="vx-group-icon-box">
+                          {% if group.title == 'Operacional' %}<i class="bi bi-house-door-fill text-primary"></i>
+                          {% elif group.title == 'Vendas' %}<i class="bi bi-tag-fill text-success"></i>
+                          {% elif group.title == 'PDV' %}<i class="bi bi-receipt-cutoff text-info"></i>
+                          {% elif group.title == 'Estoque' %}<i class="bi bi-box-seam-fill text-warning"></i>
+                          {% elif group.title == 'Compras' %}<i class="bi bi-cart3 text-secondary"></i>
+                          {% elif group.title == 'Financeiro' %}<i class="bi bi-currency-dollar text-success"></i>
+                          {% elif group.title == 'Cadastros' %}<i class="bi bi-people-fill text-primary"></i>
+                          {% elif group.title == 'RH' %}<i class="bi bi-person-badge-fill text-info"></i>
+                          {% elif group.title == 'Relatórios' %}<i class="bi bi-bar-chart-fill text-warning"></i>
+                          {% elif group.title == 'Configurações' %}<i class="bi bi-gear-fill text-secondary"></i>
+                          {% else %}<i class="bi bi-folder2 text-secondary"></i>
+                          {% endif %}
+                        </span>
                         <span class="vx-nav-label">{{ group.title }}</span>
                       </span>
                     </summary>
                 {% else %}
                   <span class="vx-nav-group-title">{{ group.title }}</span>
                 {% endif %}
-                <ul>
+                <ul class="vx-nav-sublist">
+                  <li class="vx-flyout-header d-none">
+                    <span>{{ group.title }}</span>
+                  </li>
                   {% for link in group.links %}
                     <li class="nav-item">
                       <a class="nav-link{% if link.is_active %} active{% endif %}" href="{{ link.url }}" title="{{ link.label }}" aria-label="{{ link.label }}">
@@ -242,7 +247,11 @@
 
 <div class="vx-main" id="conteudo">
   {% if user.is_authenticated and contingencia_jornada_contratual %}<div class="alert alert-warning" role="status">Modo de contingência: Jornada Contratual suspensa. Histórico preservado; atendimentos continuam pelo fluxo da OS.</div>{% endif %}
-  {% if user.is_authenticated %}<nav class="vx-breadcrumb" aria-label="Localização">{% if pdv_experience %}<a href="{% url 'platform_core:home' %}">VERTYX</a><span>›</span><a href="{% url 'core:painel' %}">Assistência (Página Geral)</a><span>›</span><a href="{% url 'operacao:pdv_home' %}">PDV</a>{% elif seller_experience %}<a href="{% url 'platform_core:home' %}">VERTYX</a><span>›</span><a href="{% url 'core:painel' %}">Assistência (Página Geral)</a><span>›</span><a href="{% url 'operacao:seller_home' %}">Minha rotina</a>{% elif request.membership and request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
+  {% if user.is_authenticated %}<nav class="vx-breadcrumb d-flex align-items-center" aria-label="Localização">
+    <button type="button" class="btn btn-sm btn-outline-secondary d-none d-lg-inline-flex align-items-center justify-content-center p-0 me-2 vx-breadcrumb-toggle" data-sidebar-toggle title="Recolher / Expandir Menu Lateral" aria-label="Recolher ou expandir menu lateral" style="width: 26px; height: 26px; border-radius: 6px; font-size: 0.85rem; border-color: rgba(255, 255, 255, 0.15);">
+      <i class="bi bi-layout-sidebar-inset"></i>
+    </button>
+    {% if pdv_experience %}<a href="{% url 'platform_core:home' %}">VERTYX</a><span>›</span><a href="{% url 'core:painel' %}">Assistência (Página Geral)</a><span>›</span><a href="{% url 'operacao:pdv_home' %}">PDV</a>{% elif seller_experience %}<a href="{% url 'platform_core:home' %}">VERTYX</a><span>›</span><a href="{% url 'core:painel' %}">Assistência (Página Geral)</a><span>›</span><a href="{% url 'operacao:seller_home' %}">Minha rotina</a>{% elif request.membership and request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
   {% if uploads_disabled %}<div class="alert alert-info" role="status">Homologação sem armazenamento de arquivos: fotos, documentos e logos estão desativados. Cadastros e operações sem anexos continuam disponíveis.</div>{% endif %}
   {% for message in messages %}
     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
