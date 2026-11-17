@@ -48,7 +48,7 @@ def admin_manifest(request):
         'short_name': 'VERTYX Admin',
         'description': 'Painel Administrativo, Gestão, Loja e Assistência Técnica VERTYX ERP',
         'lang': 'pt-BR',
-        'start_url': reverse('platform_core:home'),
+        'start_url': '/',
         'scope': '/',
         'display': 'standalone',
         'background_color': '#0b111d',

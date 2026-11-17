@@ -98,7 +98,7 @@ def manifest(request):
     response = JsonResponse({
         'id': '/saas/', 'name': 'VERTYX Admin', 'short_name': 'VERTYX Admin',
         'description': 'Administração da plataforma VERTYX', 'lang': 'pt-BR',
-        'start_url': '/saas/', 'scope': '/saas/', 'display': 'standalone',
+        'start_url': '/vertyx/saas/', 'scope': '/', 'display': 'standalone',
         'background_color': '#f4f7fb', 'theme_color': '#10264b',
         'icons': [{'src': '/static/pwa/saas-icon.svg', 'sizes': 'any', 'type': 'image/svg+xml', 'purpose': 'any'}],
     }, content_type='application/manifest+json')
@@ -117,7 +117,7 @@ self.addEventListener('fetch',event=>{
   event.respondWith(fetch(event.request,{cache:'no-store'}));
 });
 """, content_type='application/javascript; charset=utf-8')
-    response['Service-Worker-Allowed'] = '/saas/'
+    response['Service-Worker-Allowed'] = '/'
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response['X-Content-Type-Options'] = 'nosniff'
     return response

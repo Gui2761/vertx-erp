@@ -1,10 +1,13 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 from platform_core import media_views
 from platform_core.health import health
 
 urlpatterns = [
     path('health/', health, name='health'),
+    path('saas/', RedirectView.as_view(url='/vertyx/saas/', permanent=False)),
+    path('saas/<path:subpath>', RedirectView.as_view(url='/vertyx/saas/%(subpath)s', permanent=False)),
     path("admin/", admin.site.urls),
     path("", include('commercial.urls')),
     path("vertyx/", include('platform_core.urls')),
