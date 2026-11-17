@@ -163,6 +163,44 @@
     return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  const buildXAxis = (categories, isLight) => ({
+    categories: categories,
+    tickAmount: Math.min(categories.length, 8),
+    labels: {
+      rotate: -35,
+      rotateAlways: false,
+      hideOverlappingLabels: true,
+      trim: true,
+      style: {
+        fontSize: '11px',
+        fontFamily: 'Plus Jakarta Sans, Inter, system-ui, sans-serif'
+      }
+    },
+    axisBorder: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' },
+    axisTicks: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' }
+  });
+
+  const chartResponsive = [
+    {
+      breakpoint: 992,
+      options: {
+        xaxis: {
+          tickAmount: 6,
+          labels: { rotate: -45, hideOverlappingLabels: true }
+        }
+      }
+    },
+    {
+      breakpoint: 600,
+      options: {
+        xaxis: {
+          tickAmount: 4,
+          labels: { rotate: 0, hideOverlappingLabels: true }
+        }
+      }
+    }
+  ];
+
   function getBaseTheme(isLight) {
     return {
       theme: { mode: isLight ? 'light' : 'dark' },
@@ -196,15 +234,13 @@
       try {
         const salesData = JSON.parse(salesScript.textContent);
         if (Array.isArray(salesData) && salesData.length > 0) {
+          const salesCategories = salesData.map(d => d.label);
           const salesOptions = {
             ...baseTheme,
             chart: { ...baseTheme.chart, type: 'bar', height: 220 },
             series: [{ name: 'Vendas Líquidas', data: salesData.map(d => parseFloat(d.vendas) || 0) }],
-            xaxis: {
-              categories: salesData.map(d => d.label),
-              axisBorder: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' },
-              axisTicks: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' }
-            },
+            xaxis: buildXAxis(salesCategories, isLight),
+            responsive: chartResponsive,
             colors: ['#10b981'],
             plotOptions: {
               bar: { borderRadius: 4, columnWidth: '50%' }
@@ -229,6 +265,7 @@
       try {
         const cashData = JSON.parse(cashScript.textContent);
         if (Array.isArray(cashData) && cashData.length > 0) {
+          const cashCategories = cashData.map(d => d.label);
           const cashOptions = {
             ...baseTheme,
             chart: { ...baseTheme.chart, type: 'area', height: 220 },
@@ -236,11 +273,8 @@
               { name: 'Entradas', data: cashData.map(d => parseFloat(d.entrada) || 0) },
               { name: 'Saídas', data: cashData.map(d => parseFloat(d.saida) || 0) }
             ],
-            xaxis: {
-              categories: cashData.map(d => d.label),
-              axisBorder: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' },
-              axisTicks: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' }
-            },
+            xaxis: buildXAxis(cashCategories, isLight),
+            responsive: chartResponsive,
             colors: ['#10b981', '#f43f5e'],
             stroke: { curve: 'smooth', width: 2 },
             fill: {
@@ -267,15 +301,13 @@
       try {
         const revData = JSON.parse(revScript.textContent);
         if (Array.isArray(revData) && revData.length > 0) {
+          const revCategories = revData.map(d => d.label);
           const revOptions = {
             ...baseTheme,
             chart: { ...baseTheme.chart, type: 'bar', height: 220 },
             series: [{ name: 'Receitas', data: revData.map(d => parseFloat(d.faturamento) || 0) }],
-            xaxis: {
-              categories: revData.map(d => d.label),
-              axisBorder: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' },
-              axisTicks: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' }
-            },
+            xaxis: buildXAxis(revCategories, isLight),
+            responsive: chartResponsive,
             colors: ['#0284c7'],
             plotOptions: {
               bar: { borderRadius: 4, columnWidth: '50%' }

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}{% load static %}
 {% block title %}Planejamento{% endblock %}
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/planning.css' %}">
+<link rel="stylesheet" href="{% static 'css/planning.css' %}?v=20261117_dark1">
 <header class="vx-page-header"><div><p class="vx-eyebrow">Assistência · Central de operações</p><h1>Planejamento</h1><p>Agenda, equipe e pendências da {{ request.organization.display_name }}.</p></div><div class="vx-actions">{% if can_write %}<a class="btn btn-primary" href="{% url 'operacao:planning_quick' %}">+ Nova OS</a>{% endif %}{% if can_tv %}<a class="btn btn-outline-primary" href="{% url 'operacao:operational_panel' %}">Modo TV</a>{% endif %}<details class="vx-more"><summary>Mais ações</summary><a href="{% url 'operacao:tecnico' %}">Minha agenda</a>{% if user.is_administrador %}<a href="{% url 'operacao:panel_config' %}">Configurar painel de TV</a><a href="{% url 'contas:usuario_list' %}">Permissões dos usuários</a>{% endif %}</details></div></header>
 <div class="vx-plan-summary">{% for item in summaries %}<a href="{{ item.url }}"><strong>{{ item.total }}</strong><span>{{ item.label }}</span></a>{% endfor %}</div>
 <form method="get" class="vx-plan-controls">

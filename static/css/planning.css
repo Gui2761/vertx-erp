@@ -1,4 +1,708 @@
-.vx-plan-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:0 0 20px}.vx-plan-summary a{padding:16px;border:1px solid #d9e5e8;border-radius:12px;background:#fff;text-decoration:none;color:#183f49;display:flex;flex-direction:column}.vx-plan-summary strong{font-size:28px}.vx-plan-controls,.vx-unplanned,.vx-plan-main{background:#fff;border:1px solid #d9e5e8;border-radius:14px;margin-bottom:20px;padding:18px}.vx-plan-toolbar{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}.vx-plan-selects{display:flex;flex-wrap:wrap;gap:8px;align-items:end}.vx-plan-selects label{font-size:12px;max-width:180px}.vx-plan-selects select,.vx-plan-selects input{font-size:14px;min-width:0;width:100%}.vx-plan-filters{margin-top:14px}.vx-plan-filters summary,.vx-unplanned summary{cursor:pointer;padding:8px 0}.vx-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0}.vx-filter-grid label{min-width:0}.vx-unplanned summary{display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between}.vx-queue-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.vx-queue-grid article{border:1px solid #dfe9ed;border-radius:10px;padding:10px;display:grid;gap:8px}.vx-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}.vx-calendar.vx-day{grid-template-columns:1fr}.vx-calendar-day{border:1px solid #dfe8ea;min-width:0;min-height:140px;padding:8px;border-radius:8px}.vx-day-title{display:flex;justify-content:space-between;color:#23454e;text-decoration:none;font-size:13px;margin-bottom:10px}.vx-day-title strong{font-size:24px}.vx-plan-event{display:block;width:100%;text-align:left;padding:10px 8px;border:1px solid #dce5ed;border-left:4px solid #7392a5;border-radius:7px;background:#f5f8fc;color:#183f49;margin-bottom:8px;overflow-wrap:anywhere;font-size:12px}.vx-plan-event strong,.vx-plan-event small{display:block;margin-top:5px}.vx-event-top{display:flex;justify-content:space-between;gap:5px;flex-wrap:wrap}.vx-event-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;font-size:11px}.vx-event-tags span{border:1px solid #c5d2da;border-radius:5px;padding:2px 4px}.s-EXECUCAO{border-left-color:#007b72;background:#e5f5f1}.s-AG_PECA,.s-AG_CLIENTE{border-left-color:#a36a08;background:#fff4dd}.s-FINALIZADA,.s-APROVADA,.s-FATURADA{border-left-color:#527b5c;background:#edf5ed}.s-CANCELADA{border-left-color:#727a82;background:#eff1f3}.is-late{border-left-color:#bd4554}.vx-more-events{display:block;font-size:12px;padding:8px}.vx-more{position:relative}.vx-more summary{cursor:pointer;padding:8px}.vx-more[open]{background:#fff;border:1px solid #c7d9db;border-radius:8px;padding:6px}.vx-more a{display:block;padding:6px}.vx-plan-table{overflow:auto}.vx-plan-table table{width:100%;min-width:940px;font-size:13px}.vx-plan-table th,.vx-plan-table td{padding:12px 8px;border-bottom:1px solid #e2ecee;vertical-align:top}.vx-plan-table small,.vx-plan-table strong{display:block}.vx-timeline-wrap{overflow:auto}.vx-timeline-head,.vx-tech-row{display:grid;grid-template-columns:190px minmax(640px,1fr);min-width:860px;gap:12px;margin-bottom:12px}.vx-timeline-head>div{display:flex;justify-content:space-between;font-size:12px}.vx-tech-row{border-bottom:1px solid #dce5ed;padding:12px 0}.vx-tech-row small{display:block;font-size:12px;margin-top:6px}.vx-time-track{min-height:74px;position:relative;background:repeating-linear-gradient(to right,#f5f8fa,#f5f8fa calc(10% - 1px),#dae4e8 calc(10% - 1px),#dae4e8 10%)}.vx-time-bar{position:relative;margin-top:5px;display:block;min-height:30px;border:1px solid #81aca8;border-radius:5px;padding:3px;font-size:11px;overflow:hidden;background:#d5f0ea;max-width:100%;color:#143e3b}.vx-time-point{width:auto;max-width:90px;min-width:20px;border-style:dashed;transform:translateX(-50%)}.vx-time-empty{font-size:12px;padding:12px;display:block;color:#638087}.vx-tech-events{grid-column:2;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.vx-planning-drawer{position:fixed;top:0;bottom:0;right:0;left:auto;width:min(560px,100%);height:100dvh;max-height:100dvh;margin:0;padding:24px;border:0;border-left:1px solid #c7d9db;overflow:auto;color:#183f49}.vx-planning-drawer::backdrop{background:#102e4660}.vx-drawer-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.vx-drawer-head h2{font-size:24px;margin:0}.vx-drawer-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}.vx-drawer-fields div{min-width:0;overflow-wrap:anywhere}.vx-drawer-fields dt{color:#617b86;font-size:12px}.vx-drawer-fields dd{margin:0;font-size:15px}.vx-drawer-actions{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}.vx-drawer-stock{border:1px solid #d8e5e8;border-radius:8px;padding:12px;margin-top:10px}.vx-mobile-os-actions{display:flex;flex-wrap:wrap;gap:8px}.vx-mobile-os-actions a{min-height:44px;padding:12px;border:1px solid #c8dedc;border-radius:8px;text-decoration:none}
-@media(max-width:1100px){.vx-calendar:not(.vx-day){grid-template-columns:repeat(3,minmax(0,1fr))}.vx-queue-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.vx-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:767px){.vx-plan-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.vx-plan-summary a{padding:12px}.vx-plan-toolbar,.vx-plan-selects{display:grid;grid-template-columns:1fr}.vx-plan-selects label{max-width:none}.vx-filter-grid{grid-template-columns:1fr 1fr}.vx-plan-controls,.vx-unplanned,.vx-plan-main{padding:12px}.vx-calendar:not(.vx-day){grid-template-columns:1fr}.vx-queue-grid{grid-template-columns:1fr}.vx-plan-table table{min-width:0}.vx-plan-table thead{display:none}.vx-plan-table tr{display:block;border:1px solid #dce7e9;padding:12px;margin:10px 0;border-radius:10px}.vx-plan-table td{display:grid;grid-template-columns:92px minmax(0,1fr);border:0;padding:5px 0;overflow-wrap:anywhere}.vx-plan-table td:before{content:attr(data-label);font-size:11px;font-weight:600;color:#617b86}.vx-timeline-head{display:none}.vx-tech-row{display:block;min-width:0}.vx-time-track{display:none}.vx-tech-events{display:block;margin-top:12px}.vx-drawer-fields{grid-template-columns:1fr}.vx-planning-drawer{padding:18px}.vx-plan-selects input,.vx-plan-selects select{max-width:100%}}
-@media(max-width:380px){.vx-filter-grid{grid-template-columns:1fr}}
+/**
+ * VERTYX ERP — Planejamento Operacional
+ * Suporte completo a Dark Mode (padrão) e Light Mode corporativo.
+ */
+
+/* 1. Sumário Executivo (5 KPIs do topo) */
+.vx-plan-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 20px;
+}
+.vx-plan-summary a {
+  padding: 16px;
+  border: 1px solid var(--vx-border, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  background: var(--vx-surface, #121a29);
+  text-decoration: none;
+  color: var(--vx-ink, #ffffff);
+  display: flex;
+  flex-direction: column;
+  transition: border-color .15s ease, background-color .15s ease, transform .15s ease;
+}
+.vx-plan-summary a:hover {
+  background: var(--vx-surface-hover, #182337);
+  border-color: var(--vx-brand, #2563eb);
+  transform: translateY(-1px);
+}
+.vx-plan-summary strong {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--vx-ink, #ffffff);
+  line-height: 1.2;
+}
+.vx-plan-summary span {
+  font-size: 13px;
+  color: var(--vx-muted, #94a3b8);
+  margin-top: 4px;
+}
+
+/* 2. Contêineres Principais */
+.vx-plan-controls,
+.vx-unplanned,
+.vx-plan-main {
+  background: var(--vx-surface, #121a29);
+  border: 1px solid var(--vx-border, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  margin-bottom: 20px;
+  padding: 18px;
+  color: var(--vx-ink, #ffffff);
+}
+
+.vx-plan-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.vx-plan-selects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+.vx-plan-selects label {
+  font-size: 12px;
+  color: var(--vx-muted, #94a3b8);
+  max-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vx-plan-selects select,
+.vx-plan-selects input,
+.vx-filter-grid select,
+.vx-filter-grid input {
+  font-size: 14px;
+  min-width: 0;
+  width: 100%;
+  background: var(--vx-input-bg, #151e2e);
+  border: 1px solid var(--vx-input-border, rgba(255, 255, 255, 0.16));
+  color: var(--vx-input-color, #ffffff);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+.vx-plan-selects select:focus,
+.vx-plan-selects input:focus,
+.vx-filter-grid select:focus,
+.vx-filter-grid input:focus {
+  outline: none;
+  border-color: var(--vx-brand, #2563eb);
+  box-shadow: 0 0 0 2px var(--vx-border-focus, rgba(59, 130, 246, 0.4));
+}
+
+.vx-plan-filters {
+  margin-top: 14px;
+  border-top: 1px solid var(--vx-border, rgba(255, 255, 255, 0.08));
+  padding-top: 12px;
+}
+.vx-plan-filters summary,
+.vx-unplanned summary {
+  cursor: pointer;
+  padding: 8px 0;
+  color: var(--vx-ink, #ffffff);
+  font-weight: 600;
+  outline: none;
+}
+.vx-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.vx-filter-grid label {
+  min-width: 0;
+  font-size: 12px;
+  color: var(--vx-muted, #94a3b8);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vx-unplanned summary {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 3. Fila de Não Planejadas */
+.vx-queue-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.vx-queue-grid article {
+  border: 1px solid var(--vx-border, rgba(255, 255, 255, 0.08));
+  background: var(--vx-surface-subtle, #162032);
+  border-radius: 10px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+.vx-queue-grid article small {
+  color: var(--vx-muted, #94a3b8);
+}
+
+/* 4. Calendário Operacional */
+.vx-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.vx-calendar.vx-day {
+  grid-template-columns: 1fr;
+}
+.vx-calendar-day {
+  border: 1px solid var(--vx-border, rgba(255, 255, 255, 0.08));
+  background: var(--vx-surface-subtle, #162032);
+  min-width: 0;
+  min-height: 140px;
+  padding: 10px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.vx-day-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  color: var(--vx-ink-secondary, #cbd5e1);
+  text-decoration: none;
+  font-size: 13px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  transition: color .15s ease;
+}
+.vx-day-title:hover {
+  color: var(--vx-brand-hover, #3b82f6);
+}
+.vx-day-title strong {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--vx-ink, #ffffff);
+}
+
+/* 5. Cards de Atividade / OS */
+.vx-plan-event {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  border: 1px solid var(--vx-border, rgba(255, 255, 255, 0.1));
+  border-left: 4px solid var(--vx-muted, #64748b);
+  border-radius: 7px;
+  background: rgba(30, 41, 59, 0.65);
+  color: var(--vx-ink, #ffffff);
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform .12s ease, background-color .12s ease, border-color .12s ease;
+}
+.vx-plan-event:hover {
+  transform: translateY(-1px);
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.vx-plan-event strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--vx-ink, #ffffff);
+  font-weight: 600;
+}
+.vx-plan-event small {
+  display: block;
+  margin-top: 3px;
+  color: var(--vx-muted, #94a3b8);
+}
+.vx-event-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--vx-muted, #94a3b8);
+}
+.vx-event-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 11px;
+}
+.vx-event-tags span {
+  border: 1px solid var(--vx-border, rgba(255, 255, 255, 0.12));
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--vx-ink-secondary, #cbd5e1);
+  border-radius: 5px;
+  padding: 2px 5px;
+  font-weight: 500;
+}
+
+/* Status das OS nos eventos */
+.s-EXECUCAO {
+  border-left-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.14) !important;
+}
+.s-AG_PECA, .s-AG_CLIENTE {
+  border-left-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.14) !important;
+}
+.s-FINALIZADA, .s-APROVADA, .s-FATURADA {
+  border-left-color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.14) !important;
+}
+.s-CANCELADA {
+  border-left-color: #64748b !important;
+  background: rgba(100, 116, 139, 0.14) !important;
+  color: var(--vx-muted, #94a3b8) !important;
+}
+.is-late {
+  border-left-color: #f43f5e !important;
+}
+
+.vx-more-events {
+  display: block;
+  font-size: 12px;
+  padding: 8px 4px;
+  color: var(--vx-brand-hover, #3b82f6);
+  text-decoration: none;
+  margin-top: auto;
+}
+.vx-more-events:hover {
+  text-decoration: underline;
+}
+
+/* 6. Menu Mais Ações */
+.vx-more {
+  position: relative;
+}
+.vx-more summary {
+  cursor: pointer;
+  padding: 8px 14px;
+}
+.vx-more[open] {
+  position: relative;
+  background: var(--vx-surface, #121a29);
+  border: 1px solid var(--vx-border-strong, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+}
+.vx-more a {
+  display: block;
+  padding: 8px 12px;
+  color: var(--vx-ink, #ffffff);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: background-color .12s ease;
+}
+.vx-more a:hover {
+  background: var(--vx-surface-hover, #182337);
+  color: var(--vx-brand-hover, #3b82f6);
+}
+
+/* 7. Visão Lista / Tabela */
+.vx-plan-table {
+  overflow: auto;
+  margin-top: 12px;
+}
+.vx-plan-table table {
+  width: 100%;
+  min-width: 940px;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+.vx-plan-table th,
+.vx-plan-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--vx-table-td-border, rgba(255, 255, 255, 0.08));
+  vertical-align: top;
+}
+.vx-plan-table th {
+  background: var(--vx-table-th-bg, #0d1524);
+  color: var(--vx-table-th-color, #94a3b8);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.vx-plan-table tr:hover td {
+  background: var(--vx-table-hover-bg, rgba(255, 255, 255, 0.03));
+}
+.vx-plan-table small,
+.vx-plan-table strong {
+  display: block;
+}
+.vx-plan-table small {
+  color: var(--vx-muted, #94a3b8);
+}
+
+/* 8. Visão Linha do Tempo / Técnicos */
+.vx-timeline-wrap {
+  overflow: auto;
+  margin-top: 14px;
+}
+.vx-timeline-head,
+.vx-tech-row {
+  display: grid;
+  grid-template-columns: 210px minmax(640px, 1fr);
+  min-width: 860px;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.vx-timeline-head > div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--vx-muted, #94a3b8);
+}
+.vx-tech-row {
+  border-bottom: 1px solid var(--vx-border, rgba(255, 255, 255, 0.08));
+  padding: 12px 0;
+}
+.vx-tech-row small {
+  display: block;
+  font-size: 12px;
+  margin-top: 6px;
+  color: var(--vx-muted, #94a3b8);
+}
+.vx-time-track {
+  min-height: 74px;
+  position: relative;
+  background: repeating-linear-gradient(to right, rgba(255,255,255,0.02), rgba(255,255,255,0.02) calc(10% - 1px), rgba(255,255,255,0.08) calc(10% - 1px), rgba(255,255,255,0.08) 10%);
+  border-radius: 6px;
+}
+.vx-time-bar {
+  position: relative;
+  margin-top: 5px;
+  display: block;
+  min-height: 30px;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  border-radius: 5px;
+  padding: 4px 6px;
+  font-size: 11px;
+  overflow: hidden;
+  background: rgba(16, 185, 129, 0.22);
+  max-width: 100%;
+  color: #6ee7b7;
+  cursor: pointer;
+}
+.vx-time-point {
+  width: auto;
+  max-width: 90px;
+  min-width: 20px;
+  border-style: dashed;
+  transform: translateX(-50%);
+}
+.vx-time-empty {
+  font-size: 12px;
+  padding: 14px;
+  display: block;
+  color: var(--vx-muted, #94a3b8);
+}
+.vx-tech-events {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* 9. Gaveta Lateral / Drawer */
+.vx-planning-drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: auto;
+  width: min(580px, 100%);
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 24px;
+  border: 0;
+  border-left: 1px solid var(--vx-border-strong, rgba(255, 255, 255, 0.16));
+  background: var(--vx-surface, #121a29);
+  color: var(--vx-ink, #ffffff);
+  overflow: auto;
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
+}
+.vx-planning-drawer::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+}
+.vx-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.vx-drawer-head h2 {
+  font-size: 24px;
+  margin: 0;
+  color: var(--vx-ink, #ffffff);
+}
+.vx-drawer-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.vx-drawer-fields div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.vx-drawer-fields dt {
+  color: var(--vx-muted, #94a3b8);
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+.vx-drawer-fields dd {
+  margin: 0;
+  font-size: 15px;
+  color: var(--vx-ink, #ffffff);
+}
+.vx-drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0;
+}
+.vx-drawer-stock {
+  border: 1px solid var(--vx-border, rgba(255, 255, 255, 0.1));
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 10px;
+}
+.vx-mobile-os-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vx-mobile-os-actions a {
+  min-height: 44px;
+  padding: 12px;
+  border: 1px solid var(--vx-border, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+/* 10. Regras de Compatibilidade para Tema Claro (Light Mode) */
+[data-theme="light"] .vx-plan-summary a {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+[data-theme="light"] .vx-plan-summary a:hover {
+  background: #f8fafc;
+  border-color: #2563eb;
+}
+[data-theme="light"] .vx-plan-summary strong {
+  color: #0f172a;
+}
+[data-theme="light"] .vx-plan-summary span {
+  color: #64748b;
+}
+[data-theme="light"] .vx-plan-controls,
+[data-theme="light"] .vx-unplanned,
+[data-theme="light"] .vx-plan-main {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+[data-theme="light"] .vx-calendar-day {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+[data-theme="light"] .vx-day-title {
+  color: #334155;
+}
+[data-theme="light"] .vx-day-title strong {
+  color: #0f172a;
+}
+[data-theme="light"] .vx-plan-event {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+[data-theme="light"] .vx-plan-event strong {
+  color: #0f172a;
+}
+[data-theme="light"] .vx-plan-event small {
+  color: #64748b;
+}
+[data-theme="light"] .s-EXECUCAO {
+  border-left-color: #059669 !important;
+  background: #ecfdf5 !important;
+}
+[data-theme="light"] .s-AG_PECA,
+[data-theme="light"] .s-AG_CLIENTE {
+  border-left-color: #d97706 !important;
+  background: #fffbeb !important;
+}
+[data-theme="light"] .s-FINALIZADA,
+[data-theme="light"] .s-APROVADA,
+[data-theme="light"] .s-FATURADA {
+  border-left-color: #2563eb !important;
+  background: #eff6ff !important;
+}
+[data-theme="light"] .s-CANCELADA {
+  border-left-color: #64748b !important;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+}
+[data-theme="light"] .vx-event-tags span {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+}
+[data-theme="light"] .vx-queue-grid article {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+[data-theme="light"] .vx-planning-drawer {
+  background: #ffffff;
+  border-left-color: #e2e8f0;
+  color: #0f172a;
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.15);
+}
+[data-theme="light"] .vx-drawer-head h2 {
+  color: #0f172a;
+}
+[data-theme="light"] .vx-drawer-fields dt {
+  color: #64748b;
+}
+[data-theme="light"] .vx-drawer-fields dd {
+  color: #0f172a;
+}
+[data-theme="light"] .vx-drawer-stock {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+[data-theme="light"] .vx-more[open] {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+[data-theme="light"] .vx-more a {
+  color: #0f172a;
+}
+[data-theme="light"] .vx-more a:hover {
+  background: #f1f5f9;
+}
+[data-theme="light"] .vx-time-track {
+  background: repeating-linear-gradient(to right, #f8fafc, #f8fafc calc(10% - 1px), #e2e8f0 calc(10% - 1px), #e2e8f0 10%);
+}
+[data-theme="light"] .vx-time-bar {
+  border-color: #059669;
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* 11. Responsividade e Breakpoints */
+@media (max-width: 1100px) {
+  .vx-calendar:not(.vx-day) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .vx-queue-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vx-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .vx-plan-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .vx-plan-summary a {
+    padding: 12px;
+  }
+  .vx-plan-toolbar,
+  .vx-plan-selects {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .vx-plan-selects label {
+    max-width: none;
+  }
+  .vx-filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .vx-plan-controls,
+  .vx-unplanned,
+  .vx-plan-main {
+    padding: 12px;
+  }
+  .vx-calendar:not(.vx-day) {
+    grid-template-columns: 1fr;
+  }
+  .vx-queue-grid {
+    grid-template-columns: 1fr;
+  }
+  .vx-plan-table table {
+    min-width: 0;
+  }
+  .vx-plan-table thead {
+    display: none;
+  }
+  .vx-plan-table tr {
+    display: block;
+    border: 1px solid var(--vx-border, rgba(255, 255, 255, 0.08));
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 10px;
+  }
+  .vx-plan-table td {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    border: 0;
+    padding: 5px 0;
+    overflow-wrap: anywhere;
+  }
+  .vx-plan-table td:before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--vx-muted, #94a3b8);
+  }
+  .vx-timeline-head {
+    display: none;
+  }
+  .vx-tech-row {
+    display: block;
+    min-width: 0;
+  }
+  .vx-time-track {
+    display: none;
+  }
+  .vx-tech-events {
+    display: block;
+    margin-top: 12px;
+  }
+  .vx-drawer-fields {
+    grid-template-columns: 1fr;
+  }
+  .vx-planning-drawer {
+    padding: 18px;
+  }
+  .vx-plan-selects input,
+  .vx-plan-selects select {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .vx-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}

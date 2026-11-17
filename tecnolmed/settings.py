@@ -101,6 +101,19 @@ TEMPLATES = [
     },
 ]
 
+# Em produção, ativa cache em memória dos templates compilados para reduzir latência
+if not DEBUG:
+    TEMPLATES[0]['APP_DIRS'] = False
+    TEMPLATES[0]['OPTIONS']['loaders'] = [
+        (
+            'django.template.loaders.cached.Loader',
+            [
+                'django.template.loaders.filesystem.Loader',
+                'django.template.loaders.app_directories.Loader',
+            ],
+        ),
+    ]
+
 WSGI_APPLICATION = "tecnolmed.wsgi.application"
 
 DATABASES = {'default': postgres_database(config, DEBUG)}
