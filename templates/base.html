@@ -19,7 +19,7 @@
       })();
     </script>
     <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
-    <link rel="stylesheet" href="{% static 'css/vertyx.css' %}?v=20261117_ui5">
+    <link rel="stylesheet" href="{% static 'css/vertyx.css' %}?v=20261117_ui6">
 <meta name="theme-color" content="#0b111d"><link rel="manifest" href="{% if pdv_experience %}{% url 'operacao:pdv_manifest_scoped' %}{% elif seller_experience %}{% url 'operacao:seller_manifest' %}{% elif technician_experience %}{% url 'operacao:technician_manifest' %}{% else %}{% url 'operacao:admin_manifest' %}{% endif %}">
 {% if technician_experience %}<link rel="stylesheet" href="{% static 'css/technician.css' %}">{% endif %}
 {% if pdv_experience or seller_experience or request.resolver_match.url_name == 'seller_management' %}<link rel="stylesheet" href="{% static 'css/seller.css' %}?v=seller-console-6">{% endif %}
@@ -83,10 +83,10 @@
         {% elif executive_navigation %}
           <!-- Cadastro Inicial da Empresa (Destaque Onboarding) -->
           <li class="nav-item mb-2">
-            <a class="nav-link vx-onboarding-link d-flex align-items-center gap-2 p-2 px-3 rounded-3" href="{% url 'operacao:cadastro_inicial' %}" title="Cadastro e Configuração Inicial da Empresa (CNPJ, Certificado, Bancos)" style="background: linear-gradient(90deg, rgba(2, 132, 199, 0.22), rgba(59, 130, 246, 0.14)); border: 1px solid rgba(56, 189, 248, 0.45); color: #38bdf8; font-weight: 600;">
-              <i class="bi bi-gear-wide-connected text-info fs-5"></i>
+            <a class="nav-link vx-onboarding-link" href="{% url 'operacao:cadastro_inicial' %}" title="Cadastro e Configuração Inicial da Empresa (CNPJ, Certificado, Bancos)">
+              <i class="bi bi-gear-wide-connected text-info"></i>
               <span class="vx-nav-label">Cadastro Inicial</span>
-              <span class="badge bg-info text-dark ms-auto" style="font-size: 0.65rem;">Config</span>
+              <span class="badge bg-info text-dark ms-auto vx-onboarding-badge">Config</span>
             </a>
           </li>
 

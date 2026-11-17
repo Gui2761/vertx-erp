@@ -393,6 +393,37 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     display: none;
   }
 
+  .vx-onboarding-link {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 0.5rem 0.85rem !important;
+    border-radius: var(--vx-radius-sm) !important;
+    background: linear-gradient(90deg, rgba(2, 132, 199, 0.22), rgba(59, 130, 246, 0.14)) !important;
+    border: 1px solid rgba(56, 189, 248, 0.45) !important;
+    color: #38bdf8 !important;
+    font-weight: 600 !important;
+    transition: all 0.18s ease !important;
+  }
+
+  .vx-onboarding-link:hover {
+    background: linear-gradient(90deg, rgba(2, 132, 199, 0.35), rgba(59, 130, 246, 0.25)) !important;
+    border-color: #38bdf8 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+  }
+
+  .vx-onboarding-link i {
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+
+  .vx-onboarding-link .vx-onboarding-badge {
+    font-size: 0.65rem !important;
+    padding: 0.2rem 0.45rem !important;
+    font-weight: 700 !important;
+  }
+
   /* MarketUP-Style Collapsed Icon Dock (68px) */
   body.vx-sidebar-collapsed .vx-nav {
     width: 68px;
@@ -454,13 +485,29 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   body.vx-sidebar-collapsed .vx-onboarding-link,
   body.vx-sidebar-collapsed .vx-back-link {
     justify-content: center !important;
-    padding: 0.5rem 0 !important;
-    width: 44px;
-    height: 44px;
-    margin: 0 auto 0.4rem !important;
+    align-items: center !important;
+    padding: 0 !important;
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 auto 0.45rem !important;
     border-radius: 10px !important;
+    display: flex !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
+  body.vx-sidebar-collapsed .vx-onboarding-link i,
+  body.vx-sidebar-collapsed .vx-back-link i {
+    font-size: 1.25rem !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+  }
+
+  body.vx-sidebar-collapsed .vx-onboarding-link span,
+  body.vx-sidebar-collapsed .vx-back-link span,
+  body.vx-sidebar-collapsed .vx-sidebar-search .vx-nav-label,
+  body.vx-sidebar-collapsed .vx-sidebar-search .vx-search-badge,
   body.vx-sidebar-collapsed .vx-nav-label,
   body.vx-sidebar-collapsed .vx-sidebar-footer-info,
   body.vx-sidebar-collapsed .vx-theme-label,
