@@ -121,17 +121,45 @@
               <input type="text" name="telefone" value="{{ org.telefone }}" class="form-control" placeholder="(79) 99999-9999">
             </div>
 
-            <div class="col-12 col-md-8">
+            <div class="col-12 col-md-7">
               <label class="form-label small text-secondary fw-semibold">Endereço Completo</label>
               <input type="text" name="endereco" value="{{ org.endereco }}" class="form-control" placeholder="Rua, Número, Bairro">
             </div>
-            <div class="col-8 col-md-3">
+            <div class="col-7 col-md-3">
               <label class="form-label small text-secondary fw-semibold">Cidade</label>
-              <input type="text" name="cidade" value="{{ org.cidade }}" class="form-control" placeholder="Aracaju">
+              <input type="text" name="cidade" value="{{ org.cidade }}" class="form-control" placeholder="Estância">
             </div>
-            <div class="col-4 col-md-1">
-              <label class="form-label small text-secondary fw-semibold">UF</label>
-              <input type="text" name="uf" value="{{ org.uf }}" class="form-control text-uppercase" maxlength="2" placeholder="SE">
+            <div class="col-5 col-md-2">
+              <label class="form-label small text-secondary fw-semibold">UF (Estado)</label>
+              <select name="uf" id="id_uf" class="form-select fw-bold text-uppercase" style="min-width: 90px;">
+                <option value="SE" {% if org.uf == 'SE' or not org.uf %}selected{% endif %}>SE (Sergipe)</option>
+                <option value="AL" {% if org.uf == 'AL' %}selected{% endif %}>AL (Alagoas)</option>
+                <option value="BA" {% if org.uf == 'BA' %}selected{% endif %}>BA (Bahia)</option>
+                <option value="PE" {% if org.uf == 'PE' %}selected{% endif %}>PE (Pernambuco)</option>
+                <option value="PB" {% if org.uf == 'PB' %}selected{% endif %}>PB (Paraíba)</option>
+                <option value="CE" {% if org.uf == 'CE' %}selected{% endif %}>CE (Ceará)</option>
+                <option value="RN" {% if org.uf == 'RN' %}selected{% endif %}>RN (Rio Grande do Norte)</option>
+                <option value="PI" {% if org.uf == 'PI' %}selected{% endif %}>PI (Piauí)</option>
+                <option value="MA" {% if org.uf == 'MA' %}selected{% endif %}>MA (Maranhão)</option>
+                <option value="SP" {% if org.uf == 'SP' %}selected{% endif %}>SP (São Paulo)</option>
+                <option value="RJ" {% if org.uf == 'RJ' %}selected{% endif %}>RJ (Rio de Janeiro)</option>
+                <option value="MG" {% if org.uf == 'MG' %}selected{% endif %}>MG (Minas Gerais)</option>
+                <option value="ES" {% if org.uf == 'ES' %}selected{% endif %}>ES (Espírito Santo)</option>
+                <option value="PR" {% if org.uf == 'PR' %}selected{% endif %}>PR (Paraná)</option>
+                <option value="SC" {% if org.uf == 'SC' %}selected{% endif %}>SC (Santa Catarina)</option>
+                <option value="RS" {% if org.uf == 'RS' %}selected{% endif %}>RS (Rio Grande do Sul)</option>
+                <option value="GO" {% if org.uf == 'GO' %}selected{% endif %}>GO (Goiás)</option>
+                <option value="MT" {% if org.uf == 'MT' %}selected{% endif %}>MT (Mato Grosso)</option>
+                <option value="MS" {% if org.uf == 'MS' %}selected{% endif %}>MS (Mato Grosso do Sul)</option>
+                <option value="DF" {% if org.uf == 'DF' %}selected{% endif %}>DF (Distrito Federal)</option>
+                <option value="AM" {% if org.uf == 'AM' %}selected{% endif %}>AM (Amazonas)</option>
+                <option value="PA" {% if org.uf == 'PA' %}selected{% endif %}>PA (Pará)</option>
+                <option value="RO" {% if org.uf == 'RO' %}selected{% endif %}>RO (Rondônia)</option>
+                <option value="AC" {% if org.uf == 'AC' %}selected{% endif %}>AC (Acre)</option>
+                <option value="AP" {% if org.uf == 'AP' %}selected{% endif %}>AP (Amapá)</option>
+                <option value="RR" {% if org.uf == 'RR' %}selected{% endif %}>RR (Roraima)</option>
+                <option value="TO" {% if org.uf == 'TO' %}selected{% endif %}>TO (Tocantins)</option>
+              </select>
             </div>
 
             <div class="col-12 col-md-6">

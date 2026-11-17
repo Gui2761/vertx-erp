@@ -1,0 +1,103 @@
+{% load static modulos_erp %}
+<!-- Vitrine de Recursos & Upsell VERTYX (Product-Led Growth) -->
+<aside class="card p-4 h-100 shadow-sm vx-upsell-card" style="background: linear-gradient(145deg, var(--vx-surface, #111a2e), var(--vx-card-bg, #0d1526)); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 14px; position: relative; overflow: hidden;">
+  <!-- Efeito de brilho de fundo -->
+  <div style="position: absolute; top: -40px; right: -40px; width: 140px; height: 140px; background: radial-gradient(circle, rgba(14, 165, 233, 0.18) 0%, transparent 70%); pointer-events: none;"></div>
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <span class="badge px-2.5 py-1 text-uppercase fw-bold" style="background: linear-gradient(90deg, #0284c7, #6366f1); color: #ffffff; font-size: 0.68rem; letter-spacing: 0.5px;">
+      <i class="bi bi-stars me-1"></i> Turbine seu VERTYX
+    </span>
+    <span class="badge bg-secondary bg-opacity-25 text-secondary" style="font-size: 0.65rem;">Módulos Add-on</span>
+  </div>
+
+  <h2 class="h5 fw-bold mb-1" style="color: var(--vx-ink, #ffffff);">Novos Recursos para Sua Empresa</h2>
+  <p class="small text-secondary mb-3">
+    Expanda a produtividade da <strong>{{ request.organization.display_name }}</strong> ativando módulos sob medida.
+  </p>
+
+  <!-- Abas / Destaque de Recursos -->
+  <div class="d-flex flex-column gap-2.5 mb-3" id="vx-upsell-items">
+
+    <!-- Recurso 1: Ponto Digital Mobile (Destaque da Semana) -->
+    <div class="p-3 rounded-3 border vx-upsell-item active" style="background: rgba(14, 165, 233, 0.08); border-color: rgba(56, 189, 248, 0.3) !important;">
+      <div class="d-flex align-items-start gap-2.5">
+        <div class="flex-shrink-0 p-2 rounded-2" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8;">
+          <i class="bi bi-fingerprint fs-5"></i>
+        </div>
+        <div>
+          <div class="d-flex align-items-center gap-1.5 mb-1">
+            <strong class="small fw-bold" style="color: var(--vx-ink, #ffffff);">Ponto Digital & Jornada Mobile</strong>
+            <span class="badge bg-info text-dark" style="font-size: 0.6rem;">Portaria 671</span>
+          </div>
+          <p class="small text-secondary mb-2" style="font-size: 0.76rem; line-height: 1.35;">
+            Seus técnicos marcam ponto pelo celular com geolocalização e foto. Gestão completa de horas extras e espelho de ponto.
+          </p>
+          <div class="d-flex align-items-center gap-2">
+            <a href="https://wa.me/5579998104500?text=Ol%C3%A1%2C%20tenho%20interesse%20em%20ativar%20o%20M%C3%B3dulo%20de%20Ponto%20Digital%20na%20{{ request.organization.display_name|urlencode }}%20no%20VERTYX%20ERP" target="_blank" rel="noopener" class="btn btn-sm btn-primary py-1 px-2.5 d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;">
+              <i class="bi bi-whatsapp"></i> Ativar no WhatsApp
+            </a>
+            <span class="text-success small fw-semibold" style="font-size: 0.7rem;">⚡ 7 dias grátis</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recurso 2: Painel de TV Operacional -->
+    <div class="p-2.5 rounded-3 border vx-upsell-item" style="background: rgba(255, 255, 255, 0.02); border-color: rgba(255, 255, 255, 0.08) !important;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-tv text-warning fs-5"></i>
+          <div>
+            <div class="small fw-bold" style="color: var(--vx-ink, #ffffff);">Painel de TV (Tempo Real)</div>
+            <div class="text-secondary" style="font-size: 0.7rem;">Transmita as OSs ao vivo na oficina</div>
+          </div>
+        </div>
+        <a href="{% url 'operacao:operational_panel' %}" class="btn btn-sm btn-outline-warning py-0.5 px-2" style="font-size: 0.72rem;">
+          <i class="bi bi-play-circle"></i> Abrir Modo TV
+        </a>
+      </div>
+    </div>
+
+    <!-- Recurso 3: Central Fiscal (NF-e, NFC-e e CBS/IBS) -->
+    <div class="p-2.5 rounded-3 border vx-upsell-item" style="background: rgba(255, 255, 255, 0.02); border-color: rgba(255, 255, 255, 0.08) !important;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-receipt-cutoff text-success fs-5"></i>
+          <div>
+            <div class="small fw-bold" style="color: var(--vx-ink, #ffffff);">Emissão Fiscal Automática</div>
+            <div class="text-secondary" style="font-size: 0.7rem;">NF-e / NFC-e direta da OS com Certificado A1</div>
+          </div>
+        </div>
+        <a href="{% url 'operacao:cadastro_inicial' %}" class="btn btn-sm btn-outline-success py-0.5 px-2" style="font-size: 0.72rem;">
+          <i class="bi bi-gear"></i> Configurar
+        </a>
+      </div>
+    </div>
+
+    <!-- Recurso 4: API Pix & Boletos Direto no Banco -->
+    <div class="p-2.5 rounded-3 border vx-upsell-item" style="background: rgba(255, 255, 255, 0.02); border-color: rgba(255, 255, 255, 0.08) !important;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-qr-code text-info fs-5"></i>
+          <div>
+            <div class="small fw-bold" style="color: var(--vx-ink, #ffffff);">API Bancária & Pix</div>
+            <div class="text-secondary" style="font-size: 0.7rem;">Baixa automática e boletos sem taxa manual</div>
+          </div>
+        </div>
+        <a href="{% url 'operacao:bancos_integracao' %}" class="btn btn-sm btn-outline-info py-0.5 px-2" style="font-size: 0.72rem;">
+          <i class="bi bi-plug"></i> Conectar
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Rodapé do Card -->
+  <div class="mt-auto pt-2 border-top border-secondary border-opacity-10 d-flex align-items-center justify-content-between">
+    <span class="text-muted" style="font-size: 0.7rem;">Suporte consultivo VERTYX</span>
+    <a href="https://wa.me/5579998104500?text=Ol%C3%A1%2C%20gostaria%20de%20tirar%20d%C3%BAvidas%20sobre%20os%20m%C3%B3dulos%20do%20VERTYX%20ERP" target="_blank" rel="noopener" class="text-decoration-none small fw-semibold" style="color: #38bdf8; font-size: 0.72rem;">
+      <i class="bi bi-chat-dots me-1"></i> Falar com Especialista →
+    </a>
+  </div>
+</aside>
