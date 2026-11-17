@@ -176,3 +176,32 @@ window.toggleVertyxTheme = function() {
     window.applyVertyxTheme(window.getVertyxTheme());
   });
 })();
+
+// Instant Navigation: Hover/Touch Prefetching
+(function() {
+  const prefetched = new Set();
+  function prefetchUrl(url) {
+    if (!url || prefetched.has(url) || url.startsWith('javascript:') || url.startsWith('#')) return;
+    try {
+      const parsed = new URL(url, location.origin);
+      if (parsed.origin !== location.origin) return;
+      if (parsed.pathname.includes('/logout') || parsed.pathname.includes('/organizacao/')) return;
+      prefetched.add(url);
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = url;
+      link.as = 'document';
+      document.head.appendChild(link);
+    } catch(e) {}
+  }
+
+  document.addEventListener('mouseover', function(e) {
+    const a = e.target.closest('a[href]');
+    if (a && a.href) prefetchUrl(a.href);
+  }, { passive: true });
+
+  document.addEventListener('touchstart', function(e) {
+    const a = e.target.closest('a[href]');
+    if (a && a.href) prefetchUrl(a.href);
+  }, { passive: true });
+})();

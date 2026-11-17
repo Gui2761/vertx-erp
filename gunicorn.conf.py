@@ -4,7 +4,7 @@ from platform_core.logging_utils import logging_config
 bind = f"0.0.0.0:{os.environ.get('PORT', '8000')}"
 workers = int(os.environ.get('WEB_CONCURRENCY', '2'))
 worker_class = 'gthread'
-threads = int(os.environ.get('GUNICORN_THREADS', '4'))
+threads = int(os.environ.get('GUNICORN_THREADS', '8'))
 keepalive = 5
 timeout = 60
 graceful_timeout = 30

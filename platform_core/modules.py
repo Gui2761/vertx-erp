@@ -157,22 +157,24 @@ def platform_module_overrides(organization):
     """Return {codigo: modo} manual platform adjustments for one organization."""
     if organization is None:
         return {}
+    if hasattr(organization, '_pmo_cache'):
+        return organization._pmo_cache
     from .saas_models import AjusteModuloSaaS
-    return dict(
+    res = dict(
         AjusteModuloSaaS.objects.filter(organization=organization).values_list('codigo', 'modo')
     )
+    try:
+        organization._pmo_cache = res
+    except (AttributeError, TypeError):
+        pass
+    return res
 
 
 def platform_module_override(organization, code):
     """Return manual platform override ('LIBERADO' / 'BLOQUEADO' / None) for one module."""
     if organization is None or not code:
         return None
-    from .saas_models import AjusteModuloSaaS
-    return (
-        AjusteModuloSaaS.objects.filter(organization=organization, codigo=code)
-        .values_list('modo', flat=True)
-        .first()
-    )
+    return platform_module_overrides(organization).get(code)
 
 
 def expand_declared_modules(codes):
@@ -283,6 +285,27 @@ def product_module_enabled(user, erp_code, module_code, organization=None):
     This function deliberately does not infer entitlement from a role or price.
     """
     organization = organization or current_organization()
+    cache_dict = getattr(organization, '_pme_cache', None)
+    if cache_dict is None and organization is not None:
+        try:
+            organization._pme_cache = {}
+            cache_dict = organization._pme_cache
+        except (AttributeError, TypeError):
+            pass
+
+    cache_key = None
+    if cache_dict is not None:
+        cache_key = (getattr(user, 'pk', None), erp_code, module_code)
+        if cache_key in cache_dict:
+            return cache_dict[cache_key]
+
+    res = _product_module_enabled_uncached(user, erp_code, module_code, organization)
+    if cache_key is not None and cache_dict is not None:
+        cache_dict[cache_key] = res
+    return res
+
+
+def _product_module_enabled_uncached(user, erp_code, module_code, organization):
     membership = membership_for(user, organization)
     if membership is None:
         return False

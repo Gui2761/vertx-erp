@@ -100,33 +100,51 @@ def _menu(request):
     from platform_core.modules import module_for_path, module_enabled, product_module_enabled, required_modules_for_path
     from gestao.permissions import allowed
 
+    org = getattr(request, 'organization', None)
+    _plan_modules = None
+    _overrides = {}
+    _sub = None
+    if org:
+        from platform_core.modules import (
+            MODULE_IMPLIED_BY, effective_legacy_plan_codes, platform_module_overrides,
+        )
+        from platform_core.saas_models import AjusteModuloSaaS, AssinaturaSaaS
+        _overrides = platform_module_overrides(org)
+        _sub = AssinaturaSaaS.objects.filter(organization=org).select_related('plano').first()
+        if _sub and _sub.plano:
+            _plan_modules = effective_legacy_plan_codes(org, _sub.plano)
+
+    _nav_cache = {}
+
     def _is_nav_allowed(url):
+        if url in _nav_cache:
+            return _nav_cache[url]
         clean_path = url.split('?')[0]
         if clean_path.startswith(('/financeiro/', '/bancos/')) and not allowed(request.user, 'financeiro'):
+            _nav_cache[url] = False
             return False
         required = required_modules_for_path(clean_path, None)
         if not required:
             mod = module_for_path(clean_path)
             if mod:
                 required = (mod,)
-        org = getattr(request, 'organization', None)
-        if org:
-            from platform_core.modules import (
-                MODULE_IMPLIED_BY, effective_legacy_plan_codes, platform_module_override,
-            )
-            from platform_core.saas_models import AjusteModuloSaaS, AssinaturaSaaS
-            sub = AssinaturaSaaS.objects.filter(organization=org).select_related('plano').first()
-            if sub and sub.plano:
-                plan_modules = effective_legacy_plan_codes(org, sub.plano)
-                for code in required:
-                    if code and platform_module_override(org, code) == AjusteModuloSaaS.Modo.DENY:
+        if org and _sub and _sub.plano:
+            from platform_core.saas_models import AjusteModuloSaaS
+            for code in required:
+                if code and _overrides.get(code) == AjusteModuloSaaS.Modo.DENY:
+                    _nav_cache[url] = False
+                    return False
+                if code and _plan_modules is not None and code not in _plan_modules:
+                    if not (MODULE_IMPLIED_BY.get(code, set()) & _plan_modules):
+                        _nav_cache[url] = False
                         return False
-                    if code and code not in plan_modules:
-                        if not (MODULE_IMPLIED_BY.get(code, set()) & plan_modules):
-                            return False
-            if required and any(not product_module_enabled(request.user, 'assistencia', code, org) for code in required):
+        if org and required:
+            if any(not product_module_enabled(request.user, 'assistencia', code, org) for code in required):
+                _nav_cache[url] = False
                 return False
-        return module_enabled(module_for_path(clean_path))
+        res = module_enabled(module_for_path(clean_path))
+        _nav_cache[url] = res
+        return res
 
     current_path = getattr(request, 'path', '')
     filtered_groups = []

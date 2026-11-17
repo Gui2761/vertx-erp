@@ -508,6 +508,8 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   body.vx-sidebar-collapsed .vx-back-link span,
   body.vx-sidebar-collapsed .vx-sidebar-search .vx-nav-label,
   body.vx-sidebar-collapsed .vx-sidebar-search .vx-search-badge,
+  body.vx-sidebar-collapsed .vx-install-btn span,
+  body.vx-sidebar-collapsed .vx-install-btn .badge,
   body.vx-sidebar-collapsed .vx-nav-label,
   body.vx-sidebar-collapsed .vx-sidebar-footer-info,
   body.vx-sidebar-collapsed .vx-theme-label,
@@ -645,6 +647,37 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   }
 
   /* Footer Controls in Collapsed Mode */
+  body.vx-sidebar-collapsed .vx-sidebar-footer button.vx-install-btn,
+  body.vx-sidebar-collapsed .vx-install-btn {
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 0 !important;
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 auto 0.45rem !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+  }
+
+  body.vx-sidebar-collapsed .vx-install-btn div {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  body.vx-sidebar-collapsed .vx-install-btn i {
+    font-size: 1.25rem !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+  }
+
   body.vx-sidebar-collapsed .vx-sidebar-footer button.vx-theme-toggle-btn {
     justify-content: center !important;
     padding: 0.45rem 0 !important;
@@ -662,6 +695,30 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     margin: 0 auto;
     border-radius: 10px;
   }
+}
+
+/* PWA Install Button Base */
+.vx-install-btn {
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  border-radius: 8px;
+  color: #38bdf8;
+  transition: all 0.15s ease;
+}
+.vx-install-btn:hover {
+  background: rgba(14, 165, 233, 0.22);
+  border-color: rgba(14, 165, 233, 0.5);
+  color: #7dd3fc;
+}
+[data-theme="light"] .vx-install-btn {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.25);
+  color: #0284c7;
+}
+[data-theme="light"] .vx-install-btn:hover {
+  background: rgba(2, 132, 199, 0.15);
+  border-color: rgba(2, 132, 199, 0.4);
+  color: #0369a1;
 }
 
 @media (max-width: 991px) {
