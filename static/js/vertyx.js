@@ -4,7 +4,17 @@ if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWor
 });
 // Capture the install event before DOMContentLoaded; some browsers emit it early.
 let vertyxInstallPrompt;
-addEventListener('beforeinstallprompt',event=>{event.preventDefault();vertyxInstallPrompt=event;document.querySelectorAll('[data-install]').forEach(button=>button.hidden=false);});
+addEventListener('beforeinstallprompt',event=>{
+  event.preventDefault();
+  vertyxInstallPrompt=event;
+  document.querySelectorAll('[data-install]').forEach(button=>{
+    button.hidden=false;
+    if(button.classList.contains('vx-install-btn')){
+      button.classList.remove('d-none');
+      button.classList.add('d-flex');
+    }
+  });
+});
 /* Comportamentos compartilhados; nenhum dado empresarial é guardado em cache. */
 document.addEventListener('DOMContentLoaded',()=>{
   const connection=document.querySelector('[data-connection-status]');
@@ -49,8 +59,27 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(button&&!form.classList.contains('os-geo-form')){button.classList.add('vx-loading');button.setAttribute('aria-busy','true');}
   }));
   document.querySelectorAll('[data-confirm]').forEach(button=>button.addEventListener('click',event=>{if(!confirm(button.dataset.confirm))event.preventDefault();}));
-  const install=document.querySelector('[data-install]');
-  if(install){install.hidden=!vertyxInstallPrompt;install.addEventListener('click',async()=>{if(vertyxInstallPrompt){await vertyxInstallPrompt.prompt();vertyxInstallPrompt=null;install.hidden=true;}});}
+  const installButtons = document.querySelectorAll('[data-install]');
+  installButtons.forEach(btn => {
+    btn.hidden = !vertyxInstallPrompt;
+    if (vertyxInstallPrompt && btn.classList.contains('vx-install-btn')) {
+      btn.classList.remove('d-none');
+      btn.classList.add('d-flex');
+    }
+    btn.addEventListener('click', async () => {
+      if (vertyxInstallPrompt) {
+        await vertyxInstallPrompt.prompt();
+        vertyxInstallPrompt = null;
+        installButtons.forEach(b => {
+          b.hidden = true;
+          if (b.classList.contains('vx-install-btn')) {
+            b.classList.add('d-none');
+            b.classList.remove('d-flex');
+          }
+        });
+      }
+    });
+  });
   const installStatus=document.querySelector('[data-install-status]');
   if(installStatus&&!window.isSecureContext)installStatus.textContent='A instalação exige HTTPS ou localhost. Este endereço não é um contexto seguro.';
 });

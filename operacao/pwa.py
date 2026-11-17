@@ -40,6 +40,26 @@ def technician_manifest(request):
     return response
 
 
+def admin_manifest(request):
+    """PWA manifest for Administrators, Managers and ERP desktop/mobile install."""
+    return JsonResponse({
+        'id': '/admin-app/',
+        'name': 'VERTYX Admin & Gestão',
+        'short_name': 'VERTYX Admin',
+        'description': 'Painel Administrativo, Gestão, Loja e Assistência Técnica VERTYX ERP',
+        'lang': 'pt-BR',
+        'start_url': reverse('platform_core:home'),
+        'scope': '/',
+        'display': 'standalone',
+        'background_color': '#0b111d',
+        'theme_color': '#0b111d',
+        'icons': [
+            {'src': '/static/pwa/icon-192.png', 'sizes': '192x192', 'type': 'image/png'},
+            {'src': '/static/pwa/icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any maskable'}
+        ]
+    }, content_type='application/manifest+json')
+
+
 def scoped_worker(request,app):
     assert app in {'pdv','vendedor','tecnico'}
     response=HttpResponse((Path(settings.BASE_DIR)/f'static/pwa/{app}-sw.js').read_text(encoding='utf-8'),content_type='application/javascript')

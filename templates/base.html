@@ -19,7 +19,7 @@
     </script>
     <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
     <link rel="stylesheet" href="{% static 'css/vertyx.css' %}?v=20261110_ui3">
-<meta name="theme-color" content="#0b111d"><link rel="manifest" href="{% if pdv_experience %}{% url 'operacao:pdv_manifest_scoped' %}{% elif seller_experience %}{% url 'operacao:seller_manifest' %}{% elif technician_experience %}{% url 'operacao:technician_manifest' %}{% else %}{% url 'operacao:manifest' %}{% endif %}">
+<meta name="theme-color" content="#0b111d"><link rel="manifest" href="{% if pdv_experience %}{% url 'operacao:pdv_manifest_scoped' %}{% elif seller_experience %}{% url 'operacao:seller_manifest' %}{% elif technician_experience %}{% url 'operacao:technician_manifest' %}{% else %}{% url 'operacao:admin_manifest' %}{% endif %}">
 {% if technician_experience %}<link rel="stylesheet" href="{% static 'css/technician.css' %}">{% endif %}
 {% if pdv_experience or seller_experience or request.resolver_match.url_name == 'seller_management' %}<link rel="stylesheet" href="{% static 'css/seller.css' %}?v=seller-console-6">{% endif %}
 </head>
@@ -45,6 +45,9 @@
 
       <!-- Mobile Toggles -->
       <div class="d-flex align-items-center gap-2 d-xl-none">
+        <button type="button" class="btn btn-outline-info btn-sm px-2 py-1" data-install hidden title="Instalar aplicativo VERTYX Admin">
+          <i class="bi bi-download"></i>
+        </button>
         <button type="button" class="btn btn-outline-secondary btn-sm vx-theme-toggle-btn px-2 py-1" onclick="window.toggleVertyxTheme()" aria-label="Alternar tema">
           <i class="bi bi-sun-fill text-warning vx-icon-sun"></i>
           <i class="bi bi-moon-stars-fill text-info vx-icon-moon"></i>
@@ -154,6 +157,15 @@
       <!-- User Profile Footer Card -->
       <div class="mt-auto pt-3 border-top border-secondary border-opacity-10 w-100 vx-sidebar-footer">
         
+        <!-- PWA Install Button (Desktop) -->
+        <button type="button" class="btn btn-sm w-100 mb-2 vx-install-btn d-none align-items-center justify-content-between px-3 py-2" data-install hidden title="Instalar VERTYX Admin no Computador" style="background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.35); border-radius: 8px; color: #38bdf8;">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-download text-info"></i>
+            <span class="small fw-semibold">Instalar App Admin</span>
+          </div>
+          <span class="badge bg-info bg-opacity-25 text-info small" style="font-size: 0.65rem;">PWA</span>
+        </button>
+
         <!-- Theme Toggle Button -->
         <button type="button" class="btn btn-sm w-100 mb-2 vx-theme-toggle-btn d-none d-xl-flex align-items-center justify-content-between px-3 py-2" onclick="window.toggleVertyxTheme()" title="Alternar entre modo escuro e claro" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border); border-radius: 8px;">
           <div class="d-flex align-items-center gap-2">
