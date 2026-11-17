@@ -71,13 +71,11 @@ def upload_storage(config, debug, *, disabled=False):
             'default_acl': None, 'file_overwrite': False,
             'querystring_auth': True, 'querystring_expire': 60,
             'custom_domain': None, 'max_memory_size': 5 * 1024 * 1024,
-            'object_parameters': {'CacheControl': 'private, no-store'},
+            'object_parameters': {},
             'client_config': Config(
                 signature_version='s3v4', s3={'addressing_style': style},
                 connect_timeout=5, read_timeout=20,
                 retries={'total_max_attempts': 2, 'mode': 'standard'},
-                request_checksum_calculation='when_required',
-                response_checksum_validation='when_required',
             ),
         },
     }
