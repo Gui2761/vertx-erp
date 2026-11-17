@@ -27,6 +27,22 @@ PLATFORM_BOOTSTRAP_TOKEN = config('PLATFORM_BOOTSTRAP_TOKEN', default='')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
     CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+
+OFFICIAL_VERTYX_DOMAINS = [
+    'vertyxerp.com.br',
+    'www.vertyxerp.com.br',
+    'app.vertyxerp.com.br',
+    'homolog.vertyxerp.com.br',
+    'tecnolmed-erp.onrender.com',
+    'vertyx-erp.onrender.com',
+]
+for domain in OFFICIAL_VERTYX_DOMAINS:
+    if domain not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(domain)
+    origin = f'https://{domain}'
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
+
 validate_public_settings(SECRET_KEY, ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS, DEBUG)
 
 INSTALLED_APPS = [

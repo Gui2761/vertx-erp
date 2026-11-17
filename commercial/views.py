@@ -75,6 +75,9 @@ def catalog(period):
 def home(request):
     if request.user.is_authenticated:
         return redirect('platform_core:home')
+    host = request.get_host().lower()
+    if host.startswith('app.'):
+        return redirect('commercial:login')
     return page(request,'commercial/home.html',catalog(request.GET.get('periodo')))
 
 
