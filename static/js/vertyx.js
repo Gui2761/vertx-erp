@@ -79,6 +79,27 @@ document.addEventListener('DOMContentLoaded',()=>{
       group.addEventListener('mouseenter', positionFlyout);
       group.addEventListener('focusin', positionFlyout);
     });
+
+    const navBar = document.querySelector('.vx-nav');
+    if (navBar) {
+      navBar.addEventListener('scroll', () => {
+        if (!document.body.classList.contains('vx-sidebar-collapsed')) return;
+        const hovered = document.querySelector('.vx-nav-group:hover');
+        if (hovered) {
+          const sub = hovered.querySelector('.vx-nav-sublist');
+          if (sub) {
+            const rect = hovered.getBoundingClientRect();
+            const subHeight = sub.offsetHeight || 220;
+            let top = rect.top;
+            if (top + subHeight > window.innerHeight - 12) {
+              top = Math.max(12, window.innerHeight - subHeight - 12);
+            }
+            sub.style.top = top + 'px';
+            sub.style.left = (rect.right + 6) + 'px';
+          }
+        }
+      }, { passive: true });
+    }
   }
   document.querySelectorAll('.navbar-nav a').forEach(a=>{
     const curPath=location.pathname;
