@@ -36,7 +36,13 @@ REPORTS = {
 
 def financial_dashboard(start, end, filters=None):
     from gestao.financial_origin import origin_type_query
+    from platform_core.context import current_organization
+    from platform_core.access import _org_req_cache
     filters = filters or {}
+    cache = _org_req_cache(current_organization()) if not filters else None
+    cache_key = ('fin_dashboard', start, end)
+    if cache is not None and cache_key in cache:
+        return cache[cache_key]
     qs = g.Lancamento.objects.exclude(status='CANCELADO')
     if filters.get('filial'):
         from gestao.financial_origin import origin_query
@@ -113,6 +119,8 @@ def financial_dashboard(start, end, filters=None):
         outgoing = sum((entry.saldo for entry in upcoming if entry.tipo == 'PAGAR'), g.ZERO)
         forecasts[horizon] = {'entradas': incoming, 'saidas': outgoing, 'saldo_projetado': result['saldo_disponivel_contas'] + incoming - outgoing}
     result['projecoes'] = forecasts
+    if cache is not None:
+        cache[cache_key] = result
     return result
 
 def date_filter(qs, data, field):

@@ -23,16 +23,16 @@ class PainelView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        from django.db.models import Q, Count
         ctx["total_clientes"] = Cliente.objects.filter(ativo=True).count()
-        ctx["total_equipamentos"] = Equipamento.objects.count()
-        ctx["equipamentos_inoperantes"] = Equipamento.objects.filter(
-            situacao_operacional=SituacaoOperacional.INOPERANTE
-        ).count()
-        ctx["equipamentos_restricao"] = Equipamento.objects.filter(
-            situacao_operacional=SituacaoOperacional.RESTRICAO
-        ).count()
-
-        from django.db.models import Q
+        eq_agg = Equipamento.objects.aggregate(
+            total=Count('pk'),
+            inoperantes=Count('pk', filter=Q(situacao_operacional=SituacaoOperacional.INOPERANTE)),
+            restricao=Count('pk', filter=Q(situacao_operacional=SituacaoOperacional.RESTRICAO)),
+        )
+        ctx["total_equipamentos"] = eq_agg["total"]
+        ctx["equipamentos_inoperantes"] = eq_agg["inoperantes"]
+        ctx["equipamentos_restricao"] = eq_agg["restricao"]
         candidatos = list(
             Equipamento.objects.select_related("cliente")
             .filter(
@@ -53,22 +53,23 @@ class PainelView(LoginRequiredMixin, TemplateView):
         from gestao.permissions import allowed
         today = timezone.localdate()
         orders = visiveis(self.request.user)
-        ctx['os_abertas'] = orders.filter(status='ABERTA').count()
-        ctx['os_andamento'] = orders.filter(status='EXECUCAO').count()
-        ctx['os_concluidas_mes'] = orders.filter(status='FINALIZADA', conclusao__date__gte=today.replace(day=1), conclusao__date__lte=today).count()
-        agenda = AgendaPreventiva.objects.select_related('equipamento', 'contrato').filter(data_prevista__gte=today, data_prevista__lte=today + timezone.timedelta(days=30), cancelada=False).exclude(ordem__status__in=['FINALIZADA','APROVADA','FATURADA','CANCELADA']).exclude(contrato__status__in=['SUSPENSO', 'ENCERRADO'])
+        agenda_qs = AgendaPreventiva.objects.select_related('equipamento', 'contrato').filter(data_prevista__gte=today, data_prevista__lte=today + timezone.timedelta(days=30), cancelada=False).exclude(ordem__status__in=['FINALIZADA','APROVADA','FATURADA','CANCELADA']).exclude(contrato__status__in=['SUSPENSO', 'ENCERRADO'])
         if not allowed(self.request.user, 'contratos'):
-            agenda = agenda.filter(tecnico__usuario=self.request.user)
-        ctx['agenda_proxima'] = agenda[:8]
-        ctx['preventivas_proximas_total'] = agenda.count() + sum(today <= e.proxima_preventiva <= today + timezone.timedelta(days=30) for e in equipamentos_com_preventiva)
+            agenda_qs = agenda_qs.filter(tecnico__usuario=self.request.user)
+        ctx['agenda_proxima'] = list(agenda_qs[:8])
+        agenda_total = len(ctx['agenda_proxima']) if len(ctx['agenda_proxima']) < 8 else agenda_qs.count()
+        ctx['preventivas_proximas_total'] = agenda_total + sum(today <= e.proxima_preventiva <= today + timezone.timedelta(days=30) for e in equipamentos_com_preventiva)
         if allowed(self.request.user, 'contratos'):
             ctx['contratos_proximos'] = Contrato.objects.exclude(status__in=['SUSPENSO', 'ENCERRADO']).filter(data_final__gte=today, data_final__lte=today + timezone.timedelta(days=30)).count()
         if allowed(self.request.user, 'estoque'):
             ctx['estoque_minimo_total'] = Peca.objects.filter(ativo=True, quantidade_atual__lte=F('estoque_minimo')).count()
         if allowed(self.request.user, 'financeiro'):
-            pending = Lancamento.objects.filter(status__in=['PENDENTE', 'VENCIDO'])
-            ctx['financeiro_receber'] = pending.filter(tipo='RECEBER').aggregate(total=Sum('valor'))['total'] or 0
-            ctx['financeiro_vencidas'] = pending.filter(vencimento__lt=today).count()
+            fin_agg = Lancamento.objects.filter(status__in=['PENDENTE', 'VENCIDO']).aggregate(
+                receber=Sum('valor', filter=Q(tipo='RECEBER')),
+                vencidas=Count('pk', filter=Q(vencimento__lt=today)),
+            )
+            ctx['financeiro_receber'] = fin_agg['receber'] or 0
+            ctx['financeiro_vencidas'] = fin_agg['vencidas']
 
         from operacao.dashboard import indicators
         ctx.update(indicators(self.request.user))

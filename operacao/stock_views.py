@@ -36,11 +36,18 @@ def dashboard(request):
     # Base QuerySet de produtos ativos
     parts_qs = g.Peca.objects.filter(ativo=True).select_related('categoria', 'fornecedor').order_by('sku')
 
-    # KPIs organizacionais globais calculados de forma instantânea via agregação SQL
-    total_parts = parts_qs.count()
-    com_estoque = parts_qs.filter(quantidade_atual__gt=0).count()
-    sem_estoque = parts_qs.filter(quantidade_atual__lte=0).count()
-    estoque_baixo = parts_qs.filter(quantidade_atual__gt=0, quantidade_atual__lte=F('estoque_minimo')).count()
+    # KPIs organizacionais globais calculados de forma instantânea em 1 única agregação SQL
+    from django.db.models import Count
+    kpis = parts_qs.aggregate(
+        total=Count('pk'),
+        com_estoque=Count('pk', filter=Q(quantidade_atual__gt=0)),
+        sem_estoque=Count('pk', filter=Q(quantidade_atual__lte=0)),
+        estoque_baixo=Count('pk', filter=Q(quantidade_atual__gt=0, quantidade_atual__lte=F('estoque_minimo'))),
+    )
+    total_parts = kpis['total']
+    com_estoque = kpis['com_estoque']
+    sem_estoque = kpis['sem_estoque']
+    estoque_baixo = kpis['estoque_baixo']
 
     summary = {
         'produtos': total_parts,

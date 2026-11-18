@@ -336,7 +336,13 @@ def release(user, pk, reason):
     return row
 
 def available_map(today=None):
+    from platform_core.context import current_organization
+    from platform_core.access import _org_req_cache
     today = today or timezone.localdate()
+    cache = _org_req_cache(current_organization())
+    key = ('available_map', today)
+    if cache is not None and key in cache:
+        return cache[key]
     valid_sums = dict(
         m.LoteEstoque.objects.filter(peca__ativo=True, quantidade__gt=0)
         .filter(Q(validade__isnull=True) | Q(validade__gte=today))
@@ -354,6 +360,8 @@ def available_map(today=None):
     res = {}
     for pid, vqty in valid_sums.items():
         res[pid] = max(ZERO, (vqty or ZERO) - (reserved_sums.get(pid) or ZERO))
+    if cache is not None:
+        cache[key] = res
     return res
 
 
@@ -364,16 +372,15 @@ def metrics_batch(parts, config=None, today=None):
     config = config or m.Configuracao.objects.first() or m.Configuracao()
     today = today or timezone.localdate()
     part_ids = [p.pk for p in parts]
-    has_activity = set()
-    for qs in (
-        m.LoteEstoque.objects.filter(peca_id__in=part_ids),
-        m.ReservaEstoque.objects.filter(peca_id__in=part_ids, status='ATIVA', quantidade__gt=0),
-        m.ItemCompra.objects.filter(peca_id__in=part_ids, compra__status__in=['APROVADA', 'PEDIDO', 'RASCUNHO']),
-        g.Movimentacao.objects.filter(peca_id__in=part_ids, tipo__in=['SAIDA', 'OS', 'DEVOLUCAO']),
-        m.NecessidadePecaOS.objects.filter(peca_id__in=part_ids, resolvida_em__isnull=True),
-        m.ItemVenda.objects.filter(peca_id__in=part_ids, venda__status='AG_PAGAMENTO'),
-    ):
-        has_activity.update(qs.values_list('peca_id', flat=True).distinct())
+    has_activity = set(
+        m.LoteEstoque.objects.filter(peca_id__in=part_ids).order_by().values_list('peca_id', flat=True).union(
+            m.ReservaEstoque.objects.filter(peca_id__in=part_ids, status='ATIVA', quantidade__gt=0).order_by().values_list('peca_id', flat=True),
+            m.ItemCompra.objects.filter(peca_id__in=part_ids, compra__status__in=['APROVADA', 'PEDIDO', 'RASCUNHO']).order_by().values_list('peca_id', flat=True),
+            g.Movimentacao.objects.filter(peca_id__in=part_ids, tipo__in=['SAIDA', 'OS', 'DEVOLUCAO']).order_by().values_list('peca_id', flat=True),
+            m.NecessidadePecaOS.objects.filter(peca_id__in=part_ids, resolvida_em__isnull=True).order_by().values_list('peca_id', flat=True),
+            m.ItemVenda.objects.filter(peca_id__in=part_ids, venda__status='AG_PAGAMENTO').order_by().values_list('peca_id', flat=True),
+        )
+    )
 
     result = {}
     for part in parts:

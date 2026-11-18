@@ -128,14 +128,26 @@ def context(request, form, orders):
     ctx={'executive':True,'analytics_level':level,'advanced_analytics':analytics_at_least('AVANCADO', erp_code='assistencia'),
          'complete_analytics':analytics_at_least('COMPLETO', erp_code='assistencia'),'period_form':form,'period_start':start,
          'period_end':end,'greeting':'Bom dia' if now.hour<12 else 'Boa tarde' if now.hour<18 else 'Boa noite'}
+    from django.db.models import Count, Q
     ctx['agenda_hoje']=orders.filter(agendada_para__date=today).select_related('cliente','unidade','equipamento').order_by('agendada_para')[:12]
-    completed=orders.filter(status__in=['FINALIZADA','APROVADA','FATURADA'],conclusao__date__range=(start,end))
-    ctx['assistance_completed']={'preventivas':completed.filter(tipo_atendimento='PREVENTIVA').count(),'corretivas':completed.filter(tipo_atendimento='CORRETIVA').count(),'total':completed.count()}
-    ctx['executive_operations']=[('OS abertas',orders.filter(status__in=['ABERTA','AGENDADA']).count(),'/ordens/?grupo=abertas'),('OS em andamento',orders.filter(status__in=['EXECUCAO','AG_PECA','AG_CLIENTE']).count(),'/ordens/?grupo=andamento'),('OS atrasadas',orders.filter(prazo__lt=timezone.now()).exclude(status__in=m.ENCERRADAS).count(),'/ordens/?atrasadas=1'),('Preventivas pendentes',m.PreventivaProgramada.objects.filter(cancelada=False,plano__ativo=True).exclude(ordem__status__in=m.ENCERRADAS).count(),'/preventivas/'),('Orçamentos aguardando aprovação',g.Orcamento.objects.filter(status='ENVIADO',validade__gte=today).count(),'/orcamentos/?status=ENVIADO')]
-    pecas_ativas = g.Peca.objects.filter(ativo=True)
-    baixo = pecas_ativas.filter(quantidade_atual__gt=0, quantidade_atual__lte=F('estoque_minimo')).count()
-    zerados = pecas_ativas.filter(quantidade_atual__lte=0).count()
-    repor = pecas_ativas.filter(quantidade_atual__lte=F('estoque_minimo')).count()
+    os_agg = orders.aggregate(
+        comp_prev=Count('pk', filter=Q(status__in=['FINALIZADA','APROVADA','FATURADA'], conclusao__date__range=(start,end), tipo_atendimento='PREVENTIVA')),
+        comp_corr=Count('pk', filter=Q(status__in=['FINALIZADA','APROVADA','FATURADA'], conclusao__date__range=(start,end), tipo_atendimento='CORRETIVA')),
+        comp_total=Count('pk', filter=Q(status__in=['FINALIZADA','APROVADA','FATURADA'], conclusao__date__range=(start,end))),
+        abertas=Count('pk', filter=Q(status__in=['ABERTA','AGENDADA'])),
+        andamento=Count('pk', filter=Q(status__in=['EXECUCAO','AG_PECA','AG_CLIENTE'])),
+        atrasadas=Count('pk', filter=Q(prazo__lt=timezone.now()) & ~Q(status__in=m.ENCERRADAS)),
+    )
+    ctx['assistance_completed']={'preventivas':os_agg['comp_prev'],'corretivas':os_agg['comp_corr'],'total':os_agg['comp_total']}
+    ctx['executive_operations']=[('OS abertas',os_agg['abertas'],'/ordens/?grupo=abertas'),('OS em andamento',os_agg['andamento'],'/ordens/?grupo=andamento'),('OS atrasadas',os_agg['atrasadas'],'/ordens/?atrasadas=1'),('Preventivas pendentes',m.PreventivaProgramada.objects.filter(cancelada=False,plano__ativo=True).exclude(ordem__status__in=m.ENCERRADAS).count(),'/preventivas/'),('Orçamentos aguardando aprovação',g.Orcamento.objects.filter(status='ENVIADO',validade__gte=today).count(),'/orcamentos/?status=ENVIADO')]
+    pecas_agg = g.Peca.objects.filter(ativo=True).aggregate(
+        baixo=Count('pk', filter=Q(quantidade_atual__gt=0, quantidade_atual__lte=F('estoque_minimo'))),
+        zerados=Count('pk', filter=Q(quantidade_atual__lte=0)),
+        repor=Count('pk', filter=Q(quantidade_atual__lte=F('estoque_minimo'))),
+    )
+    baixo = pecas_agg['baixo']
+    zerados = pecas_agg['zerados']
+    repor = pecas_agg['repor']
     vencendo = m.LoteEstoque.objects.filter(quantidade__gt=0, validade__range=(today, today+timezone.timedelta(days=90))).count()
     vencidos = m.LoteEstoque.objects.filter(quantidade__gt=0, validade__lt=today).values('peca_id').distinct().count()
     ctx['stock_summary'] = {
@@ -152,18 +164,22 @@ def context(request, form, orders):
         items=list(latest.itens.all())
         ctx['purchase_count']=sum(Decimal(row.dados['sugerido'])>0 for row in items)
         ctx['purchase_value']=sum((Decimal(row.dados['valor_estimado']) for row in items),g.ZERO)
-    contracts=g.Contrato.objects.exclude(status__in=['SUSPENSO','ENCERRADO']).filter(data_inicial__lte=today,data_final__gte=today)
-    ctx['contract_count']=contracts.count()
+    contracts_list=list(g.Contrato.objects.exclude(status__in=['SUSPENSO','ENCERRADO']).filter(data_inicial__lte=today,data_final__gte=today))
+    ctx['contract_count']=len(contracts_list)
     frequencies={'MENSAL':1,'TRIMESTRAL':3,'SEMESTRAL':6,'ANUAL':12}
-    ctx['contract_monthly']=sum((row.valor/frequencies[row.periodicidade_cobranca] for row in contracts if row.periodicidade_cobranca in frequencies),g.ZERO)
-    ctx['contract_expiring']=contracts.filter(data_final__lte=today+timezone.timedelta(days=30)).count()
+    ctx['contract_monthly']=sum((row.valor/frequencies[row.periodicidade_cobranca] for row in contracts_list if row.periodicidade_cobranca in frequencies),g.ZERO)
+    ctx['contract_expiring']=sum(1 for row in contracts_list if row.data_final <= today+timezone.timedelta(days=30))
     ctx['contract_adjustments_unset']=True  # Regra textual não é data de reajuste.
-    quotes=g.Orcamento.objects.filter(data__range=(start,end))
-    open_quotes=quotes.filter(status__in=['RASCUNHO','ENVIADO'])
-    approved=quotes.filter(status__in=['APROVADO','CONVERTIDO'])
+    quotes_agg=g.Orcamento.objects.filter(data__range=(start,end)).aggregate(
+        total=Count('pk'),
+        abertos=Count('pk', filter=Q(status__in=['RASCUNHO','ENVIADO'])),
+        aprovados=Count('pk', filter=Q(status__in=['APROVADO','CONVERTIDO'])),
+    )
     confirmed=list(m.Venda.objects.filter(status__in=['CONFIRMADA','FINALIZADA','PARCIALMENTE_DEVOLVIDA','DEVOLVIDA'],criado_em__date__range=(start,end)).prefetch_related('itens','devolucoes'))
     sales_value=sum(((Decimal(sale.snapshot['total']) if sale.snapshot else sale.total)-sum((row.valor for row in sale.devolucoes.all()),g.ZERO) for sale in confirmed),g.ZERO)
-    ctx['commercial']={'abertos':open_quotes.count(),'aprovados':approved.count(),'vendas':len(confirmed),'valor':sales_value,'ticket':sales_value/len(confirmed) if confirmed else g.ZERO,'conversao':round(100*approved.count()/quotes.count(),1) if quotes.exists() else 0,'base':quotes.count()}
+    q_total = quotes_agg['total']
+    q_aprov = quotes_agg['aprovados']
+    ctx['commercial']={'abertos':quotes_agg['abertos'],'aprovados':q_aprov,'vendas':len(confirmed),'valor':sales_value,'ticket':sales_value/len(confirmed) if confirmed else g.ZERO,'conversao':round(100*q_aprov/q_total,1) if q_total else 0,'base':q_total}
     interval=form.cleaned_data.get('grafico') or '30'
     chart_start=today.replace(day=1)-relativedelta(months=int(interval[:-1])-1) if interval.endswith('M') else today-timezone.timedelta(days=int(interval)-1)
     if module_enabled('pdv'):
@@ -197,8 +213,11 @@ def context(request, form, orders):
         ctx['financial_cards']=[{'title':'A receber hoje','value':due('RECEBER'),'url':link_ledger('RECEBER',vencimento_inicio=today,vencimento_fim=today,status='PENDENTE')},{'title':'A pagar hoje','value':due('PAGAR'),'url':link_ledger('PAGAR',vencimento_inicio=today,vencimento_fim=today,status='PENDENTE')},{'title':'Recebimentos do mês','value':month['recebido'],'url':link_ledger('RECEBER',pagamento_inicio=today.replace(day=1),pagamento_fim=today)},{'title':'Pagamentos do mês','value':month['pago'],'url':link_ledger('PAGAR',pagamento_inicio=today.replace(day=1),pagamento_fim=today)},{'title':'Saldo realizado no período','value':period['resultado'],'url':'/financeiro/?'+urlencode({'inicio':start,'fim':end})},{'title':'Inadimplência','value':period['vencido_receber'],'url':link_ledger('RECEBER',status='VENCIDO')}]
         banks=[]
         for account in m.ContaBancaria.objects.filter(ativo=True):
-            moves=account.movimentos.filter(data__range=(start,end))
-            banks.append({'account':account,'balance':account.saldo,'incoming':moves.filter(tipo='ENTRADA').aggregate(value=Sum('valor'))['value'] or g.ZERO,'outgoing':moves.filter(tipo='SAIDA').aggregate(value=Sum('valor'))['value'] or g.ZERO})
+            mv_agg=account.movimentos.filter(data__range=(start,end)).aggregate(
+                inc=Sum('valor', filter=Q(tipo='ENTRADA')),
+                out=Sum('valor', filter=Q(tipo='SAIDA')),
+            )
+            banks.append({'account':account,'balance':account.saldo,'incoming':mv_agg['inc'] or g.ZERO,'outgoing':mv_agg['out'] or g.ZERO})
         ctx['bank_rows']=banks
         ctx['bank_total']=sum((row['balance'] for row in banks),g.ZERO)
         interval=form.cleaned_data.get('grafico') or '30'

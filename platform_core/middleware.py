@@ -138,18 +138,31 @@ class OrganizationMiddleware:
         request.organization = None
         request.membership = None
         if request.user.is_authenticated:
-            memberships = OrganizationMembership.objects.filter(user=request.user, status='ATIVO', organization__status='ATIVA').select_related('organization')
+            candidates = list(
+                OrganizationMembership.objects.filter(
+                    user=request.user, status='ATIVO', organization__status='ATIVA'
+                ).select_related('organization')[:2]
+            )
             selected = request.session.get('organization_id')
-            membership = memberships.filter(organization_id=selected).first() if isinstance(selected, int) else None
+            membership = next((m for m in candidates if m.organization_id == selected), None) if isinstance(selected, int) else None
+            if membership is None and isinstance(selected, int):
+                membership = OrganizationMembership.objects.filter(
+                    user=request.user, organization_id=selected, status='ATIVO', organization__status='ATIVA'
+                ).select_related('organization').first()
             if membership is None:
-                request.session.pop('organization_id', None)
-                candidates = list(memberships[:2])
+                if 'organization_id' in request.session:
+                    request.session.pop('organization_id', None)
                 if len(candidates) == 1:
                     membership = candidates[0]
-                    request.session['organization_id'] = membership.organization_id
+                    if request.session.get('organization_id') != membership.organization_id:
+                        request.session['organization_id'] = membership.organization_id
             if membership:
                 request.organization = membership.organization
                 request.membership = membership
+                try:
+                    request.organization._req_cache = {('membership', request.user.pk): membership}
+                except (AttributeError, TypeError):
+                    pass
         # Todo endpoint fora de plataforma/login/admin/static é Assistência e exige ERP.
         public = request.path.startswith(('/vertyx/', '/contas/login/', '/contas/logout/', '/admin/', '/static/', '/saas/', '/api/bancos/webhook/', '/primeiro-acesso/', '/gestao-publica/convites/aceitar/', '/gestao-publica/publico/', '/gestao-publica/saude/', '/gestao-publica/cidadao/')) or request.path in PUBLIC_COMMERCIAL_PATHS | {'/health/', '/manifest.webmanifest', '/manifest-adm.webmanifest', '/manifest-pdv.webmanifest', '/sw.js','/pdv/manifest.webmanifest','/vendedor/manifest.webmanifest','/tecnico/manifest.webmanifest','/admin-pwa/manifest.webmanifest','/pdv/sw.js','/vendedor/sw.js','/tecnico/sw.js','/pdv/entrar/','/vendedor/entrar/','/gestao-publica/','/gestao-publica/login/','/gestao-publica/manifest.webmanifest','/gestao-publica/sw.js'}
         if request.path.startswith('/admin/') and request.user.is_authenticated and not request.user.is_superuser:

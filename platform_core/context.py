@@ -21,7 +21,9 @@ def clear_org_cache(org=None):
 
 @contextmanager
 def tenant_context(organization):
-    clear_org_cache(organization)
+    prev = _organization.get()
+    if prev is not organization:
+        clear_org_cache(organization)
     token = _organization.set(organization)
     try:
         yield organization

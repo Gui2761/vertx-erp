@@ -106,11 +106,11 @@ def _menu(request):
     _sub = None
     if org:
         from platform_core.modules import (
-            MODULE_IMPLIED_BY, effective_legacy_plan_codes, platform_module_overrides,
+            MODULE_IMPLIED_BY, effective_legacy_plan_codes, platform_module_overrides, _cached_subscription,
         )
-        from platform_core.saas_models import AjusteModuloSaaS, AssinaturaSaaS
+        from platform_core.saas_models import AjusteModuloSaaS
         _overrides = platform_module_overrides(org)
-        _sub = AssinaturaSaaS.objects.filter(organization=org).select_related('plano').first()
+        _sub = _cached_subscription(org)
         if _sub and _sub.plano:
             _plan_modules = effective_legacy_plan_codes(org, _sub.plano)
 

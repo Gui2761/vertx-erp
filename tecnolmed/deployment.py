@@ -31,7 +31,7 @@ def postgres_database(config, debug):
             'HOST': config('POSTGRES_HOST', default='db'),
             'PORT': config('POSTGRES_PORT', default='5432'),
         }
-    database['CONN_MAX_AGE'] = config('CONN_MAX_AGE', default=60, cast=int)
+    database['CONN_MAX_AGE'] = config('CONN_MAX_AGE', default=600, cast=int)
     database['CONN_HEALTH_CHECKS'] = True
     database.setdefault('OPTIONS', {})['connect_timeout'] = 5
     if config('DATABASE_SSL_REQUIRE', default=not debug, cast=bool):
