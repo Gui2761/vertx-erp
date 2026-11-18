@@ -32,9 +32,17 @@ class PainelView(LoginRequiredMixin, TemplateView):
             situacao_operacional=SituacaoOperacional.RESTRICAO
         ).count()
 
-        equipamentos_com_preventiva = [
-            e for e in Equipamento.objects.all() if e.proxima_preventiva
-        ]
+        from django.db.models import Q
+        candidatos = list(
+            Equipamento.objects.select_related("cliente")
+            .filter(
+                Q(periodicidade_preventiva_meses__isnull=False, data_ultima_preventiva__isnull=False) |
+                Q(preventivaprogramada__isnull=False) |
+                Q(agendapreventiva__isnull=False)
+            )
+            .distinct()[:50]
+        )
+        equipamentos_com_preventiva = [e for e in candidatos if e.proxima_preventiva]
         equipamentos_com_preventiva.sort(key=lambda e: e.proxima_preventiva)
         ctx["proximas_preventivas"] = equipamentos_com_preventiva[:8]
 

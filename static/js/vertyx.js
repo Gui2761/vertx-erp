@@ -141,9 +141,41 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   const installStatus=document.querySelector('[data-install-status]');
   if(installStatus&&!window.isSecureContext)installStatus.textContent='A instalação exige HTTPS ou localhost. Este endereço não é um contexto seguro.';
+
+  // Pré-carregamento instantâneo inteligente (Instant Navigation ao passar o cursor ou tocar)
+  const prefetchedUrls = new Set();
+  const prefetchTarget = (url) => {
+    if (!url || prefetchedUrls.has(url)) return;
+    if (url.includes('/logout') || url.includes('/excluir') || url.includes('/deletar') || (url.includes('?') && url.includes('export='))) return;
+    prefetchedUrls.add(url);
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = url;
+    link.as = 'document';
+    document.head.appendChild(link);
+  };
+
+  document.addEventListener('mouseover', (e) => {
+    const a = e.target.closest('a[href^="/"]');
+    if (a && a.href && a.origin === location.origin) {
+      prefetchTarget(a.pathname + a.search);
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchstart', (e) => {
+    const a = e.target.closest('a[href^="/"]');
+    if (a && a.href && a.origin === location.origin) {
+      prefetchTarget(a.pathname + a.search);
+    }
+  }, { passive: true });
 });
-// A restored browser page must reauthorize against the current login/tenant.
-addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
+// bfcache: permite navegação instantânea pelo botão Voltar sem recarregar a tela inteira
+addEventListener('pageshow', event => {
+  if (event.persisted && sessionStorage.getItem('vx_force_reload')) {
+    sessionStorage.removeItem('vx_force_reload');
+    location.reload();
+  }
+});
 
 // Logout/tenant switching lock the offline identity; pending intents are retained.
 document.addEventListener('submit',async event=>{

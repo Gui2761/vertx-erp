@@ -5,10 +5,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}VERTYX{% endblock %} · VERTYX</title>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="icon" type="image/png" href="{% static 'img/vertyx-icon.png' %}">
     <link href="{% static 'vendor/bootstrap.min.css' %}" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script type="speculationrules">
+    {
+      "prefetch": [
+        {
+          "source": "list",
+          "urls": [
+            "/assistencia/",
+            "/planejamento/",
+            "/ordens/",
+            "/chamados/",
+            "/preventivas/",
+            "/contratos/",
+            "/orcamentos/",
+            "/vendas/",
+            "/estoque/painel/",
+            "/estoque/",
+            "/compras/",
+            "/financeiro/",
+            "/clientes/",
+            "/equipamentos/",
+            "/relatorios/",
+            "/configuracoes/"
+          ]
+        }
+      ]
+    }
+    </script>
     <script>
       (function() {
         try {
@@ -19,7 +50,7 @@
       })();
     </script>
     <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
-    <link rel="stylesheet" href="{% static 'css/vertyx.css' %}?v=20261117_ui9">
+    <link rel="stylesheet" href="{% static 'css/vertyx.css' %}?v=20261118_ui10">
 <meta name="theme-color" content="#0b111d"><link rel="manifest" href="{% if pdv_experience %}{% url 'operacao:pdv_manifest_scoped' %}{% elif seller_experience %}{% url 'operacao:seller_manifest' %}{% elif technician_experience %}{% url 'operacao:technician_manifest' %}{% else %}{% url 'operacao:admin_manifest' %}{% endif %}">
 {% if technician_experience %}<link rel="stylesheet" href="{% static 'css/technician.css' %}">{% endif %}
 {% if pdv_experience or seller_experience or request.resolver_match.url_name == 'seller_management' %}<link rel="stylesheet" href="{% static 'css/seller.css' %}?v=seller-console-6">{% endif %}
