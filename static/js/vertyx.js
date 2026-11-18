@@ -142,24 +142,29 @@ document.addEventListener('DOMContentLoaded',()=>{
   const installStatus=document.querySelector('[data-install-status]');
   if(installStatus&&!window.isSecureContext)installStatus.textContent='A instalação exige HTTPS ou localhost. Este endereço não é um contexto seguro.';
 
-  // Pré-carregamento instantâneo inteligente (Instant Navigation ao passar o cursor ou tocar)
+  // Pré-carregamento instantâneo inteligente (com debounce de 150ms para evitar rajadas e 429)
   const prefetchedUrls = new Set();
+  let hoverTimeout = null;
   const prefetchTarget = (url) => {
-    if (!url || prefetchedUrls.has(url)) return;
+    if (!url || prefetchedUrls.has(url) || prefetchedUrls.size > 25) return;
     if (url.includes('/logout') || url.includes('/excluir') || url.includes('/deletar') || (url.includes('?') && url.includes('export='))) return;
     prefetchedUrls.add(url);
     const link = document.createElement('link');
     link.rel = 'prefetch';
     link.href = url;
-    link.as = 'document';
     document.head.appendChild(link);
   };
 
   document.addEventListener('mouseover', (e) => {
     const a = e.target.closest('a[href^="/"]');
+    if (hoverTimeout) clearTimeout(hoverTimeout);
     if (a && a.href && a.origin === location.origin) {
-      prefetchTarget(a.pathname + a.search);
+      hoverTimeout = setTimeout(() => prefetchTarget(a.pathname + a.search), 150);
     }
+  }, { passive: true });
+
+  document.addEventListener('mouseout', () => {
+    if (hoverTimeout) clearTimeout(hoverTimeout);
   }, { passive: true });
 
   document.addEventListener('touchstart', (e) => {

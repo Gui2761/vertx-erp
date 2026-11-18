@@ -2,7 +2,7 @@
 from decimal import Decimal
 from urllib.parse import urlencode
 from django import forms
-from django.db.models import Sum
+from django.db.models import Sum, F
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 from gestao import models as g
@@ -132,8 +132,19 @@ def context(request, form, orders):
     completed=orders.filter(status__in=['FINALIZADA','APROVADA','FATURADA'],conclusao__date__range=(start,end))
     ctx['assistance_completed']={'preventivas':completed.filter(tipo_atendimento='PREVENTIVA').count(),'corretivas':completed.filter(tipo_atendimento='CORRETIVA').count(),'total':completed.count()}
     ctx['executive_operations']=[('OS abertas',orders.filter(status__in=['ABERTA','AGENDADA']).count(),'/ordens/?grupo=abertas'),('OS em andamento',orders.filter(status__in=['EXECUCAO','AG_PECA','AG_CLIENTE']).count(),'/ordens/?grupo=andamento'),('OS atrasadas',orders.filter(prazo__lt=timezone.now()).exclude(status__in=m.ENCERRADAS).count(),'/ordens/?atrasadas=1'),('Preventivas pendentes',m.PreventivaProgramada.objects.filter(cancelada=False,plano__ativo=True).exclude(ordem__status__in=m.ENCERRADAS).count(),'/preventivas/'),('Orçamentos aguardando aprovação',g.Orcamento.objects.filter(status='ENVIADO',validade__gte=today).count(),'/orcamentos/?status=ENVIADO')]
-    stock=[metrics(part) for part in g.Peca.objects.filter(ativo=True).select_related('fornecedor','categoria')]
-    ctx['stock_summary']={'baixo':sum(row['disponivel']>0 and row['disponivel']<=row['minimo'] for row in stock),'zerados':sum(row['disponivel']==0 for row in stock),'vencendo':m.LoteEstoque.objects.filter(quantidade__gt=0,validade__range=(today,today+timezone.timedelta(days=90))).count(),'vencidos':m.LoteEstoque.objects.filter(quantidade__gt=0,validade__lt=today).values('peca_id').distinct().count(),'repor':sum(row['disponivel']<=row['minimo'] for row in stock)}
+    pecas_ativas = g.Peca.objects.filter(ativo=True)
+    baixo = pecas_ativas.filter(quantidade_atual__gt=0, quantidade_atual__lte=F('estoque_minimo')).count()
+    zerados = pecas_ativas.filter(quantidade_atual__lte=0).count()
+    repor = pecas_ativas.filter(quantidade_atual__lte=F('estoque_minimo')).count()
+    vencendo = m.LoteEstoque.objects.filter(quantidade__gt=0, validade__range=(today, today+timezone.timedelta(days=90))).count()
+    vencidos = m.LoteEstoque.objects.filter(quantidade__gt=0, validade__lt=today).values('peca_id').distinct().count()
+    ctx['stock_summary'] = {
+        'baixo': baixo,
+        'zerados': zerados,
+        'vencendo': vencendo,
+        'vencidos': vencidos,
+        'repor': repor,
+    }
     ctx['executive_operations'].append(('Estoque baixo',ctx['stock_summary']['repor'],'/estoque/ocorrencias/?tipo=REPOSICAO'))
     latest=m.RelatorioEstoque.objects.filter(automatico=True).first() or m.RelatorioEstoque.objects.first()
     ctx['weekly_report']=latest
