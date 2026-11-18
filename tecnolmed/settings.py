@@ -11,22 +11,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MUNICIPAL_HEALTH_ENCRYPTION_KEY = config('MUNICIPAL_HEALTH_ENCRYPTION_KEY', default='')
 
 RENDER_EXTERNAL_HOSTNAME = config("RENDER_EXTERNAL_HOSTNAME", default=None)
-DEBUG = config("DEBUG", default=not bool(RENDER_EXTERNAL_HOSTNAME), cast=bool)
+FLY_APP_NAME = config("FLY_APP_NAME", default=None)
+DEBUG = config("DEBUG", default=not bool(RENDER_EXTERNAL_HOSTNAME or FLY_APP_NAME), cast=bool)
 SECRET_KEY = config("SECRET_KEY", default="dev-secret-key-nao-use-em-producao" if DEBUG else '')
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1" if DEBUG else '', cast=Csv())
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
 # Optional one-time bootstrap gate for the first VERTYX platform administrator.
 # Keep this value in the process environment/secret store, never in source control.
 PLATFORM_BOOTSTRAP_TOKEN = config('PLATFORM_BOOTSTRAP_TOKEN', default='')
-# Optional one-time bootstrap gate for the first VERTYX platform administrator.
-# Keep this value in the process environment/secret store, never in source control.
-PLATFORM_BOOTSTRAP_TOKEN = config('PLATFORM_BOOTSTRAP_TOKEN', default='')
 
-# O Render injeta automaticamente o nome público do serviço nesta variável;
+# O Render/Fly injeta automaticamente o nome público do serviço;
 # adicionamos aos hosts/origens confiáveis sem precisar editar nada manualmente.
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
     CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+
+if FLY_APP_NAME:
+    fly_hostname = f'{FLY_APP_NAME}.fly.dev'
+    if fly_hostname not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(fly_hostname)
+    fly_origin = f'https://{fly_hostname}'
+    if fly_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(fly_origin)
 
 OFFICIAL_VERTYX_DOMAINS = [
     'vertyxerp.com.br',
@@ -35,6 +41,7 @@ OFFICIAL_VERTYX_DOMAINS = [
     'homolog.vertyxerp.com.br',
     'tecnolmed-erp.onrender.com',
     'vertyx-erp.onrender.com',
+    'vertyx-erp.fly.dev',
 ]
 for domain in OFFICIAL_VERTYX_DOMAINS:
     if domain not in ALLOWED_HOSTS:

@@ -1,0 +1,43 @@
+# fly.toml — Configuração de produção do VERTYX ERP em São Paulo (gru)
+app = "vertyx-erp"
+primary_region = "gru"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8000"
+  DEBUG = "False"
+  DJANGO_SETTINGS_MODULE = "tecnolmed.settings"
+  UPLOAD_STORAGE = "s3"
+  S3_BUCKET_NAME = "vertyx-homologacao"
+  S3_REGION_NAME = "auto"
+  S3_ADDRESSING_STYLE = "path"
+  S3_ENDPOINT_URL = "https://4e5ee6fe2da401439ba26ea69e799b1f.r2.cloudflarestorage.com"
+  TIME_ZONE = "America/Maceio"
+  ALLOWED_HOSTS = "vertyxerp.com.br,www.vertyxerp.com.br,app.vertyxerp.com.br,homolog.vertyxerp.com.br,vertyx-erp.fly.dev"
+  CSRF_TRUSTED_ORIGINS = "https://vertyxerp.com.br,https://www.vertyxerp.com.br,https://app.vertyxerp.com.br,https://homolog.vertyxerp.com.br,https://vertyx-erp.fly.dev"
+  WEB_CONCURRENCY = "2"
+  GUNICORN_THREADS = "8"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+    method = "GET"
+    path = "/health/"
+    [http_service.checks.headers]
+      Host = "vertyxerp.com.br"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

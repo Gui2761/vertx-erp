@@ -14,7 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p /app/staticfiles /app/media
+RUN mkdir -p /app/staticfiles /app/media \
+    && sed -i 's/\r$//' /app/scripts/*.sh \
+    && chmod +x /app/scripts/*.sh
 # Build sem conexão com banco/bucket; static não contém uploads.
 RUN python manage.py collectstatic --noinput
 
