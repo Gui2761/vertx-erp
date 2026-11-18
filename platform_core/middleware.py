@@ -138,31 +138,40 @@ class OrganizationMiddleware:
         request.organization = None
         request.membership = None
         if request.user.is_authenticated:
-            candidates = list(
-                OrganizationMembership.objects.filter(
-                    user=request.user, status='ATIVO', organization__status='ATIVA'
-                ).select_related('organization')[:2]
-            )
+            from .context import get_org_cache_dict, is_prod_cache_enabled, _PROD_TTL_CACHE
+            import time
             selected = request.session.get('organization_id')
-            membership = next((m for m in candidates if m.organization_id == selected), None) if isinstance(selected, int) else None
-            if membership is None and isinstance(selected, int):
-                membership = OrganizationMembership.objects.filter(
-                    user=request.user, organization_id=selected, status='ATIVO', organization__status='ATIVA'
-                ).select_related('organization').first()
+            membership = None
+            if is_prod_cache_enabled() and isinstance(selected, int):
+                entry = _PROD_TTL_CACHE.get(selected)
+                if entry is not None and (time.monotonic() - entry[0]) < 60.0:
+                    cached_m = entry[1].get(('membership', request.user.pk))
+                    if cached_m is not None and cached_m.status == 'ATIVO' and cached_m.organization.status == 'ATIVA':
+                        membership = cached_m
             if membership is None:
-                if 'organization_id' in request.session:
-                    request.session.pop('organization_id', None)
-                if len(candidates) == 1:
-                    membership = candidates[0]
-                    if request.session.get('organization_id') != membership.organization_id:
-                        request.session['organization_id'] = membership.organization_id
+                candidates = list(
+                    OrganizationMembership.objects.filter(
+                        user=request.user, status='ATIVO', organization__status='ATIVA'
+                    ).select_related('organization')[:2]
+                )
+                membership = next((m for m in candidates if m.organization_id == selected), None) if isinstance(selected, int) else None
+                if membership is None and isinstance(selected, int):
+                    membership = OrganizationMembership.objects.filter(
+                        user=request.user, organization_id=selected, status='ATIVO', organization__status='ATIVA'
+                    ).select_related('organization').first()
+                if membership is None:
+                    if 'organization_id' in request.session:
+                        request.session.pop('organization_id', None)
+                    if len(candidates) == 1:
+                        membership = candidates[0]
+                        if request.session.get('organization_id') != membership.organization_id:
+                            request.session['organization_id'] = membership.organization_id
             if membership:
                 request.organization = membership.organization
                 request.membership = membership
-                try:
-                    request.organization._req_cache = {('membership', request.user.pk): membership}
-                except (AttributeError, TypeError):
-                    pass
+                c_dict = get_org_cache_dict(membership.organization)
+                if c_dict is not None:
+                    c_dict[('membership', request.user.pk)] = membership
         # Todo endpoint fora de plataforma/login/admin/static é Assistência e exige ERP.
         public = request.path.startswith(('/vertyx/', '/contas/login/', '/contas/logout/', '/admin/', '/static/', '/saas/', '/api/bancos/webhook/', '/primeiro-acesso/', '/gestao-publica/convites/aceitar/', '/gestao-publica/publico/', '/gestao-publica/saude/', '/gestao-publica/cidadao/')) or request.path in PUBLIC_COMMERCIAL_PATHS | {'/health/', '/manifest.webmanifest', '/manifest-adm.webmanifest', '/manifest-pdv.webmanifest', '/sw.js','/pdv/manifest.webmanifest','/vendedor/manifest.webmanifest','/tecnico/manifest.webmanifest','/admin-pwa/manifest.webmanifest','/pdv/sw.js','/vendedor/sw.js','/tecnico/sw.js','/pdv/entrar/','/vendedor/entrar/','/gestao-publica/','/gestao-publica/login/','/gestao-publica/manifest.webmanifest','/gestao-publica/sw.js'}
         if request.path.startswith('/admin/') and request.user.is_authenticated and not request.user.is_superuser:

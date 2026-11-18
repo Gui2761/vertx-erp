@@ -10,7 +10,9 @@ from .models import (
 
 
 def _invalidate_on_model_change(sender, **kwargs):
-    if getattr(sender, '_meta', None) and sender._meta.app_label == 'platform_core':
+    if getattr(sender, '_meta', None) and sender._meta.app_label in {
+        'platform_core', 'ordens', 'gestao', 'operacao', 'clientes', 'equipamentos', 'contas', 'rh_municipal', 'commercial'
+    }:
         clear_org_cache()
         instance = kwargs.get('instance')
         org = getattr(instance, 'organization', None) if instance is not None else None
@@ -239,16 +241,15 @@ def platform_module_overrides(organization):
     """Return {codigo: modo} manual platform adjustments for one organization."""
     if organization is None:
         return {}
-    if hasattr(organization, '_pmo_cache'):
-        return organization._pmo_cache
+    cache = _org_req_cache(organization)
+    if cache is not None and ('pmo_cache',) in cache:
+        return cache[('pmo_cache',)]
     from .saas_models import AjusteModuloSaaS
     res = dict(
         AjusteModuloSaaS.objects.filter(organization=organization).values_list('codigo', 'modo')
     )
-    try:
-        organization._pmo_cache = res
-    except (AttributeError, TypeError):
-        pass
+    if cache is not None:
+        cache[('pmo_cache',)] = res
     return res
 
 
@@ -367,23 +368,14 @@ def product_module_enabled(user, erp_code, module_code, organization=None):
     This function deliberately does not infer entitlement from a role or price.
     """
     organization = organization or current_organization()
-    cache_dict = getattr(organization, '_pme_cache', None)
-    if cache_dict is None and organization is not None:
-        try:
-            organization._pme_cache = {}
-            cache_dict = organization._pme_cache
-        except (AttributeError, TypeError):
-            pass
-
-    cache_key = None
-    if cache_dict is not None:
-        cache_key = (getattr(user, 'pk', None), erp_code, module_code)
-        if cache_key in cache_dict:
-            return cache_dict[cache_key]
+    cache = _org_req_cache(organization)
+    cache_key = ('pme', getattr(user, 'pk', None), erp_code, module_code)
+    if cache is not None and cache_key in cache:
+        return cache[cache_key]
 
     res = _product_module_enabled_uncached(user, erp_code, module_code, organization)
-    if cache_key is not None and cache_dict is not None:
-        cache_dict[cache_key] = res
+    if cache is not None:
+        cache[cache_key] = res
     return res
 
 

@@ -1,19 +1,10 @@
 from django.core.exceptions import PermissionDenied
-from .context import current_organization
+from .context import current_organization, get_org_cache_dict
 from .models import OrganizationMembership, OrganizationERP, MembershipERP
 
 
 def _org_req_cache(organization):
-    if organization is None:
-        return None
-    cache = getattr(organization, '_req_cache', None)
-    if cache is None:
-        try:
-            organization._req_cache = {}
-            cache = organization._req_cache
-        except (AttributeError, TypeError):
-            return None
-    return cache
+    return get_org_cache_dict(organization)
 
 
 def membership_for(user, organization=None):

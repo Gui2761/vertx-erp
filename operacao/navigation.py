@@ -14,6 +14,21 @@ def menu(request):
 
 def _menu(request):
     membership=getattr(request,'membership',None)
+    org=getattr(request,'organization',None)
+    current_path=getattr(request,'path','')
+    from platform_core.context import get_org_cache_dict
+    org_cache = get_org_cache_dict(org) if org and membership else None
+    nav_key = ('nav_menu_full', getattr(request.user, 'pk', None), getattr(membership, 'role', None), current_path)
+    if org_cache is not None and nav_key in org_cache:
+        return dict(org_cache[nav_key])
+    res = _menu_uncached(request)
+    if org_cache is not None:
+        org_cache[nav_key] = dict(res)
+    return res
+
+
+def _menu_uncached(request):
+    membership=getattr(request,'membership',None)
     match=getattr(request,'resolver_match',None)
     from platform_core.modules import has_capability, module_enabled, module_for_path
     from .planning_services import can_tv

@@ -185,6 +185,8 @@ if not DEBUG:
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
+if not DEBUG:
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 from platform_core.logging_utils import logging_config
 LOGGING = logging_config(config('LOG_LEVEL', default='INFO'))

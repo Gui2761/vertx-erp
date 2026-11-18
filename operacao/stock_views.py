@@ -22,6 +22,11 @@ def dashboard(request):
     """Resumo do estoque da organização ativa, com filtros sobre os produtos."""
     require(request.user, 'estoque')
     from django.utils import timezone
+    from platform_core.context import current_organization, get_org_cache_dict
+    org_cache = get_org_cache_dict(current_organization())
+    cache_key = ('stock_dashboard_ctx', request.GET.urlencode())
+    if org_cache is not None and cache_key in org_cache:
+        return render(request, 'operacao/stock_dashboard.html', org_cache[cache_key])
 
     today = timezone.localdate()
     config = m.Configuracao.objects.first() or m.Configuracao()
@@ -141,12 +146,12 @@ def dashboard(request):
     page_obj.object_list = rows
 
     movement_rows = [{'movement': row, 'quantity': row.quantidade if row.tipo == 'TRANSFER' else row.variacao} for row in movements[:10]]
-    return render(request, 'operacao/stock_dashboard.html', {
+    ctx = {
         'summary': summary,
         'page_obj': page_obj,
-        'depositos': scoped_depots.order_by('nome'),
-        'categorias': m.CategoriaPeca.objects.order_by('nome'),
-        'fornecedores': g.Fornecedor.objects.filter(ativo=True).order_by('nome'),
+        'depositos': list(scoped_depots.order_by('nome')),
+        'categorias': list(m.CategoriaPeca.objects.order_by('nome')),
+        'fornecedores': list(g.Fornecedor.objects.filter(ativo=True).order_by('nome')),
         'movimentos': movement_rows,
         'today': today,
         'validity_end': near_cutoff,
@@ -167,7 +172,10 @@ def dashboard(request):
             'validade_de': request.GET.get('validade_de', ''),
             'validade_ate': request.GET.get('validade_ate', ''),
         },
-    })
+    }
+    if org_cache is not None:
+        org_cache[cache_key] = ctx
+    return render(request, 'operacao/stock_dashboard.html', ctx)
 
 @login_required
 def lots(request):

@@ -23,6 +23,14 @@ class PainelView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        from platform_core.context import current_organization, get_org_cache_dict
+        org = current_organization()
+        cache = get_org_cache_dict(org)
+        role = self.request.membership.role if getattr(self.request, 'membership', None) else ''
+        cache_key = ('painel_view_ctx', getattr(self.request.user, 'pk', None), role, self.request.GET.urlencode())
+        if cache is not None and cache_key in cache:
+            ctx.update(cache[cache_key])
+            return ctx
         from django.db.models import Q, Count
         ctx["total_clientes"] = Cliente.objects.filter(ativo=True).count()
         eq_agg = Equipamento.objects.aggregate(
@@ -88,6 +96,8 @@ class PainelView(LoginRequiredMixin, TemplateView):
                 ctx.update(context(self.request,form,orders))
             else:
                 ctx.update(executive=True,period_form=form,executive_period_invalid=True)
+        if cache is not None and not (ctx.get('period_form') and ctx['period_form'].errors):
+            cache[cache_key] = {k: v for k, v in ctx.items() if k != 'view'}
         return ctx
 
     def render_to_response(self, context, **response_kwargs):

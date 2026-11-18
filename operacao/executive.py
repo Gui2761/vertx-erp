@@ -129,7 +129,7 @@ def context(request, form, orders):
          'complete_analytics':analytics_at_least('COMPLETO', erp_code='assistencia'),'period_form':form,'period_start':start,
          'period_end':end,'greeting':'Bom dia' if now.hour<12 else 'Boa tarde' if now.hour<18 else 'Boa noite'}
     from django.db.models import Count, Q
-    ctx['agenda_hoje']=orders.filter(agendada_para__date=today).select_related('cliente','unidade','equipamento').order_by('agendada_para')[:12]
+    ctx['agenda_hoje']=list(orders.filter(agendada_para__date=today).select_related('cliente','unidade','equipamento').order_by('agendada_para')[:12])
     os_agg = orders.aggregate(
         comp_prev=Count('pk', filter=Q(status__in=['FINALIZADA','APROVADA','FATURADA'], conclusao__date__range=(start,end), tipo_atendimento='PREVENTIVA')),
         comp_corr=Count('pk', filter=Q(status__in=['FINALIZADA','APROVADA','FATURADA'], conclusao__date__range=(start,end), tipo_atendimento='CORRETIVA')),
