@@ -25,18 +25,31 @@ def dashboard(request):
 
     today = timezone.localdate()
     config = m.Configuracao.objects.first() or m.Configuracao()
-    parts = list(g.Peca.objects.filter(ativo=True).select_related('categoria', 'fornecedor').order_by('sku'))
-    measures = {part.pk: stock.metrics(part, config, today) for part in parts}
     lots = m.LoteEstoque.objects.filter(quantidade__gt=0).select_related('peca', 'deposito', 'fornecedor')
     movements = g.Movimentacao.objects.select_related('peca', 'origem', 'destino', 'usuario').order_by('-criado_em', '-pk')
 
-    # KPIs organizacionais não mudam com os filtros da tabela.
-    low = sum(1 for data in measures.values() if data['disponivel'] > 0 and data['disponivel'] <= data['minimo'])
-    zero = sum(1 for data in measures.values() if data['fisico'] <= 0)
     near_cutoff = today + timezone.timedelta(days=max(config.dias_alerta_validade))
     near_lots = lots.filter(validade__gte=today, validade__lte=near_cutoff)
     value_expr = ExpressionWrapper(F('quantidade') * F('custo_unitario'), output_field=DecimalField(max_digits=30, decimal_places=5))
     value = lots.aggregate(total=Sum(value_expr))['total'] or Decimal('0')
+
+    # Base QuerySet de produtos ativos
+    parts_qs = g.Peca.objects.filter(ativo=True).select_related('categoria', 'fornecedor').order_by('sku')
+
+    # KPIs organizacionais globais calculados de forma instantânea via agregação SQL
+    total_parts = parts_qs.count()
+    com_estoque = parts_qs.filter(quantidade_atual__gt=0).count()
+    sem_estoque = parts_qs.filter(quantidade_atual__lte=0).count()
+    estoque_baixo = parts_qs.filter(quantidade_atual__gt=0, quantidade_atual__lte=F('estoque_minimo')).count()
+
+    summary = {
+        'produtos': total_parts,
+        'com_estoque': com_estoque,
+        'sem_estoque': sem_estoque,
+        'estoque_baixo': estoque_baixo,
+        'lotes_vencendo': near_lots.count(),
+        'valor': value,
+    }
 
     depot_id = request.GET.get('deposito', '').strip()
     category_id = request.GET.get('categoria', '').strip()
@@ -47,34 +60,58 @@ def dashboard(request):
     validity_to = parse_date(request.GET.get('validade_ate', '') or '')
 
     scoped_depots = m.Deposito.objects.filter(ativo=True)
+    depot = None
     if depot_id and scoped_depots.filter(pk=depot_id).exists():
+        depot = scoped_depots.filter(pk=depot_id).first()
         lots = lots.filter(deposito_id=depot_id)
         movements = movements.filter(Q(origem_id=depot_id) | Q(destino_id=depot_id))
+        parts_qs = parts_qs.filter(lotes__deposito_id=depot_id).distinct()
     else:
         depot_id = ''
+
     if category_id and m.CategoriaPeca.objects.filter(pk=category_id).exists():
-        parts = [part for part in parts if str(part.categoria_id or '') == category_id]
+        parts_qs = parts_qs.filter(categoria_id=category_id)
     else:
         category_id = ''
+
     if supplier_id and g.Fornecedor.objects.filter(pk=supplier_id).exists():
-        parts = [part for part in parts if str(part.fornecedor_id or '') == supplier_id]
+        parts_qs = parts_qs.filter(fornecedor_id=supplier_id)
     else:
         supplier_id = ''
+
     if lot_query:
         lots = lots.filter(numero__icontains=lot_query)
     if validity_from:
         lots = lots.filter(validade__gte=validity_from)
     if validity_to:
         lots = lots.filter(validade__lte=validity_to)
+
     if lot_query or validity_from or validity_to:
-        matching_ids = set(lots.values_list('peca_id', flat=True))
-        parts = [part for part in parts if part.pk in matching_ids]
+        matching_ids = lots.values_list('peca_id', flat=True)
+        parts_qs = parts_qs.filter(pk__in=matching_ids)
         movements = movements.filter(peca_id__in=matching_ids)
 
+    if situation == 'ZERADO':
+        parts_qs = parts_qs.filter(quantidade_atual__lte=0)
+    elif situation == 'BAIXO':
+        parts_qs = parts_qs.filter(quantidade_atual__gt=0, quantidade_atual__lte=F('estoque_minimo'))
+    elif situation == 'VENCIDO':
+        parts_qs = parts_qs.filter(lotes__validade__lt=today).distinct()
+    elif situation == 'VENCENDO':
+        parts_qs = parts_qs.filter(lotes__validade__gte=today, lotes__validade__lte=near_cutoff).distinct()
+    elif situation == 'EXCESSO':
+        parts_qs = parts_qs.filter(estoque_maximo__isnull=False, quantidade_atual__gt=F('estoque_maximo'))
+    elif situation == 'NORMAL':
+        parts_qs = parts_qs.filter(quantidade_atual__gt=F('estoque_minimo'))
+
+    # Paginação em nível de banco de dados
+    paginator = Paginator(parts_qs, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    # Enriquecimento sob demanda APENAS para os 25 itens da página atual
     rows = []
-    depot = scoped_depots.filter(pk=depot_id).first() if depot_id else None
-    for part in parts:
-        data = measures[part.pk]
+    for part in page_obj.object_list:
+        data = stock.metrics(part, config, today)
         if depot or lot_query or validity_from or validity_to:
             selected_lots = lots.filter(peca=part)
             selected_ids = set(selected_lots.values_list('pk', flat=True))
@@ -90,32 +127,37 @@ def dashboard(request):
             data = {**data, 'fisico': physical_qty,
                     'valido': valid_qty, 'reservado': reserved_qty,
                     'disponivel': available_qty, 'situacao': situation_label}
-        if situation == 'ZERADO' and data['disponivel'] > 0:
-            continue
-        if situation == 'BAIXO' and not (data['disponivel'] > 0 and data['disponivel'] <= data['minimo']):
-            continue
-        if situation == 'VENCIDO' and not lots.filter(peca=part, validade__lt=today).exists():
-            continue
-        if situation == 'VENCENDO' and not lots.filter(peca=part, validade__gte=today, validade__lte=near_cutoff).exists():
-            continue
-        if situation == 'EXCESSO' and (not part.estoque_maximo or data['disponivel'] <= part.estoque_maximo):
-            continue
-        if situation == 'NORMAL' and data['situacao'] != 'NORMAL':
-            continue
         rows.append({'peca': part, 'stock': data})
+
+    page_obj.object_list = rows
 
     movement_rows = [{'movement': row, 'quantity': row.quantidade if row.tipo == 'TRANSFER' else row.variacao} for row in movements[:10]]
     return render(request, 'operacao/stock_dashboard.html', {
-        'summary': {'produtos': len(measures), 'com_estoque': sum(1 for row in measures.values() if row['fisico'] > 0),
-                    'sem_estoque': zero, 'estoque_baixo': low, 'lotes_vencendo': near_lots.count(), 'valor': value},
-        'page_obj': Paginator(rows, 25).get_page(request.GET.get('page')),
-        'depositos': scoped_depots.order_by('nome'), 'categorias': m.CategoriaPeca.objects.order_by('nome'),
+        'summary': summary,
+        'page_obj': page_obj,
+        'depositos': scoped_depots.order_by('nome'),
+        'categorias': m.CategoriaPeca.objects.order_by('nome'),
         'fornecedores': g.Fornecedor.objects.filter(ativo=True).order_by('nome'),
-        'movimentos': movement_rows, 'today': today, 'validity_end': near_cutoff,
-        'situation_choices': [('ZERADO','Sem estoque disponível'),('BAIXO','Abaixo do mínimo'),('NORMAL','Normal'),('VENCIDO','Possui lote vencido'),('VENCENDO','Possui lote vencendo'),('EXCESSO','Acima do ideal/máximo')],
-        'filters': {'deposito': depot_id, 'categoria': category_id, 'fornecedor': supplier_id,
-                    'situacao': situation, 'lote': lot_query,
-                    'validade_de': request.GET.get('validade_de', ''), 'validade_ate': request.GET.get('validade_ate', '')},
+        'movimentos': movement_rows,
+        'today': today,
+        'validity_end': near_cutoff,
+        'situation_choices': [
+            ('ZERADO', 'Sem estoque disponível'),
+            ('BAIXO', 'Abaixo do mínimo'),
+            ('NORMAL', 'Normal'),
+            ('VENCIDO', 'Possui lote vencido'),
+            ('VENCENDO', 'Possui lote vencendo'),
+            ('EXCESSO', 'Acima do ideal/máximo'),
+        ],
+        'filters': {
+            'deposito': depot_id,
+            'categoria': category_id,
+            'fornecedor': supplier_id,
+            'situacao': situation,
+            'lote': lot_query,
+            'validade_de': request.GET.get('validade_de', ''),
+            'validade_ate': request.GET.get('validade_ate', ''),
+        },
     })
 
 @login_required

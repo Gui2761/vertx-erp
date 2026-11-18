@@ -80,14 +80,13 @@ def lista(request, resource):
             qs = qs.filter(**{field + '__icontains': search})
     if request.GET.get('status') in SITUATIONS and resource in ['orcamento', 'contrato', 'lancamento']:
         qs = reporting.situation(qs, request.GET['status'])
-    stock_rows = None
     if resource == 'peca':
         from operacao.stock import metrics
         from operacao.models import Configuracao
+        from django.db.models import F
         config = Configuracao.objects.first() or Configuracao()
         if request.GET.get('minimo') == '1':
-            stock_rows = {obj.pk: metrics(obj, config) for obj in qs.filter(ativo=True)}
-            qs = qs.filter(pk__in=[pk for pk, data in stock_rows.items() if data['disponivel'] <= data['minimo']])
+            qs = qs.filter(quantidade_atual__lte=F('estoque_minimo'))
     if resource == 'lancamento' and request.GET.get('tipo') in ['RECEBER', 'PAGAR']:
         qs = qs.filter(tipo=request.GET['tipo'])
     if resource == 'lancamento':
@@ -122,7 +121,7 @@ def lista(request, resource):
     headers = [label(model, col) for col in columns]
     if resource == 'peca':
         for obj, row in zip(page, rows):
-            data = stock_rows[obj.pk] if stock_rows is not None else metrics(obj, config)
+            data = metrics(obj, config)
             row['cells'].extend(data[key] for key in ['reservado','disponivel','em_compra','ideal','sugerido','situacao'])
         headers.extend(['Reservado','Disponível válido','Em compra','Ideal / máximo','Sugestão de compra','Situação'])
     return render(request, 'gestao/lista.html', {'titulo': title, 'resource': resource, 'headers': headers, 'rows': rows, 'page_obj': page, 'query': page_query(request), 'new_url': reverse('gestao:' + resource + '_novo') if allowed(request.user, write) else '', 'can_write': allowed(request.user, write), 'q': search})
