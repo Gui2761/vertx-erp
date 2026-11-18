@@ -59,9 +59,9 @@ def charts(start,end,interval):
         until=min(end,date+relativedelta(months=1)-timezone.timedelta(days=1)) if monthly else date
         periods.append({'inicio':max(date,start),'fim':until,'label':date.strftime('%m/%Y' if monthly else '%d/%m'),'entrada':g.ZERO,'saida':g.ZERO,'faturamento':g.ZERO})
         date=date+relativedelta(months=1) if monthly else date+timezone.timedelta(days=1)
-    payments=m.Pagamento.objects.filter(data__range=(start,end)).select_related('lancamento')
-    legacy=g.Lancamento.objects.filter(status='LIQUIDADO',pagamentos__isnull=True,data_liquidacao__range=(start,end)).exclude(eventos__tipo='ABATIMENTO')
-    revenues=g.Lancamento.objects.filter(tipo='RECEBER',data_emissao__range=(start,end)).exclude(status='CANCELADO')
+    payments=list(m.Pagamento.objects.filter(data__range=(start,end)).select_related('lancamento'))
+    legacy=list(g.Lancamento.objects.filter(status='LIQUIDADO',pagamentos__isnull=True,data_liquidacao__range=(start,end)).exclude(eventos__tipo='ABATIMENTO'))
+    revenues=list(g.Lancamento.objects.filter(tipo='RECEBER',data_emissao__range=(start,end)).exclude(status='CANCELADO'))
     for row in periods:
         row['entrada']=sum((p.valor for p in payments if row['inicio']<=p.data<=row['fim'] and p.lancamento.tipo=='RECEBER'),g.ZERO)+sum((p.valor for p in legacy if row['inicio']<=p.data_liquidacao<=row['fim'] and p.tipo=='RECEBER'),g.ZERO)
         row['saida']=sum((p.valor for p in payments if row['inicio']<=p.data<=row['fim'] and p.lancamento.tipo=='PAGAR'),g.ZERO)+sum((p.valor for p in legacy if row['inicio']<=p.data_liquidacao<=row['fim'] and p.tipo=='PAGAR'),g.ZERO)
@@ -180,19 +180,20 @@ def context(request, form, orders):
     stock_chart=[]
     ctx['stock_chart_enabled'] = module_enabled('estoque_basico')
     if ctx['stock_chart_enabled']:
-        for part in g.Peca.objects.filter(ativo=True).select_related('fornecedor','categoria'):
-            data=metrics(part)
-            stock_chart.append({'label':part.sku or part.descricao[:16],'disponivel':data['disponivel']})
+        from .stock import available_map
+        avail_by_id = available_map(today)
+        for pk, sku, desc in g.Peca.objects.filter(ativo=True).values_list('pk', 'sku', 'descricao'):
+            stock_chart.append({'label': sku or desc[:16], 'disponivel': avail_by_id.get(pk, g.ZERO)})
         stock_chart=sorted(stock_chart,key=lambda row:row['disponivel'],reverse=True)[:10]
         maximum=max((row['disponivel'] for row in stock_chart),default=Decimal('1')) or Decimal('1')
         for row in stock_chart:
             row['width']=round(100*row['disponivel']/maximum)
     ctx['stock_chart']=stock_chart
     if allowed(request.user,'financeiro'):
-        ledger=g.Lancamento.objects.filter(status__in=['PENDENTE','VENCIDO'])
-        due=lambda kind:sum((row.saldo for row in ledger.filter(tipo=kind,vencimento=today)),g.ZERO)
+        ledger_today=list(g.Lancamento.objects.filter(status__in=['PENDENTE','VENCIDO'],vencimento=today).prefetch_related('pagamentos','eventos'))
+        due=lambda kind:sum((row.saldo for row in ledger_today if row.tipo==kind),g.ZERO)
         month=financial_dashboard(today.replace(day=1),today)
-        period=financial_dashboard(start,end)
+        period=month if (start==today.replace(day=1) and end==today) else financial_dashboard(start,end)
         ctx['financial_cards']=[{'title':'A receber hoje','value':due('RECEBER'),'url':link_ledger('RECEBER',vencimento_inicio=today,vencimento_fim=today,status='PENDENTE')},{'title':'A pagar hoje','value':due('PAGAR'),'url':link_ledger('PAGAR',vencimento_inicio=today,vencimento_fim=today,status='PENDENTE')},{'title':'Recebimentos do mês','value':month['recebido'],'url':link_ledger('RECEBER',pagamento_inicio=today.replace(day=1),pagamento_fim=today)},{'title':'Pagamentos do mês','value':month['pago'],'url':link_ledger('PAGAR',pagamento_inicio=today.replace(day=1),pagamento_fim=today)},{'title':'Saldo realizado no período','value':period['resultado'],'url':'/financeiro/?'+urlencode({'inicio':start,'fim':end})},{'title':'Inadimplência','value':period['vencido_receber'],'url':link_ledger('RECEBER',status='VENCIDO')}]
         banks=[]
         for account in m.ContaBancaria.objects.filter(ativo=True):
@@ -205,7 +206,7 @@ def context(request, form, orders):
         ctx['cash_chart']=charts(chart_start,today,interval)
         ctx['cash_in_points']=' '.join(f'{row["x"]},{row["y_entrada"]}' for row in ctx['cash_chart'])
         ctx['cash_out_points']=' '.join(f'{row["x"]},{row["y_saida"]}' for row in ctx['cash_chart'])
-        ctx['revenue_chart']=charts(chart_start,today,interval)
+        ctx['revenue_chart']=ctx['cash_chart']
         ctx['revenue_chart_total']=sum((row['faturamento'] for row in ctx['revenue_chart']),g.ZERO)
         if ctx['advanced_analytics']:
             span=(today-chart_start).days+1

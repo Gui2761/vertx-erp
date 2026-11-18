@@ -108,10 +108,12 @@ def dashboard(request):
     paginator = Paginator(parts_qs, 25)
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    # Enriquecimento sob demanda APENAS para os 25 itens da página atual
+    # Enriquecimento em lote APENAS para os 25 itens da página atual
+    page_parts = list(page_obj.object_list)
+    batch_metrics = stock.metrics_batch(page_parts, config, today)
     rows = []
-    for part in page_obj.object_list:
-        data = stock.metrics(part, config, today)
+    for part in page_parts:
+        data = batch_metrics[part.pk]
         if depot or lot_query or validity_from or validity_to:
             selected_lots = lots.filter(peca=part)
             selected_ids = set(selected_lots.values_list('pk', flat=True))

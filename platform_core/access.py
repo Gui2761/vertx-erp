@@ -3,17 +3,60 @@ from .context import current_organization
 from .models import OrganizationMembership, OrganizationERP, MembershipERP
 
 
+def _org_req_cache(organization):
+    if organization is None:
+        return None
+    cache = getattr(organization, '_req_cache', None)
+    if cache is None:
+        try:
+            organization._req_cache = {}
+            cache = organization._req_cache
+        except (AttributeError, TypeError):
+            return None
+    return cache
+
+
 def membership_for(user, organization=None):
     organization = organization or current_organization()
     if organization is None or not user.is_authenticated or not user.is_active or organization.status != 'ATIVA':
         return None
-    return OrganizationMembership.objects.filter(user=user, organization=organization, status='ATIVO').first()
+    cache = _org_req_cache(organization)
+    key = ('membership', user.pk)
+    if cache is not None and key in cache:
+        m = cache[key]
+        if m is not None and m.status == 'ATIVO':
+            return m
+    m = OrganizationMembership.objects.filter(user=user, organization=organization, status='ATIVO').select_related('organization').first()
+    if cache is not None:
+        cache[key] = m
+    return m
 
 
 def has_erp_access(user, organization=None, code='assistencia'):
+    organization = organization or current_organization()
     membership = membership_for(user, organization)
     if membership is None:
         return False
+    cache = _org_req_cache(membership.organization)
+    if cache is not None:
+        org_erps = cache.get(('org_erps',))
+        if org_erps is None:
+            org_erps = set(
+                OrganizationERP.objects.filter(
+                    organization=membership.organization, erp__active=True, enabled=True
+                ).values_list('erp__code', flat=True)
+            )
+            cache[('org_erps',)] = org_erps
+        mem_key = ('member_erps', membership.pk)
+        mem_erps = cache.get(mem_key)
+        if mem_erps is None:
+            mem_erps = set(
+                MembershipERP.objects.filter(
+                    membership=membership, erp__active=True, enabled=True
+                ).values_list('erp__code', flat=True)
+            )
+            cache[mem_key] = mem_erps
+        return code in org_erps and code in mem_erps
     return OrganizationERP.objects.filter(organization=membership.organization, erp__code=code, erp__active=True, enabled=True).exists() and MembershipERP.objects.filter(membership=membership, erp__code=code, erp__active=True, enabled=True).exists()
 
 

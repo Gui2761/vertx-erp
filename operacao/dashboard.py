@@ -62,10 +62,16 @@ def operational_metrics(user, start, end):
              ('Preventivas vencidas', pending_plans.filter(data__lt=today).count() + pending_visits.filter(data_prevista__lt=today).count(), '/planejamento/?grupo=PREVENTIVAS_ATRASADAS'),
              ('Preventivas próximas (30 dias)', pending_plans.filter(data__range=(today, today + timezone.timedelta(days=30))).count() + pending_visits.filter(data_prevista__range=(today, today + timezone.timedelta(days=30))).count(), '/planejamento/?grupo=PREVENTIVAS')]
     if role in ['ADMIN', 'GESTOR']:
+        from .stock import available_map
+        avail_by_id = available_map(today)
+        critical_count = sum(
+            avail_by_id.get(pk, 0) <= minimo
+            for pk, minimo in Peca.objects.filter(ativo=True).values_list('pk', 'estoque_minimo')
+        )
         cards += [('Contratos próximos (30 dias)', Contrato.objects.exclude(status__in=['SUSPENSO', 'ENCERRADO']).filter(data_final__range=(today, today + timezone.timedelta(days=30))).count(), '/relatorios/contratos_proximos/'),
                   ('Equipamentos ativos classificados', Equipamento.objects.filter(situacao_cadastro='ATIVO').count(), '/equipamentos/'),
                   ('Compras pendentes', Compra.objects.filter(status__in=['APROVADA', 'PEDIDO']).count(), '/relatorios/compras_pendentes/'),
-                  ('Produtos em estoque crítico', sum(metrics(part)['disponivel'] <= part.estoque_minimo for part in Peca.objects.filter(ativo=True)), '/estoque/ocorrencias/?tipo=REPOSICAO')]
+                  ('Produtos em estoque crítico', critical_count, '/estoque/ocorrencias/?tipo=REPOSICAO')]
     def chart(field, identity=None):
         values = list(scope.values(*([identity, field] if identity else [field])).annotate(total=Count('pk')).order_by('-total')[:10])
         maximum = max((row['total'] for row in values), default=1)

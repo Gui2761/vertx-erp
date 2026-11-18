@@ -1,11 +1,100 @@
 """One module/capability policy for routes and services; legacy defaults preserved."""
 from django.core.exceptions import PermissionDenied
-from .access import membership_for, has_erp_access
-from .context import current_organization
+from django.db.models.signals import post_save, post_delete
+from .access import membership_for, has_erp_access, _org_req_cache
+from .context import current_organization, clear_org_cache
 from .models import (
     ERPProductModule, ItemContratoSaaS, ModuloOrganizacao,
     OrganizationERP, MembershipERP, PermissaoMembership,
 )
+
+
+def _invalidate_on_model_change(sender, **kwargs):
+    if getattr(sender, '_meta', None) and sender._meta.app_label == 'platform_core':
+        clear_org_cache()
+        instance = kwargs.get('instance')
+        org = getattr(instance, 'organization', None) if instance is not None else None
+        if org is not None:
+            clear_org_cache(org)
+
+
+post_save.connect(_invalidate_on_model_change, dispatch_uid='vertyx_clear_org_cache_save')
+post_delete.connect(_invalidate_on_model_change, dispatch_uid='vertyx_clear_org_cache_delete')
+
+
+def _cached_subscription(organization):
+    from .saas_models import AssinaturaSaaS
+    cache = _org_req_cache(organization)
+    if cache is not None and ('subscription',) in cache:
+        return cache[('subscription',)]
+    sub = AssinaturaSaaS.objects.filter(organization=organization).select_related('plano', 'plano__erp').first()
+    if cache is not None:
+        cache[('subscription',)] = sub
+    return sub
+
+
+def _cached_modulo_org_map(organization):
+    cache = _org_req_cache(organization)
+    if cache is not None and ('modulo_org_map',) in cache:
+        return cache[('modulo_org_map',)]
+    res = dict(ModuloOrganizacao.objects.filter(organization=organization).values_list('codigo', 'habilitado'))
+    if cache is not None:
+        cache[('modulo_org_map',)] = res
+    return res
+
+
+def _cached_erp_product_modules(organization, erp_code):
+    cache = _org_req_cache(organization)
+    key = ('erp_product_modules', erp_code)
+    if cache is not None and key in cache:
+        return cache[key]
+    res = set(
+        ERPProductModule.objects.filter(
+            erp__code=erp_code, erp__active=True, active=True,
+        ).values_list('code', flat=True)
+    )
+    if cache is not None:
+        cache[key] = res
+    return res
+
+
+def _cached_active_contract_lines(organization, erp_code, today=None):
+    from django.utils import timezone
+    today = today or timezone.localdate()
+    cache = _org_req_cache(organization)
+    key = ('active_contract_lines', erp_code, today)
+    if cache is not None and key in cache:
+        return cache[key]
+    lines = list(active_contract_items(organization, erp_code, today=today)[:2])
+    if cache is not None:
+        cache[key] = lines
+    return lines
+
+
+def _cached_contracted_erps(organization):
+    cache = _org_req_cache(organization)
+    if cache is not None and ('contracted_erps',) in cache:
+        return cache[('contracted_erps',)]
+    res = set(
+        ItemContratoSaaS.objects.filter(
+            contrato__organization=organization,
+            contrato__status__in=['ATIVO', 'SUSPENSO', 'ENCERRADO'],
+        ).values_list('erp__code', flat=True)
+    )
+    if cache is not None:
+        cache[('contracted_erps',)] = res
+    return res
+
+
+def _cached_perm_membership_map(organization, membership):
+    cache = _org_req_cache(organization)
+    key = ('perm_membership', membership.pk)
+    if cache is not None and key in cache:
+        return cache[key]
+    res = dict(PermissaoMembership.objects.filter(membership=membership).values_list('capacidade', 'permitido'))
+    if cache is not None:
+        cache[key] = res
+    return res
 
 
 def active_contract_items(organization, erp_code=None, *, today=None):
@@ -46,13 +135,10 @@ def analytics_level(organization=None, erp_code=None):
     organization = organization or current_organization()
     if organization is None:
         return None
-    from .saas_models import AssinaturaSaaS
     if erp_code:
-        from django.db.models import Q
         from django.utils import timezone
-        from .models import ItemContratoSaaS
         today = timezone.localdate()
-        active_lines = list(active_contract_items(organization, erp_code, today=today)[:2])
+        active_lines = _cached_active_contract_lines(organization, erp_code, today=today)
         if len(active_lines) > 1:
             # Conflicting active contracts must never accidentally expose richer analytics.
             return 'BASICO'
@@ -60,13 +146,9 @@ def analytics_level(organization=None, erp_code=None):
             return active_lines[0].nivel_indicadores_snapshot
         # Once a product was moved to contract control, an expired, suspended,
         # or inactive line must not fall back to an unrelated legacy plan.
-        if ItemContratoSaaS.objects.filter(
-            contrato__organization=organization, erp__code=erp_code,
-            contrato__status__in=['ATIVO', 'SUSPENSO', 'ENCERRADO'],
-        ).exists():
+        if erp_code in _cached_contracted_erps(organization):
             return 'BASICO'
-    subscription = (AssinaturaSaaS.objects.filter(organization=organization)
-                    .select_related('plano').first())
+    subscription = _cached_subscription(organization)
     if subscription:
         plan = subscription.plano
         if erp_code and plan.erp_id and plan.erp.code != erp_code:
@@ -249,13 +331,14 @@ def module_enabled(code):
     organization = current_organization()
     if organization is None:
         return False
-    from .saas_models import AjusteModuloSaaS, AssinaturaSaaS, CORE_SAAS_MODULES
+    from .saas_models import AjusteModuloSaaS, CORE_SAAS_MODULES
     overrides = platform_module_overrides(organization)
     if overrides.get(code) == AjusteModuloSaaS.Modo.DENY:
         return False
     allows = {k for k, v in overrides.items() if v == AjusteModuloSaaS.Modo.ALLOW}
     denies = {k for k, v in overrides.items() if v == AjusteModuloSaaS.Modo.DENY}
-    subscription = AssinaturaSaaS.objects.filter(organization=organization).select_related('plano').first()
+    subscription = _cached_subscription(organization)
+    mod_map = _cached_modulo_org_map(organization)
     if subscription is not None:
         core = set(CORE_SAAS_MODULES) - denies
         plan_codes = effective_legacy_plan_codes(organization, subscription.plano)
@@ -268,13 +351,12 @@ def module_enabled(code):
             return True
         # Tenant-level module settings may restrict a contracted feature, but
         # can never grant a feature omitted from the subscription.
-        row = ModuloOrganizacao.objects.filter(organization=organization, codigo=code).first()
-        return row.habilitado if row else True
+        return mod_map[code] if code in mod_map else True
     if overrides.get(code) == AjusteModuloSaaS.Modo.ALLOW or (MODULE_IMPLIED_BY.get(code, set()) & allows):
         return True
     # No SaaS subscription and no disabled flag means legacy access, preserving
     # installations predating the commercial-plan entitlement model.
-    return not ModuloOrganizacao.objects.filter(organization=organization, codigo=code, habilitado=False).exists()
+    return mod_map.get(code) is not False
 
 
 def product_module_enabled(user, erp_code, module_code, organization=None):
@@ -306,22 +388,10 @@ def product_module_enabled(user, erp_code, module_code, organization=None):
 
 
 def _product_module_enabled_uncached(user, erp_code, module_code, organization):
-    membership = membership_for(user, organization)
-    if membership is None:
-        return False
-    product_granted = OrganizationERP.objects.filter(
-        organization=organization, erp__code=erp_code, erp__active=True, enabled=True,
-    ).exists()
-    member_granted = MembershipERP.objects.filter(
-        membership=membership, erp__code=erp_code, erp__active=True, enabled=True,
-    ).exists()
-    if not (product_granted and member_granted):
+    if not has_erp_access(user, organization, code=erp_code):
         return False
 
-    module = ERPProductModule.objects.filter(
-        erp__code=erp_code, erp__active=True, code=module_code, active=True,
-    ).first()
-    if module is None:
+    if module_code not in _cached_erp_product_modules(organization, erp_code):
         return False
 
     from .saas_models import AjusteModuloSaaS
@@ -329,33 +399,36 @@ def _product_module_enabled_uncached(user, erp_code, module_code, organization):
     if override == AjusteModuloSaaS.Modo.DENY:
         return False
 
-    items = active_contract_items(organization, erp_code)
-    active_items = list(items[:2])
+    active_items = _cached_active_contract_lines(organization, erp_code)
     if len(active_items) > 1:
         # Until a contract-version precedence rule is activated, conflicting
         # active lines fail closed instead of guessing which plan wins.
         return False
     item = active_items[0] if active_items else None
-    if item is None and ItemContratoSaaS.objects.filter(
-        contrato__organization=organization, erp__code=erp_code,
-        contrato__status__in=['ATIVO', 'SUSPENSO', 'ENCERRADO'],
-    ).exists():
+    if item is None and erp_code in _cached_contracted_erps(organization):
         return False
     if override == AjusteModuloSaaS.Modo.ALLOW:
         return True
+    mod_map = _cached_modulo_org_map(organization)
     if item:
         # A contract snapshot is authoritative, including an intentionally
         # empty list; later plan edits cannot silently expand that contract.
         available = module_code in item.modulos_snapshot
     else:
-        from .saas_models import AssinaturaSaaS
-        subscription = AssinaturaSaaS.objects.filter(organization=organization).select_related('plano', 'plano__erp').first()
+        subscription = _cached_subscription(organization)
         if subscription:
             plan = subscription.plano
             if plan.erp_id:
                 if plan.erp.code != erp_code:
                     return False
-                plan_modules = set(plan.modulos_produto.values_list('modulo__code', flat=True))
+                cache = _org_req_cache(organization)
+                pm_key = ('plan_modulos_produto', plan.pk)
+                if cache is not None and pm_key in cache:
+                    plan_modules = cache[pm_key]
+                else:
+                    plan_modules = set(plan.modulos_produto.values_list('modulo__code', flat=True))
+                    if cache is not None:
+                        cache[pm_key] = plan_modules
                 available = module_code in plan_modules
             else:
                 # Compatibility only for existing products; a legacy plan is
@@ -370,17 +443,15 @@ def _product_module_enabled_uncached(user, erp_code, module_code, organization):
             # grants and organization-level module overrides.
             available = not (
                 erp_code == 'gestao-publica' and module_code in STRICT_PUBLIC_MODULES
-            ) and not ModuloOrganizacao.objects.filter(
-                organization=organization, codigo=module_code, habilitado=False,
-            ).exists()
+            ) and mod_map.get(module_code) is not False
     if not available:
         return False
-    row = ModuloOrganizacao.objects.filter(organization=organization, codigo=module_code).first()
-    return True if row is None else row.habilitado
+    return True if module_code not in mod_map else mod_map[module_code]
 
 def has_capability(user, code, roles=None):
-    membership = membership_for(user)
-    if membership is None or not has_erp_access(user):
+    organization = current_organization()
+    membership = membership_for(user, organization)
+    if membership is None or not has_erp_access(user, organization):
         return False
     if code.startswith('fiscal_') and membership.role not in {'ADMIN', 'GESTOR', 'FINANCEIRO', 'CONTABILIDADE'}:
         return False
@@ -388,18 +459,19 @@ def has_capability(user, code, roles=None):
         return has_capability(user,'operar_pdv')
     if code=='pdv_cliente_cadastrar' and not has_capability(user,'operar_pdv'):
         return False
+    perm_map = _cached_perm_membership_map(organization, membership)
     if code=='operar_pdv':
         if membership.role not in {'ADMIN','GESTOR','PDV','VENDEDOR'} or not module_enabled('pdv'):
             return False
-        override=PermissaoMembership.objects.filter(membership=membership,capacidade='operar_pdv').first()
-        if override:
-            return override.permitido
+        if 'operar_pdv' in perm_map:
+            return perm_map['operar_pdv']
         # Preserve explicit legacy restrictions for existing cash operators.
         # A seller requires the NEW explicit grant; legacy pdv never grants it.
         if membership.role=='VENDEDOR':
             return False
-        legacy=PermissaoMembership.objects.filter(membership=membership,capacidade='pdv').first()
-        return legacy.permitido if legacy else membership.role in CAPABILITIES['operar_pdv'][1]
+        if 'pdv' in perm_map:
+            return perm_map['pdv']
+        return membership.role in CAPABILITIES['operar_pdv'][1]
     if membership.role in {'VENDEDOR','PDV'} and code in {
         'estoque','estoque_escrever','inventario_aprovar','compras','desconto_supervisor',
         'devolucao','caixa_supervisor','rh','ajuste_ponto','config_empresa','executivo',
@@ -416,8 +488,9 @@ def has_capability(user, code, roles=None):
     module, defaults = CAPABILITIES.get(code, ('', roles or ()))
     if not module_enabled(module):
         return False
-    override = PermissaoMembership.objects.filter(membership=membership, capacidade=code).first()
-    return override.permitido if override else membership.role in (defaults if code in CAPABILITIES else roles or ())
+    if code in perm_map:
+        return perm_map[code]
+    return membership.role in (defaults if code in CAPABILITIES else roles or ())
 
 def require_capability(user, code, roles=None):
     if not has_capability(user, code, roles):

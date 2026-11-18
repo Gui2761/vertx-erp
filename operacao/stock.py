@@ -335,8 +335,85 @@ def release(user, pk, reason):
         gs.audit(user, 'RESERVA_LIBERADA', row, {'quantidade':str(row.quantidade),'motivo':reason})
     return row
 
-def metrics(part, config=None, today=None):
-    part.refresh_from_db()
+def available_map(today=None):
+    today = today or timezone.localdate()
+    valid_sums = dict(
+        m.LoteEstoque.objects.filter(peca__ativo=True, quantidade__gt=0)
+        .filter(Q(validade__isnull=True) | Q(validade__gte=today))
+        .exclude(legado=True, validade__isnull=True, peca__validade__lt=today)
+        .values_list('peca_id')
+        .annotate(total=Sum('quantidade'))
+    )
+    reserved_sums = dict(
+        m.ReservaEstoque.objects.filter(peca__ativo=True, status='ATIVA', quantidade__gt=0)
+        .exclude(ordem__status__in=m.ENCERRADAS)
+        .exclude(venda__status__in=['CONFIRMADA','FINALIZADA','PARCIALMENTE_DEVOLVIDA','DEVOLVIDA','CANCELADA'])
+        .values_list('peca_id')
+        .annotate(total=Sum('quantidade'))
+    )
+    res = {}
+    for pid, vqty in valid_sums.items():
+        res[pid] = max(ZERO, (vqty or ZERO) - (reserved_sums.get(pid) or ZERO))
+    return res
+
+
+def metrics_batch(parts, config=None, today=None):
+    parts = list(parts)
+    if not parts:
+        return {}
+    config = config or m.Configuracao.objects.first() or m.Configuracao()
+    today = today or timezone.localdate()
+    part_ids = [p.pk for p in parts]
+    has_activity = set()
+    for qs in (
+        m.LoteEstoque.objects.filter(peca_id__in=part_ids),
+        m.ReservaEstoque.objects.filter(peca_id__in=part_ids, status='ATIVA', quantidade__gt=0),
+        m.ItemCompra.objects.filter(peca_id__in=part_ids, compra__status__in=['APROVADA', 'PEDIDO', 'RASCUNHO']),
+        g.Movimentacao.objects.filter(peca_id__in=part_ids, tipo__in=['SAIDA', 'OS', 'DEVOLUCAO']),
+        m.NecessidadePecaOS.objects.filter(peca_id__in=part_ids, resolvida_em__isnull=True),
+        m.ItemVenda.objects.filter(peca_id__in=part_ids, venda__status='AG_PAGAMENTO'),
+    ):
+        has_activity.update(qs.values_list('peca_id', flat=True).distinct())
+
+    result = {}
+    for part in parts:
+        if part.pk in has_activity:
+            result[part.pk] = metrics(part, config=config, today=today, refresh=False)
+        else:
+            ideal = max(part.estoque_minimo, part.estoque_maximo or part.estoque_minimo, ZERO)
+            suggested = max(ZERO, ideal).quantize(THREE, rounding=ROUND_CEILING)
+            supplier = part.fornecedor
+            cost = part.custo_aquisicao
+            result[part.pk] = {
+                'peca': part,
+                'produto': part.descricao,
+                'sku': part.sku,
+                'categoria': str(part.categoria or ''),
+                'fisico': part.quantidade_atual,
+                'valido': ZERO,
+                'vencido': ZERO,
+                'reservado': ZERO,
+                'disponivel': ZERO,
+                'minimo': part.estoque_minimo,
+                'ideal': ideal.quantize(THREE, rounding=ROUND_CEILING),
+                'consumo_medio': ZERO.quantize(Decimal('.000001')),
+                'vencendo': ZERO,
+                'substituir': ZERO,
+                'em_compra': ZERO,
+                'em_solicitacao': ZERO,
+                'sugerido': suggested,
+                'fornecedor': str(supplier or ''),
+                'fornecedor_id': supplier.pk if supplier else None,
+                'custo': cost,
+                'valor_estimado': (suggested * cost).quantize(Decimal('.01')),
+                'situacao': 'ZERADO',
+            }
+    return result
+
+
+def metrics(part, config=None, today=None, refresh=True):
+    if refresh:
+        part.refresh_from_db()
     config = config or m.Configuracao.objects.first() or m.Configuracao()
     today = today or timezone.localdate()
     valid = list(valid_lots(part, today=today))
