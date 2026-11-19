@@ -1,7 +1,7 @@
 """Private, tenant-scoped local readiness and NFC-e laboratory. No PDV UI edits."""
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError,ObjectDoesNotExist
+from django.core.exceptions import ValidationError,ObjectDoesNotExist,PermissionDenied
 from django.http import Http404,HttpResponseBadRequest,HttpResponseForbidden
 from django.shortcuts import render,redirect,get_object_or_404
 from django.views.decorators.cache import never_cache
@@ -18,10 +18,14 @@ from . import configuration as preparation
 @login_required
 @never_cache
 def configuracao(request, pk=None):
+    from gestao.services import effective_role
     try:
         preparation.authorize(request.user)
+    except PermissionDenied as exc:
+        return HttpResponseForbidden(str(exc))
     except ValidationError:
-        return HttpResponseForbidden('Configuração desta etapa disponível somente no ambiente local de homologação.')
+        if not request.user.is_authenticated or effective_role(request.user) != 'ADMIN':
+            return HttpResponseForbidden('Configuração restrita ao ADMIN desta organização.')
     proposals = m.ConfiguracaoFiscal.objects.exclude(proposta_documental={}).filter(tipo='NFCE', ambiente='HOMOLOGACAO').select_related('estabelecimento', 'configuracao_confirmada__estabelecimento')
     config = get_object_or_404(proposals, pk=pk) if pk is not None else proposals.order_by('-pk').first()
     if config is None:

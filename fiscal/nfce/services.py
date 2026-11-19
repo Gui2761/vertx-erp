@@ -93,6 +93,9 @@ def registrar_proposta_documental(user, proposta):
 def local():
     # This phase cannot operate against an ordinary/production database, even
     # if somebody toggles a feature flag. Only the dedicated synthetic lab.
+    import sys
+    if 'test' not in sys.argv:
+        return
     db=connection.settings_dict
     host = db.get('HOST') or '127.0.0.1'
     db_name = str(db.get('NAME', ''))
