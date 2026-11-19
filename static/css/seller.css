@@ -17,3 +17,149 @@
 @media(min-width:1200px){.sv-console-workspace{height:calc(100dvh - 365px);min-height:350px}.sv-consumer{padding:10px 24px}.sv-consumer h2{margin-top:6px}.sv-consumer>.sv-details{margin-top:0}.sv-summary-total{padding:12px 24px}.sv-summary-total>strong{line-height:1.2}.sv-summary-total>.sv-button{padding-block:8px}}
 @media print{.sv-bottom,.vx-seller .navbar,.sv-connection{display:none}.vx-seller{padding:0}.vx-seller .vx-main{padding:0}}
 .vx-back-to-erp-btn{background:rgba(14,165,233,0.18)!important;border:1px solid rgba(56,189,248,0.5)!important;color:#38bdf8!important;border-radius:8px!important;font-weight:700!important;display:inline-flex!important;align-items:center!important;gap:6px!important;padding:6px 14px!important;transition:all .2s ease-in-out!important}.vx-back-to-erp-btn:hover{background:rgba(14,165,233,0.35)!important;border-color:#38bdf8!important;color:#fff!important;transform:translateX(-2px)}[data-theme="light"] .vx-back-to-erp-btn{background:rgba(2,132,199,0.12)!important;border-color:rgba(2,132,199,0.4)!important;color:#0284c7!important}[data-theme="light"] .vx-back-to-erp-btn:hover{background:rgba(2,132,199,0.22)!important;color:#0369a1!important}
+
+/* ==========================================================================
+   PDV Contrast & Visibility Fixes (Garante alta visibilidade em qualquer tela)
+   ========================================================================== */
+.vx-seller,
+.vx-seller .sv-card,
+.sv-card,
+.sv-console-products .sv-card,
+.sv-product-card {
+  color: #0f172a !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+}
+
+.sv-card h1, .sv-card h2, .sv-card h3, .sv-card h4, .sv-card h5, .sv-card h6,
+.sv-console-products h3,
+.sv-products h3,
+.sv-product-title {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  line-height: 1.35 !important;
+  margin: 6px 0 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-height: 40px !important;
+}
+
+.sv-product-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+  margin-bottom: 4px !important;
+}
+
+.sv-product-code {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  background: #f1f5f9 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.sv-product-code-alt {
+  font-size: 10px !important;
+  color: #64748b !important;
+}
+
+.sv-product-pricing {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin: 8px 0 10px !important;
+  padding-bottom: 6px !important;
+  border-bottom: 1px dashed #e2e8f0 !important;
+}
+
+.sv-price {
+  color: #047857 !important;
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.sv-stock-badge {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  display: inline-block !important;
+}
+.sv-stock-badge.sv-stock-ok {
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+.sv-stock-badge.sv-stock-warning {
+  background: #fffbeb !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+}
+.sv-stock-badge.sv-stock-empty {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+}
+
+.sv-product-add {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+  margin-top: 6px !important;
+}
+.sv-qty-group {
+  width: 75px !important;
+}
+.sv-qty-group input {
+  height: 38px !important;
+  min-height: 38px !important;
+  font-size: 14px !important;
+  text-align: center !important;
+  padding: 4px 6px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  color: #0f172a !important;
+  background: #f8fafc !important;
+  font-weight: 600 !important;
+}
+.sv-btn-add {
+  flex: 1 !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 14px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: 1px solid #059669 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+.sv-btn-add:hover:not(:disabled) {
+  background: #059669 !important;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3) !important;
+}
+.sv-btn-add:disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+  cursor: not-allowed !important;
+}

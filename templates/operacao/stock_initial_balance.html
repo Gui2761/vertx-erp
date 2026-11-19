@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% block title %}Levantamento Inicial · Balanço de Estoque · VERTYX{% endblock %}
+{% block content %}
+<header class="vx-page-header">
+  <div>
+    <p class="vx-eyebrow">VERTYX · Controle operacional</p>
+    <h1>Levantamento Inicial de Estoque <span class="badge bg-warning text-dark fs-6 align-middle ms-2">Balanço Físico</span></h1>
+    <p>Conferência física e lançamento de saldo inicial para produtos recém-importados ou em implantação.</p>
+  </div>
+  <div class="vx-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'gestao:peca_lista' %}"><i class="bi bi-arrow-left me-1"></i> Voltar aos Produtos</a>
+    <a class="btn btn-outline-primary" href="{% url 'operacao:stock_dashboard' %}"><i class="bi bi-speedometer2 me-1"></i> Painel do Estoque</a>
+    <a class="btn btn-success" href="{% url 'operacao:stock_initial_balance_template' %}" title="Baixar planilha CSV com todos os produtos da organização">
+      <i class="bi bi-file-earmark-arrow-down me-1"></i> Baixar Planilha Modelo
+    </a>
+  </div>
+</header>
+
+<!-- Indicadores de implantação -->
+<section class="vx-kpi-grid mb-4" aria-label="Indicadores de contagem">
+  <article class="card p-3">
+    <span class="text-muted small">Total de Produtos Cadastrados</span>
+    <strong class="vx-metric fs-3">{{ kpis.total|default:0 }}</strong>
+  </article>
+  <article class="card p-3 border-danger">
+    <span class="text-danger fw-bold small"><i class="bi bi-exclamation-triangle me-1"></i> Sem Estoque / Zerados (0,000)</span>
+    <strong class="vx-metric text-danger fs-3">{{ kpis.zerados|default:0 }}</strong>
+    <small class="text-muted">Aguardando contagem física inicial</small>
+  </article>
+  <article class="card p-3 border-success">
+    <span class="text-success fw-bold small"><i class="bi bi-check-circle me-1"></i> Com Estoque Já Lançado</span>
+    <strong class="vx-metric text-success fs-3">{{ kpis.com_estoque|default:0 }}</strong>
+    <small class="text-muted">Saldo físico já registrado</small>
+  </article>
+</section>
+
+<!-- Card de Carga em Massa via Planilha -->
+<section class="card mb-4 border-primary">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <span class="fw-bold"><i class="bi bi-file-earmark-spreadsheet me-2"></i> Importar Levantamento Inicial em Massa (Planilha Excel / CSV)</span>
+    <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseImport" aria-expanded="false" aria-controls="collapseImport">
+      Alternar visualização
+    </button>
+  </div>
+  <div class="collapse show" id="collapseImport">
+    <div class="card-body">
+      <p class="text-muted small mb-3">
+        Tem centenas ou milhares de produtos para lançar? Baixe a planilha modelo pré-preenchida com o catálogo da sua loja, insira as quantidades físicas conferidas e faça o upload abaixo. O saldo será ajustado de forma automática e auditada.
+      </p>
+      <form method="post" action="{% url 'operacao:stock_initial_balance_import' %}" enctype="multipart/form-data" class="row g-3 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-7">
+          <label for="arquivo" class="form-label fw-bold small">Selecione o arquivo (.csv ou .xlsx)</label>
+          <input type="file" name="arquivo" id="arquivo" class="form-control" accept=".csv, .xlsx, .txt" required>
+        </div>
+        <div class="col-md-5 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-grow-1">
+            <i class="bi bi-upload me-1"></i> Processar Planilha de Balanço
+          </button>
+          <a class="btn btn-outline-secondary" href="{% url 'operacao:stock_initial_balance_template' %}">
+            <i class="bi bi-download"></i> Baixar Modelo
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- Filtros de Busca e Posição -->
+<section class="card card-body mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label fw-bold small">Buscar produto</label>
+      <input type="text" name="q" value="{{ filters.q }}" class="form-control" placeholder="SKU, descrição, código de barras...">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label fw-bold small">Situação do estoque</label>
+      <select name="situacao" class="form-select">
+        <option value="ZERADOS" {% if filters.situacao == 'ZERADOS' %}selected{% endif %}>⚠️ Apenas Zerados (Foco da contagem)</option>
+        <option value="COM_ESTOQUE" {% if filters.situacao == 'COM_ESTOQUE' %}selected{% endif %}>✓ Apenas com estoque</option>
+        <option value="TODOS" {% if filters.situacao == 'TODOS' %}selected{% endif %}>Todos os produtos</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fw-bold small">Categoria</label>
+      <select name="categoria" class="form-select">
+        <option value="">Todas</option>
+        {% for cat in categorias %}
+          <option value="{{ cat.pk }}" {% if filters.categoria == cat.pk|stringformat:'s' %}selected{% endif %}>{{ cat.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-search"></i> Filtrar</button>
+      <a class="btn btn-outline-secondary" href="{% url 'operacao:stock_initial_balance' %}">Limpar</a>
+    </div>
+  </form>
+</section>
+
+<!-- Grid Interativo de Lançamento de Balanço -->
+<section class="card mb-4">
+  <form method="post" action="{% url 'operacao:stock_initial_balance' %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="salvar_lote">
+    <input type="hidden" name="query_string" value="{{ query_string }}">
+
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 bg-light py-3">
+      <div>
+        <h2 class="h5 mb-0 fw-bold">Grid de Contagem Física (Lançamento em Tela)</h2>
+        <span class="small text-muted">Digite as quantidades conferidas na loja e clique em "Salvar Balanço em Massa".</span>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-warning text-dark fw-bold px-4 shadow-sm">
+          <i class="bi bi-check2-all me-1"></i> Salvar Balanço em Massa
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover table-striped align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 130px;">Código / SKU</th>
+            <th>Descrição do Produto</th>
+            <th style="width: 90px;">Unidade</th>
+            <th style="width: 120px;" class="text-center">Saldo Atual</th>
+            <th style="width: 170px;">Nova Quantidade (Físico)</th>
+            <th style="width: 130px;">Lote</th>
+            <th style="width: 140px;">Validade</th>
+            <th style="width: 110px;" class="text-center">Ação Rápida</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for peca in page_obj %}
+            <tr>
+              <td>
+                <strong class="font-monospace text-primary">{{ peca.sku }}</strong>
+                {% if peca.codigo_barras and peca.codigo_barras != peca.sku %}
+                  <small class="d-block text-muted">{{ peca.codigo_barras }}</small>
+                {% endif %}
+                <input type="hidden" name="peca_pks" value="{{ peca.pk }}">
+              </td>
+              <td>
+                <span class="fw-semibold text-dark">{{ peca.descricao }}</span>
+                {% if peca.categoria %}
+                  <small class="d-block text-muted">{{ peca.categoria.nome }}</small>
+                {% endif %}
+              </td>
+              <td><span class="badge bg-secondary">{{ peca.unidade_medida|default:'UN' }}</span></td>
+              <td class="text-center">
+                {% if peca.quantidade_atual <= 0 %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">0,000</span>
+                {% else %}
+                  <strong class="text-success">{{ peca.quantidade_atual|floatformat:3 }}</strong>
+                {% endif %}
+              </td>
+              <td>
+                <div class="input-group input-group-sm">
+                  <input type="number" 
+                         step="0.001" 
+                         min="0" 
+                         name="qty_{{ peca.pk }}" 
+                         id="input_qty_{{ peca.pk }}"
+                         class="form-control text-center fw-bold" 
+                         placeholder="{% if peca.quantidade_atual > 0 %}{{ peca.quantidade_atual|stringformat:'.3f' }}{% else %}0.000{% endif %}"
+                         value="{% if peca.quantidade_atual > 0 %}{{ peca.quantidade_atual|stringformat:'.3f' }}{% endif %}">
+                </div>
+              </td>
+              <td>
+                <input type="text" 
+                       name="lote_{{ peca.pk }}" 
+                       id="input_lote_{{ peca.pk }}"
+                       class="form-control form-control-sm" 
+                       placeholder="{{ peca.lote|default:'INICIAL' }}"
+                       value="{{ peca.lote|default:'INICIAL' }}">
+              </td>
+              <td>
+                <input type="date" 
+                       name="validade_{{ peca.pk }}" 
+                       id="input_val_{{ peca.pk }}"
+                       class="form-control form-control-sm" 
+                       value="{{ peca.validade|date:'Y-m-d' }}">
+              </td>
+              <td class="text-center">
+                <button type="button" 
+                        class="btn btn-sm btn-outline-success" 
+                        onclick="salvarLinhaIndividual('{{ peca.pk }}')"
+                        title="Salvar apenas este produto imediatamente">
+                  <i class="bi bi-check-lg"></i> Lançar
+                </button>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                Nenhum produto localizado com os filtros selecionados.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2 bg-light py-3">
+      <span class="small text-muted">
+        Exibindo página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} produtos)
+      </span>
+      <button type="submit" class="btn btn-warning text-dark fw-bold px-4 shadow-sm">
+        <i class="bi bi-check2-all me-1"></i> Salvar Balanço em Massa
+      </button>
+    </div>
+  </form>
+</section>
+
+<!-- Formulário oculto para envio individual instantâneo via JS -->
+<form id="formIndividual" method="post" action="{% url 'operacao:stock_initial_balance' %}" style="display:none;">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="salvar_individual">
+  <input type="hidden" name="query_string" value="{{ query_string }}">
+  <input type="hidden" name="peca_id" id="ind_peca_id">
+  <input type="hidden" name="quantidade" id="ind_quantidade">
+  <input type="hidden" name="lote" id="ind_lote">
+  <input type="hidden" name="validade" id="ind_validade">
+</form>
+
+<script>
+function salvarLinhaIndividual(pk) {
+  const qtyInput = document.getElementById('input_qty_' + pk);
+  const loteInput = document.getElementById('input_lote_' + pk);
+  const valInput = document.getElementById('input_val_' + pk);
+  
+  if (!qtyInput || qtyInput.value === '') {
+    alert('Por favor, informe a quantidade física para este produto.');
+    if (qtyInput) qtyInput.focus();
+    return;
+  }
+  
+  document.getElementById('ind_peca_id').value = pk;
+  document.getElementById('ind_quantidade').value = qtyInput.value;
+  document.getElementById('ind_lote').value = loteInput ? loteInput.value : '';
+  document.getElementById('ind_validade').value = valInput ? valInput.value : '';
+  
+  document.getElementById('formIndividual').submit();
+}
+</script>
+
+{% include 'paginacao.html' %}
+{% endblock %}

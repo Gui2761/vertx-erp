@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, DecimalException
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -286,7 +286,7 @@ REPORT_FIELDS=[('produto','Produto'),('sku','Código/SKU'),('categoria','Categor
 NUMERIC_FIELDS={'fisico','reservado','disponivel','minimo','ideal','consumo_medio','vencendo','em_compra','sugerido','custo','valor_estimado'}
 
 def report_value(row,key):
-    from decimal import Decimal
+    from decimal import Decimal, DecimalException
     return Decimal(row.dados[key]) if key in NUMERIC_FIELDS else row.dados[key]
 
 @login_required
@@ -348,3 +348,320 @@ def receipt(request,pk,item_id):
         record_write(request,saved,before)
         return redirect('operacao:compra_detalhe',pk=pk)
     return render(request,'operacao/form.html',{'titulo':'Identificar lote do recebimento','form':form,'back_url':reverse('operacao:compra_detalhe',args=[pk])},status=400 if request.method=='POST' else 200)
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def initial_balance(request):
+    """
+    Levantamento Inicial / Balanço de Estoque.
+    Permite a conferência física e o lançamento do saldo inicial para produtos
+    recém-importados ou em implantação de inventário.
+    """
+    require(request.user, 'estoque_escrever')
+    
+    # Processamento de formulário individual ou em lote
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'salvar_individual':
+            peca_id = request.POST.get('peca_id')
+            raw_qty = request.POST.get('quantidade', '').strip().replace(',', '.')
+            lote_num = request.POST.get('lote', '').strip() or 'INICIAL'
+            validade_str = request.POST.get('validade', '').strip()
+            validade = parse_date(validade_str) if validade_str else None
+            
+            try:
+                peca = get_object_or_404(g.Peca, pk=peca_id)
+                new_qty = Decimal(raw_qty)
+                if new_qty < 0:
+                    raise ValidationError('Quantidade não pode ser negativa.')
+                
+                if new_qty != peca.quantidade_atual:
+                    lote_data = {'numero': lote_num}
+                    if validade:
+                        lote_data['validade'] = validade
+                    elif peca.validade:
+                        lote_data['validade'] = peca.validade
+                    
+                    with transaction.atomic():
+                        gs.movimentar(
+                            request.user,
+                            peca.pk,
+                            'AJUSTE',
+                            new_qty,
+                            observacao=f"Levantamento Inicial (Balanço): {peca.sku}",
+                            lote_data=lote_data if new_qty > peca.quantidade_atual else None
+                        )
+                    messages.success(request, f'Saldo do produto "{peca.descricao}" ajustado para {new_qty}.')
+                else:
+                    messages.info(request, f'Saldo do produto "{peca.descricao}" já era {new_qty}. Nenhuma alteração necessária.')
+            except (ValidationError, ValueError, DecimalException) as exc:
+                messages.error(request, f'Erro ao ajustar produto: {exc}')
+            
+            query_string = request.POST.get('query_string', '')
+            return redirect(f"{reverse('operacao:stock_initial_balance')}?{query_string}")
+
+        elif action == 'salvar_lote':
+            pks = request.POST.getlist('peca_pks')
+            updated_count = 0
+            errors = []
+            
+            for pk_str in pks:
+                raw_qty = request.POST.get(f'qty_{pk_str}', '').strip().replace(',', '.')
+                if not raw_qty:
+                    continue
+                try:
+                    new_qty = Decimal(raw_qty)
+                    if new_qty < 0:
+                        continue
+                    peca = g.Peca.objects.filter(pk=pk_str).first()
+                    if not peca:
+                        continue
+                    
+                    if new_qty != peca.quantidade_atual:
+                        lote_num = request.POST.get(f'lote_{pk_str}', '').strip() or 'INICIAL'
+                        validade_str = request.POST.get(f'validade_{pk_str}', '').strip()
+                        validade = parse_date(validade_str) if validade_str else None
+                        
+                        lote_data = {'numero': lote_num}
+                        if validade:
+                            lote_data['validade'] = validade
+                        elif peca.validade:
+                            lote_data['validade'] = peca.validade
+                        
+                        with transaction.atomic():
+                            gs.movimentar(
+                                request.user,
+                                peca.pk,
+                                'AJUSTE',
+                                new_qty,
+                                observacao=f"Levantamento Inicial (Balanço em lote): {peca.sku}",
+                                lote_data=lote_data if new_qty > peca.quantidade_atual else None
+                            )
+                        updated_count += 1
+                except Exception as exc:
+                    errors.append(f"Produto {pk_str}: {exc}")
+            
+            if updated_count > 0:
+                messages.success(request, f'{updated_count} produto(s) atualizado(s) com sucesso no Levantamento Inicial!')
+            else:
+                messages.info(request, 'Nenhum saldo foi modificado.')
+            if errors:
+                messages.warning(request, f'Alguns itens tiveram inconsistências: {"; ".join(errors[:3])}')
+            
+            query_string = request.POST.get('query_string', '')
+            return redirect(f"{reverse('operacao:stock_initial_balance')}?{query_string}")
+
+    # Consulta e Filtros (GET)
+    q = request.GET.get('q', '').strip()
+    situacao = request.GET.get('situacao', 'ZERADOS').strip()
+    categoria_id = request.GET.get('categoria', '').strip()
+    
+    parts_qs = g.Peca.objects.filter(ativo=True).select_related('categoria').order_by('sku')
+    
+    from django.db.models import Count
+    kpis = parts_qs.aggregate(
+        total=Count('pk'),
+        zerados=Count('pk', filter=Q(quantidade_atual__lte=0)),
+        com_estoque=Count('pk', filter=Q(quantidade_atual__gt=0)),
+    )
+    
+    if q:
+        parts_qs = parts_qs.filter(
+            Q(sku__icontains=q) |
+            Q(descricao__icontains=q) |
+            Q(codigo_barras__icontains=q) |
+            Q(gtin__icontains=q)
+        )
+    
+    if situacao == 'ZERADOS':
+        parts_qs = parts_qs.filter(quantidade_atual__lte=0)
+    elif situacao == 'COM_ESTOQUE':
+        parts_qs = parts_qs.filter(quantidade_atual__gt=0)
+        
+    if categoria_id:
+        parts_qs = parts_qs.filter(categoria_id=categoria_id)
+        
+    paginator = Paginator(parts_qs, 50)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    categorias = m.CategoriaPeca.objects.filter(ativo=True).order_by('nome')
+    depositos = m.Deposito.objects.filter(ativo=True).order_by('nome')
+    
+    context = {
+        'page_obj': page_obj,
+        'kpis': kpis,
+        'categorias': categorias,
+        'depositos': depositos,
+        'filters': {
+            'q': q,
+            'situacao': situacao,
+            'categoria': categoria_id,
+        },
+        'query_string': request.GET.urlencode(),
+    }
+    return render(request, 'operacao/stock_initial_balance.html', context)
+
+
+@login_required
+def initial_balance_template(request):
+    """Gera planilha CSV modelo pré-populada com todos os produtos da organização para levantamento de estoque."""
+    require(request.user, 'estoque_escrever')
+    import csv
+    
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="levantamento_inicial_estoque.csv"'
+    response.write('\ufeff')
+    
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow([
+        'CODIGO_SKU',
+        'DESCRICAO',
+        'SALDO_ATUAL_SISTEMA',
+        'QUANTIDADE_FISICA_CONFERIDA',
+        'NUMERO_LOTE',
+        'DATA_VALIDADE'
+    ])
+    
+    for peca in g.Peca.objects.filter(ativo=True).order_by('sku'):
+        writer.writerow([
+            peca.sku,
+            peca.descricao,
+            str(peca.quantidade_atual).replace('.', ','),
+            '',
+            peca.lote or 'INICIAL',
+            peca.validade.strftime('%d/%m/%Y') if peca.validade else ''
+        ])
+    return response
+
+
+@login_required
+@require_POST
+def initial_balance_import(request):
+    """
+    Importa planilha (CSV ou XLSX) com a contagem física do levantamento inicial.
+    Atualiza o estoque dos produtos correspondentes por SKU ou código de barras.
+    """
+    require(request.user, 'estoque_escrever')
+    uploaded_file = request.FILES.get('arquivo')
+    if not uploaded_file:
+        messages.error(request, 'Nenhum arquivo foi selecionado.')
+        return redirect('operacao:stock_initial_balance')
+        
+    filename = uploaded_file.name.lower()
+    rows = []
+    
+    try:
+        if filename.endswith('.csv') or filename.endswith('.txt'):
+            import csv
+            content = uploaded_file.read().decode('utf-8-sig', errors='replace')
+            sample = content[:2048]
+            delimiter = ';' if ';' in sample else (',' if ',' in sample else '\t')
+            reader = csv.reader(content.splitlines(), delimiter=delimiter)
+            rows = [r for r in reader if any(cell.strip() for cell in r)]
+        elif filename.endswith(('.xlsx', '.xlsm')):
+            import openpyxl
+            wb = openpyxl.load_workbook(uploaded_file, data_only=True)
+            sheet = wb.active
+            for r in sheet.iter_rows(values_only=True):
+                if any(cell is not None for cell in r):
+                    rows.append([str(c) if c is not None else '' for c in r])
+        else:
+            messages.error(request, 'Formato inválido. Por favor, envie uma planilha .csv ou .xlsx.')
+            return redirect('operacao:stock_initial_balance')
+    except Exception as exc:
+        messages.error(request, f'Erro ao ler o arquivo: {exc}')
+        return redirect('operacao:stock_initial_balance')
+        
+    if not rows or len(rows) < 2:
+        messages.error(request, 'A planilha está vazia ou não possui cabeçalho.')
+        return redirect('operacao:stock_initial_balance')
+        
+    header = [h.strip().upper().replace(' ', '_') for h in rows[0]]
+    sku_idx = None
+    qty_idx = None
+    lote_idx = None
+    validade_idx = None
+    
+    for i, col in enumerate(header):
+        if col in ['CODIGO_SKU', 'SKU', 'CODIGO', 'COD_PROD', 'CODIGO_PRODUTO', 'ITEM']:
+            sku_idx = i
+        elif col in ['QUANTIDADE_FISICA_CONFERIDA', 'QUANTIDADE', 'SALDO', 'QUANTIDADE_FISICA', 'QTD', 'ESTOQUE', 'CONTAGEM']:
+            qty_idx = i
+        elif col in ['NUMERO_LOTE', 'LOTE', 'NUM_LOTE']:
+            lote_idx = i
+        elif col in ['DATA_VALIDADE', 'VALIDADE', 'VENCIMENTO']:
+            validade_idx = i
+            
+    if sku_idx is None or qty_idx is None:
+        messages.error(request, 'Não foi possível identificar as colunas obrigatórias: "CODIGO_SKU" e "QUANTIDADE" (ou QUANTIDADE_FISICA_CONFERIDA). Baixe o modelo oficial.')
+        return redirect('operacao:stock_initial_balance')
+        
+    updated = 0
+    not_found = []
+    errors = []
+    
+    for row_num, row in enumerate(rows[1:], start=2):
+        if len(row) <= max(sku_idx, qty_idx):
+            continue
+        raw_sku = row[sku_idx].strip()
+        raw_qty = row[qty_idx].strip().replace(',', '.')
+        if not raw_sku or not raw_qty:
+            continue
+            
+        try:
+            qty = Decimal(raw_qty)
+            if qty < 0:
+                continue
+        except (ValueError, DecimalException):
+            continue
+            
+        peca = g.Peca.objects.filter(ativo=True).filter(
+            Q(sku__iexact=raw_sku) | Q(codigo_barras__iexact=raw_sku) | Q(gtin__iexact=raw_sku)
+        ).first()
+        
+        if not peca:
+            not_found.append(raw_sku)
+            continue
+            
+        if qty != peca.quantidade_atual:
+            lote_num = 'INICIAL'
+            if lote_idx is not None and len(row) > lote_idx and row[lote_idx].strip():
+                lote_num = row[lote_idx].strip()
+                
+            lote_data = {'numero': lote_num}
+            if validade_idx is not None and len(row) > validade_idx and row[validade_idx].strip():
+                val_parsed = parse_date(row[validade_idx].strip())
+                if val_parsed:
+                    lote_data['validade'] = val_parsed
+            elif peca.validade:
+                lote_data['validade'] = peca.validade
+                
+            try:
+                with transaction.atomic():
+                    gs.movimentar(
+                        request.user,
+                        peca.pk,
+                        'AJUSTE',
+                        qty,
+                        observacao=f"Levantamento Inicial (Importação de Planilha)",
+                        lote_data=lote_data if qty > peca.quantidade_atual else None
+                    )
+                updated += 1
+            except Exception as exc:
+                errors.append(f"{peca.sku}: {exc}")
+                
+    if updated > 0:
+        messages.success(request, f'Sucesso! {updated} produto(s) tiveram seu saldo físico inicial lançado com sucesso!')
+    else:
+        messages.info(request, 'Nenhum saldo foi alterado (as quantidades informadas já coincidiam com o saldo atual ou as linhas estavam vazias).')
+        
+    if not_found:
+        messages.warning(request, f'{len(not_found)} código(s) não foram encontrados no cadastro de produtos: {", ".join(not_found[:5])}{"..." if len(not_found) > 5 else ""}')
+        
+    if errors:
+        messages.error(request, f'Alguns produtos apresentaram erro: {"; ".join(errors[:3])}')
+        
+    return redirect('operacao:stock_initial_balance')
