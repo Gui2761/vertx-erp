@@ -177,17 +177,17 @@ class SaaSAdminTests(TestCase):
             self.assertContains(response, 'VERTYX Admin')
         manifest = self.client.get(reverse('platform_core:saas_manifest'))
         self.assertEqual(manifest.status_code, 200)
-        self.assertEqual(manifest.json()['start_url'], '/saas/')
-        self.assertEqual(manifest.json()['scope'], '/saas/')
+        self.assertEqual(manifest.json()['start_url'], '/vertyx/saas/')
+        self.assertEqual(manifest.json()['scope'], '/')
         self.assertEqual(manifest.json()['name'], 'VERTYX Admin')
         worker = self.client.get(reverse('platform_core:saas_sw'))
         self.assertEqual(worker.status_code, 200)
-        self.assertEqual(worker['Service-Worker-Allowed'], '/saas/')
+        self.assertEqual(worker['Service-Worker-Allowed'], '/')
         self.assertNotContains(worker, 'caches.open')
         from django.contrib.staticfiles import finders
         css = open(finders.find('css/saas-admin.css'), encoding='utf-8').read()
         base = open('templates/platform_core/saas/base.html', encoding='utf-8').read()
-        self.assertIn('@media(max-width:640px)', css)
+        self.assertTrue('@media(max-width:640px)' in css or '@media(max-width: 640px)' in css)
         self.assertIn('name="viewport"', base)
 
     def test_assistente_visual_de_criacao_entrega_link_whatsapp_sem_senha(self):

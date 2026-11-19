@@ -17,7 +17,7 @@ from platform_core.access import require_erp
 from platform_core.context import current_organization
 from platform_core.models import Organization, ConfiguracaoEmpresa
 from .models import ContaBancaria, Configuracao, Deposito
-from .fiscal_models import CredencialFiscal
+from .fiscal_models import CredencialFiscal, ConfiguracaoFiscal, VinculoCredencialFiscal
 
 
 @login_required
@@ -231,6 +231,12 @@ def cadastro_inicial(request):
                 cred._service_write = True
                 cred.save()
 
+                for cfg in ConfiguracaoFiscal.objects.filter(estabelecimento__organization=org, ambiente=cred.ambiente):
+                    if not VinculoCredencialFiscal.objects.filter(configuracao=cfg, credencial=cred).exists():
+                        vinculo = VinculoCredencialFiscal(configuracao=cfg, credencial=cred)
+                        vinculo._service_write = True
+                        vinculo.save()
+
                 if not isinstance(empresa_cfg.retencoes_informativas, dict):
                     empresa_cfg.retencoes_informativas = {}
 
@@ -317,6 +323,12 @@ def cadastro_inicial(request):
                 )
                 cred._service_write = True
                 cred.save()
+
+                for cfg in ConfiguracaoFiscal.objects.filter(estabelecimento__organization=org, ambiente=cred.ambiente):
+                    if not VinculoCredencialFiscal.objects.filter(configuracao=cfg, credencial=cred).exists():
+                        vinculo = VinculoCredencialFiscal(configuracao=cfg, credencial=cred)
+                        vinculo._service_write = True
+                        vinculo.save()
 
                 if not isinstance(empresa_cfg.retencoes_informativas, dict):
                     empresa_cfg.retencoes_informativas = {}
