@@ -1,6 +1,37 @@
 {% extends 'base.html' %}
 {% block title %}Levantamento Inicial · Balanço de Estoque · VERTYX{% endblock %}
 {% block content %}
+<style>
+  .vx-product-desc {
+    color: #0f172a;
+    font-size: 0.95rem;
+    line-height: 1.35;
+    display: inline-block;
+  }
+  .vx-product-sku {
+    color: #0284c7;
+    font-weight: 700;
+  }
+  [data-bs-theme="dark"] .vx-product-desc,
+  [data-theme="dark"] .vx-product-desc,
+  body.dark .vx-product-desc,
+  .table-dark .vx-product-desc {
+    color: #f8fafc !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  [data-bs-theme="dark"] .vx-product-sku,
+  [data-theme="dark"] .vx-product-sku {
+    color: #38bdf8 !important;
+  }
+  @media (prefers-color-scheme: dark) {
+    .vx-product-desc {
+      color: #f8fafc !important;
+    }
+    .vx-product-sku {
+      color: #38bdf8 !important;
+    }
+  }
+</style>
 <header class="vx-page-header">
   <div>
     <p class="vx-eyebrow">VERTYX · Controle operacional</p>
@@ -134,14 +165,14 @@
           {% for peca in page_obj %}
             <tr>
               <td>
-                <strong class="font-monospace text-primary">{{ peca.sku }}</strong>
+                <strong class="font-monospace vx-product-sku">{{ peca.sku }}</strong>
                 {% if peca.codigo_barras and peca.codigo_barras != peca.sku %}
                   <small class="d-block text-muted">{{ peca.codigo_barras }}</small>
                 {% endif %}
                 <input type="hidden" name="peca_pks" value="{{ peca.pk }}">
               </td>
               <td>
-                <span class="fw-semibold text-dark">{{ peca.descricao }}</span>
+                <span class="fw-semibold vx-product-desc">{{ peca.descricao }}</span>
                 {% if peca.categoria %}
                   <small class="d-block text-muted">{{ peca.categoria.nome }}</small>
                 {% endif %}

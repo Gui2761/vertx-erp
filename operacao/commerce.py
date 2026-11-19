@@ -240,7 +240,12 @@ def add_item(user,public_id,code,quantity,mode='venda',discount=0,reason=''):
     if value and (not reason.strip() or value*100>gross*config.limite_desconto_percentual and not has_capability(user,'desconto_supervisor')): raise PermissionDenied('Desconto exige motivo e limite/autorização.')
     item=m.ItemVenda.objects.create(venda=sale,peca=part,quantidade=conversion['quantidade_base'],valor_unitario=conversion['valor_base'],desconto=value,conversao={k:str(v) for k,v in conversion.items()})
     if config.reservar_rascunho:
-        with _execution(user,sale=sale,session=session): stock.reserve(user,part.pk,sale.deposito_id,item.quantidade,'Reserva PDV',sale_id=sale.pk,request_id=uuid.uuid5(sale.public_id,'reserva:'+str(item.pk)))
+        reserve_depot = sale.deposito_id
+        if stock.total(stock.valid_lots(part, sale.deposito)) < item.quantidade:
+            principal = m.Deposito.objects.filter(nome='Principal', ativo=True).first()
+            if principal and stock.total(stock.valid_lots(part, principal)) >= item.quantidade:
+                reserve_depot = principal.pk
+        with _execution(user,sale=sale,session=session): stock.reserve(user,part.pk,reserve_depot,item.quantidade,'Reserva PDV',sale_id=sale.pk,request_id=uuid.uuid5(sale.public_id,'reserva:'+str(item.pk)))
     gs.audit(user,'VENDA_ITEM_ADICIONADO',item,{'conversao':item.conversao,'desconto':str(value),'motivo':reason})
     from .seller_services import validate_discount
     validate_discount(user,sale)
@@ -383,8 +388,14 @@ def finalize(user,public_id,payments,request_id):
     for index in sorted(range(len(items)),key=lambda i:exact[i]-cents[i],reverse=True)[:int(total*100)-sum(cents)]: cents[index]+=1
     for index,item in enumerate(items):
         net=Decimal(cents[index])/100
+        depot_id = sale.deposito_id
+        bal = m.SaldoDeposito.objects.filter(deposito_id=depot_id, peca_id=item.peca_id).values_list('quantidade', flat=True).first() or Decimal('0')
+        if bal < item.quantidade:
+            principal = m.Deposito.objects.filter(nome='Principal', ativo=True).first()
+            if principal and (m.SaldoDeposito.objects.filter(deposito=principal, peca_id=item.peca_id).values_list('quantidade', flat=True).first() or Decimal('0')) >= item.quantidade:
+                depot_id = principal.pk
         with _execution(user,sale=sale,session=session,entry=entry):
-            move=gs.movimentar(user,item.peca_id,'SAIDA',item.quantidade,str(sale),origem_id=sale.deposito_id,venda_id=sale.pk,request_id=uuid.uuid5(key,'item:'+str(item.pk)))
+            move=gs.movimentar(user,item.peca_id,'SAIDA',item.quantidade,str(sale),origem_id=depot_id,venda_id=sale.pk,request_id=uuid.uuid5(key,'item:'+str(item.pk)))
         item.custo_total=move.valor_custo;item.custo_unitario=(item.custo_total/item.quantidade).quantize(CENT,rounding=ROUND_HALF_UP);item.movimento=move;gs.write(item)
         allocated.append({'item':item.pk,'sku':item.peca.sku,'descricao':item.peca.descricao,'quantidade':str(item.quantidade),'valor_unitario':str(item.valor_unitario),'desconto':str(item.desconto),'valor_liquido':str(net),'custo_total':str(item.custo_total),'movimento':move.pk,'conversao':item.conversao,'lotes':[{'id':detail.lote_id,'numero':detail.lote.numero,'validade':detail.lote.validade.isoformat() if detail.lote.validade else None,'quantidade':str(-detail.variacao),'custo_unitario':str(detail.custo_unitario),'custo_total':str(detail.custo_total)} for detail in move.lotes_movimentados.select_related('lote')]})
     accounts=sorted(set([session.conta_id]+[f.conta_pdv_id for f in g.FormaPagamento.objects.filter(pk__in=[r['forma'] for r in rows]) if f.conta_pdv_id]))

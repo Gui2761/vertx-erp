@@ -52,7 +52,26 @@ def availability(part, depot, sale=None):
     reserved = stock.active_reservations(part,depot)
     if sale:
         reserved = reserved.exclude(venda=sale)
-    return max(ZERO,valid+legacy-stock.total(reserved))
+    avail = max(ZERO,valid+legacy-stock.total(reserved))
+    if avail <= ZERO:
+        principal = m.Deposito.objects.filter(nome='Principal', ativo=True).first()
+        if principal and principal.pk != (depot.pk if depot else None):
+            p_valid = stock.total(stock.valid_lots(part, principal))
+            p_balances = stock.total(m.SaldoDeposito.objects.filter(peca=part, deposito=principal))
+            p_detailed = stock.total(m.LoteEstoque.objects.filter(peca=part, deposito=principal))
+            p_legacy = max(ZERO, p_balances - p_detailed)
+            if part.validade and part.validade < timezone.localdate():
+                p_legacy = ZERO
+            p_reserved = stock.active_reservations(part, principal)
+            if sale:
+                p_reserved = p_reserved.exclude(venda=sale)
+            p_avail = max(ZERO, p_valid + p_legacy - stock.total(p_reserved))
+            if p_avail > ZERO:
+                return p_avail
+        if getattr(part, 'quantidade_atual', ZERO) > ZERO:
+            global_res = stock.total(stock.active_reservations(part, None).exclude(venda=sale) if sale else stock.active_reservations(part, None))
+            return max(ZERO, part.quantidade_atual - global_res)
+    return avail
 
 def cart_hash(sale):
     rows = list(sale.itens.order_by('pk').values('pk','peca_id','quantidade','valor_unitario','desconto'))

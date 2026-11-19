@@ -458,7 +458,7 @@ def initial_balance(request):
     situacao = request.GET.get('situacao', 'ZERADOS').strip()
     categoria_id = request.GET.get('categoria', '').strip()
     
-    parts_qs = g.Peca.objects.filter(ativo=True).select_related('categoria').order_by('sku')
+    parts_qs = g.Peca.objects.filter(ativo=True).select_related('categoria').order_by('descricao')
     
     from django.db.models import Count
     kpis = parts_qs.aggregate(
@@ -525,7 +525,7 @@ def initial_balance_template(request):
         'DATA_VALIDADE'
     ])
     
-    for peca in g.Peca.objects.filter(ativo=True).order_by('sku'):
+    for peca in g.Peca.objects.filter(ativo=True).order_by('descricao'):
         writer.writerow([
             peca.sku,
             peca.descricao,

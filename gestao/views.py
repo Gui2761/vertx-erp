@@ -14,7 +14,7 @@ from . import models as m, forms, services, reporting
 from .permissions import require, allowed, ROLES
 
 RESOURCES = {
-    'peca': (m.Peca, forms.PecaForm, 'estoque', 'estoque_escrever', 'Peças e Estoque', ['sku', 'descricao', 'quantidade_atual', 'estoque_minimo', 'unidade_medida', 'ativo']),
+    'peca': (m.Peca, forms.PecaForm, 'estoque', 'estoque_escrever', 'Peças e Estoque', ['sku', 'descricao', 'preco_venda', 'quantidade_atual', 'estoque_minimo', 'unidade_medida', 'ativo']),
     'fornecedor': (m.Fornecedor, forms.FornecedorForm, 'estoque_escrever', 'estoque_escrever', 'Fornecedores', ['nome', 'documento', 'telefone', 'ativo']),
     'orcamento': (m.Orcamento, forms.OrcamentoForm, 'orcamentos', 'orcamentos', 'Orçamentos', ['numero', 'cliente', 'validade', 'situacao', 'total']),
     'contrato': (m.Contrato, forms.ContratoForm, 'contratos', 'contratos', 'Contratos', ['numero', 'cliente', 'data_final', 'situacao', 'valor']),
@@ -23,7 +23,7 @@ RESOURCES = {
     'centro_custo': (m.CentroCusto, forms.CentroCustoForm, 'financeiro', 'financeiro_escrever', 'Centros de custo', ['nome', 'ativo']),
     'forma_pagamento': (m.FormaPagamento, forms.FormaPagamentoForm, 'financeiro', 'financeiro_escrever', 'Formas de pagamento', ['nome', 'tipo_pdv', 'conta_pdv', 'ativo']),
 }
-LABELS = {'numero': 'Número', 'situacao': 'Situação', 'total': 'Total', 'quantidade_atual': 'Saldo atual', 'estoque_minimo': 'Estoque mínimo', 'desconto_total':'Desconto', 'juros_total':'Juros', 'multa_total':'Multa', 'valor_atualizado':'Valor atualizado', 'valor_pago':'Recebido / pago', 'saldo':'Saldo pendente'}
+LABELS = {'numero': 'Número', 'situacao': 'Situação', 'total': 'Total', 'preco_venda': 'Preço de venda', 'quantidade_atual': 'Saldo atual', 'estoque_minimo': 'Estoque mínimo', 'desconto_total':'Desconto', 'juros_total':'Juros', 'multa_total':'Multa', 'valor_atualizado':'Valor atualizado', 'valor_pago':'Recebido / pago', 'saldo':'Saldo pendente'}
 SITUATIONS = {'RASCUNHO': 'Rascunho', 'ENVIADO': 'Enviado', 'APROVADO': 'Aprovado', 'RECUSADO': 'Recusado', 'CONVERTIDO': 'Convertido em OS', 'ATIVO': 'Ativo', 'PROXIMO': 'Próximo do vencimento', 'VENCIDO': 'Vencido', 'PARCIAL': 'Parcial', 'PENDENTE': 'Em aberto', 'LIQUIDADO': 'Pago / recebido', 'CANCELADO': 'Cancelado'}
 
 
@@ -50,6 +50,11 @@ def value(obj, name):
     if hasattr(obj, 'get_' + name + '_display'):
         return getattr(obj, 'get_' + name + '_display')()
     result = getattr(obj, name)
+    if name in ['preco_venda', 'custo_aquisicao'] and result is not None:
+        try:
+            return f"R$ {float(result):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        except (ValueError, TypeError):
+            pass
     return 'Sim' if result is True else 'Não' if result is False else result if result is not None else ''
 
 
