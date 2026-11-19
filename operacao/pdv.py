@@ -116,7 +116,10 @@ def sale(request,public_id,receipt=False):
                 c.draft(sale,session)
                 sale.cliente=Cliente.objects.get(pk=request.POST['cliente'],ativo=True) if request.POST.get('cliente') else None
                 gs.write(sale);gs.audit(request.user,'PDV_CLIENTE_SELECIONADO',sale,{'cliente':sale.cliente_id})
-            elif action=='finalizar': c.finalize(request.user,public_id,json.loads(request.POST['pagamentos']),request.POST['request_id'])
+            elif action=='finalizar':
+                doc = request.POST.get('cliente_documento', '').strip()
+                tipo = request.POST.get('tipo_emissao', 'CUPOM').strip().upper()
+                c.finalize(request.user,public_id,json.loads(request.POST['pagamentos']),request.POST['request_id'],cliente_documento=doc,tipo_emissao=tipo)
             elif action=='estado': c.sale_state(request.user,public_id,request.POST['estado'],request.POST.get('motivo',''))
             elif action=='devolver':
                 from gestao.products import number

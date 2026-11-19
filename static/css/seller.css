@@ -163,3 +163,362 @@
   border-color: #cbd5e1 !important;
   cursor: not-allowed !important;
 }
+
+/* ============================================================
+   PDV MODERNO & ESPAÇOSO - MELHORIAS DE USABILIDADE & EMISSÃO
+   ============================================================ */
+
+/* Modal de Pagamento / Fechamento */
+.sv-payment-dialog {
+  width: min(720px, calc(100% - 32px)) !important;
+  max-height: calc(100dvh - 32px) !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  padding: 24px 28px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.4) !important;
+}
+
+[data-bs-theme="dark"] .sv-payment-dialog,
+body.dark .sv-payment-dialog {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.sv-payment-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.75) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+.sv-dialog-top {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 16px !important;
+}
+
+.sv-btn-close {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+.sv-btn-close:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-color: #fca5a5 !important;
+}
+
+/* Banner de Total */
+.sv-payment-total-banner {
+  background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+  color: #ffffff !important;
+  border-radius: 14px !important;
+  padding: 16px 20px !important;
+  margin-bottom: 20px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+}
+
+.sv-total-label {
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  color: #94a3b8 !important;
+}
+
+.sv-total-amount {
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  color: #38bdf8 !important;
+}
+
+/* Identificação do Consumidor (CPF/CNPJ na Nota) */
+.sv-doc-cliente-box {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+}
+[data-bs-theme="dark"] .sv-doc-cliente-box,
+body.dark .sv-doc-cliente-box {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.sv-input-doc {
+  width: 100% !important;
+  padding: 10px 14px !important;
+  font-size: 1rem !important;
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  outline: none !important;
+  transition: border-color 0.15s ease !important;
+}
+.sv-input-doc:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+[data-bs-theme="dark"] .sv-input-doc,
+body.dark .sv-input-doc {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+.sv-badge-optional {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  background: #e2e8f0 !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+}
+
+.sv-doc-hint {
+  display: block !important;
+  font-size: 0.8rem !important;
+  color: #64748b !important;
+  margin-top: 6px !important;
+}
+
+/* Tipo de Emissão no Fechamento */
+.sv-emission-box {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+}
+[data-bs-theme="dark"] .sv-emission-box,
+body.dark .sv-emission-box {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.sv-emission-pills {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+}
+
+.sv-emission-pill {
+  padding: 12px 14px !important;
+  border-radius: 10px !important;
+  border: 2px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  text-align: left !important;
+  transition: all 0.15s ease !important;
+}
+.sv-emission-pill .sv-pill-icon {
+  font-size: 1.5rem !important;
+}
+.sv-emission-pill strong {
+  display: block !important;
+  font-size: 0.95rem !important;
+  line-height: 1.2 !important;
+}
+.sv-emission-pill small {
+  display: block !important;
+  font-size: 0.78rem !important;
+  color: #64748b !important;
+}
+
+.sv-emission-pill.active {
+  border-color: #0284c7 !important;
+  background: #f0f9ff !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15) !important;
+}
+.sv-emission-pill.active strong {
+  color: #0369a1 !important;
+}
+
+[data-bs-theme="dark"] .sv-emission-pill,
+body.dark .sv-emission-pill {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+[data-bs-theme="dark"] .sv-emission-pill.active,
+body.dark .sv-emission-pill.active {
+  background: rgba(2, 132, 199, 0.2) !important;
+  border-color: #38bdf8 !important;
+}
+
+/* Pills de Forma de Pagamento */
+.sv-pill-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.sv-payment-pill {
+  padding: 10px 12px !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transition: all 0.15s ease !important;
+}
+.sv-payment-pill:hover {
+  border-color: #94a3b8 !important;
+}
+.sv-payment-pill.active {
+  border-color: #0284c7 !important;
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .sv-payment-pill,
+body.dark .sv-payment-pill {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+[data-bs-theme="dark"] .sv-payment-pill.active,
+body.dark .sv-payment-pill.active {
+  background: #0284c7 !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+}
+
+/* Campo Dinheiro e Troco */
+.sv-input-money-wrap {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.sv-currency-symbol {
+  position: absolute !important;
+  left: 14px !important;
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+  color: #64748b !important;
+  pointer-events: none !important;
+}
+
+.sv-input-money {
+  width: 100% !important;
+  padding: 12px 14px 12px 42px !important;
+  font-size: 1.4rem !important;
+  font-weight: 800 !important;
+  border-radius: 10px !important;
+  border: 2px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  outline: none !important;
+}
+.sv-input-money:focus {
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .sv-input-money,
+body.dark .sv-input-money {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.sv-troco-box {
+  background: #ecfdf5 !important;
+  border: 1.5px solid #a7f3d0 !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+[data-bs-theme="dark"] .sv-troco-box,
+body.dark .sv-troco-box {
+  background: rgba(6, 78, 59, 0.3) !important;
+  border-color: #059669 !important;
+}
+
+.sv-troco-title {
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0.05em !important;
+  color: #065f46 !important;
+}
+[data-bs-theme="dark"] .sv-troco-title,
+body.dark .sv-troco-title {
+  color: #6ee7b7 !important;
+}
+
+.sv-troco-value {
+  font-size: 1.8rem !important;
+  font-weight: 800 !important;
+  color: #059669 !important;
+}
+[data-bs-theme="dark"] .sv-troco-value,
+body.dark .sv-troco-value {
+  color: #34d399 !important;
+}
+
+/* Botão Confirmar Venda */
+.sv-btn-confirm-sale {
+  background: linear-gradient(135deg, #059669, #10b981) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  padding: 16px 24px !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35) !important;
+  transition: all 0.2s ease !important;
+}
+.sv-btn-confirm-sale:hover:not(:disabled) {
+  background: linear-gradient(135deg, #047857, #059669) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45) !important;
+}
+.sv-btn-confirm-sale:disabled {
+  background: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* Responsividade e Respiro em Notebooks (1366x768) */
+@media (max-width: 1366px) {
+  .sv-console-workspace {
+    height: auto !important;
+    min-height: calc(100vh - 180px) !important;
+    gap: 16px !important;
+  }
+  .sv-entry-panel,
+  .sv-summary-panel {
+    padding: 16px !important;
+  }
+  .sv-payment-dialog {
+    padding: 20px 22px !important;
+  }
+}

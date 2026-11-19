@@ -351,7 +351,7 @@ def normalize_payments(rows):
     return result
 
 @transaction.atomic
-def finalize(user,public_id,payments,request_id):
+def finalize(user,public_id,payments,request_id,cliente_documento='',tipo_emissao='CUPOM'):
     sale,session=lock_sale(user,public_id)
     key=token(request_id);rows=normalize_payments(payments)
     if sale.finalizacao_id:
@@ -398,20 +398,29 @@ def finalize(user,public_id,payments,request_id):
             move=gs.movimentar(user,item.peca_id,'SAIDA',item.quantidade,str(sale),origem_id=depot_id,venda_id=sale.pk,request_id=uuid.uuid5(key,'item:'+str(item.pk)))
         item.custo_total=move.valor_custo;item.custo_unitario=(item.custo_total/item.quantidade).quantize(CENT,rounding=ROUND_HALF_UP);item.movimento=move;gs.write(item)
         allocated.append({'item':item.pk,'sku':item.peca.sku,'descricao':item.peca.descricao,'quantidade':str(item.quantidade),'valor_unitario':str(item.valor_unitario),'desconto':str(item.desconto),'valor_liquido':str(net),'custo_total':str(item.custo_total),'movimento':move.pk,'conversao':item.conversao,'lotes':[{'id':detail.lote_id,'numero':detail.lote.numero,'validade':detail.lote.validade.isoformat() if detail.lote.validade else None,'quantidade':str(-detail.variacao),'custo_unitario':str(detail.custo_unitario),'custo_total':str(detail.custo_total)} for detail in move.lotes_movimentados.select_related('lote')]})
-    accounts=sorted(set([session.conta_id]+[f.conta_pdv_id for f in g.FormaPagamento.objects.filter(pk__in=[r['forma'] for r in rows]) if f.conta_pdv_id]))
+    dest_accounts = [session.conta_id]
+    for f in g.FormaPagamento.objects.filter(pk__in=[r['forma'] for r in rows]):
+        dest_accounts.append(f.conta_pdv_id or session.conta_id)
+    accounts = sorted(set(dest_accounts))
     list(m.ContaBancaria.objects.select_for_update().filter(pk__in=accounts).order_by('pk'))
     for index,row in enumerate(rows):
-        form=g.FormaPagamento.objects.get(pk=row['forma']);amount=Decimal(row['valor']);received=Decimal(row['recebido'])
+        form=g.FormaPagamento.objects.get(pk=row['forma'])
+        amount=Decimal(row['valor'])
+        raw_rec = row.get('recebido')
+        received = Decimal(raw_rec) if raw_rec else amount
         payment=None
         if form.tipo_pdv not in ('BOLETO','CREDIARIO'):
-            account_id=session.conta_id if form.tipo_pdv=='DINHEIRO' else form.conta_pdv_id
-            with _execution(user,sale=sale,session=session,entry=entry,account_ids=[form.conta_pdv_id] if form.conta_pdv_id else []):
+            account_id=session.conta_id if form.tipo_pdv=='DINHEIRO' else (form.conta_pdv_id or session.conta_id)
+            with _execution(user,sale=sale,session=session,entry=entry,account_ids=[account_id] if account_id else []):
                 payment=finance.pagar(user,entry.pk,amount,timezone.localdate(),f'PDV: {form.nome}',account_id,uuid.uuid5(key,'pagamento:'+str(index)))
             if account_id==session.conta_id:
                 move=m.MovimentoCaixa.objects.get(conta_id=account_id,referencia=payment.request_id)
                 gs.write(m.EventoCaixa(sessao=session,movimento=move,tipo='VENDA'))
-        gs.write(m.PagamentoVenda(venda=sale,forma=form,valor=amount,recebido=received,troco=received-amount,pagamento=payment,parcelas=row.get('parcelas',1)))
+        gs.write(m.PagamentoVenda(venda=sale,forma=form,valor=amount,recebido=received,troco=max(ZERO, received-amount),pagamento=payment,parcelas=row.get('parcelas',1)))
     sale.status='FINALIZADA';sale.finalizacao_id=key;sale.finalizacao_dados=rows;sale.finalizada_em=timezone.now()
-    sale.snapshot={'numero':str(sale),'organization':str(current_organization().display_name),'cliente':str(sale.cliente) if sale.cliente_id else 'Consumidor não identificado','vendedor':str(sale.vendedor),'total':str(total),'desconto_global':str(sale.desconto_global),'acrescimo':str(sale.acrescimo),'itens':allocated,'pagamentos':rows,'saldo_pendente':str(entry.saldo),'finalizada_em':timezone.now().isoformat(),'fiscal':'Comprovante não fiscal'}
+    clean_doc = str(cliente_documento or '').strip()
+    cliente_label = str(sale.cliente) if sale.cliente_id else (f'Consumidor (Doc: {clean_doc})' if clean_doc else 'Consumidor não identificado')
+    fiscal_label = 'NFC-e (Nota Fiscal de Consumidor Eletrônica)' if str(tipo_emissao).upper() == 'NFCE' else 'Comprovante não fiscal'
+    sale.snapshot={'numero':str(sale),'organization':str(current_organization().display_name),'cliente':cliente_label,'cliente_documento':clean_doc or (sale.cliente.cpf_cnpj if sale.cliente_id else ''),'tipo_emissao':str(tipo_emissao).upper(),'vendedor':str(sale.vendedor),'total':str(total),'desconto_global':str(sale.desconto_global),'acrescimo':str(sale.acrescimo),'itens':allocated,'pagamentos':rows,'saldo_pendente':str(entry.saldo),'finalizada_em':timezone.now().isoformat(),'fiscal':fiscal_label}
     gs.write(sale);gs.audit(user,'VENDA_FINALIZADA',sale,{'total':str(total),'lancamento':entry.pk,'caixa':session.pk,'request_id':str(key)})
     return sale

@@ -1,3 +1,183 @@
-{% load l10n %}<dialog class="sv-payment-dialog" id="seller-checkout" aria-labelledby="checkout-title"><div class="sv-dialog-top"><div><p class="sv-eyebrow">FECHAMENTO · {{ sale }}</p><h2 id="checkout-title">Confirmar pagamento</h2></div><button class="sv-button" type="button" data-close-dialog>Voltar</button></div><div class="sv-payment-total"><span>TOTAL DA VENDA</span><strong>R$ {{ sale.total|floatformat:2 }}</strong></div>
-<form method="post" id="pdv-pagamento" class="sv-checkout">{% csrf_token %}<input name="action" value="finalizar" type="hidden"><input name="request_id" value="{{ request_id }}" type="hidden"><input name="pagamentos" id="pagamentos" type="hidden"><h2>Pagamento</h2><p class="sv-help">Confirme o recebimento. PIX e cartão não têm integração com adquirente. Venda a prazo exige cliente e limite de crédito.</p><div id="pagamento-linhas">{% for idx in '123' %}{% if idx != '1' %}<details class="sv-details"><summary>Adicionar pagamento {{ idx }}</summary>{% endif %}<fieldset class="pagamento-linha"><legend>Pagamento {{ idx }}</legend><label for="forma-{{ idx }}">Forma</label><select id="forma-{{ idx }}" class="forma"><option value="">Não usar</option>{% for row in forms %}<option value="{{ row.pk|unlocalize }}" data-kind="{{ row.tipo_pdv }}">{{ row.nome }} · {{ row.get_tipo_pdv_display }}</option>{% endfor %}</select><label for="valor-{{ idx }}">Valor devido R$</label><input id="valor-{{ idx }}" class="valor" type="number" min=".01" step=".01"><label for="recebido-{{ idx }}">Recebido em dinheiro R$</label><input id="recebido-{{ idx }}" class="recebido" type="number" min=".01" step=".01"><div class="parcelas-control" hidden><label for="parcelas-{{ idx }}">Parcelas no cartão de crédito</label><input id="parcelas-{{ idx }}" class="parcelas" type="number" min="1" max="12" step="1" value="1"></div></fieldset>{% if idx != '1' %}</details>{% endif %}{% endfor %}</div><p class="sv-change" data-seller-change aria-live="polite">Troco: R$ 0,00</p><button class="sv-button sv-primary" id="finalizar"{% if not items %} disabled{% endif %}>Confirmar venda · R$ {{ sale.total|floatformat:2 }}</button><small>A confirmação registra a venda, baixa o estoque e gera o comprovante não fiscal.</small></form>
+{% load l10n %}
+<dialog class="sv-payment-dialog" id="seller-checkout" aria-labelledby="checkout-title">
+  <div class="sv-dialog-top">
+    <div>
+      <p class="sv-eyebrow">FECHAMENTO DA VENDA · {{ sale }}</p>
+      <h2 id="checkout-title" class="h4 mb-0 text-white">Confirmar Pagamento</h2>
+    </div>
+    <button class="sv-button sv-btn-close" type="button" data-close-dialog>✕ Fechar</button>
+  </div>
+
+  <div class="sv-payment-total-banner">
+    <div class="sv-total-label">VALOR TOTAL DA VENDA</div>
+    <div class="sv-total-amount">R$ {{ sale.total|floatformat:2 }}</div>
+  </div>
+
+  <form method="post" id="pdv-pagamento" class="sv-checkout-form">
+    {% csrf_token %}
+    <input name="action" value="finalizar" type="hidden">
+    <input name="request_id" value="{{ request_id }}" type="hidden">
+    <input name="pagamentos" id="pagamentos" type="hidden">
+    <input type="hidden" name="tipo_emissao" id="tipo_emissao" value="CUPOM">
+
+    <!-- CPF/CNPJ na Nota (Opcional) - Conforme exigência legal e do cliente -->
+    <div class="sv-doc-cliente-box mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <label for="cliente_documento" class="sv-field-label mb-0">
+          <i class="bi bi-person-vcard text-primary me-1"></i> CPF ou CNPJ do Cliente (Opcional)
+        </label>
+        <span class="sv-badge-optional">Opcional</span>
+      </div>
+      <input type="text" 
+             id="cliente_documento" 
+             name="cliente_documento" 
+             class="sv-input-doc" 
+             placeholder="000.000.000-00 ou 00.000.000/0000-00 (deixe em branco se não solicitado)" 
+             maxlength="20"
+             autocomplete="off">
+      <small class="sv-doc-hint">Pergunte ao cliente: "Deseja CPF na nota?". Se o cliente não quiser, deixe em branco.</small>
+    </div>
+
+    <!-- Opção de Emissão no Final da Venda: Cupom Térmico ou NFC-e -->
+    <div class="sv-emission-box mb-3">
+      <label class="sv-field-label d-block mb-2">
+        <i class="bi bi-receipt-cutoff text-primary me-1"></i> Tipo de Emissão no Fechamento
+      </label>
+      <div class="sv-emission-pills">
+        <button type="button" class="sv-emission-pill active" id="pill-emissao-cupom" data-emission="CUPOM">
+          <span class="sv-pill-icon">🧾</span>
+          <div class="sv-pill-texts">
+            <strong>Cupom Térmico</strong>
+            <small>Comprovante de venda rápido (Bobina)</small>
+          </div>
+        </button>
+        <button type="button" class="sv-emission-pill" id="pill-emissao-nfce" data-emission="NFCE">
+          <span class="sv-pill-icon">📄</span>
+          <div class="sv-pill-texts">
+            <strong>NFC-e Fiscal</strong>
+            <small>Nota de Consumidor Eletrônica SEFAZ</small>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Seleção Rápida de Forma de Pagamento (Pills Visuais) -->
+    <div class="sv-payment-quick-select mb-3">
+      <label class="sv-field-label d-block mb-2">
+        <i class="bi bi-wallet2 text-primary me-1"></i> Forma de Pagamento
+      </label>
+      <div class="sv-pill-grid">
+        {% for row in forms %}
+          <button type="button" 
+                  class="sv-payment-pill {% if forloop.first %}active{% endif %}" 
+                  data-pill-forma="{{ row.pk|unlocalize }}"
+                  data-pill-kind="{{ row.tipo_pdv }}">
+            {% if row.tipo_pdv == 'DINHEIRO' %}💵 Dinheiro
+            {% elif row.tipo_pdv == 'PIX' %}⚡ PIX
+            {% elif row.tipo_pdv == 'DEBITO' %}💳 Cartão Débito
+            {% elif row.tipo_pdv == 'CREDITO' %}💳 Cartão Crédito
+            {% elif row.tipo_pdv == 'BOLETO' %}📄 Boleto
+            {% else %}💰 {{ row.nome }}{% endif %}
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Linha 1 (Principal) -->
+    <div id="pagamento-linhas">
+      <fieldset class="pagamento-linha sv-linha-principal border-0 p-0 m-0">
+        <!-- O select real fica sincronizado com os botões rápidos -->
+        <div style="display:none;">
+          <label for="forma-1">Forma</label>
+          <select id="forma-1" class="forma">
+            {% for row in forms %}
+              <option value="{{ row.pk|unlocalize }}" data-kind="{{ row.tipo_pdv }}" {% if forloop.first %}selected{% endif %}>{{ row.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Valor devido: oculto e pré-preenchido com o total da venda, conforme solicitação do cliente -->
+        <input id="valor-1" class="valor" type="hidden" value="{{ sale.total|stringformat:'.2f' }}">
+
+        <!-- Campo Dinheiro: Valor entregue e cálculo instantâneo de troco -->
+        <div class="sv-cash-section mt-3" id="cash-section-1">
+          <label for="recebido-1" class="sv-field-label">
+            <i class="bi bi-cash-stack me-1 text-success"></i> Valor entregue pelo cliente (R$)
+          </label>
+          <div class="sv-input-money-wrap">
+            <span class="sv-currency-symbol">R$</span>
+            <input id="recebido-1" 
+                   class="recebido sv-input-money" 
+                   type="number" 
+                   step="0.01" 
+                   min="0" 
+                   placeholder="{{ sale.total|stringformat:'.2f' }}"
+                   autocomplete="off">
+          </div>
+          <small class="text-muted d-block mt-1">Deixe vazio se o cliente pagou o valor exato.</small>
+          
+          <!-- Box de Troco em Destaque -->
+          <div class="sv-troco-box mt-3">
+            <span class="sv-troco-title">TROCO A DEVOLVER</span>
+            <span class="sv-troco-value" data-seller-change>R$ 0,00</span>
+          </div>
+        </div>
+
+        <!-- Opção de Parcelas para Cartão de Crédito -->
+        <div class="parcelas-control sv-card-section mt-3" hidden>
+          <label for="parcelas-1" class="sv-field-label">Número de Parcelas</label>
+          <select id="parcelas-1" class="parcelas form-select form-select-lg mt-1">
+            <option value="1">1x de R$ {{ sale.total|floatformat:2 }} (À vista)</option>
+            <option value="2">2x</option>
+            <option value="3">3x</option>
+            <option value="4">4x</option>
+            <option value="5">5x</option>
+            <option value="6">6x</option>
+            <option value="10">10x</option>
+            <option value="12">12x</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <!-- Divisão de Pagamento Opcional (apenas se cliente quiser pagar com 2 ou 3 formas) -->
+      <details class="sv-details sv-split-details mt-4">
+        <summary class="text-primary fw-semibold" style="cursor: pointer;">
+          <i class="bi bi-plus-circle me-1"></i> Dividir pagamento em mais formas (Opcional)
+        </summary>
+        <div class="p-3 bg-light rounded mt-2 border">
+          <p class="small text-muted mb-2">Para dividir o valor entre formas diferentes (ex: parte em dinheiro e parte em cartão):</p>
+          {% for idx in '23' %}
+            <fieldset class="pagamento-linha mb-3 p-2 bg-white rounded border">
+              <legend class="h6 mb-2">Forma adicional {{ idx }}</legend>
+              <div class="row g-2">
+                <div class="col-6">
+                  <label for="forma-{{ idx }}" class="small fw-bold">Forma</label>
+                  <select id="forma-{{ idx }}" class="forma form-select form-select-sm">
+                    <option value="">Não usar</option>
+                    {% for row in forms %}
+                      <option value="{{ row.pk|unlocalize }}" data-kind="{{ row.tipo_pdv }}">{{ row.nome }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label for="valor-{{ idx }}" class="small fw-bold">Valor (R$)</label>
+                  <input id="valor-{{ idx }}" class="valor form-control form-control-sm" type="number" min="0.01" step="0.01" placeholder="0,00">
+                </div>
+              </div>
+            </fieldset>
+          {% endfor %}
+        </div>
+      </details>
+    </div>
+
+    <!-- Botão de Confirmação Grande e Imprimir Cupom -->
+    <div class="mt-4">
+      <button class="sv-button sv-btn-confirm-sale w-100 py-3 fs-5 fw-bold" id="finalizar" {% if not items %}disabled{% endif %}>
+        <i class="bi bi-check2-circle me-2"></i> <span id="btn-finalizar-text">Confirmar Venda e Emitir Cupom</span> · R$ {{ sale.total|floatformat:2 }}
+      </button>
+      <small class="text-muted text-center d-block mt-2">
+        A confirmação registra a venda, dá baixa no estoque e abre o comprovante para impressão.
+      </small>
+    </div>
+  </form>
 </dialog>

@@ -12,12 +12,18 @@
     updateInstallments(row);
   });
   form?.addEventListener('submit', () => {
-    const payments = [...document.querySelectorAll('.pagamento-linha')].filter(row => row.querySelector('.forma').value).map(row => {
-      const result = {forma: row.querySelector('.forma').value, valor: row.querySelector('.valor').value};
-      const received = row.querySelector('.recebido').value;
+    const due = Number(document.querySelector('.sv-pdv')?.dataset.total || 0);
+    const payments = [...document.querySelectorAll('.pagamento-linha')].filter(row => row.querySelector('.forma')?.value).map(row => {
+      let val = row.querySelector('.valor')?.value;
+      if (!val || Number(val) === 0) val = due.toFixed(2);
+      const result = {forma: row.querySelector('.forma').value, valor: val};
+      let received = row.querySelector('.recebido')?.value;
+      if (!received && row.querySelector('.forma')?.selectedOptions[0]?.dataset.kind === 'DINHEIRO') {
+        received = val;
+      }
       if (received) result.recebido = received;
       const installments = row.querySelector('.parcelas');
-      if (row.querySelector('.forma').selectedOptions[0]?.dataset.kind === 'CREDITO' && installments) result.parcelas = installments.value || '1';
+      if (row.querySelector('.forma')?.selectedOptions[0]?.dataset.kind === 'CREDITO' && installments) result.parcelas = installments.value || '1';
       return result;
     });
     document.getElementById('pagamentos').value = JSON.stringify(payments);

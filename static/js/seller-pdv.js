@@ -32,29 +32,120 @@
   const cents = value => {const number=Number(value);return Number.isFinite(number)?Math.round(number*100):0;};
   const currency = value => (value/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const change = document.querySelector('[data-seller-change]');
-  const recalculate = () => {
-    let troco=0;
-    document.querySelectorAll('.pagamento-linha').forEach(row=>{
-      const kind=row.querySelector('.forma').selectedOptions[0]?.dataset.kind;
-      const received=row.querySelector('.recebido');
-      received.disabled=kind!=='DINHEIRO';
-      if(received.disabled) received.value='';
-      const installments=row.querySelector('.parcelas');
-      const installmentControl=row.querySelector('.parcelas-control');
-      if(installmentControl) installmentControl.hidden=kind!=='CREDITO';
-      if(installments) installments.disabled=kind!=='CREDITO';
-      if(kind==='DINHEIRO') troco+=Math.max(0,cents(received.value)-cents(row.querySelector('.valor').value));
+  
+  // Sincronização das pills visuais de pagamento
+  document.querySelectorAll('[data-pill-forma]').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('[data-pill-forma]').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const forma1 = document.getElementById('forma-1');
+      if (forma1) {
+        forma1.value = pill.dataset.pillForma;
+        forma1.dispatchEvent(new Event('change'));
+      }
     });
-    if(change)change.textContent='Troco: '+currency(troco);
+  });
+
+  // Sincronização do tipo de emissão (Cupom Térmico vs NFC-e Fiscal)
+  document.querySelectorAll('[data-emission]').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('[data-emission]').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const hidden = document.getElementById('tipo_emissao');
+      const btnText = document.getElementById('btn-finalizar-text');
+      const kind = pill.dataset.emission;
+      if (hidden) hidden.value = kind;
+      if (btnText) {
+        btnText.textContent = (kind === 'NFCE') ? 'Confirmar Venda e Emitir NFC-e' : 'Confirmar Venda e Emitir Cupom';
+      }
+    });
+  });
+
+  const recalculate = () => {
+    let troco = 0;
+    const due = cents(document.querySelector('.sv-pdv')?.dataset.total || 0);
+    const line1 = document.querySelector('.pagamento-linha');
+    if (line1) {
+      const forma1 = line1.querySelector('.forma');
+      const kind1 = forma1?.selectedOptions[0]?.dataset.kind;
+      const valor1 = line1.querySelector('.valor');
+      const rec1 = line1.querySelector('.recebido');
+      const cashSection = document.getElementById('cash-section-1');
+      const installmentControl = line1.querySelector('.parcelas-control');
+      const installments = line1.querySelector('.parcelas');
+
+      const additionalLines = [...document.querySelectorAll('.pagamento-linha')].slice(1).filter(r => r.querySelector('.forma')?.value);
+      if (!additionalLines.length && valor1) {
+        valor1.value = (due / 100).toFixed(2);
+      }
+
+      if (cashSection) {
+        cashSection.style.display = (kind1 === 'DINHEIRO') ? 'block' : 'none';
+      }
+      if (installmentControl) {
+        installmentControl.hidden = (kind1 !== 'CREDITO');
+      }
+      if (installments) {
+        installments.disabled = (kind1 !== 'CREDITO');
+      }
+
+      if (kind1 === 'DINHEIRO' && valor1) {
+        const valCents = cents(valor1.value);
+        const recCents = cents(rec1?.value);
+        if (recCents > valCents) {
+          troco = (recCents - valCents);
+        }
+      }
+    }
+    if (change) change.textContent = currency(troco);
   };
+
   document.querySelectorAll('.pagamento-linha input,.pagamento-linha select').forEach(field=>field.addEventListener('input',recalculate));
+  document.querySelectorAll('.pagamento-linha select').forEach(field=>field.addEventListener('change',recalculate));
   recalculate();
+
   const checkout=document.getElementById('pdv-pagamento');
   checkout?.addEventListener('submit',event=>{
+    const due=cents(document.querySelector('.sv-pdv').dataset.total);
+    const line1 = document.querySelector('.pagamento-linha');
+    const valor1 = line1?.querySelector('.valor');
+    const forma1 = line1?.querySelector('.forma');
+    const rec1 = line1?.querySelector('.recebido');
+
+    const additionalLines = [...document.querySelectorAll('.pagamento-linha')].slice(1).filter(r => r.querySelector('.forma')?.value);
+    if (!additionalLines.length) {
+      if (valor1) valor1.value = (due / 100).toFixed(2);
+      if (forma1?.selectedOptions[0]?.dataset.kind === 'DINHEIRO' && rec1) {
+        if (!rec1.value || Number(rec1.value) < Number(valor1.value)) {
+          rec1.value = valor1.value;
+        }
+      }
+    }
+
     const payments=[...document.querySelectorAll('.pagamento-linha')].filter(row=>row.querySelector('.forma').value);
     const total=payments.reduce((sum,row)=>sum+cents(row.querySelector('.valor').value),0);
-    const due=cents(document.querySelector('.sv-pdv').dataset.total);
-    if(!payments.length || total!==due){event.preventDefault();change.textContent='Os pagamentos devem somar exatamente '+currency(due)+'.';change.scrollIntoView({block:'center'});}
+    if(!payments.length || total!==due){
+      event.preventDefault();
+      if (change) {
+        change.textContent='Os pagamentos devem somar exatamente '+currency(due)+'.';
+        change.scrollIntoView({block:'center'});
+      }
+      return;
+    }
+    const rows = payments.map(row => {
+      const result = { forma: row.querySelector('.forma').value, valor: row.querySelector('.valor').value };
+      const received = row.querySelector('.recebido')?.value;
+      if (received) result.recebido = received;
+      const installments = row.querySelector('.parcelas');
+      if (row.querySelector('.forma')?.selectedOptions[0]?.dataset.kind === 'CREDITO' && installments && !installments.disabled) {
+        result.parcelas = installments.value;
+      }
+      return result;
+    });
+    const pagamentosInput = document.getElementById('pagamentos');
+    if (pagamentosInput) {
+      pagamentosInput.value = JSON.stringify(rows);
+    }
   });
   const scan=document.querySelector('[data-seller-scan]'), video=document.querySelector('[data-scan-video]'), stop=document.querySelector('[data-scan-stop]'), feedback=document.querySelector('[data-scan-feedback]');
   let stream, scanning=false;

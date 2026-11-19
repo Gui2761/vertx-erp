@@ -3,33 +3,29 @@
 {% block content %}
 <style>
   .vx-product-desc {
-    color: #0f172a;
-    font-size: 0.95rem;
+    color: #f8fafc !important;
+    font-size: 0.98rem;
+    font-weight: 600;
     line-height: 1.35;
     display: inline-block;
-  }
-  .vx-product-sku {
-    color: #0284c7;
-    font-weight: 700;
-  }
-  [data-bs-theme="dark"] .vx-product-desc,
-  [data-theme="dark"] .vx-product-desc,
-  body.dark .vx-product-desc,
-  .table-dark .vx-product-desc {
-    color: #f8fafc !important;
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
-  [data-bs-theme="dark"] .vx-product-sku,
-  [data-theme="dark"] .vx-product-sku {
+  .vx-product-sku {
     color: #38bdf8 !important;
+    font-weight: 700;
   }
-  @media (prefers-color-scheme: dark) {
-    .vx-product-desc {
-      color: #f8fafc !important;
-    }
-    .vx-product-sku {
-      color: #38bdf8 !important;
-    }
+  .table tbody td {
+    color: #e2e8f0;
+  }
+  [data-bs-theme="light"] .vx-product-desc {
+    color: #0f172a !important;
+    text-shadow: none;
+  }
+  [data-bs-theme="light"] .vx-product-sku {
+    color: #0284c7 !important;
+  }
+  [data-bs-theme="light"] .table tbody td {
+    color: #1e293b;
   }
 </style>
 <header class="vx-page-header">
