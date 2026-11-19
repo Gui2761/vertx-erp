@@ -276,7 +276,7 @@
 <script src="{% static 'vendor/bootstrap.bundle.min.js' %}"></script>
 {% if seller_experience %}<nav class="sv-bottom" aria-label="Atalhos do vendedor">{% for link in seller_navigation %}{% if link.url == '/vendedor/' %}<a href="{{ link.url }}">Rotina</a>{% elif link.url == '/vendedor/vendas/' %}<a href="{{ link.url }}">Vendas</a>{% elif link.url == '/vendedor/meta/' %}<a href="{{ link.url }}">Meta</a>{% elif link.url == '/vendedor/ponto/' %}<a href="{{ link.url }}">Ponto</a>{% elif link.url == '/vendedor/alertas/' %}<a href="{{ link.url }}">Alertas</a>{% endif %}{% endfor %}</nav>{% endif %}
 <script src="{% static 'js/pdv-outbox.js' %}" defer></script>
-<script src="{% static 'js/vertyx.js' %}?v=pdv-admin-6" defer></script>
+<script src="{% static 'js/vertyx.js' %}?v=pdv-admin-7" defer></script>
 <script src="{% static 'js/checklist-builder.js' %}" defer></script>
 </body>
 </html>

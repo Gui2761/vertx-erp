@@ -1,7 +1,48 @@
-if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register(document.body.classList.contains('vx-technician')?'/tecnico/sw.js':location.pathname.startsWith('/pdv/')?'/pdv/sw.js':location.pathname.startsWith('/vendedor/')?'/vendedor/sw.js':'/sw.js').catch(() => {
-  const status=document.querySelector('[data-install-status]');
-  if(status)status.textContent='Não foi possível ativar o service worker. Recarregue com conexão e confira o painel Application do navegador. As vendas continuam exigindo conexão.';
-});
+// Redirecionamento de segurança para apps ou abas abertas no domínio legado do Render
+if (window.location.hostname.includes('render.com')) {
+  window.location.replace('https://vertyxerp.com.br' + window.location.pathname + window.location.search + window.location.hash);
+}
+
+// Auto-atualização transparente e registro de Service Worker
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  const swUrl = document.body.classList.contains('vx-technician')
+    ? '/tecnico/sw.js'
+    : location.pathname.startsWith('/pdv/')
+    ? '/pdv/sw.js'
+    : location.pathname.startsWith('/vendedor/')
+    ? '/vendedor/sw.js'
+    : '/sw.js';
+
+  navigator.serviceWorker.register(swUrl).then(reg => {
+    try { reg.update(); } catch (e) {}
+
+    if (reg.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      if (newWorker) {
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      }
+    });
+  }).catch(() => {
+    const status = document.querySelector('[data-install-status]');
+    if (status) status.textContent = 'Não foi possível ativar o service worker. Recarregue com conexão e confira o painel Application do navegador. As vendas continuam exigindo conexão.';
+  });
+
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+}
 // Capture the install event before DOMContentLoaded; some browsers emit it early.
 let vertyxInstallPrompt;
 addEventListener('beforeinstallprompt',event=>{

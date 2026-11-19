@@ -82,11 +82,11 @@ def scoped_worker(request,app):
     assert app in {'pdv','vendedor','tecnico'}
     response=HttpResponse((Path(settings.BASE_DIR)/f'static/pwa/{app}-sw.js').read_text(encoding='utf-8'),content_type='application/javascript')
     response['Service-Worker-Allowed']=f'/{app}/'
-    response['Cache-Control']='no-cache'
+    response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response
 
 def worker(request):
     response = HttpResponse((Path(settings.BASE_DIR) / 'static/pwa/sw.js').read_text(encoding='utf-8'), content_type='application/javascript')
     response['Service-Worker-Allowed'] = '/'
-    response['Cache-Control'] = 'no-cache'
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return response
