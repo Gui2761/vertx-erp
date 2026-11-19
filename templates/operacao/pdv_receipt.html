@@ -1,9 +1,333 @@
-{% extends 'base.html' %}{% block content %}
-<main class="container"><h1>Comprovante não fiscal</h1>
-<p>{{ sale.snapshot.organization }} · {{ sale.snapshot.numero }} · {{ sale.snapshot.finalizada_em }}</p>
-<p>Identificação da venda: <span class="text-break">{{ sale.public_id }}</span></p>
-<p>{{ sale.snapshot.cliente }} · Vendedor: {{ sale.snapshot.vendedor }}</p>
-<div class="table-responsive"><table class="table"><thead><tr><th>Produto</th><th>Quantidade</th><th>Valor líquido</th></tr></thead><tbody>{% for row in sale.snapshot.itens %}<tr><td>{{ row.sku }} · {{ row.descricao }}</td><td>{{ row.quantidade|floatformat:3 }}</td><td>R$ {{ row.valor_liquido|floatformat:2 }}</td></tr>{% endfor %}</tbody></table></div>
-<p>Total R$ {{ sale.snapshot.total|floatformat:2 }} · Desconto R$ {{ sale.snapshot.desconto_global|floatformat:2 }} · Acréscimo R$ {{ sale.snapshot.acrescimo|floatformat:2 }}</p>
-<h2>Pagamentos</h2><div class="table-responsive"><table class="table"><thead><tr><th>Forma</th><th>Valor aplicado</th><th>Valor recebido</th><th>Troco</th></tr></thead><tbody>{% for row in sale.pagamentos_pdv.all %}<tr><td>{{ row.forma.nome }}{% if row.forma.tipo_pdv == 'CREDITO' %} · {{ row.parcelas }}x{% endif %}</td><td>R$ {{ row.valor|floatformat:2 }}</td><td>R$ {{ row.recebido|floatformat:2 }}</td><td>R$ {{ row.troco|floatformat:2 }}</td></tr>{% endfor %}</tbody></table></div>
-<p>Este comprovante não substitui documento fiscal.</p><button class="btn btn-primary" onclick="window.print()">Imprimir</button><a class="btn btn-outline-secondary" href="{% url 'operacao:pdv_sale' sale.public_id %}">Voltar à venda</a></main>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Comprovante de Venda · {{ sale.snapshot.numero }}{% endblock %}
+{% block content %}
+<div class="vx-no-print d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 p-3 bg-light border rounded">
+  <div>
+    <h1 class="h4 mb-1">Comprovante da Venda · {{ sale.snapshot.numero }}</h1>
+    <p class="text-muted small mb-0">Imprima o cupom térmico para entrega ao cliente ou arquivamento interno.</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="btn-group" role="group" aria-label="Largura da bobina">
+      <button type="button" class="btn btn-outline-secondary active" id="btn-mode-80" onclick="setPaperWidth('80mm')">Bobina 80mm</button>
+      <button type="button" class="btn btn-outline-secondary" id="btn-mode-58" onclick="setPaperWidth('58mm')">Bobina 58mm</button>
+    </div>
+    <button class="btn btn-primary" onclick="window.print()">
+      <i class="bi bi-printer me-1"></i> Imprimir Cupom
+    </button>
+    <a class="btn btn-outline-primary" href="{% url 'operacao:pdv_home' %}">
+      <i class="bi bi-cart-plus me-1"></i> Nova Venda
+    </a>
+    <a class="btn btn-outline-secondary" href="{% url 'operacao:pdv_sale' sale.public_id %}">
+      Detalhes no ERP
+    </a>
+  </div>
+</div>
+
+<div class="receipt-wrapper">
+  <article class="thermal-receipt width-80mm" id="thermalSlip">
+    <!-- Cabeçalho do Estabelecimento -->
+    <header class="receipt-header">
+      <div class="company-name">{{ sale.snapshot.organization|upper }}</div>
+      <div class="receipt-sub">{{ organization.endereco|default:'Comprovante de Operação' }}</div>
+      {% if organization.telefone %}<div class="receipt-sub">Tel: {{ organization.telefone }}</div>{% endif %}
+      {% if organization.cnpj %}<div class="receipt-sub">CNPJ: {{ organization.cnpj }}</div>{% endif %}
+    </header>
+
+    <div class="receipt-divider-double">================================================</div>
+    <div class="receipt-title">COMPROVANTE NÃO FISCAL</div>
+    <div class="receipt-divider-double">================================================</div>
+
+    <!-- Informações da Venda -->
+    <div class="receipt-meta">
+      <div><strong>Venda:</strong> {{ sale.snapshot.numero }}</div>
+      <div><strong>Data/Hora:</strong> {{ sale.snapshot.finalizada_em|slice:":10" }} {{ sale.snapshot.finalizada_em|slice:"11:19" }}</div>
+      <div><strong>Operador:</strong> {{ sale.snapshot.vendedor }}</div>
+      <div><strong>Cliente:</strong> {{ sale.snapshot.cliente }}</div>
+      {% if sale.cliente.cpf_cnpj %}<div><strong>Doc:</strong> {{ sale.cliente.cpf_cnpj }}</div>{% endif %}
+    </div>
+
+    <div class="receipt-divider">------------------------------------------------</div>
+    <div class="receipt-table-header">
+      <span>ITEM / DESCRIÇÃO</span>
+    </div>
+    <div class="receipt-table-cols">
+      <span>QTD x VL.UNIT</span>
+      <span>DESC</span>
+      <span class="text-end">TOTAL</span>
+    </div>
+    <div class="receipt-divider">------------------------------------------------</div>
+
+    <!-- Lista de Itens -->
+    <div class="receipt-items">
+      {% for row in sale.snapshot.itens %}
+        <div class="receipt-item">
+          <div class="item-name">{{ forloop.counter }}. {{ row.sku }} · {{ row.descricao|upper }}</div>
+          <div class="item-calc">
+            <span>{{ row.quantidade|floatformat:3 }} x {{ row.valor_unitario|floatformat:2 }}</span>
+            <span>{% if row.desconto and row.desconto != '0' and row.desconto != '0.00' %}-{{ row.desconto|floatformat:2 }}{% else %}—{% endif %}</span>
+            <span class="text-end fw-bold">R$ {{ row.valor_liquido|floatformat:2 }}</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="receipt-divider">------------------------------------------------</div>
+
+    <!-- Totais -->
+    <div class="receipt-totals">
+      {% if sale.snapshot.desconto_global and sale.snapshot.desconto_global != '0' and sale.snapshot.desconto_global != '0.00' %}
+        <div class="totals-line">
+          <span>Desconto Venda:</span>
+          <span>-R$ {{ sale.snapshot.desconto_global|floatformat:2 }}</span>
+        </div>
+      {% endif %}
+      {% if sale.snapshot.acrescimo and sale.snapshot.acrescimo != '0' and sale.snapshot.acrescimo != '0.00' %}
+        <div class="totals-line">
+          <span>Acréscimo:</span>
+          <span>+R$ {{ sale.snapshot.acrescimo|floatformat:2 }}</span>
+        </div>
+      {% endif %}
+      <div class="totals-line totals-grand">
+        <span>TOTAL DA VENDA:</span>
+        <span>R$ {{ sale.snapshot.total|floatformat:2 }}</span>
+      </div>
+    </div>
+
+    <div class="receipt-divider">------------------------------------------------</div>
+
+    <!-- Pagamentos -->
+    <div class="receipt-payments">
+      <div class="receipt-subtitle">FORMA(S) DE PAGAMENTO</div>
+      {% for row in sale.pagamentos_pdv.all %}
+        <div class="payment-line">
+          <span>{{ row.forma.nome|upper }}{% if row.forma.tipo_pdv == 'CREDITO' %} ({{ row.parcelas }}x){% endif %}:</span>
+          <span class="fw-bold">R$ {{ row.valor|floatformat:2 }}</span>
+        </div>
+        {% if row.recebido and row.recebido > row.valor %}
+          <div class="payment-sub">
+            <span>Recebido: R$ {{ row.recebido|floatformat:2 }}</span>
+            <span>Troco: R$ {{ row.troco|floatformat:2 }}</span>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="receipt-divider-double">================================================</div>
+
+    <!-- Rodapé -->
+    <footer class="receipt-footer">
+      <div>OBRIGADO PELA PREFERÊNCIA!</div>
+      <div class="small-token">Chave: {{ sale.public_id }}</div>
+      <div class="legal-warning">NÃO POSSUI VALOR FISCAL · CONTROLE INTERNO</div>
+      <div class="legal-brand">VERTYX ERP · GESTÃO INTELIGENTE</div>
+    </footer>
+  </article>
+</div>
+
+<style>
+/* Estilos visuais na tela (Preview de Papel Térmico) */
+.receipt-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20px 10px 40px;
+  background: #e2e8f0;
+  border-radius: 12px;
+}
+
+.thermal-receipt {
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Courier New', Courier, Consolas, Monaco, monospace;
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 20px 14px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  transition: width 0.2s ease;
+}
+
+.thermal-receipt.width-80mm {
+  width: 320px;
+}
+.thermal-receipt.width-58mm {
+  width: 240px;
+  font-size: 11px;
+}
+
+.receipt-header {
+  text-align: center;
+  margin-bottom: 6px;
+}
+.company-name {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.receipt-sub {
+  font-size: 11px;
+  color: #333333;
+}
+.receipt-title {
+  text-align: center;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  padding: 2px 0;
+}
+.receipt-subtitle {
+  font-weight: 700;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.receipt-divider, .receipt-divider-double {
+  white-space: nowrap;
+  overflow: hidden;
+  letter-spacing: -1px;
+  text-align: center;
+  margin: 5px 0;
+  font-weight: bold;
+}
+
+.receipt-meta {
+  font-size: 11.5px;
+  margin: 6px 0;
+}
+
+.receipt-table-header {
+  font-weight: 700;
+  font-size: 11px;
+}
+.receipt-table-cols {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.receipt-items {
+  margin: 4px 0;
+}
+.receipt-item {
+  margin-bottom: 6px;
+}
+.item-name {
+  font-weight: 700;
+  word-break: break-word;
+}
+.item-calc {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+}
+
+.totals-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+  font-size: 12px;
+}
+.totals-grand {
+  font-size: 15px;
+  font-weight: 800;
+  border-top: 1px dashed #000;
+  padding-top: 5px;
+  margin-top: 4px;
+}
+
+.payment-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.payment-sub {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #444;
+  padding-left: 10px;
+}
+
+.receipt-footer {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 11px;
+}
+.small-token {
+  font-size: 9px;
+  word-break: break-all;
+  margin: 4px 0;
+}
+.legal-warning {
+  font-weight: 700;
+  font-size: 9.5px;
+  margin: 4px 0;
+}
+.legal-brand {
+  font-size: 8.5px;
+  color: #555;
+}
+
+/* ==========================================================================
+   CONFIGURAÇÃO DA IMPRESSORA TÉRMICA (@media print)
+   ========================================================================== */
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+  body, html {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+  .vx-no-print, header, nav, footer, .navbar, .vx-nav, .vx-skip {
+    display: none !important;
+  }
+  .receipt-wrapper {
+    padding: 0 !important;
+    background: none !important;
+    display: block !important;
+  }
+  .thermal-receipt {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 8px 4px !important;
+  }
+  .thermal-receipt.width-80mm {
+    width: 76mm !important; /* Calibrado para bobinas térmicas de 80mm com margens de hardware */
+  }
+  .thermal-receipt.width-58mm {
+    width: 52mm !important; /* Calibrado para bobinas térmicas de 58mm */
+  }
+}
+</style>
+
+<script>
+function setPaperWidth(width) {
+  const slip = document.getElementById('thermalSlip');
+  const btn80 = document.getElementById('btn-mode-80');
+  const btn58 = document.getElementById('btn-mode-58');
+  
+  if (width === '58mm') {
+    slip.classList.remove('width-80mm');
+    slip.classList.add('width-58mm');
+    btn58.classList.add('active');
+    btn80.classList.remove('active');
+  } else {
+    slip.classList.remove('width-58mm');
+    slip.classList.add('width-80mm');
+    btn80.classList.add('active');
+    btn58.classList.remove('active');
+  }
+}
+
+// Suporte a autoprint via query param ?autoprint=1
+if (window.location.search.includes('autoprint=1')) {
+  window.addEventListener('load', () => {
+    setTimeout(() => { window.print(); }, 300);
+  });
+}
+</script>
+{% endblock %}

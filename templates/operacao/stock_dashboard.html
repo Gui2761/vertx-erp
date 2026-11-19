@@ -3,7 +3,7 @@
 {% block content %}
 <header class="vx-page-header">
   <div><p class="vx-eyebrow">VERTYX · Controle operacional</p><h1>Painel do Estoque</h1><p>Posição física, disponibilidade, validade e movimentações da organização ativa.</p></div>
-  <div class="vx-actions"><a class="btn btn-primary" href="{% url 'gestao:peca_lista' %}">Produtos</a><a class="btn btn-warning text-dark fw-bold" href="{% url 'operacao:stock_initial_balance' %}"><i class="bi bi-clipboard-check me-1"></i> Levantamento inicial <span class="badge bg-dark text-white ms-1">Balanço</span></a><a class="btn btn-outline-primary" href="{% url 'operacao:stock_entry' %}">Entrada por lote</a><a class="btn btn-outline-primary" href="{% url 'operacao:stock_lots' %}">Lotes e validades</a></div>
+  <div class="vx-actions"><a class="btn btn-primary" href="{% url 'gestao:peca_lista' %}">Produtos</a><a class="btn btn-warning text-dark fw-bold" href="{% url 'operacao:stock_initial_balance' %}"><i class="bi bi-clipboard-check me-1"></i> Levantamento inicial <span class="badge bg-dark text-white ms-1">Balanço</span></a><a class="btn btn-outline-dark" href="{% url 'operacao:barcode_labels' %}"><i class="bi bi-upc-scan me-1"></i> Imprimir Etiquetas</a><a class="btn btn-outline-primary" href="{% url 'operacao:stock_entry' %}">Entrada por lote</a><a class="btn btn-outline-primary" href="{% url 'operacao:stock_lots' %}">Lotes e validades</a></div>
 </header>
 <section class="vx-kpi-grid stock-kpi-grid mb-4" aria-label="Indicadores do estoque">
   <article class="card"><span class="text-muted">Produtos ativos</span><strong class="vx-metric">{{ summary.produtos }}</strong></article>

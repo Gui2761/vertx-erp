@@ -665,3 +665,79 @@ def initial_balance_import(request):
         messages.error(request, f'Alguns produtos apresentaram erro: {"; ".join(errors[:3])}')
         
     return redirect('operacao:stock_initial_balance')
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def barcode_labels(request):
+    """
+    Gerador e impressor de etiquetas de código de barras para produtos.
+    Suporta bobina térmica (Zebra, Argox, Elgin) e folhas A4 (Pimaco).
+    """
+    require(request.user, 'estoque')
+    from .barcode_generator import generate_code128_svg
+    from platform_core.context import current_organization
+    
+    q = request.GET.get('q', '').strip()
+    categoria_id = request.GET.get('categoria', '').strip()
+    peca_id = request.GET.get('peca', '').strip()
+    layout = request.GET.get('layout', 'a4_30').strip()
+    show_price = request.GET.get('show_price', '1') == '1'
+    show_org = request.GET.get('show_org', '1') == '1'
+    show_sku = request.GET.get('show_sku', '1') == '1'
+    
+    parts_qs = g.Peca.objects.filter(ativo=True).select_related('categoria').order_by('descricao')
+    if peca_id:
+        parts_qs = parts_qs.filter(pk=peca_id)
+    if q:
+        parts_qs = parts_qs.filter(
+            Q(sku__icontains=q) | Q(descricao__icontains=q) | Q(codigo_barras__icontains=q) | Q(gtin__icontains=q)
+        )
+    if categoria_id:
+        parts_qs = parts_qs.filter(categoria_id=categoria_id)
+        
+    if request.method == 'POST':
+        pks = request.POST.getlist('selected_pks')
+        layout = request.POST.get('layout', layout)
+        show_price = request.POST.get('show_price') == '1'
+        show_org = request.POST.get('show_org') == '1'
+        show_sku = request.POST.get('show_sku') == '1'
+        
+        selected_items = []
+        for pk in pks:
+            try:
+                qty = int(request.POST.get(f'copies_{pk}', 1) or 1)
+            except (ValueError, TypeError):
+                qty = 1
+            peca = g.Peca.objects.filter(pk=pk).first()
+            if peca and qty > 0:
+                barcode_val = peca.codigo_barras or peca.gtin or peca.sku
+                svg = generate_code128_svg(barcode_val, height=35, module_width=1.3, include_text=True)
+                for _ in range(min(qty, 100)):
+                    selected_items.append({
+                        'peca': peca,
+                        'barcode_val': barcode_val,
+                        'svg': svg,
+                    })
+        return render(request, 'operacao/barcode_labels_print.html', {
+            'items': selected_items,
+            'layout': layout,
+            'show_price': show_price,
+            'show_org': show_org,
+            'show_sku': show_sku,
+            'org_name': current_organization().display_name if current_organization() else 'VERTYX',
+        })
+
+    categorias = m.CategoriaPeca.objects.filter(ativo=True).order_by('nome')
+    products = list(parts_qs[:150])
+    
+    context = {
+        'products': products,
+        'categorias': categorias,
+        'filters': {'q': q, 'categoria': categoria_id, 'peca': peca_id},
+        'layout': layout,
+        'show_price': show_price,
+        'show_org': show_org,
+        'show_sku': show_sku,
+    }
+    return render(request, 'operacao/barcode_labels.html', context)

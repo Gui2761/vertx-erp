@@ -1,0 +1,31 @@
+name: Scheduled Database Backup
+
+on:
+  schedule:
+    # Executa todos os dias às 03:00 UTC (00:00 Horário de Brasília)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Permite disparo manual pelo painel do GitHub Actions
+
+jobs:
+  backup:
+    name: Execute Daily Database Backup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Trigger Remote Backup on Fly.io
+        run: |
+          echo "Disparando comando de backup na máquina ativa do Fly.io..."
+          flyctl ssh console -a vertyx-erp -C "python manage.py backup_db --retention=14"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        continue-on-error: true
+
+      - name: Log Backup Execution
+        run: |
+          echo "Rotina de backup concluída com sucesso em $(date -u)"

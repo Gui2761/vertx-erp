@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% block title %}Gerador de Etiquetas de Código de Barras · VERTYX{% endblock %}
+{% block content %}
+<header class="vx-page-header">
+  <div>
+    <p class="vx-eyebrow">VERTYX · Controle operacional</p>
+    <h1>Gerador de Etiquetas de Código de Barras</h1>
+    <p>Gere e imprima etiquetas adesivas para produtos e prateleiras em bobinas térmicas ou folhas A4.</p>
+  </div>
+  <div class="vx-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'gestao:peca_lista' %}">
+      <i class="bi bi-arrow-left me-1"></i> Voltar aos Produtos
+    </a>
+    <a class="btn btn-outline-primary" href="{% url 'operacao:stock_dashboard' %}">
+      <i class="bi bi-speedometer2 me-1"></i> Painel do Estoque
+    </a>
+  </div>
+</header>
+
+<form method="post" action="{% url 'operacao:barcode_labels' %}" target="_blank">
+  {% csrf_token %}
+  
+  <div class="row g-4">
+    <!-- Coluna de Configuração -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white fw-bold">
+          <i class="bi bi-sliders me-1"></i> Formato da Etiqueta
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Modelo / Impressora</label>
+            <select name="layout" class="form-select" id="layoutSelect">
+              <optgroup label="Folhas A4 (Laser / Jato de Tinta / Pimaco)">
+                <option value="a4_30" selected>Folha A4 · 30 etiquetas (3 colunas x 10 linhas)</option>
+                <option value="a4_14">Folha A4 · 14 etiquetas (2 colunas x 7 linhas)</option>
+              </optgroup>
+              <optgroup label="Impressora Térmica de Bobina (Zebra, Elgin, Argox)">
+                <option value="termica_50x30">Bobina Térmica · 50mm x 30mm (1 por linha)</option>
+                <option value="termica_60x40">Bobina Térmica · 60mm x 40mm (1 por linha)</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Opções Visuais na Etiqueta</label>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" name="show_price" value="1" id="chkPrice" checked>
+              <label class="form-check-label" for="chkPrice">Exibir Preço de Venda (R$)</label>
+            </div>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" name="show_org" value="1" id="chkOrg" checked>
+              <label class="form-check-label" for="chkOrg">Exibir Nome da Loja / Marca</label>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="show_sku" value="1" id="chkSku" checked>
+              <label class="form-check-label" for="chkSku">Exibir Código Interno / SKU</label>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2 pt-2">
+            <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm">
+              <i class="bi bi-printer me-2"></i> Gerar e Imprimir Etiquetas
+            </button>
+            <small class="text-muted text-center">Abrirá a folha de impressão em nova aba.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card de Dica Rápida -->
+      <div class="card bg-light border-0">
+        <div class="card-body">
+          <h6 class="fw-bold"><i class="bi bi-lightbulb text-warning me-1"></i> Dica de Impressão</h6>
+          <p class="small text-muted mb-0">
+            Na janela de impressão do navegador (Chrome / Edge), defina <strong>Margens: Nenhuma</strong> e <strong>Escala: 100%</strong> (Padrão) para garantir o alinhamento exato nas divisões do papel adesivo.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna de Seleção de Produtos -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+          <span class="fw-bold"><i class="bi bi-box-seam me-1"></i> Selecione os Produtos e Quantidade de Cópias</span>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="marcarTodos(true)">Marcar Todos</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="marcarTodos(false)">Desmarcar</button>
+          </div>
+        </div>
+
+        <!-- Barra de Busca Rápida de Produtos -->
+        <div class="card-body border-bottom bg-light py-2">
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input type="text" id="filterInput" class="form-control" placeholder="Filtrar produtos na lista abaixo (digite nome, código ou barras)..." onkeyup="filtrarTabela()">
+          </div>
+        </div>
+
+        <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+          <table class="table table-hover align-middle mb-0" id="productsTable">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th style="width: 40px;" class="text-center">
+                  <input type="checkbox" id="checkMaster" class="form-check-input" onclick="toggleMaster(this)">
+                </th>
+                <th>Produto / Descrição</th>
+                <th style="width: 140px;">Código / SKU</th>
+                <th style="width: 110px;">Preço</th>
+                <th style="width: 110px;" class="text-center">Cópias</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for peca in products %}
+                <tr class="product-row">
+                  <td class="text-center">
+                    <input type="checkbox" 
+                           name="selected_pks" 
+                           value="{{ peca.pk }}" 
+                           class="form-check-input row-check"
+                           id="chk_{{ peca.pk }}"
+                           checked>
+                  </td>
+                  <td>
+                    <label for="chk_{{ peca.pk }}" class="fw-semibold text-dark mb-0 d-block cursor-pointer">
+                      {{ peca.descricao }}
+                    </label>
+                    <small class="text-muted">{{ peca.unidade_medida|default:'UN' }}{% if peca.categoria %} · {{ peca.categoria.nome }}{% endif %}</small>
+                  </td>
+                  <td>
+                    <span class="font-monospace text-primary small fw-bold">{{ peca.sku }}</span>
+                    {% if peca.codigo_barras and peca.codigo_barras != peca.sku %}
+                      <small class="d-block text-muted">{{ peca.codigo_barras }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <strong class="text-success small">R$ {{ peca.preco_venda|floatformat:2 }}</strong>
+                  </td>
+                  <td class="text-center">
+                    <input type="number" 
+                           name="copies_{{ peca.pk }}" 
+                           value="1" 
+                           min="1" 
+                           max="100" 
+                           class="form-control form-control-sm text-center fw-bold"
+                           style="width: 70px; margin: 0 auto;">
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    Nenhum produto cadastrado nesta organização.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-footer bg-light d-flex justify-content-between align-items-center py-2">
+          <span class="small text-muted" id="selectedCount">Total de produtos listados: {{ products|length }}</span>
+          <button type="submit" class="btn btn-primary fw-bold shadow-sm">
+            <i class="bi bi-printer me-1"></i> Imprimir Selecionados
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+function toggleMaster(master) {
+  const checkboxes = document.querySelectorAll('.row-check');
+  checkboxes.forEach(cb => {
+    if (cb.closest('tr').style.display !== 'none') {
+      cb.checked = master.checked;
+    }
+  });
+  atualizarContador();
+}
+
+function marcarTodos(status) {
+  const checkboxes = document.querySelectorAll('.row-check');
+  checkboxes.forEach(cb => {
+    if (cb.closest('tr').style.display !== 'none') {
+      cb.checked = status;
+    }
+  });
+  const master = document.getElementById('checkMaster');
+  if (master) master.checked = status;
+  atualizarContador();
+}
+
+function filtrarTabela() {
+  const input = document.getElementById('filterInput').value.toLowerCase();
+  const rows = document.querySelectorAll('.product-row');
+  
+  rows.forEach(row => {
+    const text = row.innerText.toLowerCase();
+    row.style.display = text.includes(input) ? '' : 'none';
+  });
+  atualizarContador();
+}
+
+function atualizarContador() {
+  const checks = document.querySelectorAll('.row-check:checked');
+  const countEl = document.getElementById('selectedCount');
+  if (countEl) {
+    countEl.innerText = `${checks.length} produto(s) selecionado(s) para impressão`;
+  }
+}
+
+document.querySelectorAll('.row-check').forEach(cb => {
+  cb.addEventListener('change', atualizarContador);
+});
+atualizarContador();
+</script>
+{% endblock %}

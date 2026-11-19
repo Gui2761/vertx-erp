@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Backups do Banco de Dados · VERTYX{% endblock %}
+{% block content %}
+<header class="vx-page-header">
+  <div>
+    <p class="vx-eyebrow">VERTYX · Segurança & Infraestrutura</p>
+    <h1>Backups do Banco de Dados</h1>
+    <p>Histórico e geração de cópias integrais de segurança dos dados da organização.</p>
+  </div>
+  <div class="vx-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'operacao:configuracao' %}">
+      <i class="bi bi-arrow-left me-1"></i> Configurações
+    </a>
+    <form method="post" action="{% url 'operacao:backup_generate' %}" style="display: inline;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success fw-bold shadow-sm">
+        <i class="bi bi-shield-check me-1"></i> Gerar Novo Backup Agora
+      </button>
+    </form>
+  </div>
+</header>
+
+<!-- Indicadores de Segurança -->
+<section class="vx-kpi-grid mb-4" aria-label="Indicadores de backup">
+  <article class="card p-3">
+    <span class="text-muted small">Banco de Dados Ativo</span>
+    <strong class="vx-metric text-primary fs-5">{{ db_info.engine|upper }}</strong>
+    <small class="text-muted">Host: {{ db_info.host }}</small>
+  </article>
+  <article class="card p-3">
+    <span class="text-muted small">Cópias Disponíveis</span>
+    <strong class="vx-metric fs-5">{{ backups_count }} arquivo(s)</strong>
+    <small class="text-muted">Compactados em .json.gz</small>
+  </article>
+  <article class="card p-3">
+    <span class="text-muted small">Retenção Automática</span>
+    <strong class="vx-metric text-success fs-5">14 Backups</strong>
+    <small class="text-muted">Rotação diária segura</small>
+  </article>
+</section>
+
+<!-- Tabela de Backups -->
+<section class="card shadow-sm mb-4">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+    <span class="fw-bold"><i class="bi bi-archive me-1"></i> Arquivos de Backup Armazenados</span>
+    <form method="post" action="{% url 'operacao:backup_generate' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-primary fw-bold">
+        <i class="bi bi-cloud-arrow-down me-1"></i> Criar Cópia Imediata
+      </button>
+    </form>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover table-striped align-middle mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Arquivo de Backup</th>
+          <th>Data e Hora da Geração</th>
+          <th>Tamanho Comprimido</th>
+          <th>Tipo</th>
+          <th style="width: 140px;" class="text-center">Download</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for file in files %}
+          <tr>
+            <td>
+              <strong class="font-monospace text-primary">{{ file.name }}</strong>
+            </td>
+            <td>
+              <span>{{ file.date|date:'d/m/Y H:i:s' }}</span>
+            </td>
+            <td>
+              <span class="badge bg-secondary">{{ file.size_kb }} KB</span>
+              {% if file.size_mb > 0 %}<small class="text-muted">({{ file.size_mb }} MB)</small>{% endif %}
+            </td>
+            <td>
+              <span class="badge bg-success-subtle text-success border border-success-subtle">Integral / Auditado</span>
+            </td>
+            <td class="text-center">
+              <a class="btn btn-sm btn-outline-success" href="{% url 'operacao:backup_download' file.name %}">
+                <i class="bi bi-download me-1"></i> Baixar
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-5 text-muted">
+              <i class="bi bi-cloud-slash fs-1 d-block mb-2"></i>
+              Nenhum arquivo de backup gerado ainda.<br>
+              Clique no botão <strong>"Gerar Novo Backup Agora"</strong> acima para criar a primeira cópia.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Caixa de Ajuda / Instruções de Restauração -->
+<section class="card bg-light border-0">
+  <div class="card-body">
+    <h6 class="fw-bold"><i class="bi bi-info-circle text-primary me-1"></i> Como restaurar um backup?</h6>
+    <p class="small text-muted mb-2">
+      Os arquivos gerados são dumps integrais compactados contendo todos os cadastros, produtos, clientes, movimentações de estoque, histórico de vendas do PDV e contas da organização.
+    </p>
+    <div class="bg-dark text-light p-2 rounded font-monospace small">
+      # Para restaurar em um novo ambiente ou banco local:<br>
+      gzip -d -k backup_vertyx_XXXXXXXX.json.gz<br>
+      python manage.py loaddata backup_vertyx_XXXXXXXX.json
+    </div>
+  </div>
+</section>
+{% endblock %}

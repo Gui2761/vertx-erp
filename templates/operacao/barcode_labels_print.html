@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Impressão de Etiquetas de Código de Barras · VERTYX</title>
+<style>
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    color: #000000;
+    background: #e2e8f0;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Barra de controle na tela (oculta na impressão) */
+  .print-toolbar {
+    background: #0f172a;
+    color: #ffffff;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  .print-btn {
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .print-btn:hover { background: #059669; }
+  .close-btn {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .close-btn:hover { background: #1e293b; color: #ffffff; }
+
+  .sheets-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 10px 40px;
+    gap: 20px;
+  }
+
+  /* ==========================================================================
+     LAYOUT: FOLHA A4 - 30 ETIQUETAS (3 colunas x 10 linhas / Pimaco 6180)
+     Tamanho etiqueta: ~66.7mm x 25.4mm
+     ========================================================================== */
+  .sheet-a4-30 {
+    width: 210mm;
+    min-height: 297mm;
+    background: #ffffff;
+    padding: 12mm 5mm;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    display: grid;
+    grid-template-columns: repeat(3, 66.7mm);
+    grid-template-rows: repeat(10, 25.4mm);
+    gap: 0;
+    page-break-after: always;
+  }
+  .sheet-a4-30 .label-box {
+    width: 66.7mm;
+    height: 25.4mm;
+    padding: 2mm 3mm;
+    border: 1px dashed #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  /* ==========================================================================
+     LAYOUT: FOLHA A4 - 14 ETIQUETAS (2 colunas x 7 linhas / Pimaco 6181)
+     Tamanho etiqueta: ~101.6mm x 38.1mm
+     ========================================================================== */
+  .sheet-a4-14 {
+    width: 210mm;
+    min-height: 297mm;
+    background: #ffffff;
+    padding: 14mm 3mm;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    display: grid;
+    grid-template-columns: repeat(2, 101.6mm);
+    grid-template-rows: repeat(7, 38.1mm);
+    gap: 0;
+    page-break-after: always;
+  }
+  .sheet-a4-14 .label-box {
+    width: 101.6mm;
+    height: 38.1mm;
+    padding: 3mm 5mm;
+    border: 1px dashed #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  /* ==========================================================================
+     LAYOUT: BOBINA TÉRMICA 50mm x 30mm (Zebra, Elgin, Argox)
+     ========================================================================== */
+  .sheet-termica-50x30 {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sheet-termica-50x30 .label-box {
+    width: 50mm;
+    height: 30mm;
+    background: #ffffff;
+    padding: 2mm 3mm;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  /* ==========================================================================
+     LAYOUT: BOBINA TÉRMICA 60mm x 40mm
+     ========================================================================== */
+  .sheet-termica-60x40 {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sheet-termica-60x40 .label-box {
+    width: 60mm;
+    height: 40mm;
+    background: #ffffff;
+    padding: 3mm 4mm;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  /* Estilos internos da etiqueta */
+  .label-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 7pt;
+    font-weight: 700;
+    color: #475569;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 1px;
+    margin-bottom: 2px;
+  }
+  .label-title {
+    font-size: 7.5pt;
+    font-weight: 800;
+    color: #000000;
+    line-height: 1.15;
+    max-height: 2.3em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    width: 100%;
+    margin-bottom: 2px;
+  }
+  .label-barcode {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .label-barcode svg {
+    max-width: 95%;
+    max-height: 11mm;
+  }
+  .label-footer {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 1px;
+  }
+  .label-price {
+    font-size: 10pt;
+    font-weight: 900;
+    color: #000000;
+  }
+  .label-sku {
+    font-family: monospace;
+    font-size: 7pt;
+    color: #334155;
+    font-weight: bold;
+  }
+
+  /* Ajustes específicos de tamanho para 14 etiquetas */
+  .sheet-a4-14 .label-title {
+    font-size: 9pt;
+    max-height: 2.6em;
+  }
+  .sheet-a4-14 .label-barcode svg {
+    max-height: 16mm;
+  }
+  .sheet-a4-14 .label-price {
+    font-size: 13pt;
+  }
+  .sheet-a4-14 .label-header {
+    font-size: 8.5pt;
+  }
+
+  /* Ajustes para bobina 60x40 */
+  .sheet-termica-60x40 .label-title {
+    font-size: 8.5pt;
+  }
+  .sheet-termica-60x40 .label-barcode svg {
+    max-height: 16mm;
+  }
+  .sheet-termica-60x40 .label-price {
+    font-size: 12pt;
+  }
+
+  /* ==========================================================================
+     CONFIGURAÇÃO DE IMPRESSÃO (@media print)
+     ========================================================================== */
+  @media print {
+    @page {
+      margin: 0;
+      size: auto;
+    }
+    body, html {
+      background: #ffffff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .print-toolbar {
+      display: none !important;
+    }
+    .sheets-container {
+      padding: 0 !important;
+      gap: 0 !important;
+    }
+    .sheet-a4-30, .sheet-a4-14 {
+      box-shadow: none !important;
+      margin: 0 !important;
+    }
+    .sheet-termica-50x30, .sheet-termica-60x40 {
+      gap: 0 !important;
+    }
+    .sheet-termica-50x30 .label-box,
+    .sheet-termica-60x40 .label-box {
+      box-shadow: none !important;
+      margin: 0 !important;
+    }
+    .label-box {
+      border: none !important; /* Sem bordas na impressão real para corte limpo */
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-toolbar">
+  <div>
+    <strong>Impressão de Etiquetas VERTYX</strong> · Total de etiquetas a imprimir: <strong>{{ items|length }}</strong>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <button class="print-btn" onclick="window.print()">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/><path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/></svg>
+      Imprimir Etiquetas
+    </button>
+    <button class="close-btn" onclick="window.close()">Fechar</button>
+  </div>
+</div>
+
+<div class="sheets-container">
+  {% if layout == 'a4_30' %}
+    <div class="sheet-a4-30">
+      {% for item in items %}
+        <article class="label-box">
+          {% if show_org %}
+            <div class="label-header">
+              <span>{{ org_name|upper }}</span>
+              <span>{{ item.peca.unidade_medida|default:'UN' }}</span>
+            </div>
+          {% endif %}
+          <div class="label-title">{{ item.peca.descricao }}</div>
+          <div class="label-barcode">
+            {{ item.svg|safe }}
+          </div>
+          <div class="label-footer">
+            {% if show_sku %}
+              <span class="label-sku">SKU: {{ item.peca.sku }}</span>
+            {% else %}
+              <span></span>
+            {% endif %}
+            {% if show_price %}
+              <span class="label-price">R$ {{ item.peca.preco_venda|floatformat:2 }}</span>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+  {% elif layout == 'a4_14' %}
+    <div class="sheet-a4-14">
+      {% for item in items %}
+        <article class="label-box">
+          {% if show_org %}
+            <div class="label-header">
+              <span>{{ org_name|upper }}</span>
+              <span>{{ item.peca.unidade_medida|default:'UN' }}</span>
+            </div>
+          {% endif %}
+          <div class="label-title">{{ item.peca.descricao }}</div>
+          <div class="label-barcode">
+            {{ item.svg|safe }}
+          </div>
+          <div class="label-footer">
+            {% if show_sku %}
+              <span class="label-sku">SKU: {{ item.peca.sku }}</span>
+            {% else %}
+              <span></span>
+            {% endif %}
+            {% if show_price %}
+              <span class="label-price">R$ {{ item.peca.preco_venda|floatformat:2 }}</span>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+  {% elif layout == 'termica_50x30' %}
+    <div class="sheet-termica-50x30">
+      {% for item in items %}
+        <article class="label-box">
+          {% if show_org %}
+            <div class="label-header">
+              <span>{{ org_name|upper }}</span>
+              <span>{{ item.peca.unidade_medida|default:'UN' }}</span>
+            </div>
+          {% endif %}
+          <div class="label-title">{{ item.peca.descricao }}</div>
+          <div class="label-barcode">
+            {{ item.svg|safe }}
+          </div>
+          <div class="label-footer">
+            {% if show_sku %}
+              <span class="label-sku">SKU: {{ item.peca.sku }}</span>
+            {% else %}
+              <span></span>
+            {% endif %}
+            {% if show_price %}
+              <span class="label-price">R$ {{ item.peca.preco_venda|floatformat:2 }}</span>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+  {% elif layout == 'termica_60x40' %}
+    <div class="sheet-termica-60x40">
+      {% for item in items %}
+        <article class="label-box">
+          {% if show_org %}
+            <div class="label-header">
+              <span>{{ org_name|upper }}</span>
+              <span>{{ item.peca.unidade_medida|default:'UN' }}</span>
+            </div>
+          {% endif %}
+          <div class="label-title">{{ item.peca.descricao }}</div>
+          <div class="label-barcode">
+            {{ item.svg|safe }}
+          </div>
+          <div class="label-footer">
+            {% if show_sku %}
+              <span class="label-sku">SKU: {{ item.peca.sku }}</span>
+            {% else %}
+              <span></span>
+            {% endif %}
+            {% if show_price %}
+              <span class="label-price">R$ {{ item.peca.preco_venda|floatformat:2 }}</span>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+</body>
+</html>

@@ -113,3 +113,75 @@ def configuracao_email(request):
         'config': config,
     })
 
+
+@login_required
+def backup_dashboard(request):
+    """Painel de controle e histórico de backups do banco de dados."""
+    require_erp(request.user, roles=['ADMIN', 'GESTOR'])
+    import os
+    from datetime import datetime
+    
+    backup_dir = os.path.join(settings.BASE_DIR, 'backups')
+    os.makedirs(backup_dir, exist_ok=True)
+    
+    files = []
+    if os.path.exists(backup_dir):
+        for fname in sorted(os.listdir(backup_dir), reverse=True):
+            if fname.endswith('.json.gz') or fname.endswith('.sql.gz'):
+                fpath = os.path.join(backup_dir, fname)
+                st = os.stat(fpath)
+                files.append({
+                    'name': fname,
+                    'size_kb': round(st.st_size / 1024, 1),
+                    'size_mb': round(st.st_size / (1024 * 1024), 2),
+                    'date': datetime.fromtimestamp(st.st_mtime),
+                })
+                
+    db_settings = settings.DATABASES['default']
+    db_info = {
+        'engine': db_settings.get('ENGINE', '').split('.')[-1],
+        'name': str(db_settings.get('NAME', '')),
+        'host': db_settings.get('HOST', 'localhost') or 'localhost',
+    }
+    
+    return render(request, 'operacao/backup_dashboard.html', {
+        'files': files,
+        'db_info': db_info,
+        'backups_count': len(files),
+    })
+
+
+@login_required
+@require_POST
+def backup_generate(request):
+    """Dispara a geração imediata de um novo backup integral."""
+    require_erp(request.user, roles=['ADMIN', 'GESTOR'])
+    try:
+        from django.core.management import call_command
+        call_command('backup_db')
+        messages.success(request, 'Backup completo do banco de dados gerado com sucesso!')
+    except Exception as exc:
+        messages.error(request, f'Erro ao gerar backup: {exc}')
+    return redirect('operacao:backup_dashboard')
+
+
+@login_required
+def backup_download(request, filename):
+    """Download seguro do arquivo de backup comprimido."""
+    require_erp(request.user, roles=['ADMIN', 'GESTOR'])
+    import os
+    import re
+    from django.http import Http404, FileResponse
+    
+    if not re.match(r'^[a-zA-Z0-9_\-\.]+$', filename) or not (filename.endswith('.json.gz') or filename.endswith('.sql.gz')):
+        raise Http404('Arquivo de backup inválido.')
+        
+    backup_dir = os.path.join(settings.BASE_DIR, 'backups')
+    filepath = os.path.join(backup_dir, filename)
+    if not os.path.exists(filepath):
+        raise Http404('Arquivo de backup não encontrado no servidor.')
+        
+    response = FileResponse(open(filepath, 'rb'), content_type='application/gzip')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
