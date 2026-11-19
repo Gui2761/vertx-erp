@@ -55,6 +55,8 @@ jobs:
           python manage.py collectstatic --noinput --settings=tecnolmed.test_settings
 
       - name: Run Test Suite
+        env:
+          DATABASE_URL: postgres://tecnolmed:secretpassword@127.0.0.1:5432/tecnolmed_test
         run: |
           python manage.py test --settings=tecnolmed.test_settings
 

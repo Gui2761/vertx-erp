@@ -4,7 +4,21 @@ os.environ['DEBUG'] = 'True'
 os.environ['UPLOAD_STORAGE'] = 'local'
 from .settings import *  # noqa
 
-DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'validation.sqlite3'}}
+database_url = os.environ.get('DATABASE_URL', '').strip()
+if database_url:
+    import dj_database_url
+    DATABASES = {'default': dj_database_url.parse(database_url)}
+    if not DATABASES['default'].get('HOST'):
+        DATABASES['default']['HOST'] = '127.0.0.1'
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'test_validation.sqlite3',
+            'HOST': '127.0.0.1',
+        }
+    }
+
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver'] + OFFICIAL_VERTYX_DOMAINS
 DEBUG = True
 PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']

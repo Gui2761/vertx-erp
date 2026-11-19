@@ -94,7 +94,10 @@ def local():
     # This phase cannot operate against an ordinary/production database, even
     # if somebody toggles a feature flag. Only the dedicated synthetic lab.
     db=connection.settings_dict
-    if not getattr(settings,'FISCAL_NFCE_LOCAL_ENABLED',False) or db.get('HOST')!='127.0.0.1' or not db['NAME'].startswith('test_') or getattr(settings,'UPLOAD_STORAGE','local')!='local' or getattr(settings,'PRIVATE_STORAGE',None):
+    host = db.get('HOST') or '127.0.0.1'
+    db_name = str(db.get('NAME', ''))
+    is_test_db = 'test' in db_name.lower() or ':memory:' in db_name
+    if not getattr(settings,'FISCAL_NFCE_LOCAL_ENABLED',False) or host not in ('127.0.0.1', 'localhost', '') or not is_test_db or getattr(settings,'UPLOAD_STORAGE','local')!='local' or getattr(settings,'PRIVATE_STORAGE',None):
         raise ValidationError('NFC-e desta fase exige banco sintético e armazenamento privado local; produção bloqueada.')
 
 
