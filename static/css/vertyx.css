@@ -1484,7 +1484,7 @@ ul.errorlist {
 }
 
 .table-hover > tbody > tr:hover > * {
-  background-color: #162338 !important;
+  background-color: var(--vx-table-hover-bg) !important;
 }
 
 /* Pagination */
@@ -1496,9 +1496,9 @@ ul.errorlist {
 }
 
 .page-link {
-  background-color: #121a29 !important;
-  border: 1px solid #2a3b55 !important;
-  color: #cbd5e1 !important;
+  background-color: var(--vx-surface) !important;
+  border: 1px solid var(--vx-border-strong) !important;
+  color: var(--vx-ink-secondary) !important;
   border-radius: var(--vx-radius-sm) !important;
   padding: 0.45rem 0.9rem !important;
   font-size: 0.85rem !important;
@@ -1507,56 +1507,58 @@ ul.errorlist {
 }
 
 .page-link:hover {
-  background-color: #1e293b !important;
-  border-color: #3b82f6 !important;
-  color: #ffffff !important;
+  background-color: var(--vx-surface-hover) !important;
+  border-color: var(--vx-brand) !important;
+  color: var(--vx-ink) !important;
 }
 
 .page-item.active .page-link {
-  background-color: #2563eb !important;
-  border-color: #3b82f6 !important;
+  background-color: var(--vx-brand) !important;
+  border-color: var(--vx-brand) !important;
   color: #ffffff !important;
-  box-shadow: 0 0 12px rgba(37, 99, 235, 0.5) !important;
+  box-shadow: 0 0 12px var(--vx-brand-glow) !important;
 }
 
 .page-item.disabled .page-link {
-  background-color: #0b111d !important;
-  border-color: #1e293b !important;
-  color: #64748b !important;
+  background-color: var(--vx-bg) !important;
+  border-color: var(--vx-border) !important;
+  color: var(--vx-muted) !important;
+  opacity: 0.6;
 }
 
 /* Modals & Dropdowns */
 .modal-content {
-  background-color: #121a29 !important;
+  background-color: var(--vx-surface) !important;
   border: 1px solid var(--vx-border-strong) !important;
-  color: #ffffff !important;
+  color: var(--vx-ink) !important;
   border-radius: var(--vx-radius) !important;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7) !important;
+  box-shadow: var(--vx-shadow-lg) !important;
 }
 
 .modal-header, .modal-footer {
   border-color: var(--vx-border) !important;
-  background-color: #0d1524 !important;
+  background-color: var(--vx-surface-subtle) !important;
+  color: var(--vx-ink) !important;
 }
 
 .dropdown-menu {
-  background-color: #121a29 !important;
+  background-color: var(--vx-surface) !important;
   border: 1px solid var(--vx-border-strong) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: var(--vx-shadow-lg) !important;
   border-radius: 10px !important;
   padding: 6px !important;
 }
 
 .dropdown-item {
-  color: #cbd5e1 !important;
+  color: var(--vx-ink-secondary) !important;
   border-radius: 6px !important;
   padding: 8px 12px !important;
   font-size: 0.88rem !important;
 }
 
 .dropdown-item:hover {
-  background-color: #1e293b !important;
-  color: #ffffff !important;
+  background-color: var(--vx-surface-hover) !important;
+  color: var(--vx-ink) !important;
 }
 
 /* Nav Tabs */
@@ -1951,5 +1953,367 @@ body:not([data-theme="light"]) .btn-outline-dark:hover {
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.4) !important;
 }
+
+/* ==========================================================================
+   PADRÃO UNIVERSAL ADAPTATIVO VERTYX (DARK & LIGHT THEMES)
+   Tokens Semânticos, Componentes Autoadaptativos e Rede de Proteção
+   ========================================================================== */
+
+/* 1. Elementos Tipográficos e Links de Tabela */
+.vx-table-link {
+  color: var(--vx-ink) !important;
+  text-decoration: none !important;
+  font-weight: 700;
+  transition: color 0.15s ease;
+}
+.vx-table-link:hover {
+  color: var(--vx-brand-hover) !important;
+}
+
+/* 2. Pílulas e Abas de Filtros */
+.vx-filter-pill {
+  background: var(--vx-surface-subtle) !important;
+  border: 1px solid var(--vx-border-strong) !important;
+  color: var(--vx-ink-secondary) !important;
+  font-weight: 600;
+  border-radius: 8px !important;
+  padding: 0.45rem 0.95rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+}
+.vx-filter-pill:hover {
+  background: var(--vx-surface-hover) !important;
+  color: var(--vx-ink) !important;
+  border-color: var(--vx-brand) !important;
+}
+.vx-filter-pill.active {
+  background: var(--vx-brand) !important;
+  border-color: var(--vx-brand) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+.vx-filter-pill .vx-filter-badge {
+  background: rgba(255, 255, 255, 0.15);
+  color: inherit;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+.vx-filter-pill.active .vx-filter-badge {
+  background: #ffffff;
+  color: #1d4ed8;
+}
+
+/* 3. Banner Executivo de Reposição de Estoque */
+.vx-stock-alert-banner {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+.vx-stock-alert-banner .vx-alert-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fde047;
+}
+.vx-stock-alert-banner .vx-alert-title {
+  color: #fde047;
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+}
+.vx-stock-alert-banner .vx-alert-sub {
+  color: #fef08a;
+}
+.vx-stock-alert-banner .vx-alert-btn {
+  background: #f59e0b;
+  color: #0f172a;
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* 4. Atalho de Teclado KBD */
+.vx-shortcut-kbd {
+  background: rgba(37, 99, 235, 0.35);
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  color: #ffffff;
+}
+
+/* 5. KPI Cards de Estoque e Operação */
+.stock-kpi-card {
+  background: var(--vx-surface) !important;
+  border: 1px solid var(--vx-border-strong) !important;
+  border-radius: 14px !important;
+  padding: 16px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  min-height: 125px !important;
+  box-shadow: var(--vx-shadow) !important;
+  transition: transform 0.15s ease, border-color 0.15s ease !important;
+}
+.stock-kpi-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: var(--vx-brand) !important;
+}
+.stock-kpi-card .kpi-label {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  color: var(--vx-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.3 !important;
+}
+.stock-kpi-card .kpi-value {
+  font-size: 1.75rem !important;
+  font-weight: 800 !important;
+  color: var(--vx-ink) !important;
+  line-height: 1.15 !important;
+  margin-bottom: 4px !important;
+  letter-spacing: -0.02em !important;
+}
+.stock-kpi-card .kpi-sub {
+  font-size: 0.72rem !important;
+  color: var(--vx-muted) !important;
+  font-weight: 500 !important;
+}
+
+/* ==========================================================================
+   REDE DE SEGURANÇA E HARMONIZAÇÃO DO MODO CLARO ([data-theme="light"])
+   ========================================================================== */
+
+/* Neutraliza o antipadrão .text-white sobre fundos brancos */
+[data-theme="light"] .text-white:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.badge-primary):not(.badge-success):not(.badge-danger):not(.badge-dark):not(.vx-alert-btn) {
+  color: var(--vx-ink) !important;
+}
+
+/* Tabelas no Modo Claro */
+[data-theme="light"] .table {
+  color: #0f172a !important;
+}
+[data-theme="light"] .table a:not(.btn):not(.badge) {
+  color: #0f172a !important;
+}
+[data-theme="light"] .table a:not(.btn):not(.badge):hover {
+  color: #2563eb !important;
+}
+[data-theme="light"] .table th {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+[data-theme="light"] .table td {
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .table-hover > tbody > tr:hover > * {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(15, 23, 42, 0.02) !important;
+  color: #0f172a !important;
+}
+
+/* Cards e Seções no Modo Claro */
+[data-theme="light"] .card,
+[data-theme="light"] .vx-section-card {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.03) !important;
+}
+[data-theme="light"] .card-header {
+  background-color: #f8fafc !important;
+  border-bottom-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .card-footer {
+  background-color: #f8fafc !important;
+  border-top-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* Badges e Pílulas no Modo Claro */
+[data-theme="light"] .bg-success, 
+[data-theme="light"] .bg-success-subtle, 
+[data-theme="light"] .badge-success {
+  background-color: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+[data-theme="light"] .bg-danger, 
+[data-theme="light"] .bg-danger-subtle, 
+[data-theme="light"] .badge-danger {
+  background-color: #fff1f2 !important;
+  color: #be123c !important;
+  border: 1px solid #fecdd3 !important;
+}
+[data-theme="light"] .bg-warning, 
+[data-theme="light"] .bg-warning-subtle, 
+[data-theme="light"] .badge-warning {
+  background-color: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+}
+[data-theme="light"] .bg-primary, 
+[data-theme="light"] .bg-primary-subtle, 
+[data-theme="light"] .badge-primary {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+}
+[data-theme="light"] .bg-secondary, 
+[data-theme="light"] .bg-secondary-subtle, 
+[data-theme="light"] .badge-secondary {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+[data-theme="light"] .bg-info, 
+[data-theme="light"] .bg-info-subtle, 
+[data-theme="light"] .badge-info {
+  background-color: #f0f9ff !important;
+  color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
+}
+
+/* Filtros e Botões Secundários no Modo Claro */
+[data-theme="light"] .vx-filter-pill:not(.active) {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+[data-theme="light"] .vx-filter-pill:not(.active):hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+[data-theme="light"] .vx-filter-pill:not(.active) .vx-filter-badge {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Banner de Reposição no Modo Claro */
+[data-theme="light"] .vx-stock-alert-banner {
+  background: #fffbeb !important;
+  border: 1px solid #fde68a !important;
+}
+[data-theme="light"] .vx-stock-alert-banner .vx-alert-icon-box {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #d97706 !important;
+}
+[data-theme="light"] .vx-stock-alert-banner .vx-alert-title {
+  color: #b45309 !important;
+}
+[data-theme="light"] .vx-stock-alert-banner .vx-alert-sub {
+  color: #92400e !important;
+}
+[data-theme="light"] .vx-stock-alert-banner .vx-alert-btn {
+  background: #d97706 !important;
+  color: #ffffff !important;
+}
+
+/* Atalho KBD no Modo Claro */
+[data-theme="light"] .vx-shortcut-kbd {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+/* Modais, Dropdowns e Paginação no Modo Claro */
+[data-theme="light"] .modal-content {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12) !important;
+}
+[data-theme="light"] .modal-header,
+[data-theme="light"] .modal-footer {
+  border-color: #f1f5f9 !important;
+  background-color: #f8fafc !important;
+}
+[data-theme="light"] .dropdown-menu {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1) !important;
+}
+[data-theme="light"] .dropdown-item {
+  color: #334155 !important;
+}
+[data-theme="light"] .dropdown-item:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .page-link {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+[data-theme="light"] .page-link:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .page-item.disabled .page-link {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+}
+
+/* KPI Cards de Estoque no Modo Claro */
+[data-theme="light"] .stock-kpi-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
+}
+[data-theme="light"] .stock-kpi-card .kpi-label {
+  color: #64748b !important;
+}
+[data-theme="light"] .stock-kpi-card .kpi-value {
+  color: #0f172a !important;
+}
+[data-theme="light"] .stock-kpi-card .kpi-sub {
+  color: #64748b !important;
+}
+[data-theme="light"] .kpi-card-highlight {
+  border-color: #059669 !important;
+  background: linear-gradient(135deg, #ffffff 0%, rgba(5, 150, 105, 0.08) 100%) !important;
+}
+
+/* Formulários e Inputs no Modo Claro */
+[data-theme="light"] .form-label {
+  color: #334155 !important;
+}
+[data-theme="light"] .form-control,
+[data-theme="light"] .form-select,
+[data-theme="light"] select,
+[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+[data-theme="light"] textarea {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .form-control:focus,
+[data-theme="light"] .form-select:focus,
+[data-theme="light"] input:focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus {
+  background-color: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
 
 

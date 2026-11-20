@@ -12,24 +12,24 @@
 </header>
 
 <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-  <a href="?" class="btn btn-sm d-flex align-items-center gap-2 px-3 py-2" style="{% if filtro_ativo == 'abertas' %}background: #2563eb !important; border: 1px solid #3b82f6 !important; color: #ffffff !important; font-weight: 700;{% else %}background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.16); color: #f1f5f9 !important; font-weight: 600;{% endif %} border-radius: 8px;">
+  <a href="?" class="vx-filter-pill {% if filtro_ativo == 'abertas' %}active{% endif %}">
     <span>Abertas</span>
-    <span class="badge" style="{% if filtro_ativo == 'abertas' %}background: #ffffff; color: #1d4ed8;{% else %}background: rgba(255, 255, 255, 0.15); color: #ffffff;{% endif %} font-weight: 700;">{{ counts.abertas }}</span>
+    <span class="vx-filter-badge">{{ counts.abertas }}</span>
   </a>
-  <a href="?tipo=REPOSICAO" class="btn btn-sm d-flex align-items-center gap-2 px-3 py-2" style="{% if filtro_ativo == 'reposicao' %}background: #2563eb !important; border: 1px solid #3b82f6 !important; color: #ffffff !important; font-weight: 700;{% else %}background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.16); color: #f1f5f9 !important; font-weight: 600;{% endif %} border-radius: 8px;">
+  <a href="?tipo=REPOSICAO" class="vx-filter-pill {% if filtro_ativo == 'reposicao' %}active{% endif %}">
     <span>Produtos para reposição</span>
-    <span class="badge" style="{% if filtro_ativo == 'reposicao' %}background: #ffffff; color: #1d4ed8;{% else %}background: rgba(255, 255, 255, 0.15); color: #ffffff;{% endif %} font-weight: 700;">{{ counts.reposicao }}</span>
+    <span class="vx-filter-badge">{{ counts.reposicao }}</span>
   </a>
-  <a href="?historico=1" class="btn btn-sm d-flex align-items-center gap-2 px-3 py-2" style="{% if filtro_ativo == 'historico' %}background: #2563eb !important; border: 1px solid #3b82f6 !important; color: #ffffff !important; font-weight: 700;{% else %}background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.16); color: #f1f5f9 !important; font-weight: 600;{% endif %} border-radius: 8px;">
+  <a href="?historico=1" class="vx-filter-pill {% if filtro_ativo == 'historico' %}active{% endif %}">
     <span>Resolvidas</span>
-    <span class="badge" style="{% if filtro_ativo == 'historico' %}background: #ffffff; color: #1d4ed8;{% else %}background: rgba(255, 255, 255, 0.15); color: #ffffff;{% endif %} font-weight: 700;">{{ counts.resolvidas }}</span>
+    <span class="vx-filter-badge">{{ counts.resolvidas }}</span>
   </a>
 </div>
 
 <div class="card p-3 table-responsive mb-4" style="background-color: var(--vx-surface); border: 1px solid var(--vx-border); border-radius: var(--vx-radius);">
   <table class="table table-hover align-middle mb-0">
     <thead>
-      <tr class="small text-uppercase" style="color: #94a3b8 !important; font-weight: 700; letter-spacing: 0.06em; font-size: 0.78rem;">
+      <tr class="small text-uppercase" style="color: var(--vx-muted) !important; font-weight: 700; letter-spacing: 0.06em; font-size: 0.78rem;">
         <th>Produto / Código</th>
         <th class="text-center">Estoque atual</th>
         <th class="text-center">Mínimo</th>
@@ -43,17 +43,17 @@
       {% for row in rows %}
       <tr>
         <td>
-          <a class="fw-bold text-white text-decoration-none d-block text-truncate" style="max-width: 380px; font-size: 0.95rem;" href="{% url 'gestao:peca_detalhe' row.occurrence.peca_id %}" title="{{ row.stock.produto }}">
+          <a class="vx-table-link d-block text-truncate" style="max-width: 380px; font-size: 0.95rem;" href="{% url 'gestao:peca_detalhe' row.occurrence.peca_id %}" title="{{ row.stock.produto }}">
             {{ row.stock.produto }}
           </a>
-          <small class="d-block font-monospace fw-semibold" style="color: #94a3b8 !important;"><i class="bi bi-upc me-1 text-info"></i>{{ row.stock.sku }}</small>
+          <small class="d-block font-monospace fw-semibold" style="color: var(--vx-muted) !important;"><i class="bi bi-upc me-1 text-info"></i>{{ row.stock.sku }}</small>
         </td>
         <td class="text-center">
           <span class="badge font-monospace fw-bold" style="background: rgba(239, 68, 68, 0.2) !important; color: #fca5a5 !important; border: 1px solid rgba(239, 68, 68, 0.45) !important; font-size: 0.88rem; padding: 4px 10px; border-radius: 6px;">
             {{ row.stock.fisico }}
           </span>
         </td>
-        <td class="text-center font-monospace fw-bold" style="color: #cbd5e1 !important; font-size: 0.9rem;">{{ row.stock.minimo }}</td>
+        <td class="text-center font-monospace fw-bold" style="color: var(--vx-ink-secondary) !important; font-size: 0.9rem;">{{ row.stock.minimo }}</td>
         <td class="text-center">
           <span class="badge font-monospace fw-bold" style="background: rgba(239, 68, 68, 0.2) !important; color: #fca5a5 !important; border: 1px solid rgba(239, 68, 68, 0.45) !important; font-size: 0.88rem; padding: 4px 10px; border-radius: 6px;">
             {{ row.stock.disponivel }}
@@ -69,11 +69,11 @@
           {% else %}
             <span class="badge fw-bold" style="background: rgba(255, 255, 255, 0.08) !important; color: #e2e8f0 !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;">{{ row.occurrence.situacao }}</span>
           {% endif %}
-          {% if row.occurrence.lote %}<small class="d-block font-monospace fw-semibold mt-1" style="color: #94a3b8 !important;">Lote: {{ row.occurrence.lote.numero }}</small>{% endif %}
+          {% if row.occurrence.lote %}<small class="d-block font-monospace fw-semibold mt-1" style="color: var(--vx-muted) !important;">Lote: {{ row.occurrence.lote.numero }}</small>{% endif %}
         </td>
         <td class="text-center font-monospace fw-bold" style="color: #38bdf8 !important; font-size: 1rem;">{{ row.stock.sugerido }}</td>
         <td class="text-end small">
-          <span style="color: #cbd5e1 !important; font-weight: 500; font-size: 0.85rem;">{{ row.occurrence.atualizada_em|date:'d/m/Y H:i' }}</span>
+          <span style="color: var(--vx-ink-secondary) !important; font-weight: 500; font-size: 0.85rem;">{{ row.occurrence.atualizada_em|date:'d/m/Y H:i' }}</span>
           {% if row.occurrence.resolvida_em %}
             <span class="badge ms-1 fw-bold" style="background: rgba(52, 211, 153, 0.2); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.4);">Resolvida</span>
           {% endif %}

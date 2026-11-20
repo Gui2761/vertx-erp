@@ -125,13 +125,24 @@
   border-color: #cbd5e1;
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.15);
 }
+[data-theme="light"] .vx-search-group-title {
+  color: #0369a1 !important;
+  background: #f0f9ff !important;
+  border-bottom: 1px solid #bae6fd !important;
+}
+[data-theme="light"] .vx-search-group-title .vx-group-name {
+  color: #0369a1 !important;
+}
 [data-theme="light"] .vx-search-item {
   color: #0f172a;
   border-color: #f1f5f9;
 }
 [data-theme="light"] .vx-search-item:hover, [data-theme="light"] .vx-search-item.active {
   background: #f1f5f9;
-  color: #0f172a;
+  color: #2563eb;
+}
+[data-theme="light"] .vx-search-item .vx-search-text {
+  color: #0f172a !important;
 }
 [data-theme="light"] .vx-result-pill {
   background: #f8fafc;
@@ -150,9 +161,9 @@
 
 <div class="vx-search-hero">
   <form id="global-search-form" method="get" action="{% url 'operacao:pesquisa' %}">
-    <label for="global-query" class="form-label small fw-bold mb-2 d-flex justify-content-between" style="color: #cbd5e1;">
+    <label for="global-query" class="form-label small fw-bold mb-2 d-flex justify-content-between" style="color: var(--vx-ink-secondary);">
       <span style="letter-spacing: 0.03em;">DIGITE PARA BUSCAR EM TODO O SISTEMA</span>
-      <span class="font-monospace" style="font-size: 0.78rem; color: #94a3b8;">Atalho: <kbd class="px-2 py-0.5 border text-white fw-bold" style="background: rgba(37, 99, 235, 0.35); border-color: rgba(56, 189, 248, 0.4) !important;">/</kbd></span>
+      <span class="font-monospace" style="font-size: 0.78rem; color: var(--vx-muted);">Atalho: <kbd class="px-2 py-0.5 border fw-bold vx-shortcut-kbd">/</kbd></span>
     </label>
     
     <div class="vx-search-input-wrap">
@@ -320,7 +331,7 @@
         else if (sec.titulo === 'Produtos') iconClass = 'bi-box-seam text-info';
         else if (sec.titulo === 'Vendas PDV') iconClass = 'bi-receipt text-success';
 
-        html += '<div class="vx-search-group-title"><i class="bi ' + iconClass + ' me-1"></i><span class="text-white fw-bold">' + sec.titulo + '</span><span class="badge ms-auto" style="background: rgba(255,255,255,0.15); color: #ffffff; font-size: 0.72rem; border: 1px solid rgba(255,255,255,0.2);">' + sec.rows.length + '</span></div>';
+        html += '<div class="vx-search-group-title"><i class="bi ' + iconClass + ' me-1"></i><span class="vx-group-name fw-bold">' + sec.titulo + '</span><span class="badge ms-auto" style="background: rgba(255,255,255,0.15); color: inherit; font-size: 0.72rem; border: 1px solid rgba(255,255,255,0.2);">' + sec.rows.length + '</span></div>';
         
         sec.rows.slice(0, 5).forEach(row => {
           let rawLabel = row.label || '';
@@ -342,7 +353,7 @@
           }
 
           html += '<a class="vx-search-item" href="' + row.url + '">';
-          html += '<div class="text-truncate d-flex align-items-center" style="max-width: 86%;">' + badgePrefix + '<span class="text-white fw-semibold">' + restText + '</span></div>';
+          html += '<div class="text-truncate d-flex align-items-center" style="max-width: 86%;">' + badgePrefix + '<span class="vx-search-text fw-semibold">' + restText + '</span></div>';
           html += '<span class="badge px-2 py-1 shadow-sm" style="background: #2563eb; color: #ffffff; border: 1px solid #3b82f6;"><i class="bi bi-arrow-right"></i></span>';
           html += '</a>';
         });
