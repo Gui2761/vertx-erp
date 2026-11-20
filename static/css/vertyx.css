@@ -749,13 +749,20 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   background: var(--vx-surface);
   border: 1px solid var(--vx-card-border);
   color: var(--vx-muted);
-  padding: 0.45rem 0.65rem;
+  padding: 0.55rem 0.85rem;
   border-radius: var(--vx-radius-sm);
   text-decoration: none;
   margin-top: 0.75rem;
   margin-bottom: 0.75rem;
-  font-size: 0.8rem;
+  font-size: 0.86rem;
+  font-weight: 500;
+  letter-spacing: 0.025em !important;
   transition: all 0.2s ease;
+}
+
+.vx-sidebar-search .vx-nav-label {
+  letter-spacing: 0.025em !important;
+  font-weight: 500;
 }
 
 .vx-sidebar-search:hover {

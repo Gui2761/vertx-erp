@@ -1,3 +1,373 @@
-{% extends 'base.html' %}{% block title %}Pesquisa global{% endblock %}{% block content %}
-<header class="vx-page-header"><h1>Pesquisa global</h1></header><form class="card p-3 mb-3" method="get"><label for="global-query">Cliente, unidade, patrimônio, série, OS, chamado ou contrato</label><div class="d-flex gap-2"><input class="form-control" id="global-query" name="q" value="{{ q }}" maxlength="100" minlength="2"><button class="btn btn-primary">Pesquisar</button></div></form>
-{% for section in sections %}<section class="card p-3 mb-3"><h2 class="h5">{{ section.titulo }}</h2>{% for row in section.rows %}<p><a href="{{ row.url }}">{{ row.label }}</a></p>{% empty %}<p>Nenhum resultado autorizado.</p>{% endfor %}</section>{% endfor %}{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Pesquisa global — VERTYX{% endblock %}
+
+{% block content %}
+<style>
+.vx-search-hero {
+  background: var(--vx-surface);
+  border: 1px solid var(--vx-border);
+  border-radius: var(--vx-radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+.vx-search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.vx-search-input-icon {
+  position: absolute;
+  left: 1.15rem;
+  color: var(--vx-muted);
+  font-size: 1.15rem;
+  pointer-events: none;
+}
+.vx-search-input {
+  width: 100%;
+  padding: 0.8rem 1rem 0.8rem 3rem;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  background: var(--vx-bg-darker, #070b13) !important;
+  color: var(--vx-ink, #ffffff) !important;
+  border: 1px solid var(--vx-border-strong, rgba(255, 255, 255, 0.16));
+  border-radius: var(--vx-radius-sm, 10px);
+  transition: all 0.2s ease;
+}
+.vx-search-input:focus {
+  outline: none;
+  border-color: var(--vx-brand, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  background: var(--vx-surface-hover, #182337) !important;
+}
+.vx-search-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--vx-surface, #121a29);
+  border: 1px solid var(--vx-border-strong, rgba(255, 255, 255, 0.16));
+  border-radius: var(--vx-radius, 14px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  z-index: 1050;
+  max-height: 480px;
+  overflow-y: auto;
+  display: none;
+}
+.vx-search-group-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vx-muted);
+  padding: 0.65rem 1rem 0.35rem;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.vx-search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem;
+  color: var(--vx-ink, #ffffff);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.15s ease;
+  letter-spacing: 0.02em;
+}
+.vx-search-item:hover, .vx-search-item.active {
+  background: var(--vx-surface-hover, #182337);
+  color: #ffffff;
+  padding-left: 1.25rem;
+}
+.vx-search-item:last-child {
+  border-bottom: none;
+}
+.vx-section-card {
+  background: var(--vx-surface);
+  border: 1px solid var(--vx-border);
+  border-radius: var(--vx-radius);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.vx-result-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.85rem;
+  background: var(--vx-surface-subtle);
+  border: 1px solid var(--vx-border);
+  border-radius: 8px;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+}
+.vx-result-pill:hover {
+  background: var(--vx-surface-hover);
+  border-color: var(--vx-brand);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+[data-theme="light"] .vx-search-input {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1;
+}
+[data-theme="light"] .vx-search-dropdown {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.15);
+}
+[data-theme="light"] .vx-search-item {
+  color: #0f172a;
+  border-color: #f1f5f9;
+}
+[data-theme="light"] .vx-search-item:hover, [data-theme="light"] .vx-search-item.active {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+[data-theme="light"] .vx-result-pill {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+</style>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-2 border-bottom border-secondary border-opacity-10">
+  <div>
+    <p class="text-muted small mb-0">Central de Busca › VERTYX</p>
+    <h1 class="h2 mb-1 fw-bold">Pesquisa Global</h1>
+    <p class="text-muted small mb-0">Localize clientes, equipamentos, ordens de serviço, produtos, contratos e chamados em tempo real.</p>
+  </div>
+</div>
+
+<div class="vx-search-hero">
+  <form id="global-search-form" method="get" action="{% url 'operacao:pesquisa' %}">
+    <label for="global-query" class="form-label small text-muted fw-semibold mb-2 d-flex justify-content-between">
+      <span style="letter-spacing: 0.03em;">DIGITE PARA BUSCAR EM TODO O SISTEMA</span>
+      <span class="font-monospace text-secondary" style="font-size: 0.75rem;">Atalho: <kbd class="px-1 py-0 bg-secondary bg-opacity-25 border border-secondary border-opacity-25 text-white">/</kbd></span>
+    </label>
+    
+    <div class="vx-search-input-wrap">
+      <i class="bi bi-search vx-search-input-icon"></i>
+      <input 
+        class="vx-search-input" 
+        id="global-query" 
+        name="q" 
+        value="{{ q }}" 
+        maxlength="100" 
+        minlength="2" 
+        placeholder="Buscar por cliente, OS (ex: 18), equipamento, número de série, produto, chamado ou contrato..."
+        autocomplete="off"
+        spellcheck="false"
+      >
+      <button class="btn btn-primary px-4 fw-semibold ms-2 shadow-sm d-flex align-items-center gap-2" style="min-height: 48px; border-radius: 10px;">
+        <i class="bi bi-search"></i>
+        <span>Pesquisar</span>
+      </button>
+      
+      <!-- Autocomplete Dropdown -->
+      <div id="global-search-dropdown" class="vx-search-dropdown"></div>
+    </div>
+  </form>
+</div>
+
+<!-- Full Results Section -->
+<div id="search-static-results">
+  {% if q %}
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <span class="text-muted small">Resultados para: <strong class="text-white">"{{ q }}"</strong></span>
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ sections|length }} categoria{{ sections|length|pluralize:'s' }}</span>
+    </div>
+    
+    {% for section in sections %}
+      {% if section.rows %}
+      <section class="vx-section-card">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-10">
+          <div class="d-flex align-items-center gap-2">
+            {% if section.titulo == 'Clientes' %}<i class="bi bi-building text-primary fs-5"></i>
+            {% elif section.titulo == 'Unidades' %}<i class="bi bi-geo-alt text-info fs-5"></i>
+            {% elif section.titulo == 'Equipamentos' %}<i class="bi bi-cpu text-info fs-5"></i>
+            {% elif section.titulo == 'Ordens de serviço' %}<i class="bi bi-tools text-warning fs-5"></i>
+            {% elif section.titulo == 'Chamados' %}<i class="bi bi-headset text-danger fs-5"></i>
+            {% elif section.titulo == 'Contratos' %}<i class="bi bi-file-earmark-text text-success fs-5"></i>
+            {% elif section.titulo == 'Produtos' %}<i class="bi bi-box-seam text-info fs-5"></i>
+            {% elif section.titulo == 'Fornecedores' %}<i class="bi bi-truck text-secondary fs-5"></i>
+            {% elif section.titulo == 'Vendas PDV' %}<i class="bi bi-receipt text-success fs-5"></i>
+            {% else %}<i class="bi bi-folder2-open text-primary fs-5"></i>{% endif %}
+            <h2 class="h5 mb-0 fw-bold">{{ section.titulo }}</h2>
+          </div>
+          <span class="badge bg-secondary bg-opacity-25 text-white border border-secondary border-opacity-25">{{ section.rows|length }}</span>
+        </div>
+        
+        <div class="d-flex flex-wrap gap-2">
+          {% for row in section.rows %}
+            <a class="vx-result-pill" href="{{ row.url }}">
+              <i class="bi bi-arrow-right-short me-1 text-primary"></i>
+              <span>{{ row.label }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    {% empty %}
+      <div class="card p-5 text-center text-muted" style="background: var(--vx-surface); border: 1px solid var(--vx-border); border-radius: var(--vx-radius);">
+        <i class="bi bi-search fs-1 mb-3 text-secondary opacity-50"></i>
+        <h3 class="h5 text-white mb-2">Nenhum resultado encontrado</h3>
+        <p class="small text-muted mb-0">Tente buscar por termos mais genéricos, código de barras, número de série ou razão social.</p>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="row g-3">
+      <div class="col-12 col-md-4">
+        <div class="card p-3 h-100" style="background: var(--vx-surface); border: 1px solid var(--vx-border); border-radius: var(--vx-radius-sm);">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-tools text-warning fs-5"></i>
+            <strong class="text-white">Ordens de Serviço</strong>
+          </div>
+          <small class="text-muted">Digite o número da OS (ex: <code>18</code> ou <code>OS-00018</code>) ou o defeito relatado.</small>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="card p-3 h-100" style="background: var(--vx-surface); border: 1px solid var(--vx-border); border-radius: var(--vx-radius-sm);">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-building text-primary fs-5"></i>
+            <strong class="text-white">Clientes e Unidades</strong>
+          </div>
+          <small class="text-muted">Localize hospitais, clínicas, secretarias ou unidades operacionais pelo nome.</small>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="card p-3 h-100" style="background: var(--vx-surface); border: 1px solid var(--vx-border); border-radius: var(--vx-radius-sm);">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-box-seam text-info fs-5"></i>
+            <strong class="text-white">Produtos e Estoque</strong>
+          </div>
+          <small class="text-muted">Busque por código EAN de barras, SKU ou descrição da mercadoria.</small>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+(function() {
+  const input = document.getElementById('global-query');
+  const dropdown = document.getElementById('global-search-dropdown');
+  let debounceTimer = null;
+  let activeIndex = -1;
+
+  if (!input || !dropdown) return;
+
+  // Atalho global '/' para focar a barra de pesquisa
+  document.addEventListener('keydown', function(e) {
+    if (e.key === '/' && document.activeElement !== input && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      input.focus();
+      input.select();
+    }
+  });
+
+  input.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    const query = this.value.trim();
+    if (query.length < 2) {
+      dropdown.style.display = 'none';
+      dropdown.innerHTML = '';
+      return;
+    }
+
+    debounceTimer = setTimeout(() => {
+      fetch('{% url "operacao:pesquisa" %}?q=' + encodeURIComponent(query) + '&format=json', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(res => res.json())
+      .then(data => {
+        renderDropdown(data);
+      })
+      .catch(err => {
+        console.warn('Erro no autocomplete:', err);
+      });
+    }, 250);
+  });
+
+  function renderDropdown(data) {
+    if (!data.sections || data.sections.length === 0) {
+      dropdown.innerHTML = '<div class="p-3 text-muted text-center small"><i class="bi bi-search me-1"></i>Nenhum resultado para "' + input.value + '"</div>';
+      dropdown.style.display = 'block';
+      return;
+    }
+
+    let html = '';
+    let hasAnyRow = false;
+
+    data.sections.forEach(sec => {
+      if (sec.rows && sec.rows.length > 0) {
+        hasAnyRow = true;
+        html += '<div class="vx-search-group-title"><i class="bi bi-collection me-1 text-primary"></i>' + sec.titulo + ' (' + sec.rows.length + ')</div>';
+        sec.rows.slice(0, 5).forEach(row => {
+          html += '<a class="vx-search-item" href="' + row.url + '">';
+          html += '<span class="text-truncate" style="max-width: 85%;">' + row.label + '</span>';
+          html += '<span class="badge bg-secondary bg-opacity-25 text-muted small"><i class="bi bi-arrow-right"></i></span>';
+          html += '</a>';
+        });
+      }
+    });
+
+    if (!hasAnyRow) {
+      dropdown.innerHTML = '<div class="p-3 text-muted text-center small"><i class="bi bi-search me-1"></i>Nenhum resultado encontrado</div>';
+    } else {
+      dropdown.innerHTML = html;
+    }
+    dropdown.style.display = 'block';
+    activeIndex = -1;
+  }
+
+  // Teclas de navegação: Seta Baixo, Seta Cima, Enter, Esc
+  input.addEventListener('keydown', function(e) {
+    const items = dropdown.querySelectorAll('.vx-search-item');
+    if (!items.length || dropdown.style.display === 'none') return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % items.length;
+      updateActiveItem(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + items.length) % items.length;
+      updateActiveItem(items);
+    } else if (e.key === 'Enter') {
+      if (activeIndex >= 0 && items[activeIndex]) {
+        e.preventDefault();
+        items[activeIndex].click();
+      }
+    } else if (e.key === 'Escape') {
+      dropdown.style.display = 'none';
+    }
+  });
+
+  function updateActiveItem(items) {
+    items.forEach((item, idx) => {
+      if (idx === activeIndex) {
+        item.classList.add('active');
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  }
+
+  // Fechar dropdown ao clicar fora
+  document.addEventListener('click', function(e) {
+    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.style.display = 'none';
+    }
+  });
+})();
+</script>
+{% endblock %}

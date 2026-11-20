@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import F, Q
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -537,4 +537,6 @@ def pesquisa(request):
             sections.append({'titulo':'Vendas PDV','rows':[{'label':str(sale),'url':reverse('operacao:pdv_sale',args=[sale.public_id])} for sale in sales.exclude(public_id__isnull=True).distinct()[:25]]})
         for label, rows, route in sources:
             sections.append({'titulo': label, 'rows': [{'label': str(row), 'url': reverse(route, args=[row.cliente_id if label == 'Unidades' else row.pk])} for row in rows.distinct()[:25]]})
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        return JsonResponse({'q': text, 'sections': sections})
     return render(request, 'operacao/pesquisa.html', {'q': text, 'sections': sections})
