@@ -1,5 +1,118 @@
 {% extends 'base.html' %}{% block title %}Ocorrências de estoque{% endblock %}{% block content %}
-<header class="vx-page-header"><div><p class="vx-eyebrow">Ocorrências operacionais</p><h1>Alertas de estoque</h1><p>Uma ocorrência permanece aberta enquanto o problema existir. Marcar o aviso como lido não a resolve.</p></div><a class="btn btn-primary" href="{% url 'operacao:stock_reports' %}">Ver relatório de compras</a></header>
-<div class="vx-actions mb-3"><a href="?" class="btn btn-outline-primary">Abertas</a><a href="?historico=1" class="btn btn-outline-primary">Resolvidas</a><a href="?tipo=REPOSICAO" class="btn btn-outline-primary">Produtos para reposição</a></div>
-<div class="card p-3 table-responsive"><table class="table"><thead><tr><th>Produto / Código</th><th>Estoque atual</th><th>Mínimo</th><th>Disponível</th><th>Situação / lote</th><th>Sugestão de compra</th><th>Atualizado / resolvido</th></tr></thead><tbody>{% for row in rows %}<tr><td><a href="{% url 'gestao:peca_detalhe' row.occurrence.peca_id %}">{{ row.stock.produto }}<small class="d-block">{{ row.stock.sku }}</small></a></td><td>{{ row.stock.fisico }}</td><td>{{ row.stock.minimo }}</td><td>{{ row.stock.disponivel }}</td><td>{{ row.occurrence.situacao }}<small class="d-block">{{ row.occurrence.lote.numero }}</small></td><td>{{ row.stock.sugerido }}</td><td>{{ row.occurrence.atualizada_em|date:'d/m/Y H:i' }}{% if row.occurrence.resolvida_em %}<span class="badge bg-success">Resolvida</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="7">Nenhuma ocorrência neste filtro.</td></tr>{% endfor %}</tbody></table></div>
-{% include 'paginacao.html' %}<details class="card p-3 mt-3"><summary>Meus avisos de estoque</summary>{% for notice in notifications %}<article class="d-flex gap-2 flex-wrap align-items-center py-2"><span>{{ notice.titulo }} · {{ notice.mensagem }}</span>{% if not notice.lida_em %}<form method="post" action="{% url 'operacao:notificacao_lida' notice.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-primary">Marcar como lida</button></form>{% else %}<span class="badge bg-secondary">Lida</span>{% endif %}</article>{% empty %}<p>Sem avisos para você.</p>{% endfor %}</details>{% endblock %}
+<header class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-2 border-bottom border-secondary border-opacity-10">
+  <div>
+    <p class="text-muted small mb-0">Operação › Estoque</p>
+    <h1 class="h2 mb-1">Alertas e Ocorrências de Estoque</h1>
+    <p class="text-muted small mb-0">Uma ocorrência permanece aberta enquanto o produto estiver abaixo do mínimo ou desabastecido.</p>
+  </div>
+  <a class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" href="{% url 'operacao:stock_reports' %}">
+    <i class="bi bi-file-earmark-text"></i>
+    <span>Ver relatório de compras</span>
+  </a>
+</header>
+
+<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+  <a href="?" class="btn btn-sm {% if filtro_ativo == 'abertas' %}btn-primary{% else %}btn-outline-secondary text-white{% endif %} d-flex align-items-center gap-2">
+    <span>Abertas</span>
+    <span class="badge {% if filtro_ativo == 'abertas' %}bg-white text-primary{% else %}bg-secondary bg-opacity-50 text-white{% endif %}">{{ counts.abertas }}</span>
+  </a>
+  <a href="?tipo=REPOSICAO" class="btn btn-sm {% if filtro_ativo == 'reposicao' %}btn-primary{% else %}btn-outline-secondary text-white{% endif %} d-flex align-items-center gap-2">
+    <span>Produtos para reposição</span>
+    <span class="badge {% if filtro_ativo == 'reposicao' %}bg-white text-primary{% else %}bg-secondary bg-opacity-50 text-white{% endif %}">{{ counts.reposicao }}</span>
+  </a>
+  <a href="?historico=1" class="btn btn-sm {% if filtro_ativo == 'historico' %}btn-primary{% else %}btn-outline-secondary text-white{% endif %} d-flex align-items-center gap-2">
+    <span>Resolvidas</span>
+    <span class="badge {% if filtro_ativo == 'historico' %}bg-white text-primary{% else %}bg-secondary bg-opacity-50 text-white{% endif %}">{{ counts.resolvidas }}</span>
+  </a>
+</div>
+
+<div class="card p-3 table-responsive mb-4" style="background-color: var(--vx-surface); border: 1px solid var(--vx-border); border-radius: var(--vx-radius);">
+  <table class="table table-hover align-middle mb-0">
+    <thead>
+      <tr class="text-muted small text-uppercase">
+        <th>Produto / Código</th>
+        <th class="text-center">Estoque atual</th>
+        <th class="text-center">Mínimo</th>
+        <th class="text-center">Disponível</th>
+        <th>Situação</th>
+        <th class="text-center">Sugestão de compra</th>
+        <th class="text-end">Atualizado / Resolvido</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>
+          <a class="fw-semibold text-white text-decoration-none d-block text-truncate" style="max-width: 380px;" href="{% url 'gestao:peca_detalhe' row.occurrence.peca_id %}" title="{{ row.stock.produto }}">
+            {{ row.stock.produto }}
+          </a>
+          <small class="text-muted font-monospace"><i class="bi bi-upc me-1"></i>{{ row.stock.sku }}</small>
+        </td>
+        <td class="text-center">
+          <span class="badge {% if row.stock.fisico <= 0 %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-secondary-subtle text-secondary{% endif %} font-monospace">
+            {{ row.stock.fisico }}
+          </span>
+        </td>
+        <td class="text-center font-monospace text-muted">{{ row.stock.minimo }}</td>
+        <td class="text-center">
+          <span class="badge {% if row.stock.disponivel <= 0 %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} font-monospace">
+            {{ row.stock.disponivel }}
+          </span>
+        </td>
+        <td>
+          {% if row.occurrence.tipo == 'REPOSICAO' %}
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-cart-plus me-1"></i>REPOSIÇÃO</span>
+          {% elif row.occurrence.tipo == 'VENCIDO' %}
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-calendar-x me-1"></i>VENCIDO</span>
+          {% elif row.occurrence.tipo == 'VALIDADE' %}
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-clock-history me-1"></i>{{ row.occurrence.situacao }}</span>
+          {% else %}
+            <span class="badge bg-secondary-subtle text-secondary">{{ row.occurrence.situacao }}</span>
+          {% endif %}
+          {% if row.occurrence.lote %}<small class="d-block text-muted font-monospace">Lote: {{ row.occurrence.lote.numero }}</small>{% endif %}
+        </td>
+        <td class="text-center font-monospace fw-bold text-info">{{ row.stock.sugerido }}</td>
+        <td class="text-end small">
+          <span class="text-muted">{{ row.occurrence.atualizada_em|date:'d/m/Y H:i' }}</span>
+          {% if row.occurrence.resolvida_em %}
+            <span class="badge bg-success-subtle text-success ms-1">Resolvida</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="text-center py-4 text-muted">
+          <i class="bi bi-check2-circle fs-1 text-success d-block mb-2"></i>
+          <strong>Nenhuma ocorrência neste filtro.</strong>
+          <p class="small text-muted mb-0">Todos os itens filtrados estão regulares no estoque.</p>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include 'paginacao.html' %}
+<details class="card p-3 mt-3" style="background-color: var(--vx-surface); border: 1px solid var(--vx-border); border-radius: var(--vx-radius);">
+  <summary class="fw-semibold text-white cursor-pointer"><i class="bi bi-bell me-2 text-info"></i>Meus avisos de estoque</summary>
+  <div class="mt-3">
+    {% for notice in notifications %}
+    <article class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-10">
+      <div>
+        <strong class="d-block text-white">{{ notice.titulo }}</strong>
+        <span class="small text-muted">{{ notice.mensagem }}</span>
+      </div>
+      {% if not notice.lida_em %}
+      <form method="post" action="{% url 'operacao:notificacao_lida' notice.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-sm btn-outline-primary">Marcar como lida</button>
+      </form>
+      {% else %}
+      <span class="badge bg-secondary-subtle text-secondary">Lida</span>
+      {% endif %}
+    </article>
+    {% empty %}
+    <p class="text-muted small mb-0 py-2">Sem avisos individuais pendentes para seu usuário.</p>
+    {% endfor %}
+  </div>
+</details>
+{% endblock %}

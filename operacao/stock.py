@@ -478,11 +478,13 @@ def scan_stock(user, now=None):
     config = m.Configuracao.objects.select_for_update().get(pk=config.pk)
     today = timezone.localdate(now)
     wanted = set()
-    for part in g.Peca.objects.filter(ativo=True).select_related('categoria','fornecedor'):
+    parts = list(g.Peca.objects.filter(ativo=True).select_related('categoria','fornecedor'))
+    all_metrics = metrics_batch(parts, config, today)
+    for part in parts:
         # Encerramento libera compromissos sem restaurar consumo físico já lançado.
         for reservation in part.reservas.filter(status='ATIVA').filter(Q(ordem__status__in=m.ENCERRADAS) | Q(venda__status__in=['CONFIRMADA','CANCELADA'])):
             release(user, reservation.pk, 'Origem encerrada; liberação automática do compromisso restante.')
-        data = metrics(part, config, today)
+        data = all_metrics.get(part.pk) or metrics(part, config, today)
         conditions = []
         if data['disponivel'] <= part.estoque_minimo:
             conditions.append((f'produto:{part.pk}:reposicao',None,'REPOSICAO',data['situacao']))

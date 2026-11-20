@@ -243,6 +243,21 @@ def release(request,pk):
 @login_required
 def occurrences(request):
     require(request.user,'estoque_escrever')
+    from .stock_scheduler import tick
+    try:
+        config_obj = m.Configuracao.objects.first()
+        now = timezone.now()
+        should_tick = False
+        if not config_obj or not config_obj.ultima_verificacao_estoque:
+            should_tick = True
+        elif now >= config_obj.ultima_verificacao_estoque + timezone.timedelta(minutes=config_obj.intervalo_alertas_minutos):
+            should_tick = True
+        elif not m.OcorrenciaEstoque.objects.filter(resolvida_em__isnull=True).exists():
+            should_tick = True
+        if should_tick:
+            tick(request.user, now)
+    except Exception:
+        pass
     qs=m.OcorrenciaEstoque.objects.select_related('peca','lote').order_by('peca__sku','-aberta_em')
     qs=qs.filter(resolvida_em__isnull=request.GET.get('historico')!='1')
     if request.GET.get('tipo'):
@@ -256,7 +271,20 @@ def occurrences(request):
             cache[row.peca_id]=stock.metrics(row.peca,config)
         rows.append({'occurrence':row,'stock':cache[row.peca_id]})
     query=request.GET.copy();query.pop('page',None)
-    return render(request,'operacao/stock_occurrences.html',{'rows':rows,'page_obj':page,'query':query.urlencode(),'notifications':m.Notificacao.objects.filter(usuario=request.user,ocorrencia_estoque__isnull=False,resolvida_em__isnull=True)[:100]})
+    counts = {
+        'abertas': m.OcorrenciaEstoque.objects.filter(resolvida_em__isnull=True).count(),
+        'reposicao': m.OcorrenciaEstoque.objects.filter(tipo='REPOSICAO', resolvida_em__isnull=True).count(),
+        'resolvidas': m.OcorrenciaEstoque.objects.filter(resolvida_em__isnull=False).count(),
+    }
+    filtro_ativo = 'historico' if request.GET.get('historico')=='1' else ('reposicao' if request.GET.get('tipo')=='REPOSICAO' else 'abertas')
+    return render(request,'operacao/stock_occurrences.html',{
+        'rows':rows,
+        'page_obj':page,
+        'query':query.urlencode(),
+        'counts':counts,
+        'filtro_ativo':filtro_ativo,
+        'notifications':m.Notificacao.objects.filter(usuario=request.user,ocorrencia_estoque__isnull=False,resolvida_em__isnull=True)[:100]
+    })
 
 @login_required
 @require_http_methods(['GET','POST'])
