@@ -1,6 +1,199 @@
-{% extends 'base.html' %}{% load l10n %}{% block title %}Abrir PDV{% endblock %}{% block content %}<main class="sv-page">
-<header class="sv-heading"><div><p class="sv-eyebrow">PONTO DE VENDA</p><h1>Seu caixa. Suas vendas.</h1><p>Escolha seu caixa aberto. O depósito é definido pela empresa em cada caixa.</p></div><div class="d-flex gap-2 flex-wrap align-items-center"><a class="sv-button" href="{% url 'core:painel' %}" style="background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(56, 189, 248, 0.5); color: #0284c7; font-weight: 700;"><i class="bi bi-arrow-left-circle-fill text-info"></i> Voltar à Página Geral (ERP)</a><a class="sv-button" href="{% url 'operacao:pdv_history' %}">Histórico do PDV</a></div></header>
-<div class="sv-workspace"><section class="sv-card"><h2>Nova venda</h2>{% if sessions %}<form method="post" class="sv-form">{% csrf_token %}<input name="action" value="venda" type="hidden"><input name="request_id" value="{{ request_id }}" type="hidden"><label for="caixa">Meu caixa aberto</label><select id="caixa" name="caixa" required>{% for row in sessions %}<option value="{{ row.public_id }}">{{ row.conta.nome }}</option>{% endfor %}</select><button class="sv-button sv-primary">Iniciar venda rápida →</button></form>{% else %}<p class="sv-empty">Você ainda não tem um caixa aberto. Faça a conferência de abertura abaixo.</p>{% endif %}
-<details class="sv-details" id="abrir-meu-caixa"{% if not sessions or opening_error %} open{% endif %}><summary>Abrir meu caixa</summary>{% if opening_error %}<div class="alert alert-danger" role="alert">{{ opening_error }}</div>{% endif %}{% if not contas %}<div class="alert alert-warning my-2" role="alert" style="border-left:4px solid #f59e0b;background:#fffbeb;padding:12px 16px;border-radius:6px;"><h3 class="h6 mb-2" style="font-weight:700;color:#b45309;">⚠️ Nenhum Caixa Físico disponível para abertura nesta organização</h3><p class="small mb-2" style="color:#78350f;">Para realizar vendas na frente de caixa, é necessário ter uma conta cadastrada como <strong>Caixa</strong> com um <strong>Depósito padrão ativo</strong> vinculado.</p>{% if bancos_disponiveis %}<div class="small mb-3"><strong style="color:#92400e;">Contas cadastradas que você pode ativar como Caixa PDV com 1 clique:</strong><ul class="my-2 ps-3">{% for b in bancos_disponiveis %}<li class="mb-1"><strong>{{ b.nome }}</strong> (Atualmente: {{ b.get_tipo_display }})<form method="post" action="{% url 'operacao:banco_acao' b.pk 'tornar_caixa' %}" style="display:inline-block;margin-left:6px;">{% csrf_token %}<button type="submit" class="btn btn-sm btn-success py-0 px-2" style="font-size:0.75rem;">⚡ Tornar Caixa PDV</button></form></li>{% endfor %}</ul></div>{% endif %}<div class="d-flex gap-2 flex-wrap"><a class="btn btn-sm btn-primary" href="/bancos/novo/?tipo=CAIXA">＋ Cadastrar Novo Caixa PDV</a><a class="btn btn-sm btn-outline-secondary" href="/bancos/">Gerenciar Bancos e Caixas</a></div></div>{% endif %}<form method="post" class="sv-form">{% csrf_token %}<input name="action" value="abrir" type="hidden"><input name="request_id" value="{{ opening_request_id }}" type="hidden"><label for="conta">Caixa configurado pela empresa · depósito padrão</label><select id="conta" name="conta" {% if not contas %}disabled{% else %}required{% endif %}>{% if not contas %}<option value="" disabled selected>Nenhum caixa disponível (cadastre ou ative acima)</option>{% else %}{% for row in contas %}<option value="{{ row.pk|unlocalize }}"{% if opening_conta|stringformat:'s' == row.pk|stringformat:'s' %} selected{% endif %}>{{ row.nome }} · {{ row.deposito_padrao.nome }}</option>{% endfor %}{% endif %}</select><label for="contado">Dinheiro contado na abertura (R$)</label><input id="contado" name="contado" type="number" min="0" step=".01" value="{{ opening_contado }}" {% if not contas %}disabled{% else %}required{% endif %}><button class="sv-button" {% if not contas %}disabled style="opacity:0.6;cursor:not-allowed;" title="Cadastre ou ative um Caixa antes de abrir"{% endif %}>Confirmar abertura</button><small>A contagem de abertura não gera um recebimento financeiro.</small></form></details></section>
-<section class="sv-card"><h2>Continuar atendimento</h2>{% for row in drafts %}<a class="sv-sale-link" href="{% url 'operacao:pdv_sale' row.public_id %}"><strong>{{ row }}</strong><span>R$ {{ row.total|floatformat:2 }} →</span></a>{% empty %}<p class="sv-empty">Nenhum carrinho em aberto.</p>{% endfor %}<a class="sv-button" href="{% url 'operacao:pdv_history' %}">Histórico de vendas</a>
-{% for row in sessions %}<details class="sv-details"><summary>Conferir e fechar {{ row.conta.nome }}</summary><form method="post" action="{% url 'operacao:pdv_cash' row.public_id %}" class="sv-form">{% csrf_token %}<input type="hidden" name="action" value="fechar"><label for="fechamento-{{ row.pk }}">Dinheiro contado no fechamento (R$)</label><input type="number" name="contado" id="fechamento-{{ row.pk }}" min="0" step=".01" required><label for="motivo-{{ row.pk }}">Justificativa, se houver divergência</label><textarea name="motivo" id="motivo-{{ row.pk }}" rows="2"></textarea><button class="sv-button">Confirmar fechamento</button><small>O fechamento segue a conferência e a auditoria do caixa existente.</small></form></details>{% endfor %}</section></div>{% if cash_supervisor %}<p><a class="sv-button" href="{% url 'operacao:pdv_home' %}?gestao=1">Gestão de caixas</a> <a class="sv-button" href="{% url 'operacao:seller_management' %}">Gestão dos vendedores</a></p>{% endif %}<p><a class="sv-button" href="{% url 'operacao:pdv_offline' %}">Preparar offline / sincronização</a></p>{% include 'operacao/pdv_install.html' %}</main>{% endblock %}
+{% extends 'base.html' %}
+{% load l10n %}
+{% block title %}Central do PDV{% endblock %}
+{% block content %}
+<main class="sv-page" style="max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px;">
+  <!-- Header Executivo -->
+  <header class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4 pb-3" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+    <div>
+      <span class="badge d-inline-flex align-items-center gap-1 mb-2" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700; padding: 5px 12px; border-radius: 6px; letter-spacing: 0.08em; font-size: 0.75rem;">
+        <i class="bi bi-shop"></i> PONTO DE VENDA
+      </span>
+      <h1 class="h2 text-white mb-1" style="font-weight: 800; letter-spacing: -0.03em;">Central do PDV</h1>
+      <p class="text-muted mb-0" style="font-size: 0.95rem;">Escolha seu caixa aberto, inicie vendas balcão ou gerencie atendimentos em andamento.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <a class="vx-back-to-erp-btn" href="{% url 'core:painel' %}">
+        <i class="bi bi-arrow-left-circle-fill"></i>
+        <span>Voltar à Página Geral (ERP)</span>
+      </a>
+      <a class="sv-button" href="{% url 'operacao:pdv_history' %}">
+        <i class="bi bi-clock-history text-info"></i>
+        <span>Histórico do PDV</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Workspace de Operação (2 Colunas Balanceadas) -->
+  <div class="sv-workspace">
+    <!-- Coluna 1: Nova Venda & Abertura de Caixa -->
+    <section class="sv-card">
+      <div class="d-flex align-items-center gap-2 mb-3 pb-2" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <i class="bi bi-cart-plus-fill text-success fs-4"></i>
+        <h2 class="h5 mb-0 text-white fw-bold">Nova Venda Balcão</h2>
+      </div>
+
+      {% if sessions %}
+        <form method="post" class="sv-form">
+          {% csrf_token %}
+          <input name="action" value="venda" type="hidden">
+          <input name="request_id" value="{{ request_id }}" type="hidden">
+          
+          <label for="caixa" class="text-white small fw-semibold">Meu Caixa Aberto</label>
+          <select id="caixa" name="caixa" required class="form-select">
+            {% for row in sessions %}
+              <option value="{{ row.public_id }}">{{ row.conta.nome }} (Aberto)</option>
+            {% endfor %}
+          </select>
+          
+          <button class="sv-button sv-primary mt-2 w-100" style="font-size: 1rem; font-weight: 700;">
+            <i class="bi bi-lightning-charge-fill me-1"></i> Iniciar venda rápida →
+          </button>
+        </form>
+      {% else %}
+        <div class="text-center py-4 px-2" style="background: rgba(255, 255, 255, 0.02); border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.1);">
+          <i class="bi bi-lock-fill fs-2 text-warning d-block mb-2"></i>
+          <p class="text-white fw-semibold mb-1">Nenhum caixa aberto no momento</p>
+          <p class="small text-muted mb-0">Faça a conferência de abertura abaixo para iniciar suas vendas.</p>
+        </div>
+      {% endif %}
+
+      <!-- Accordion de Abertura de Caixa -->
+      <details class="sv-details mt-4" id="abrir-meu-caixa"{% if not sessions or opening_error %} open{% endif %}>
+        <summary class="fw-bold" style="cursor: pointer;">
+          <i class="bi bi-key-fill text-warning me-1"></i> Abrir meu caixa
+        </summary>
+        
+        {% if opening_error %}
+          <div class="alert alert-danger my-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ opening_error }}
+          </div>
+        {% endif %}
+
+        {% if not contas %}
+          <div class="alert alert-warning my-3" role="alert" style="border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.1); border-radius: 8px;">
+            <h3 class="h6 mb-2 fw-bold text-warning">⚠️ Nenhum Caixa Físico disponível para abertura nesta organização</h3>
+            <p class="small mb-2 text-white">Para realizar vendas na frente de caixa, é necessário ter uma conta cadastrada como <strong>Caixa</strong> com um <strong>Depósito padrão ativo</strong> vinculado.</p>
+            {% if bancos_disponiveis %}
+              <div class="small mb-3">
+                <strong class="text-warning">Contas cadastradas que você pode ativar como Caixa PDV com 1 clique:</strong>
+                <ul class="my-2 ps-3">
+                  {% for b in bancos_disponiveis %}
+                    <li class="mb-1 text-white">
+                      <strong>{{ b.nome }}</strong> (Atualmente: {{ b.get_tipo_display }})
+                      <form method="post" action="{% url 'operacao:banco_acao' b.pk 'tornar_caixa' %}" style="display:inline-block;margin-left:6px;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-success py-0 px-2" style="font-size:0.75rem;">⚡ Tornar Caixa PDV</button>
+                      </form>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+            <div class="d-flex gap-2 flex-wrap">
+              <a class="btn btn-sm btn-primary" href="/bancos/novo/?tipo=CAIXA">＋ Cadastrar Novo Caixa PDV</a>
+              <a class="btn btn-sm btn-outline-secondary" href="/bancos/">Gerenciar Bancos e Caixas</a>
+            </div>
+          </div>
+        {% endif %}
+
+        <form method="post" class="sv-form mt-3">
+          {% csrf_token %}
+          <input name="action" value="abrir" type="hidden">
+          <input name="request_id" value="{{ opening_request_id }}" type="hidden">
+
+          <label for="conta" class="text-white small fw-semibold">Caixa configurado pela empresa · depósito padrão</label>
+          <select id="conta" name="conta" {% if not contas %}disabled{% else %}required{% endif %} class="form-select">
+            {% if not contas %}
+              <option value="" disabled selected>Nenhum caixa disponível (cadastre ou ative acima)</option>
+            {% else %}
+              {% for row in contas %}
+                <option value="{{ row.pk|unlocalize }}"{% if opening_conta|stringformat:'s' == row.pk|stringformat:'s' %} selected{% endif %}>
+                  {{ row.nome }} · {{ row.deposito_padrao.nome }}
+                </option>
+              {% endfor %}
+            {% endif %}
+          </select>
+
+          <label for="contado" class="text-white small fw-semibold">Dinheiro contado na abertura (R$)</label>
+          <input id="contado" name="contado" type="number" min="0" step=".01" value="{{ opening_contado }}" {% if not contas %}disabled{% else %}required{% endif %} class="form-control" placeholder="0.00">
+
+          <button class="sv-button mt-2" {% if not contas %}disabled style="opacity:0.5;cursor:not-allowed;" title="Cadastre ou ative um Caixa antes de abrir"{% endif %}>
+            <i class="bi bi-check-circle-fill text-success"></i> Confirmar abertura do caixa
+          </button>
+          <small class="text-muted">A contagem de abertura não gera lançamento de recebimento financeiro.</small>
+        </form>
+      </details>
+    </section>
+
+    <!-- Coluna 2: Continuar Atendimento & Fechamento -->
+    <section class="sv-card">
+      <div class="d-flex align-items-center gap-2 mb-3 pb-2" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <i class="bi bi-arrow-repeat text-info fs-4"></i>
+        <h2 class="h5 mb-0 text-white fw-bold">Continuar Atendimento</h2>
+      </div>
+
+      <div class="mb-3">
+        {% for row in drafts %}
+          <a class="sv-sale-link d-flex justify-content-between align-items-center" href="{% url 'operacao:pdv_sale' row.public_id %}">
+            <div>
+              <strong class="text-white d-block">{{ row }}</strong>
+              <small class="text-muted"><i class="bi bi-clock me-1"></i>Carrinho em andamento</small>
+            </div>
+            <span class="fs-5 fw-bold" style="color: #34d399;">R$ {{ row.total|floatformat:2 }} →</span>
+          </a>
+        {% empty %}
+          <div class="text-center py-4 px-2" style="background: rgba(255, 255, 255, 0.02); border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.1);">
+            <i class="bi bi-cart-x fs-2 text-secondary d-block mb-2"></i>
+            <p class="text-muted mb-0 small">Nenhum carrinho em aberto no momento.</p>
+          </div>
+        {% endfor %}
+      </div>
+
+      <a class="sv-button w-100 mb-3" href="{% url 'operacao:pdv_history' %}">
+        <i class="bi bi-journal-text me-1"></i> Consultar histórico de vendas
+      </a>
+
+      <!-- Fechamento de Caixa -->
+      {% for row in sessions %}
+        <details class="sv-details">
+          <summary class="fw-bold" style="cursor: pointer; color: #f87171 !important;">
+            <i class="bi bi-box-arrow-right text-danger me-1"></i> Conferir e fechar {{ row.conta.nome }}
+          </summary>
+          <form method="post" action="{% url 'operacao:pdv_cash' row.public_id %}" class="sv-form mt-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="fechar">
+            <label for="fechamento-{{ row.pk }}" class="text-white small fw-semibold">Dinheiro contado no fechamento (R$)</label>
+            <input type="number" name="contado" id="fechamento-{{ row.pk }}" min="0" step=".01" required class="form-control" placeholder="0.00">
+            <label for="motivo-{{ row.pk }}" class="text-white small fw-semibold">Justificativa, se houver divergência</label>
+            <textarea name="motivo" id="motivo-{{ row.pk }}" rows="2" class="form-control" placeholder="Observações de conferência..."></textarea>
+            <button class="sv-button mt-2" style="border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+              <i class="bi bi-lock-fill text-danger me-1"></i> Confirmar fechamento do caixa
+            </button>
+            <small class="text-muted">O fechamento segue a conferência e a auditoria do caixa existente.</small>
+          </form>
+        </details>
+      {% endfor %}
+    </section>
+  </div>
+
+  <!-- Barra de Ações de Gestão Rápida -->
+  <div class="d-flex gap-2 flex-wrap align-items-center mb-4 p-3 rounded-3" style="background: #121a29; border: 1px solid rgba(255, 255, 255, 0.08);">
+    <span class="small fw-bold text-muted me-2"><i class="bi bi-gear-fill me-1"></i> AÇÕES DO PDV:</span>
+    {% if cash_supervisor %}
+      <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" href="{% url 'operacao:pdv_home' %}?gestao=1">
+        <i class="bi bi-bank"></i> Gestão de Caixas
+      </a>
+      <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" href="{% url 'operacao:seller_management' %}">
+        <i class="bi bi-people"></i> Gestão dos Vendedores
+      </a>
+    {% endif %}
+    <a class="btn btn-sm btn-outline-info d-inline-flex align-items-center gap-1" href="{% url 'operacao:pdv_offline' %}">
+      <i class="bi bi-cloud-arrow-down"></i> Preparar offline / sincronização
+    </a>
+  </div>
+
+  <!-- Box de Instalação PWA -->
+  {% include 'operacao/pdv_install.html' %}
+</main>
+{% endblock %}

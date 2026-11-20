@@ -1,1 +1,70 @@
-{% extends 'base.html' %}{% block title %}Histórico do PDV{% endblock %}{% block content %}<main class="sv-page"><h1>Histórico de vendas</h1><p>Vendas dos caixas autorizados nesta organização.</p><section class="sv-sales-list">{% for sale in sales %}<article class="sv-card"><strong>{{ sale }}</strong><p>{{ sale.get_status_display }} · {{ sale.vendedor }} · R$ {{ sale.total|floatformat:2 }}</p><a class="sv-button" href="{% url 'operacao:pdv_sale' sale.public_id %}">Consultar venda / devolução</a>{% if sale.snapshot %}<a class="sv-button" href="{% url 'operacao:pdv_receipt' sale.public_id %}">Comprovante</a>{% endif %}</article>{% empty %}<p>Nenhuma venda.</p>{% endfor %}</section></main>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Histórico do PDV{% endblock %}
+{% block content %}
+<main class="sv-page" style="max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px;">
+  <!-- Header Executivo -->
+  <header class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4 pb-3" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+    <div>
+      <span class="badge d-inline-flex align-items-center gap-1 mb-2" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700; padding: 5px 12px; border-radius: 6px; letter-spacing: 0.08em; font-size: 0.75rem;">
+        <i class="bi bi-clock-history"></i> VERTYX PDV
+      </span>
+      <h1 class="h2 text-white mb-1" style="font-weight: 800; letter-spacing: -0.03em;">Histórico de Vendas</h1>
+      <p class="text-muted mb-0" style="font-size: 0.95rem;">Vendas realizadas pelos caixas autorizados nesta organização com consulta rápida a devoluções e comprovantes.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <a class="vx-back-to-erp-btn" href="{% url 'core:painel' %}">
+        <i class="bi bi-arrow-left-circle-fill"></i>
+        <span>Voltar ao ERP</span>
+      </a>
+      <a class="sv-button" href="{% url 'operacao:pdv_home' %}">
+        <i class="bi bi-shop text-info"></i>
+        <span>Central do PDV</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Lista de Vendas em Grid de Cards Executivos -->
+  <section class="sv-sales-list">
+    {% for sale in sales %}
+      <article class="sv-card" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 190px; border-radius: 14px;">
+        <div>
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <strong class="text-white fs-5 fw-bold">{{ sale }}</strong>
+            <span class="badge {% if sale.status == 'CONCLUIDA' %}bg-success text-success{% elif sale.status == 'CANCELADA' %}bg-danger text-danger{% else %}bg-warning text-warning{% endif %} bg-opacity-25 border border-opacity-25" style="font-size: 0.72rem; padding: 4px 8px;">
+              {{ sale.get_status_display }}
+            </span>
+          </div>
+          <p class="small text-muted mb-3">
+            <i class="bi bi-person-badge me-1"></i>{{ sale.vendedor }}
+            {% if sale.criado_em %}
+              · <span class="font-monospace text-info">{{ sale.criado_em|date:'d/m/Y H:i' }}</span>
+            {% endif %}
+          </p>
+        </div>
+        <div>
+          <div class="d-flex justify-content-between align-items-baseline mb-3 pt-2" style="border-top: 1px dashed rgba(255, 255, 255, 0.1);">
+            <span class="small text-muted">Total</span>
+            <strong class="fs-4 fw-bold" style="color: #34d399;">R$ {{ sale.total|floatformat:2 }}</strong>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <a class="sv-button sv-primary flex-grow-1 text-center justify-content-center" href="{% url 'operacao:pdv_sale' sale.public_id %}" style="font-size: 0.85rem; padding: 8px 12px; min-height: 38px;">
+              <i class="bi bi-receipt me-1"></i> Consultar venda
+            </a>
+            {% if sale.snapshot %}
+              <a class="sv-button flex-grow-1 text-center justify-content-center" href="{% url 'operacao:pdv_receipt' sale.public_id %}" style="font-size: 0.85rem; padding: 8px 12px; min-height: 38px;">
+                <i class="bi bi-printer me-1"></i> Comprovante
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+    {% empty %}
+      <div class="col-12 text-center py-5" style="grid-column: 1 / -1; background: #121a29; border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 48px 24px;">
+        <i class="bi bi-inbox fs-1 opacity-50 d-block mb-3 text-secondary"></i>
+        <h3 class="h5 text-white fw-bold">Nenhuma venda encontrada</h3>
+        <p class="small text-muted mb-0">Quando vendas forem registradas ou abertas na frente de caixa, elas aparecerão listadas aqui.</p>
+      </div>
+    {% endfor %}
+  </section>
+</main>
+{% endblock %}

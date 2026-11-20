@@ -1,2 +1,55 @@
-<div class="sv-cart-title"><h2>Produtos da venda</h2><span>{{ items|length }} itens</span></div>
-{% for row in items %}<article class="sv-cart-item"><div><strong>{{ row.peca.descricao }}</strong><small>{{ row.peca.sku }} · R$ {{ row.valor_unitario|floatformat:2 }} / {{ row.peca.unidade_medida }} (base)</small></div><strong>R$ {{ row.total|floatformat:2 }}</strong><form method="post" class="sv-cart-controls">{% csrf_token %}<input name="action" value="editar" type="hidden"><input name="item" value="{{ row.pk }}" type="hidden"><input name="desconto" value="{{ row.desconto|stringformat:'.2f' }}" type="hidden"><input name="motivo" value="Quantidade do carrinho" type="hidden"><button type="button" class="sv-qty-button" data-qty-delta="-1" aria-label="Diminuir {{ row.peca.descricao }}">−</button><label class="visually-hidden" for="quantity-{{ row.pk }}">Quantidade de {{ row.peca.descricao }}</label><input id="quantity-{{ row.pk }}" name="quantidade" value="{{ row.quantidade|stringformat:'.3f' }}" type="number" min=".001" step=".001" required><button type="button" class="sv-qty-button" data-qty-delta="1" aria-label="Aumentar {{ row.peca.descricao }}">+</button><button class="sv-button">Atualizar</button></form><form method="post">{% csrf_token %}<input name="action" value="remover" type="hidden"><input name="item" value="{{ row.pk }}" type="hidden"><button class="sv-remove">Remover item</button></form><details class="sv-details"><summary>Desconto deste item</summary><form method="post" class="sv-form">{% csrf_token %}<input name="action" value="editar" type="hidden"><input name="item" value="{{ row.pk }}" type="hidden"><input name="quantidade" value="{{ row.quantidade|stringformat:'.3f' }}" type="hidden"><label for="item-discount-{{ row.pk }}">Desconto R$</label><input id="item-discount-{{ row.pk }}" name="desconto" type="number" step=".01" min="0" value="{{ row.desconto|stringformat:'.2f' }}"><label for="item-reason-{{ row.pk }}">Motivo</label><input id="item-reason-{{ row.pk }}" name="motivo" required><button class="sv-button">Aplicar dentro do limite</button></form></details></article>{% empty %}<p class="sv-empty">Carrinho vazio. Adicione seu primeiro produto.</p>{% endfor %}
+<div class="sv-cart-title">
+  <h2 class="text-white"><i class="bi bi-cart3 me-1"></i> Produtos no Carrinho</h2>
+  <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">{{ items|length }} itens</span>
+</div>
+
+{% for row in items %}
+  <article class="sv-cart-item">
+    <div>
+      <strong class="text-white">{{ row.peca.descricao }}</strong>
+      <small class="text-muted"><span class="font-monospace text-info">{{ row.peca.sku }}</span> · R$ {{ row.valor_unitario|floatformat:2 }} / {{ row.peca.unidade_medida }}</small>
+    </div>
+    <strong class="fs-5 fw-bold" style="color: #34d399;">R$ {{ row.total|floatformat:2 }}</strong>
+    
+    <form method="post" class="sv-cart-controls">
+      {% csrf_token %}
+      <input name="action" value="editar" type="hidden">
+      <input name="item" value="{{ row.pk }}" type="hidden">
+      <input name="desconto" value="{{ row.desconto|stringformat:'.2f' }}" type="hidden">
+      <input name="motivo" value="Quantidade do carrinho" type="hidden">
+      <button type="button" class="sv-qty-button" data-qty-delta="-1" aria-label="Diminuir {{ row.peca.descricao }}">−</button>
+      <label class="visually-hidden" for="quantity-{{ row.pk }}">Quantidade de {{ row.peca.descricao }}</label>
+      <input id="quantity-{{ row.pk }}" name="quantidade" value="{{ row.quantidade|stringformat:'.3f' }}" type="number" min=".001" step=".001" required>
+      <button type="button" class="sv-qty-button" data-qty-delta="1" aria-label="Aumentar {{ row.peca.descricao }}">+</button>
+      <button class="sv-button" style="padding: 6px 12px; font-size: 12px;"><i class="bi bi-check-lg"></i> Atualizar</button>
+    </form>
+    
+    <form method="post">
+      {% csrf_token %}
+      <input name="action" value="remover" type="hidden">
+      <input name="item" value="{{ row.pk }}" type="hidden">
+      <button class="sv-remove" title="Remover produto"><i class="bi bi-trash3 me-1"></i>Remover item</button>
+    </form>
+    
+    <details class="sv-details">
+      <summary class="small"><i class="bi bi-tag me-1"></i> Desconto deste item</summary>
+      <form method="post" class="sv-form mt-2">
+        {% csrf_token %}
+        <input name="action" value="editar" type="hidden">
+        <input name="item" value="{{ row.pk }}" type="hidden">
+        <input name="quantidade" value="{{ row.quantidade|stringformat:'.3f' }}" type="hidden">
+        <label for="item-discount-{{ row.pk }}" class="small">Desconto R$</label>
+        <input id="item-discount-{{ row.pk }}" name="desconto" type="number" step=".01" min="0" value="{{ row.desconto|stringformat:'.2f' }}">
+        <label for="item-reason-{{ row.pk }}" class="small">Motivo</label>
+        <input id="item-reason-{{ row.pk }}" name="motivo" required placeholder="Ex: Desconto autorizado">
+        <button class="sv-button mt-1" style="font-size: 12px;">Aplicar desconto</button>
+      </form>
+    </details>
+  </article>
+{% empty %}
+  <div class="text-center py-5 px-3" style="background: rgba(255, 255, 255, 0.02); border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.08); margin-top: 15px;">
+    <i class="bi bi-cart3 fs-1 text-secondary opacity-50 d-block mb-2"></i>
+    <strong class="text-white d-block mb-1">Carrinho vazio</strong>
+    <p class="small text-muted mb-0">Digite um produto na barra de busca acima ou bipe com leitor de código de barras.</p>
+  </div>
+{% endfor %}

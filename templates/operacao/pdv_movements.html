@@ -1,11 +1,96 @@
 {% extends 'base.html' %}
 {% block title %}Movimentações do PDV{% endblock %}
 {% block content %}
-<main class="container-fluid">
-  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4"><div><p class="text-primary fw-semibold mb-1">VERTYX PDV</p><h1 class="h2">Movimentações</h1><p class="text-muted">Consulta somente leitura das movimentações oficiais originadas no PDV.</p></div><a class="btn btn-outline-primary" href="{% url 'operacao:pdv_home' %}?gestao=1">Voltar para caixas</a></div>
-  {% if erro_periodo %}<div class="alert alert-danger" role="alert">Período inválido. Confira as datas informadas.</div>{% endif %}
-  <form class="card card-body mb-3" method="get"><div class="row g-3 align-items-end"><div class="col-sm-5"><label class="form-label" for="start">De</label><input class="form-control" id="start" type="date" name="inicio" value="{{ inicio|date:'Y-m-d' }}"></div><div class="col-sm-5"><label class="form-label" for="end">Até</label><input class="form-control" id="end" type="date" name="fim" value="{{ fim|date:'Y-m-d' }}"></div><div class="col-sm-2"><button class="btn btn-primary w-100">Filtrar</button></div></div></form>
-  <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Data</th><th>Conta</th><th>Tipo</th><th>Descrição</th><th>Operador</th><th class="text-end">Valor</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ row.data|date:'d/m/Y' }}</td><td>{{ row.conta }}</td><td>{{ row.get_tipo_display }}</td><td>{{ row.descricao }}</td><td>{{ row.usuario }}</td><td class="text-end {% if row.tipo == 'SAIDA' %}text-danger{% else %}text-success{% endif %}">R$ {{ row.valor|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Nenhuma movimentação de PDV neste período.</td></tr>{% endfor %}</tbody></table></div>
+<main class="sv-page" style="max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px;">
+  <!-- Header Executivo -->
+  <header class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4 pb-3" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+    <div>
+      <span class="badge d-inline-flex align-items-center gap-1 mb-2" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700; padding: 5px 12px; border-radius: 6px; letter-spacing: 0.08em; font-size: 0.75rem;">
+        <i class="bi bi-arrow-left-right"></i> VERTYX PDV
+      </span>
+      <h1 class="h2 text-white mb-1" style="font-weight: 800; letter-spacing: -0.03em;">Movimentações do PDV</h1>
+      <p class="text-muted mb-0" style="font-size: 0.95rem;">Consulta oficial e auditada das movimentações registradas na frente de caixa.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <a class="vx-back-to-erp-btn" href="{% url 'core:painel' %}">
+        <i class="bi bi-arrow-left-circle-fill"></i>
+        <span>Voltar ao ERP</span>
+      </a>
+      <a class="sv-button" href="{% url 'operacao:pdv_home' %}?gestao=1">
+        <i class="bi bi-bank text-info"></i>
+        <span>Voltar para caixas</span>
+      </a>
+    </div>
+  </header>
+
+  {% if erro_periodo %}
+    <div class="alert alert-danger mb-4" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i> Período inválido. Confira as datas informadas.
+    </div>
+  {% endif %}
+
+  <!-- Filtro de Período -->
+  <form class="card card-body mb-4" method="get" style="background: #121a29; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.25);">
+    <div class="row g-3 align-items-end">
+      <div class="col-sm-5">
+        <label class="form-label text-white small fw-semibold" for="start">Data Inicial</label>
+        <input class="form-control" id="start" type="date" name="inicio" value="{{ inicio|date:'Y-m-d' }}" style="background: #080d17; border-color: rgba(255,255,255,0.14); color: #fff;">
+      </div>
+      <div class="col-sm-5">
+        <label class="form-label text-white small fw-semibold" for="end">Data Final</label>
+        <input class="form-control" id="end" type="date" name="fim" value="{{ fim|date:'Y-m-d' }}" style="background: #080d17; border-color: rgba(255,255,255,0.14); color: #fff;">
+      </div>
+      <div class="col-sm-2">
+        <button class="btn btn-primary w-100" style="font-weight: 700; min-height: 44px;">
+          <i class="bi bi-funnel-fill me-1"></i> Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Tabela de Movimentações -->
+  <div class="card p-0 overflow-hidden mb-4" style="background: #121a29; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="color: #f8fafc;">
+        <thead style="background: #162234; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+          <tr>
+            <th class="py-3 px-3 text-white fw-bold">Data</th>
+            <th class="py-3 px-3 text-white fw-bold">Conta / Caixa</th>
+            <th class="py-3 px-3 text-white fw-bold">Tipo</th>
+            <th class="py-3 px-3 text-white fw-bold">Descrição</th>
+            <th class="py-3 px-3 text-white fw-bold">Operador</th>
+            <th class="py-3 px-3 text-end text-white fw-bold">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+              <td class="py-3 px-3 font-monospace text-muted">{{ row.data|date:'d/m/Y' }}</td>
+              <td class="py-3 px-3 fw-semibold text-white">{{ row.conta }}</td>
+              <td class="py-3 px-3">
+                <span class="badge {% if row.tipo == 'SAIDA' %}bg-danger{% else %}bg-success{% endif %} bg-opacity-25 text-{% if row.tipo == 'SAIDA' %}danger{% else %}success{% endif %} border border-{% if row.tipo == 'SAIDA' %}danger{% else %}success{% endif %} border-opacity-25" style="font-size: 0.75rem;">
+                  {{ row.get_tipo_display }}
+                </span>
+              </td>
+              <td class="py-3 px-3 text-muted">{{ row.descricao }}</td>
+              <td class="py-3 px-3 text-muted">{{ row.usuario }}</td>
+              <td class="py-3 px-3 text-end fw-bold {% if row.tipo == 'SAIDA' %}text-danger{% else %}text-success{% endif %}" style="font-size: 1rem;">
+                R$ {{ row.valor|floatformat:2 }}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">
+                <i class="bi bi-inbox fs-2 opacity-50 d-block mb-2"></i>
+                Nenhuma movimentação de PDV neste período.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   {% include 'paginacao.html' %}
 </main>
 {% endblock %}
