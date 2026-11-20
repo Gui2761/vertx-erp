@@ -156,12 +156,17 @@ Quando cores são inseridas de forma estática (por exemplo, `text-white` ou `ba
 4. ❌ **Injeção de Dados Mocados ou Sintéticos**:
    O sistema é multi-tenant real e será usado por várias empresas. Sempre consuma do backend oficial.
 
+5. ❌ **Ativação Múltipla de Links do Menu Lateral (Bug de dois selecionados)**:
+   Nunca utilize checagem cega de prefixo (`startswith`) sem desempate de especificidade. Sub-rotas como `/estoque/` e `/estoque/painel/` ou `/compras/` e `/compras/?cotacoes=1` causavam ativação simultânea de dois itens no menu lateral.
+   ✅ **Solução:** Aplicar a arquitetura *Single Best Match* (tanto no context processor Python quanto no Javascript de bootstrap do cliente), atribuindo pontuação de especificidade e garantindo que exatamente **um** item receba a classe `.active`.
+
 ---
 
 ## 5. Checklist de Verificação Pré-Deploy
 
 - [ ] Testou a tela com `data-theme="dark"` no elemento `<html>`?
 - [ ] Testou a tela com `data-theme="light"` no elemento `<html>`?
+- [ ] O menu lateral possui estritamente **1** item ativo selecionado (zero duplo destaque)?
 - [ ] Todos os textos primários possuem contraste superior a 4.5:1 nos dois modos?
 - [ ] Nenhum texto ficou com cor branca sobre fundo branco no modo claro?
 - [ ] Nenhum elemento permaneceu como caixa preta no meio da tela no modo claro?
