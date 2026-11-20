@@ -522,3 +522,122 @@ body.dark .sv-troco-value {
     padding: 20px 22px !important;
   }
 }
+
+/* ============================================================
+   GRADE OTIMIZADA DE PRODUTOS NO PDV (4 PRODUTOS POR LINHA)
+   ============================================================ */
+.sv-console-products,
+.sv-products {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin: 12px 0 !important;
+}
+
+.sv-console-products .sv-card,
+.sv-product-card {
+  padding: 12px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  min-height: 165px !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.sv-product-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.1) !important;
+  border-color: #3b82f6 !important;
+}
+
+.sv-product-title,
+.sv-console-products h3 {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  margin: 6px 0 8px !important;
+  color: #0f172a !important;
+  min-height: 36px !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.sv-product-pricing {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  margin: 6px 0 8px !important;
+  padding-bottom: 6px !important;
+  border-bottom: 1px dashed #e2e8f0 !important;
+}
+
+.sv-price {
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  color: #047857 !important;
+}
+
+.sv-stock-badge {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 2px 6px !important;
+  border-radius: 6px !important;
+}
+
+.sv-product-add {
+  display: flex !important;
+  gap: 6px !important;
+  align-items: center !important;
+  margin-top: 4px !important;
+}
+
+.sv-qty-group {
+  width: 55px !important;
+}
+
+.sv-qty-group input {
+  height: 34px !important;
+  min-height: 34px !important;
+  font-size: 13px !important;
+  padding: 2px 4px !important;
+  text-align: center !important;
+  border-radius: 6px !important;
+}
+
+.sv-btn-add {
+  flex: 1 !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+}
+
+/* Responsividade da grade de 4 produtos */
+@media (max-width: 1250px) {
+  .sv-console-products,
+  .sv-products {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 950px) {
+  .sv-console-products,
+  .sv-products {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .sv-console-products,
+  .sv-products {
+    grid-template-columns: 1fr !important;
+  }
+}
