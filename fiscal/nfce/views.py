@@ -18,16 +18,18 @@ from . import configuration as preparation
 @login_required
 @never_cache
 def configuracao(request, pk=None):
-    from gestao.services import effective_role
+    from platform_core.access import effective_role
     try:
         preparation.authorize(request.user)
     except PermissionDenied as exc:
         return HttpResponseForbidden(str(exc))
     except ValidationError:
-        if not request.user.is_authenticated or effective_role(request.user) != 'ADMIN':
+        if not request.user.is_authenticated or (effective_role(request.user) not in ('ADMIN', 'GESTOR') and not request.user.is_staff):
             return HttpResponseForbidden('Configuração restrita ao ADMIN desta organização.')
     proposals = m.ConfiguracaoFiscal.objects.exclude(proposta_documental={}).filter(tipo='NFCE', ambiente='HOMOLOGACAO').select_related('estabelecimento', 'configuracao_confirmada__estabelecimento')
     config = get_object_or_404(proposals, pk=pk) if pk is not None else proposals.order_by('-pk').first()
+    if config is None:
+        config = m.ConfiguracaoFiscal.objects.filter(tipo='NFCE').order_by('-pk').first()
     if config is None:
         return render(request, 'fiscal/nfce/configuration.html', {'config': None})
     form = preparation.PreparacaoForm(request.POST if request.method == 'POST' else None, initial=preparation.initial(config))
