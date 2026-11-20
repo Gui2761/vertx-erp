@@ -1,3 +1,6 @@
+import urllib.parse
+from platform_core.modules import has_capability, module_enabled
+
 ICON_ALIASES = {'calendar3':'calendar','calendar-check':'calendar','clipboard2-pulse':'document','telephone':'health','file-earmark-text':'document','file-earmark-ruled':'document','bag':'cart','people':'users','box-seam':'stock','arrow-left-right':'arrows','hourglass-split':'calendar','buildings':'stock','list-check':'document','bookmark-check':'document','cart-check':'cart','chat-square-text':'document','truck':'cart','box-arrow-in-down':'stock','person-vcard':'users','cash-stack':'bank','arrow-down-circle':'arrows','arrow-up-circle':'arrows','graph-up':'chart','file-earmark-check':'document','heart-pulse':'health','person-gear':'users','folder':'document','person-lock':'users','bar-chart':'chart','gear':'settings','sliders':'settings','person-check':'users'}
 
 def menu(request):
@@ -16,9 +19,10 @@ def _menu(request):
     membership=getattr(request,'membership',None)
     org=getattr(request,'organization',None)
     current_path=getattr(request,'path','')
+    current_full_path = request.get_full_path() if hasattr(request, 'get_full_path') else current_path
     from platform_core.context import get_org_cache_dict
     org_cache = get_org_cache_dict(org) if org and membership else None
-    nav_key = ('nav_menu_full', getattr(request.user, 'pk', None), getattr(membership, 'role', None), current_path)
+    nav_key = ('nav_menu_full', getattr(request.user, 'pk', None), getattr(membership, 'role', None), current_full_path)
     if org_cache is not None and nav_key in org_cache:
         return dict(org_cache[nav_key])
     res = _menu_uncached(request)
@@ -162,40 +166,70 @@ def _menu_uncached(request):
         return res
 
     current_path = getattr(request, 'path', '')
+    current_full_path = request.get_full_path() if hasattr(request, 'get_full_path') else current_path
+
     filtered_groups = []
     for title, links in groups:
         allowed_links = [(label, url, icon) for label, url, icon in links if _is_nav_allowed(url)]
         if allowed_links:
-            is_active = any(
-                current_path == url.split('?')[0]
-                or (url.split('?')[0] not in ('/', '') and current_path.startswith(url.split('?')[0]))
-                for _, url, _ in allowed_links
-            )
-            filtered_groups.append((title, allowed_links, is_active))
+            filtered_groups.append((title, allowed_links))
 
-    if not any(active for _, _, active in filtered_groups) and filtered_groups:
-        filtered_groups[0] = (filtered_groups[0][0], filtered_groups[0][1], True)
+    # Single Best Match: encontra o único item do menu com maior especificidade/pontuação
+    best_match_key = None
+    best_score = -1
+
+    for title, links in filtered_groups:
+        for label, url, icon in links:
+            url_parts = urllib.parse.urlparse(url)
+            link_path = url_parts.path
+            link_query = urllib.parse.parse_qs(url_parts.query)
+
+            score = -1
+            if link_query:
+                # Link com query parameters explícitos (ex: ?cotacoes=1, ?tipo=RECEBER, ?gestao=1)
+                curr_parts = urllib.parse.urlparse(current_full_path)
+                curr_query = urllib.parse.parse_qs(curr_parts.query)
+                if current_path == link_path or (link_path not in ('/', '') and current_path.startswith(link_path)):
+                    if all(curr_query.get(k) == v for k, v in link_query.items()):
+                        score = 1000 + len(link_path) + len(url_parts.query)
+            else:
+                # Link sem query parameters
+                if current_path == link_path:
+                    score = 500 + len(link_path)
+                elif link_path not in ('/', '') and current_path.startswith(link_path):
+                    score = 100 + len(link_path)
+
+            if score > best_score:
+                best_score = score
+                best_match_key = (title, url)
+
+    exec_nav = []
+    has_active_group = False
+
+    for title, links in filtered_groups:
+        group_has_active_link = any((title, url) == best_match_key for _, url, _ in links)
+        if group_has_active_link:
+            has_active_group = True
+
+        exec_nav.append({
+            'title': title,
+            'is_active': group_has_active_link,
+            'links': [
+                {
+                    'label': label,
+                    'url': url,
+                    'icon': ICON_ALIASES.get(icon, icon),
+                    'is_active': ((title, url) == best_match_key)
+                }
+                for label, url, icon in links
+            ]
+        })
+
+    if not has_active_group and exec_nav:
+        exec_nav[0]['is_active'] = True
 
     return {
         'administrative_navigation': True,
         'can_operational_panel': panel_access,
-        'executive_navigation': [
-            {
-                'title': title,
-                'is_active': is_active,
-                'links': [
-                    {
-                        'label': label,
-                        'url': url,
-                        'icon': ICON_ALIASES.get(icon, icon),
-                        'is_active': (
-                            current_path == url.split('?')[0]
-                            or (url.split('?')[0] not in ('/', '') and current_path.startswith(url.split('?')[0]))
-                        )
-                    }
-                    for label, url, icon in links
-                ]
-            }
-            for title, links, is_active in filtered_groups
-        ]
+        'executive_navigation': exec_nav
     }
