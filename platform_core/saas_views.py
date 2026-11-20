@@ -670,10 +670,17 @@ def alterar_plano_cliente(request, public_id):
     if denied:
         return denied
     organization = get_object_or_404(Organization, public_id=public_id)
-    subscription = get_object_or_404(AssinaturaSaaS.objects.select_related('plano'), organization=organization)
+    subscription = AssinaturaSaaS.objects.select_related('plano').filter(organization=organization).first()
     form = AlterarPlanoForm(request.POST or None)
-    form.fields['plano'].queryset = form.fields['plano'].queryset.exclude(pk=subscription.plano_id)
-    before = set(subscription.plano.modulos)
+    if subscription:
+        form.fields['plano'].queryset = form.fields['plano'].queryset.exclude(pk=subscription.plano_id)
+        before = set(subscription.plano.modulos)
+        current_plan_data = plano_snapshot(subscription.plano)
+        plans_data = [plano_snapshot(plan) for plan in PlanoSaaS.objects.filter(ativo=True).exclude(pk=subscription.plano_id)]
+    else:
+        before = set()
+        current_plan_data = {}
+        plans_data = [plano_snapshot(plan) for plan in PlanoSaaS.objects.filter(ativo=True)]
     if request.method == 'POST' and form.is_valid():
         chosen = form.cleaned_data['plano']
         current_usage = metricas_uso(organization)
@@ -695,8 +702,8 @@ def alterar_plano_cliente(request, public_id):
                 'organization': organization, 'subscription': subscription, 'form': form,
                 'added': sorted(set(chosen.modulos) - before), 'removed': sorted(before - set(chosen.modulos)),
                 'module_labels': dict(ModuloOrganizacao._meta.get_field('codigo').choices),
-                'current_plan': plano_snapshot(subscription.plano),
-                'plans_data': [plano_snapshot(plan) for plan in PlanoSaaS.objects.filter(ativo=True).exclude(pk=subscription.plano_id)],
+                'current_plan': current_plan_data,
+                'plans_data': plans_data,
                 'new_limits': chosen.limites, 'quota_warnings': quota_warnings,
                 'quota_unavailable': quota_unavailable,
                 'confirm_quota_overage': True,
@@ -707,7 +714,7 @@ def alterar_plano_cliente(request, public_id):
         except (ValidationError, IntegrityError) as exc:
             _audit_redirect_error(request, exc, form)
         else:
-            messages.success(request, 'Plano alterado. Módulos e limites foram sincronizados sem mudar permissões individuais.')
+            messages.success(request, 'Plano vinculado/alterado com sucesso. Módulos e limites foram sincronizados sem mudar permissões individuais.')
             return redirect('platform_core:saas_client_detail', public_id=changed.organization.public_id)
     selected = form.cleaned_data.get('plano') if form.is_bound and not form.errors else None
     after = set(selected.modulos) if selected else set()
@@ -715,8 +722,8 @@ def alterar_plano_cliente(request, public_id):
         'organization': organization, 'subscription': subscription, 'form': form,
         'added': sorted(after - before), 'removed': sorted(before - after),
         'module_labels': dict(ModuloOrganizacao._meta.get_field('codigo').choices),
-        'current_plan': plano_snapshot(subscription.plano),
-        'plans_data': [plano_snapshot(plan) for plan in PlanoSaaS.objects.filter(ativo=True).exclude(pk=subscription.plano_id)],
+        'current_plan': current_plan_data,
+        'plans_data': plans_data,
         'new_limits': selected.limites if selected else {},
         'quota_warnings': [],
         'quota_unavailable': [],

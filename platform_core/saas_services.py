@@ -840,27 +840,41 @@ def criar_cliente(*, actor, company, admin, plan_id):
 
 @transaction.atomic
 def alterar_plano(*, actor, organization, plan_id, reason=''):
-    sub = AssinaturaSaaS.objects.select_for_update().select_related('plano').get(organization=organization)
+    sub = AssinaturaSaaS.objects.select_for_update().select_related('plano').filter(organization=organization).first()
     new_plan = PlanoSaaS.objects.select_for_update().get(pk=plan_id, ativo=True)
-    old_plan = sub.plano
-    before = plano_snapshot(old_plan)
-    after = plano_snapshot(new_plan)
-    if old_plan.pk == new_plan.pk:
-        raise ValidationError('Selecione um plano diferente do atual.')
-    HistoricoPlanoSaaS.objects.create(
-        assinatura=sub, plano_anterior=old_plan, plano_novo=new_plan,
-        anterior=before, posterior=after, motivo=reason.strip(), alterado_por=actor,
-    )
-    sub.plano = new_plan
-    sub.periodicidade = new_plan.periodicidade
-    sub.save(update_fields=['plano', 'periodicidade', 'atualizado_em'])
+    if sub:
+        old_plan = sub.plano
+        before = plano_snapshot(old_plan)
+        after = plano_snapshot(new_plan)
+        if old_plan.pk == new_plan.pk:
+            raise ValidationError('Selecione um plano diferente do atual.')
+        HistoricoPlanoSaaS.objects.create(
+            assinatura=sub, plano_anterior=old_plan, plano_novo=new_plan,
+            anterior=before, posterior=after, motivo=reason.strip(), alterado_por=actor,
+        )
+        sub.plano = new_plan
+        sub.periodicidade = new_plan.periodicidade
+        sub.save(update_fields=['plano', 'periodicidade', 'atualizado_em'])
+    else:
+        before = {}
+        after = plano_snapshot(new_plan)
+        sub = AssinaturaSaaS.objects.create(
+            organization=organization,
+            plano=new_plan,
+            status=AssinaturaSaaS.Status.ACTIVE if organization.status == Organization.Status.ACTIVE else AssinaturaSaaS.Status.IMPLANTACAO,
+            periodicidade=new_plan.periodicidade,
+        )
+        HistoricoPlanoSaaS.objects.create(
+            assinatura=sub, plano_anterior=None, plano_novo=new_plan,
+            anterior=before, posterior=after, motivo=reason.strip() or 'Vínculo inicial de plano SaaS', alterado_por=actor,
+        )
     aplicar_modulos(organization, new_plan)
     with tenant_context(organization):
         config = ConfiguracaoEmpresa.objects.filter(organization=organization).first()
         if config:
             config.limites = _tenant_limits(new_plan)
             config.save(update_fields=['limites'])
-    registrar(actor, 'PLANO_ALTERADO', f'assinatura:{sub.pk}', organization=organization,
+    registrar(actor, 'PLANO_ALTERADO' if before else 'PLANO_VINCULADO', f'assinatura:{sub.pk}', organization=organization,
               details={'anterior': before, 'posterior': after, 'motivo': reason.strip()})
     return sub
 
