@@ -56,13 +56,14 @@
   display: none;
 }
 .vx-search-group-title {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--vx-muted);
-  padding: 0.65rem 1rem 0.35rem;
-  background: rgba(0, 0, 0, 0.2);
+  color: #38bdf8;
+  padding: 0.65rem 1rem 0.45rem;
+  background: rgba(14, 165, 233, 0.1);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.25);
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -71,16 +72,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.65rem 1rem;
-  color: var(--vx-ink, #ffffff);
+  padding: 0.75rem 1rem;
+  color: #ffffff;
   text-decoration: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.15s ease;
   letter-spacing: 0.02em;
 }
 .vx-search-item:hover, .vx-search-item.active {
-  background: var(--vx-surface-hover, #182337);
-  color: #ffffff;
+  background: #1e293b;
+  color: #38bdf8;
   padding-left: 1.25rem;
 }
 .vx-search-item:last-child {
@@ -96,22 +97,23 @@
 .vx-result-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.5rem 0.85rem;
-  background: var(--vx-surface-subtle);
-  border: 1px solid var(--vx-border);
+  padding: 0.55rem 0.95rem;
+  background: #162032;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
   color: #ffffff;
   text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
   letter-spacing: 0.02em;
   transition: all 0.2s ease;
 }
 .vx-result-pill:hover {
-  background: var(--vx-surface-hover);
-  border-color: var(--vx-brand);
+  background: #2563eb;
+  border-color: #60a5fa;
   color: #ffffff;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 [data-theme="light"] .vx-search-input {
   background: #ffffff !important;
@@ -148,9 +150,9 @@
 
 <div class="vx-search-hero">
   <form id="global-search-form" method="get" action="{% url 'operacao:pesquisa' %}">
-    <label for="global-query" class="form-label small text-muted fw-semibold mb-2 d-flex justify-content-between">
+    <label for="global-query" class="form-label small fw-bold mb-2 d-flex justify-content-between" style="color: #cbd5e1;">
       <span style="letter-spacing: 0.03em;">DIGITE PARA BUSCAR EM TODO O SISTEMA</span>
-      <span class="font-monospace text-secondary" style="font-size: 0.75rem;">Atalho: <kbd class="px-1 py-0 bg-secondary bg-opacity-25 border border-secondary border-opacity-25 text-white">/</kbd></span>
+      <span class="font-monospace" style="font-size: 0.78rem; color: #94a3b8;">Atalho: <kbd class="px-2 py-0.5 border text-white fw-bold" style="background: rgba(37, 99, 235, 0.35); border-color: rgba(56, 189, 248, 0.4) !important;">/</kbd></span>
     </label>
     
     <div class="vx-search-input-wrap">
@@ -166,7 +168,7 @@
         autocomplete="off"
         spellcheck="false"
       >
-      <button class="btn btn-primary px-4 fw-semibold ms-2 shadow-sm d-flex align-items-center gap-2" style="min-height: 48px; border-radius: 10px;">
+      <button class="btn btn-primary px-4 fw-bold ms-2 shadow d-flex align-items-center gap-2" style="min-height: 48px; border-radius: 10px; background-color: #2563eb; border-color: #3b82f6; color: #ffffff;">
         <i class="bi bi-search"></i>
         <span>Pesquisar</span>
       </button>
@@ -309,11 +311,39 @@
     data.sections.forEach(sec => {
       if (sec.rows && sec.rows.length > 0) {
         hasAnyRow = true;
-        html += '<div class="vx-search-group-title"><i class="bi bi-collection me-1 text-primary"></i>' + sec.titulo + ' (' + sec.rows.length + ')</div>';
+        let iconClass = 'bi-collection text-info';
+        if (sec.titulo === 'Clientes') iconClass = 'bi-building text-primary';
+        else if (sec.titulo === 'Equipamentos') iconClass = 'bi-cpu text-info';
+        else if (sec.titulo === 'Ordens de serviço') iconClass = 'bi-tools text-warning';
+        else if (sec.titulo === 'Chamados') iconClass = 'bi-headset text-danger';
+        else if (sec.titulo === 'Contratos') iconClass = 'bi-file-earmark-text text-success';
+        else if (sec.titulo === 'Produtos') iconClass = 'bi-box-seam text-info';
+        else if (sec.titulo === 'Vendas PDV') iconClass = 'bi-receipt text-success';
+
+        html += '<div class="vx-search-group-title"><i class="bi ' + iconClass + ' me-1"></i><span class="text-white fw-bold">' + sec.titulo + '</span><span class="badge ms-auto" style="background: rgba(255,255,255,0.15); color: #ffffff; font-size: 0.72rem; border: 1px solid rgba(255,255,255,0.2);">' + sec.rows.length + '</span></div>';
+        
         sec.rows.slice(0, 5).forEach(row => {
+          let rawLabel = row.label || '';
+          let badgePrefix = '';
+          let restText = rawLabel;
+
+          if (rawLabel.startsWith('OS-')) {
+            let dashIdx = rawLabel.indexOf(' - ');
+            if (dashIdx > -1) {
+              badgePrefix = '<span class="badge me-2" style="background: rgba(245, 158, 11, 0.25); border: 1px solid #f59e0b; color: #fde047; font-weight: 700; font-family: monospace;">' + rawLabel.slice(0, dashIdx) + '</span>';
+              restText = rawLabel.slice(dashIdx + 3);
+            }
+          } else if (rawLabel.startsWith('VENDA-')) {
+            let dashIdx = rawLabel.indexOf(' - ');
+            if (dashIdx > -1) {
+              badgePrefix = '<span class="badge me-2" style="background: rgba(16, 185, 129, 0.25); border: 1px solid #10b981; color: #6ee7b7; font-weight: 700; font-family: monospace;">' + rawLabel.slice(0, dashIdx) + '</span>';
+              restText = rawLabel.slice(dashIdx + 3);
+            }
+          }
+
           html += '<a class="vx-search-item" href="' + row.url + '">';
-          html += '<span class="text-truncate" style="max-width: 85%;">' + row.label + '</span>';
-          html += '<span class="badge bg-secondary bg-opacity-25 text-muted small"><i class="bi bi-arrow-right"></i></span>';
+          html += '<div class="text-truncate d-flex align-items-center" style="max-width: 86%;">' + badgePrefix + '<span class="text-white fw-semibold">' + restText + '</span></div>';
+          html += '<span class="badge px-2 py-1 shadow-sm" style="background: #2563eb; color: #ffffff; border: 1px solid #3b82f6;"><i class="bi bi-arrow-right"></i></span>';
           html += '</a>';
         });
       }

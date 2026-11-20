@@ -80,7 +80,23 @@
 </section>
 {% endif %}
 
-{% if stock_summary.repor %}<a class="alert alert-warning d-block text-decoration-none mb-4" href="{% url 'operacao:stock_occurrences' %}?tipo=REPOSICAO"><strong>ATENÇÃO — {{ stock_summary.repor }} PRODUTOS PRECISAM DE REPOSIÇÃO</strong></a>{% endif %}
+{% if stock_summary.repor %}
+<a class="d-flex align-items-center justify-content-between p-3 mb-4 text-decoration-none shadow-sm" href="{% url 'operacao:stock_occurrences' %}?tipo=REPOSICAO" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.5); border-radius: 12px; transition: all 0.2s ease;">
+  <div class="d-flex align-items-center gap-3">
+    <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(245, 158, 11, 0.25); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(245, 158, 11, 0.5);">
+      <i class="bi bi-exclamation-triangle-fill fs-5" style="color: #fde047;"></i>
+    </div>
+    <div>
+      <span class="d-block fw-bold text-uppercase" style="color: #fde047; font-size: 0.92rem; letter-spacing: 0.04em;">ATENÇÃO — {{ stock_summary.repor }} PRODUTOS PRECISAM DE REPOSIÇÃO</span>
+      <span class="small" style="color: #fef08a;">Itens cadastrados atingiram ou ficaram abaixo da margem de segurança do estoque.</span>
+    </div>
+  </div>
+  <div class="btn btn-sm fw-bold px-3 py-1.5 d-none d-sm-flex align-items-center gap-2" style="background: #f59e0b; color: #0f172a; border-radius: 8px; border: none; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);">
+    <span>Ver Ocorrências</span>
+    <i class="bi bi-arrow-right"></i>
+  </div>
+</a>
+{% endif %}
 
 {% if sales_chart %}
 <section class="card p-4 mb-4" aria-label="Gráfico de vendas">
@@ -242,15 +258,15 @@
     <div class="card p-4 h-100 d-flex flex-column" style="background-color: var(--vx-surface); border: 1px solid var(--vx-border); border-radius: var(--vx-radius);">
       <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-10">
         <div class="d-flex align-items-center gap-2">
-          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(37, 99, 235, 0.12); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(37, 99, 235, 0.2);">
-            <i class="bi bi-calendar2-week text-primary fs-5"></i>
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(56, 189, 248, 0.3);">
+            <i class="bi bi-calendar2-week-fill text-info fs-5"></i>
           </div>
           <div>
-            <h2 class="h5 mb-0 fw-bold">Agenda de hoje</h2>
-            <small class="text-muted">Atendimentos e ordens de serviço programadas</small>
+            <h2 class="h5 mb-0 fw-bold text-white">Agenda de hoje</h2>
+            <small class="fw-semibold" style="color: #94a3b8 !important;">Atendimentos e ordens de serviço programadas</small>
           </div>
         </div>
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+        <span class="badge px-3 py-1 fw-bold" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.82rem;">
           {{ agenda_hoje|length }} agendamento{{ agenda_hoje|length|pluralize:'s' }}
         </span>
       </div>
@@ -264,44 +280,44 @@
           </div>
           <div class="vx-agenda-body">
             <div class="d-flex align-items-center justify-content-between gap-2 mb-1 flex-wrap">
-              <span class="vx-agenda-client text-truncate" style="max-width: 320px;" title="{{ order.cliente }}">{{ order.cliente }}</span>
+              <span class="vx-agenda-client text-white fw-bold text-truncate" style="max-width: 320px;" title="{{ order.cliente }}">{{ order.cliente }}</span>
               {% if order.status == 'EM_DESLOCAMENTO' %}
-                <span class="badge bg-warning-subtle text-warning border border-warning-subtle text-nowrap"><i class="bi bi-truck me-1"></i>{{ order.get_status_display }}</span>
+                <span class="badge text-nowrap fw-bold" style="background: rgba(245, 158, 11, 0.2); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.45); font-size: 0.8rem; padding: 4px 8px;"><i class="bi bi-truck me-1"></i>{{ order.get_status_display }}</span>
               {% elif order.status == 'EM_ATENDIMENTO' or order.status == 'EM_ANDAMENTO' %}
-                <span class="badge bg-info-subtle text-info border border-info-subtle text-nowrap"><i class="bi bi-gear-wide-connected me-1"></i>{{ order.get_status_display }}</span>
+                <span class="badge text-nowrap fw-bold" style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.8rem; padding: 4px 8px;"><i class="bi bi-gear-wide-connected me-1"></i>{{ order.get_status_display }}</span>
               {% elif order.status == 'CONCLUIDA' or order.status == 'FINALIZADA' %}
-                <span class="badge bg-success-subtle text-success border border-success-subtle text-nowrap"><i class="bi bi-check-circle me-1"></i>{{ order.get_status_display }}</span>
+                <span class="badge text-nowrap fw-bold" style="background: rgba(52, 211, 153, 0.2); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.45); font-size: 0.8rem; padding: 4px 8px;"><i class="bi bi-check-circle me-1"></i>{{ order.get_status_display }}</span>
               {% elif order.status == 'CANCELADA' %}
-                <span class="badge bg-danger-subtle text-danger border border-danger-subtle text-nowrap"><i class="bi bi-x-circle me-1"></i>{{ order.get_status_display }}</span>
+                <span class="badge text-nowrap fw-bold" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.45); font-size: 0.8rem; padding: 4px 8px;"><i class="bi bi-x-circle me-1"></i>{{ order.get_status_display }}</span>
               {% else %}
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle text-nowrap">{{ order.get_status_display }}</span>
+                <span class="badge text-nowrap fw-bold" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.8rem; padding: 4px 8px;">{{ order.get_status_display }}</span>
               {% endif %}
             </div>
-            <div class="vx-agenda-meta small text-muted">
-              <span class="badge bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-25 py-0 px-1 font-monospace" style="font-size: 0.72rem;">{{ order.numero }}</span>
-              <span class="text-truncate" style="max-width: 160px;" title="{{ order.unidade|default:'Sem unidade' }}"><i class="bi bi-geo-alt text-info me-1"></i>{{ order.unidade|default:'Sem unidade' }}</span>
-              <span class="opacity-25">·</span>
-              <span class="text-truncate" style="max-width: 180px;" title="{{ order.equipamento }}"><i class="bi bi-cpu text-info me-1"></i>{{ order.equipamento }}</span>
-              <span class="opacity-25">·</span>
-              <span class="badge bg-secondary-subtle text-secondary py-0 px-1 border border-secondary border-opacity-25">{{ order.get_tipo_atendimento_display }}</span>
-              <span class="opacity-25">·</span>
-              <span title="{{ order.tecnico|default:'Não atribuído' }}"><i class="bi bi-person text-info me-1"></i>{{ order.tecnico|default:'Não atribuído' }}</span>
+            <div class="vx-agenda-meta d-flex align-items-center flex-wrap gap-2" style="font-size: 0.85rem; color: #cbd5e1 !important;">
+              <span class="badge font-monospace fw-bold" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-size: 0.78rem;">{{ order.numero }}</span>
+              <span class="text-truncate fw-medium" style="max-width: 170px; color: #f1f5f9;" title="{{ order.unidade|default:'Sem unidade' }}"><i class="bi bi-geo-alt-fill text-info me-1"></i>{{ order.unidade|default:'Sem unidade' }}</span>
+              <span style="color: #64748b;">·</span>
+              <span class="text-truncate fw-medium" style="max-width: 190px; color: #f1f5f9;" title="{{ order.equipamento }}"><i class="bi bi-cpu-fill text-info me-1"></i>{{ order.equipamento }}</span>
+              <span style="color: #64748b;">·</span>
+              <span class="badge font-monospace fw-bold" style="background: rgba(255, 255, 255, 0.08); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.18);">{{ order.get_tipo_atendimento_display }}</span>
+              <span style="color: #64748b;">·</span>
+              <span class="fw-medium" style="color: #f1f5f9;" title="{{ order.tecnico|default:'Não atribuído' }}"><i class="bi bi-person-fill text-info me-1"></i>{{ order.tecnico|default:'Não atribuído' }}</span>
             </div>
           </div>
-          <div class="vx-agenda-action">
-            <i class="bi bi-chevron-right"></i>
+          <div class="vx-agenda-action" style="color: #38bdf8;">
+            <i class="bi bi-chevron-right fs-5"></i>
           </div>
         </a>
         {% empty %}
-        <div class="text-center py-4 my-auto text-muted">
-          <i class="bi bi-calendar-check fs-1 d-block mb-2 text-secondary opacity-50"></i>
-          <p class="mb-0 fw-medium">Nenhuma OS agendada para hoje.</p>
-          <small class="text-muted">Aproveite para organizar pendências ou adiantar o planejamento.</small>
+        <div class="text-center py-4 my-auto" style="color: #94a3b8;">
+          <i class="bi bi-calendar-check fs-1 d-block mb-2 text-info opacity-75"></i>
+          <p class="mb-0 fw-bold text-white">Nenhuma OS agendada para hoje.</p>
+          <small style="color: #94a3b8;">Aproveite para organizar pendências ou adiantar o planejamento.</small>
         </div>
         {% endfor %}
       </div>
 
-      <a class="btn btn-outline-primary w-100 fw-semibold py-2 d-flex align-items-center justify-content-center gap-2 mt-auto shadow-sm" href="{% url 'operacao:calendario' %}?visao=DIA">
+      <a class="btn btn-primary w-100 fw-bold py-2 d-flex align-items-center justify-content-center gap-2 mt-auto shadow" href="{% url 'operacao:calendario' %}?visao=DIA" style="background: #2563eb !important; border-color: #3b82f6 !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;">
         <i class="bi bi-calendar3"></i>
         <span>Ver planejamento completo</span>
       </a>
@@ -312,12 +328,12 @@
     <div class="card p-4 h-100 d-flex flex-column" style="background-color: var(--vx-surface); border: 1px solid var(--vx-border); border-radius: var(--vx-radius);">
       <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-10">
         <div class="d-flex align-items-center gap-2">
-          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(6, 182, 212, 0.12); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(6, 182, 212, 0.2);">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(56, 189, 248, 0.3);">
             <i class="bi bi-graph-up-arrow text-info fs-5"></i>
           </div>
           <div>
-            <h2 class="h5 mb-0 fw-bold">Desempenho da assistência</h2>
-            <small class="text-muted">Status das ordens e distribuição de atendimentos</small>
+            <h2 class="h5 mb-0 fw-bold text-white">Desempenho da assistência</h2>
+            <small class="fw-semibold" style="color: #94a3b8 !important;">Status das ordens e distribuição de atendimentos</small>
           </div>
         </div>
       </div>
@@ -325,17 +341,17 @@
         {% for row in status_chart %}
         <div class="vx-chart-row mb-3">
           <div class="d-flex justify-content-between mb-1">
-            <span class="small fw-semibold">{{ row.name }}</span>
-            <strong class="small">{{ row.value }}</strong>
+            <span class="small fw-bold" style="color: #f8fafc !important;">{{ row.name }}</span>
+            <strong class="small fw-bold" style="color: #38bdf8 !important;">{{ row.value }}</strong>
           </div>
-          <div class="progress" role="img" aria-label="{{ row.name }}: {{ row.value }}" style="height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.08);">
-            <div class="progress-bar bg-primary" style="width:{{ row.width }}%; border-radius: 4px;"></div>
+          <div class="progress" role="img" aria-label="{{ row.name }}: {{ row.value }}" style="height: 10px; border-radius: 6px; background: rgba(255, 255, 255, 0.08);">
+            <div class="progress-bar" style="width:{{ row.width }}%; border-radius: 6px; background: linear-gradient(90deg, #2563eb, #38bdf8) !important;"></div>
           </div>
         </div>
         {% endfor %}
       </div>
-      <p class="small text-muted mb-0 pt-2 border-top border-secondary border-opacity-10">
-        <i class="bi bi-info-circle me-1"></i>No período: <strong>{{ assistance_completed.preventivas }}</strong> preventivas · <strong>{{ assistance_completed.corretivas }}</strong> corretivas · <strong>{{ assistance_completed.total }}</strong> atendimentos concluídos.
+      <p class="small mb-0 pt-2 border-top border-secondary border-opacity-10" style="color: #cbd5e1 !important;">
+        <i class="bi bi-info-circle text-info me-1"></i>No período: <strong class="text-white">{{ assistance_completed.preventivas }}</strong> preventivas · <strong class="text-white">{{ assistance_completed.corretivas }}</strong> corretivas · <strong class="text-info">{{ assistance_completed.total }}</strong> atendimentos concluídos.
       </p>
     </div>
   </section>
