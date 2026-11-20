@@ -6,7 +6,7 @@
   document.querySelectorAll('[data-open-payment]').forEach(button=>button.addEventListener('click',()=>{openDialog('seller-checkout');document.getElementById('forma-1')?.focus();}));
   document.querySelectorAll('[data-focus-code]').forEach(button=>button.addEventListener('click',focusCode));
   const action=kind=>{
-    if(kind==='search'){document.getElementById('codigo-busca')?.focus();return;}
+    if(kind==='search'){const sb=document.getElementById('codigo-busca');if(sb){sb.focus();sb.select();}return;}
     if(kind==='advanced'){focusCode();return;}
     if(kind==='cancel'){openDialog('seller-cancel');return;}
     if(kind==='cash'){openDialog('seller-cash-summary');return;}
@@ -161,4 +161,133 @@
     }catch{release();feedback.textContent='Câmera indisponível ou permissão negada. Use a busca.';}
   });
   addEventListener('pagehide',release);
+
+  // Autocomplete em tempo real para a barra de busca
+  const searchForm = document.getElementById('form-busca-pdv');
+  const searchInput = document.getElementById('codigo-busca');
+  const dropdown = document.getElementById('sv-autocomplete-dropdown');
+  const barcodeForm = document.getElementById('seller-barcode-form');
+  const barcodeCodeInput = document.getElementById('seller-barcode-code');
+
+  if (searchInput && dropdown) {
+    let debounceTimer = null;
+    let selectedIndex = -1;
+    let currentResults = [];
+
+    const closeDropdown = () => {
+      dropdown.hidden = true;
+      dropdown.innerHTML = '';
+      selectedIndex = -1;
+      currentResults = [];
+    };
+
+    const addItemDirect = (sku) => {
+      if (barcodeForm && barcodeCodeInput) {
+        barcodeCodeInput.value = sku;
+        barcodeForm.requestSubmit();
+      } else {
+        searchInput.value = sku;
+        searchForm?.requestSubmit();
+      }
+    };
+
+    const renderResults = (results) => {
+      currentResults = results;
+      selectedIndex = -1;
+      if (!results || results.length === 0) {
+        dropdown.innerHTML = '<div class="sv-auto-empty"><i class="bi bi-info-circle me-1"></i> Nenhum produto encontrado. Pressione Enter para buscar.</div>';
+        dropdown.hidden = false;
+        return;
+      }
+
+      dropdown.innerHTML = results.map((item, idx) => `
+        <div class="sv-autocomplete-item" data-index="${idx}" data-sku="${item.sku}">
+          <div class="sv-auto-info">
+            <span class="sv-auto-title" title="${item.descricao}">${item.descricao}</span>
+            <div class="sv-auto-meta">
+              <span class="sv-auto-code">${item.sku}</span>
+              <span>${item.unidade}</span>
+              ${item.codigo_barras && item.codigo_barras !== item.sku ? `<span class="text-secondary">EAN: ${item.codigo_barras}</span>` : ''}
+            </div>
+          </div>
+          <div class="sv-auto-actions">
+            <span class="sv-auto-price">R$ ${item.preco}</span>
+            <span class="sv-auto-stock ${item.tem_estoque ? 'ok' : 'empty'}">
+              ${item.tem_estoque ? `Estoque: ${item.disponivel}` : 'Sem estoque'}
+            </span>
+            <button type="button" class="sv-auto-btn-add" data-add-sku="${item.sku}">
+              <i class="bi bi-cart-plus"></i> Add
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      dropdown.hidden = false;
+
+      dropdown.querySelectorAll('.sv-autocomplete-item').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const sku = el.dataset.sku;
+          addItemDirect(sku);
+        });
+      });
+    };
+
+    const doSearch = () => {
+      const q = searchInput.value.trim();
+      if (q.length < 2) {
+        closeDropdown();
+        return;
+      }
+      const url = searchForm?.dataset.autocompleteUrl || '/pdv/autocomplete/';
+      fetch(`${url}${url.includes('?') ? '&' : '?'}q=${encodeURIComponent(q)}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(res => res.ok ? res.json() : { results: [] })
+      .then(data => renderResults(data.results || []))
+      .catch(() => closeDropdown());
+    };
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(doSearch, 200);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (dropdown.hidden || currentResults.length === 0) return;
+      const items = dropdown.querySelectorAll('.sv-autocomplete-item');
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % items.length;
+        items.forEach((it, i) => it.classList.toggle('active', i === selectedIndex));
+        items[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+        items.forEach((it, i) => it.classList.toggle('active', i === selectedIndex));
+        items[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        if (selectedIndex >= 0 && selectedIndex < currentResults.length) {
+          e.preventDefault();
+          addItemDirect(currentResults[selectedIndex].sku);
+        }
+      } else if (e.key === 'Escape') {
+        closeDropdown();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target) && e.target !== searchInput) {
+        closeDropdown();
+      }
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded',()=>{
+    if(!document.querySelector('dialog[open]')){
+      const sb=document.getElementById('codigo-busca');
+      if(sb){sb.focus();if(sb.value)sb.select();}
+    }
+  });
 })();

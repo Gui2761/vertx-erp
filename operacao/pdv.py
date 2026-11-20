@@ -175,3 +175,46 @@ def movements(request):
     ).select_related('conta','usuario').distinct().order_by('-data','-pk')
     page=Paginator(rows,50).get_page(request.GET.get('page'))
     return render(request,'operacao/pdv_movements.html',{'rows':page,'inicio':start,'fim':end})
+
+
+@login_required
+def autocomplete(request, public_id=None):
+    from django.http import JsonResponse
+    require_capability(request.user, 'pdv')
+    query = request.GET.get('q', '').strip()[:100]
+    if not query or len(query) < 2:
+        return JsonResponse({'results': []})
+    depot = None
+    sale = None
+    if public_id:
+        try:
+            sale = m.Venda.objects.select_related('deposito').get(public_id=public_id, sessao_caixa__operador=request.user)
+            depot = sale.deposito
+        except (m.Venda.DoesNotExist, ValueError):
+            pass
+    from gestao import models as g
+    from . import seller_services as s
+    from django.db.models import Q
+    parts = g.Peca.objects.filter(ativo=True).filter(
+        Q(descricao__icontains=query) |
+        Q(sku__icontains=query) |
+        Q(referencia__icontains=query) |
+        Q(gtin__icontains=query) |
+        Q(codigo_barras__icontains=query) |
+        Q(codigos_alternativos__codigo__icontains=query)
+    ).distinct()[:8]
+    results = []
+    for p in parts:
+        avail = float(s.availability(p, depot, sale)) if depot else 0.0
+        price = float(p.preco_venda * p.fator_venda)
+        results.append({
+            'sku': p.sku,
+            'descricao': p.descricao,
+            'codigo_barras': p.codigo_barras or p.sku,
+            'unidade': p.unidade_venda or p.unidade_medida or 'un',
+            'preco': f'{price:.2f}',
+            'disponivel': f'{avail:.3f}',
+            'tem_estoque': avail > 0,
+        })
+    return JsonResponse({'results': results})
+

@@ -641,3 +641,145 @@ body.dark .sv-troco-value {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ============================================================
+   AUTOCOMPLETE INTELIGENTE DA BARRA DE BUSCA DO PDV
+   ============================================================ */
+.sv-search-input-wrap {
+  position: relative !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.sv-autocomplete-dropdown {
+  position: absolute !important;
+  top: calc(100% + 4px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: #0f172a !important;
+  border: 1px solid #3b82f6 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6) !important;
+  z-index: 1060 !important;
+  max-height: 400px !important;
+  overflow-y: auto !important;
+  padding: 6px !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.sv-autocomplete-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 10px 14px !important;
+  border-radius: 8px !important;
+  border-bottom: 1px solid #1e293b !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.sv-autocomplete-item:last-child {
+  border-bottom: none !important;
+}
+
+.sv-autocomplete-item:hover,
+.sv-autocomplete-item.active {
+  background: #1e293b !important;
+  border-color: #3b82f6 !important;
+  transform: translateX(2px) !important;
+}
+
+.sv-auto-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.sv-auto-title {
+  font-weight: 700 !important;
+  font-size: 13.5px !important;
+  color: #f8fafc !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.sv-auto-meta {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.sv-auto-code {
+  font-family: monospace !important;
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.1) !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+}
+
+.sv-auto-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+.sv-auto-price {
+  font-weight: 800 !important;
+  font-size: 16px !important;
+  color: #34d399 !important;
+  white-space: nowrap !important;
+}
+
+.sv-auto-stock {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  padding: 2px 7px !important;
+  border-radius: 5px !important;
+  white-space: nowrap !important;
+}
+
+.sv-auto-stock.ok {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+.sv-auto-stock.empty {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.sv-auto-btn-add {
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: 1px solid #059669 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.sv-auto-btn-add:hover {
+  background: #059669 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4) !important;
+}
+
+.sv-auto-empty {
+  padding: 14px !important;
+  text-align: center !important;
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+}

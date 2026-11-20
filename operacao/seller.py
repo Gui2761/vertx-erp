@@ -176,7 +176,7 @@ def sale_context(request,sale,session):
     query=request.GET.get('q','').strip()[:100]
     parts=g.Peca.objects.filter(ativo=True)
     if query:
-        parts=parts.filter(Q(descricao__icontains=query)|Q(sku__icontains=query)|Q(referencia__icontains=query)|Q(gtin=query)|Q(codigo_barras=query)|Q(codigos_alternativos__codigo=query)).distinct()
+        parts=parts.filter(Q(descricao__icontains=query)|Q(sku__icontains=query)|Q(referencia__icontains=query)|Q(gtin__icontains=query)|Q(codigo_barras__icontains=query)|Q(codigos_alternativos__codigo__icontains=query)).distinct()
     else:
         parts=parts.none()
     products=[{'part':part,'available':s.availability(part,sale.deposito,sale),'price':part.preco_venda*part.fator_venda} for part in parts[:20]]
