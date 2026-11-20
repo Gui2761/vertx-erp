@@ -22,7 +22,7 @@
   </form>{% else %}<p>Conteúdo clínico restrito. Seu acesso permite consultar apenas o histórico operacional.</p>{% endif %}
   <p>O conteúdo só é recuperado mediante finalidade e auditoria. Registros anteriores são preservados nas retificações.</p>
   {% for entry in events %}<article class="gp-record">
-    <strong>{{ entry.criada_em|date:'d/m/Y H:i:s' }}</strong> · Registrado por {{ entry.autor.get_full_name|default:entry.autor.username }}
+    <strong>{{ entry.criada_em|date:'d/m/Y H:i:s' }}</strong> · Registrado por {% if entry.autor %}{{ entry.autor.get_full_name|default:entry.autor.username }}{% else %}Profissional de Saúde{% endif %}
     {% if entry.retifica_id %}<span> · Retificação</span>{% endif %}{% if entry.has_correction %}<span> · Há versão retificada posterior</span>{% endif %}
     {% if entry.clinical %}
       <h3>{{ entry.kind_label }}</h3>
