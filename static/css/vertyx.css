@@ -2088,12 +2088,36 @@ body:not([data-theme="light"]) .btn-outline-dark:hover {
   font-weight: 500 !important;
 }
 
+/* Botão Warning e Badges Internas */
+.btn-warning {
+  background: #f59e0b !important;
+  border-color: #d97706 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+.btn-warning:hover {
+  background: #d97706 !important;
+  border-color: #b45309 !important;
+  color: #ffffff !important;
+}
+.btn-warning .badge {
+  background: rgba(15, 23, 42, 0.15) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15, 23, 42, 0.2) !important;
+  font-weight: 700 !important;
+}
+.btn-warning:hover .badge {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
 /* ==========================================================================
    REDE DE SEGURANÇA E HARMONIZAÇÃO DO MODO CLARO ([data-theme="light"])
    ========================================================================== */
 
-/* Neutraliza o antipadrão .text-white sobre fundos brancos */
-[data-theme="light"] .text-white:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.badge-primary):not(.badge-success):not(.badge-danger):not(.badge-dark):not(.vx-alert-btn) {
+/* Neutraliza o antipadrão .text-white sobre fundos brancos (preservando containers comprovadamente escuros) */
+[data-theme="light"] .text-white:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.badge-primary):not(.badge-success):not(.badge-danger):not(.badge-dark):not(.bg-dark):not(.bg-dark *):not(.text-bg-dark):not(.text-bg-dark *):not(.vx-alert-btn) {
   color: var(--vx-ink) !important;
 }
 

@@ -14,9 +14,9 @@
       <i class="bi bi-boxes"></i> Produtos
     </a>
     <a class="btn btn-warning text-dark fw-bold d-inline-flex align-items-center gap-1" href="{% url 'operacao:stock_initial_balance' %}">
-      <i class="bi bi-clipboard-check"></i> Levantamento inicial <span class="badge bg-dark text-white ms-1">Balanço</span>
+      <i class="bi bi-clipboard-check"></i> Levantamento inicial <span class="badge ms-1" style="background: rgba(15, 23, 42, 0.15); color: #0f172a; font-weight: 700; border: 1px solid rgba(15, 23, 42, 0.2);">Balanço</span>
     </a>
-    <a class="btn btn-outline-light d-inline-flex align-items-center gap-1" href="{% url 'operacao:barcode_labels' %}" style="font-weight: 600; border-color: rgba(255,255,255,0.25);">
+    <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" href="{% url 'operacao:barcode_labels' %}" style="font-weight: 600;">
       <i class="bi bi-upc-scan"></i> Imprimir Etiquetas
     </a>
     <a class="btn btn-outline-primary d-inline-flex align-items-center gap-1" href="{% url 'operacao:stock_entry' %}" style="font-weight: 600;">
