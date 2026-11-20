@@ -142,15 +142,51 @@ document.addEventListener('DOMContentLoaded',()=>{
       }, { passive: true });
     }
   }
-  document.querySelectorAll('.navbar-nav a').forEach(a=>{
-    const curPath=location.pathname;
-    if(a.pathname===curPath || (a.pathname!=='/' && a.pathname!=='/assistencia/' && a.pathname.length > 2 && curPath.startsWith(a.pathname))){
-      a.classList.add('active');
-      a.setAttribute('aria-current','page');
-      const details=a.closest('details');
-      if(details){details.open=true;}
-    }
+  const navLinks = Array.from(document.querySelectorAll('.navbar-nav a[href]')).filter(a => {
+    const p = a.pathname;
+    return p && p !== '#' && !a.classList.contains('vx-back-link') && !a.classList.contains('vx-onboarding-link');
   });
+  if (navLinks.length > 0) {
+    const curPath = location.pathname;
+    const curSearch = location.search;
+    let bestLink = null;
+    let bestScore = -1;
+
+    navLinks.forEach(a => {
+      const p = a.pathname;
+      const s = a.search;
+      let score = -1;
+
+      if (s) {
+        if (p === curPath && curSearch === s) {
+          score = 1000 + p.length + s.length;
+        }
+      } else {
+        if (p === curPath) {
+          score = 500 + p.length;
+        } else if (p !== '/' && p !== '/assistencia/' && p.length > 2 && curPath.startsWith(p)) {
+          score = 100 + p.length;
+        }
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestLink = a;
+      }
+    });
+
+    navLinks.forEach(a => {
+      a.classList.remove('active');
+      a.removeAttribute('aria-current');
+    });
+
+    if (bestLink && bestScore > 0) {
+      bestLink.classList.add('active');
+      bestLink.setAttribute('aria-current', 'page');
+      const details = bestLink.closest('details');
+      if (details) { details.open = true; }
+    }
+  }
   document.querySelectorAll('.sv-bottom a').forEach(a=>{if(a.pathname===location.pathname || (a.pathname==='/pdv/' && location.pathname.startsWith('/pdv/')))a.setAttribute('aria-current','page');});
   if(document.body.classList.contains('vx-seller')&&location.hash==='#abrir-meu-caixa'){const panel=document.getElementById('abrir-meu-caixa');if(panel){panel.open=true;panel.scrollIntoView({block:'center'});}}
   document.querySelectorAll('form').forEach(form=>form.addEventListener('submit',event=>{
