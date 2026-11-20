@@ -44,7 +44,7 @@
     <section class="panel">
       <div class="panel-heading"><div><h2>Acessos municipais já cadastrados</h2><span>O bootstrap não cria outro acesso para um membership que já possua registro.</span></div></div>
       <div class="table-wrap"><table><thead><tr><th>Usuário</th><th>Papel</th><th>Escopo</th><th>Status</th><th>Atribuído por</th></tr></thead><tbody>
-        {% for access in existing_accesses %}<tr><td><strong>{{ access.membership.user.get_full_name|default:access.membership.user.email|default:access.membership.user.username }}</strong><small>{{ access.membership.user.email }}</small></td><td>{{ access.get_papel_display }}</td><td>{{ access.get_escopo_display }}</td><td>{% if access.ativo %}Ativo{% else %}Inativo{% endif %}</td><td>{{ access.atribuido_por.get_full_name|default:access.atribuido_por.username }}</td></tr>{% endfor %}
+        {% for access in existing_accesses %}<tr><td><strong>{{ access.membership.user.get_full_name|default:access.membership.user.email|default:access.membership.user.username }}</strong><small>{{ access.membership.user.email }}</small></td><td>{{ access.get_papel_display }}</td><td>{{ access.get_escopo_display }}</td><td>{% if access.ativo %}Ativo{% else %}Inativo{% endif %}</td><td>{% if access.atribuido_por %}{{ access.atribuido_por.get_full_name|default:access.atribuido_por.username }}{% else %}Sistema{% endif %}</td></tr>{% endfor %}
       </tbody></table></div>
     </section>
   {% endif %}

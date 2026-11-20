@@ -213,6 +213,43 @@ def home(request):
             row['accessible'] = row['enabled'] and has_municipal_permission(request.user, capability, module=module_code)
         else:
             row['accessible'] = row['enabled']
+
+    def _safe_reverse(name, **kwargs):
+        try:
+            return reverse(name, kwargs=kwargs) if kwargs else reverse(name)
+        except Exception:
+            return None
+
+    module_route_map = {
+        'estrutura_municipal': lambda: _safe_reverse('rh_municipal_public:structure'),
+        'usuarios_municipais': lambda: _safe_reverse('rh_municipal_public:accesses'),
+        'acessos_municipais': lambda: _safe_reverse('rh_municipal_public:accesses'),
+        'convites_municipais': lambda: _safe_reverse('rh_municipal_public:invites'),
+        'planejamento_publico': lambda: _safe_reverse('rh_municipal_public:planejamento'),
+        'orcamento_publico': lambda: _safe_reverse('rh_municipal_public:orcamento'),
+        'contabilidade_pub': lambda: _safe_reverse('rh_municipal_public:contabilidade'),
+        'tesouraria_publica': lambda: _safe_reverse('rh_municipal_public:tesouraria'),
+        'compras_publicas': lambda: _safe_reverse('rh_municipal_public:compras_module', family='compras'),
+        'licitacoes_publicas': lambda: _safe_reverse('rh_municipal_public:licitacoes_module', family='licitacoes'),
+        'registro_precos': lambda: _safe_reverse('rh_municipal_public:registro_precos_module', family='registro-precos'),
+        'contratos_publicos': lambda: _safe_reverse('rh_municipal_public:contratos_module', family='contratos'),
+        'rh_municipal': lambda: _safe_reverse('rh_municipal:home'),
+        'patrimonio': lambda: _safe_reverse('rh_municipal_public:patrimonio_home'),
+        'almoxarifado': lambda: _safe_reverse('rh_municipal_public:almoxarifado_home'),
+        'frotas': lambda: _safe_reverse('rh_municipal_public:frotas_home'),
+        'processo_digital': lambda: _safe_reverse('rh_municipal_public:processes_home'),
+        'ouvidoria': lambda: _safe_reverse('rh_municipal_public:ouvidoria_home'),
+        'esic': lambda: _safe_reverse('rh_municipal_public:esic_home'),
+        'transparencia': lambda: _safe_reverse('rh_municipal_public:transparencia_home'),
+        'tributos_municipais': lambda: _safe_reverse('rh_municipal_public:tributary_home'),
+        'gestao_territorial': lambda: _safe_reverse('rh_municipal_public:territory_home'),
+        'nfse_municipal': lambda: _safe_reverse('rh_municipal_public:nfse_home'),
+        'saude_sus': lambda: _safe_reverse('rh_municipal_public:saude_home'),
+    }
+
+    for row in module_rows:
+        resolver = module_route_map.get(row['code'])
+        row['url'] = resolver() if resolver else None
     from . import phase_a_models as civic
     phase_widgets = []
     phase_definitions = (

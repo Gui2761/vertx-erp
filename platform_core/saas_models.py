@@ -380,6 +380,12 @@ class AuditoriaSaaS(models.Model):
         verbose_name = 'auditoria SaaS'
         verbose_name_plural = 'auditoria SaaS'
 
+    @property
+    def actor_name(self):
+        if self.actor:
+            return self.actor.get_full_name() or self.actor.username or self.actor.email or 'Usuário'
+        return 'Sistema'
+
     def save(self, *args, **kwargs):
         if self.pk:
             raise ValidationError('Auditoria SaaS é imutável.')
