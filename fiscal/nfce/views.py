@@ -31,6 +31,46 @@ def configuracao(request, pk=None):
     if config is None:
         config = m.ConfiguracaoFiscal.objects.filter(tipo='NFCE').order_by('-pk').first()
     if config is None:
+        if request.method == 'POST' and request.POST.get('acao') == 'criar_proposta_inicial':
+            from platform_core.models import Organization, ConfiguracaoEmpresa
+            import re
+            org = Organization.objects.get(pk=current_organization().pk)
+            cfg_empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first()
+            cnpj_raw = (org.cnpj or (getattr(cfg_empresa, 'cnpj', '') if cfg_empresa else '') or '11222333000181')
+            cnpj_clean = re.sub(r'\D', '', cnpj_raw) or '11222333000181'
+            if len(cnpj_clean) != 14:
+                cnpj_clean = '11222333000181'
+            proposta = {
+                'dados': {
+                    'cnpj': cnpj_clean,
+                    'razao_social': (getattr(org, 'razao_social', '') or org.display_name or 'TECNOLMED EQUIPAMENTOS MEDICOS LTDA')[:150],
+                    'nome_fantasia': (org.nome_fantasia or org.display_name or 'TECNOLMED')[:150],
+                    'ie': (getattr(cfg_empresa, 'inscricao_estadual', '') if cfg_empresa else 'ISENTO') or 'ISENTO',
+                    'im': (getattr(cfg_empresa, 'inscricao_municipal', '') if cfg_empresa else '100001') or '100001',
+                    'logradouro': (getattr(org, 'endereco', '') or 'Rua dos Médicos')[:100],
+                    'numero': '100',
+                    'complemento': 'Sala 101',
+                    'bairro': 'Centro',
+                    'cep': '49000000',
+                    'municipio': (getattr(org, 'cidade', '') or 'Aracaju')[:60],
+                    'uf': (getattr(org, 'uf', '') or 'SE')[:2] or 'SE',
+                    'cnae_principal': '4645101',
+                    'natureza_juridica': 'Sociedade Empresária Limitada',
+                    'porte': 'EPP',
+                    'simples_nacional': True
+                },
+                'fontes': ['Cadastro da Organização VERTYX (Homologação)'],
+                'divergencias': [],
+                'cadastro_anterior': {}
+            }
+            try:
+                new_cfg = s.registrar_proposta_documental(request.user, proposta)
+                from django.contrib import messages
+                messages.success(request, 'Proposta documental para homologação local criada com sucesso.')
+                return redirect('operacao:fiscal_configuracao_detalhe', pk=new_cfg.pk)
+            except Exception as exc:
+                from django.contrib import messages
+                messages.error(request, f'Erro ao registrar proposta documental: {exc}')
         return render(request, 'fiscal/nfce/configuration.html', {'config': None})
     form = preparation.PreparacaoForm(request.POST if request.method == 'POST' else None, initial=preparation.initial(config))
     if request.method == 'POST':
