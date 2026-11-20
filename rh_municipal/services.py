@@ -20,7 +20,11 @@ def roles_for(user):
     membership = membership_for(user)
     if not membership or not has_erp_access(user, membership.organization, code=PRODUCT_CODE):
         return set()
-    return set(AcessoRH.objects.filter(membership=membership, ativo=True).values_list('papel', flat=True))
+    roles = set(AcessoRH.objects.filter(membership=membership, ativo=True).values_list('papel', flat=True))
+    from .models import AcessoMunicipal
+    if AcessoMunicipal.objects.filter(membership=membership, papel=AcessoMunicipal.Papel.ADMIN_PREFEITURA, ativo=True).exists():
+        roles.add(AcessoRH.Papel.ADMIN_MUNICIPAL)
+    return roles
 
 
 def require_roles(user, allowed):
