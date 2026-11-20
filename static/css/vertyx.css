@@ -1913,3 +1913,43 @@ body:not(:has(.vx-nav)) .vx-main {
   color: #2563eb !important;
 }
 
+/* ==========================================================================
+   Page Headers & Action Bars (Alinhamento Executivo Superior)
+   ========================================================================== */
+.vx-page-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  flex-wrap: wrap !important;
+  gap: 16px !important;
+  margin-bottom: 24px !important;
+}
+
+.vx-page-header > div:first-child {
+  flex: 1 1 320px !important;
+  min-width: 0 !important;
+}
+
+.vx-page-header .vx-actions,
+.vx-actions {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+}
+
+/* Fix para botões outline-dark em dark theme */
+[data-theme="dark"] .btn-outline-dark,
+body:not([data-theme="light"]) .btn-outline-dark {
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-theme="dark"] .btn-outline-dark:hover,
+body:not([data-theme="light"]) .btn-outline-dark:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+

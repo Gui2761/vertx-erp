@@ -1,9 +1,31 @@
 {% extends 'base.html' %}
 {% block title %}Painel do Estoque · VERTYX{% endblock %}
 {% block content %}
-<header class="vx-page-header">
-  <div><p class="vx-eyebrow">VERTYX · Controle operacional</p><h1>Painel do Estoque</h1><p>Posição física, disponibilidade, validade e movimentações da organização ativa.</p></div>
-  <div class="vx-actions"><a class="btn btn-primary" href="{% url 'gestao:peca_lista' %}">Produtos</a><a class="btn btn-warning text-dark fw-bold" href="{% url 'operacao:stock_initial_balance' %}"><i class="bi bi-clipboard-check me-1"></i> Levantamento inicial <span class="badge bg-dark text-white ms-1">Balanço</span></a><a class="btn btn-outline-dark" href="{% url 'operacao:barcode_labels' %}"><i class="bi bi-upc-scan me-1"></i> Imprimir Etiquetas</a><a class="btn btn-outline-primary" href="{% url 'operacao:stock_entry' %}">Entrada por lote</a><a class="btn btn-outline-primary" href="{% url 'operacao:stock_lots' %}">Lotes e validades</a></div>
+<header class="vx-page-header d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-3" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+  <div>
+    <span class="badge d-inline-flex align-items-center gap-1 mb-2" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700; padding: 5px 12px; border-radius: 6px; letter-spacing: 0.08em; font-size: 0.75rem;">
+      <i class="bi bi-box-seam"></i> CONTROLE OPERACIONAL
+    </span>
+    <h1 class="h2 text-white mb-1" style="font-weight: 800; letter-spacing: -0.03em;">Painel do Estoque</h1>
+    <p class="text-muted mb-0" style="font-size: 0.95rem;">Posição física, disponibilidade, validade e movimentações da organização ativa.</p>
+  </div>
+  <div class="vx-actions d-flex flex-wrap align-items-center gap-2">
+    <a class="btn btn-primary d-inline-flex align-items-center gap-1" href="{% url 'gestao:peca_lista' %}" style="font-weight: 600;">
+      <i class="bi bi-boxes"></i> Produtos
+    </a>
+    <a class="btn btn-warning text-dark fw-bold d-inline-flex align-items-center gap-1" href="{% url 'operacao:stock_initial_balance' %}">
+      <i class="bi bi-clipboard-check"></i> Levantamento inicial <span class="badge bg-dark text-white ms-1">Balanço</span>
+    </a>
+    <a class="btn btn-outline-light d-inline-flex align-items-center gap-1" href="{% url 'operacao:barcode_labels' %}" style="font-weight: 600; border-color: rgba(255,255,255,0.25);">
+      <i class="bi bi-upc-scan"></i> Imprimir Etiquetas
+    </a>
+    <a class="btn btn-outline-primary d-inline-flex align-items-center gap-1" href="{% url 'operacao:stock_entry' %}" style="font-weight: 600;">
+      <i class="bi bi-plus-circle"></i> Entrada por lote
+    </a>
+    <a class="btn btn-outline-primary d-inline-flex align-items-center gap-1" href="{% url 'operacao:stock_lots' %}" style="font-weight: 600;">
+      <i class="bi bi-calendar-check"></i> Lotes e validades
+    </a>
+  </div>
 </header>
 <section class="stock-kpi-grid mb-4" aria-label="Indicadores do estoque">
   <article class="stock-kpi-card">
