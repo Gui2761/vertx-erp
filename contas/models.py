@@ -125,6 +125,34 @@ class Tecnico(OrganizationOwned):
     def __str__(self):
         return self.nome
 
+    @property
+    def whatsapp_digits(self):
+        raw = self.whatsapp or self.telefone or ""
+        digits = "".join(ch for ch in raw if ch.isdigit())
+        if len(digits) in (10, 11):
+            return f"55{digits}"
+        elif len(digits) > 11 and digits.startswith("55"):
+            return digits
+        return digits
+
+    @property
+    def whatsapp_invite_url(self):
+        digits = self.whatsapp_digits
+        if not digits:
+            return ""
+        primeiro_nome = self.nome.split()[0] if self.nome else "Técnico"
+        msg = (
+            f"Olá {primeiro_nome}! Aqui está o seu acesso ao Aplicativo do Técnico VERTYX (TECNOLMED).\n\n"
+            f"📲 Acesse suas Demandas do Dia e Ordens de Serviço pelo link:\n"
+            f"https://vertyxerp.com.br/tecnico/\n\n"
+            f"💡 Como instalar no seu celular:\n"
+            f"1. Abra o link no Chrome (Android) ou Safari (iPhone)\n"
+            f"2. Toque no menu do navegador (ou Compartilhar) e selecione 'Adicionar à tela de início'\n"
+            f"3. O aplicativo ficará instalado como PWA para você consultar as demandas e registrar atendimentos diariamente."
+        )
+        from urllib.parse import quote
+        return f"https://wa.me/{digits}?text={quote(msg)}"
+
     def clean(self):
         super().clean()
         from platform_core.models import OrganizationMembership

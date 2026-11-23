@@ -1,9 +1,171 @@
 {% extends 'base.html' %}{% load static modulos_erp %}
-{% block title %}Meus atendimentos{% endblock %}
+{% block title %}Demanda do Dia · Aplicativo do Técnico VERTYX{% endblock %}
+
 {% block content %}
-<header class="vx-page-header"><div><p class="vx-eyebrow">Assistência em campo</p><h1>Meus atendimentos</h1><p>Olá, {{ user.first_name|default:user.username }}. Sua operação de hoje.</p></div><button class="btn btn-outline-primary" data-install hidden>Instalar aplicativo</button></header>
-<nav class="vx-field-links" aria-label="Minha operação"><a href="{% url 'ordens:lista' %}">Minhas Ordens de Serviço</a><a href="{% url 'operacao:chamado_lista' %}">Meus chamados · {{ calls_count }}</a><a href="{% url 'operacao:mobile_qr' %}">Ler QR / código</a><a href="{% url 'operacao:calendario' %}">Minha agenda</a></nav>
-{% if ongoing %}<section aria-labelledby="em-andamento"><h2 class="h4" id="em-andamento">Atendimentos em andamento</h2>{% for row in ongoing %}{% include 'operacao/technician_order.html' %}{% endfor %}</section>{% endif %}
-<section aria-labelledby="meus-chamados"><h2 class="h4" id="meus-chamados">Meus chamados</h2>{% for call in calls %}<article class="card p-3 mb-3"><h3 class="h5">{{ call.titulo }}</h3><p>{{ call.cliente }} · {{ call.unidade|default:'Sem unidade' }}<br>{{ call.equipamento|default:'Equipamento a confirmar' }}</p><p>{{ call.get_status_display }} · {{ call.agendada_para|date:'d/m/Y H:i'|default:'Sem horário' }}</p><a class="btn btn-primary" href="{% url 'operacao:chamado_detalhe' call.pk %}">Abrir chamado</a></article>{% empty %}<p class="text-muted">Nenhum chamado pendente atribuído a você.</p>{% endfor %}{% if calls_count > 20 %}<a class="btn btn-outline-primary" href="{% url 'operacao:chamado_lista' %}">Ver todos os meus chamados</a>{% endif %}</section>
-{% for title,rows in groups %}<section class="mb-4"><h2 class="h4">{% if title == 'Hoje' %}Meus atendimentos hoje{% elif title == 'Atrasadas' %}Atendimentos atrasados{% elif title == 'Próximas' %}Próximos atendimentos{% else %}{{ title }}{% endif %} <span class="badge bg-secondary">{{ rows|length }}</span></h2>{% for row in rows %}{% include 'operacao/technician_order.html' %}{% empty %}<p class="text-muted">Nenhuma OS nesta seção.</p>{% endfor %}</section>{% endfor %}
+{% if is_gestor %}
+<div class="alert alert-info py-2 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div class="d-flex align-items-center gap-2">
+    <strong>👔 Modo Gestor:</strong>
+    <span>Visualizando painel PWA do técnico.</span>
+    {% if tecnico_selecionado %}
+      <span class="badge bg-primary">Filtrado: {{ tecnico_selecionado.nome }}</span>
+    {% else %}
+      <span class="badge bg-secondary">Todas as Demandas da Equipe</span>
+    {% endif %}
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <label class="small fw-bold mb-0">Técnico:</label>
+    <select class="form-select form-select-sm" style="width: auto;" onchange="location.href=this.value ? '?tecnico='+this.value : '{% url 'operacao:tecnico' %}';">
+      <option value="">-- Todos os Técnicos --</option>
+      {% for t in tecnicos_disponiveis %}
+        <option value="{{ t.pk }}" {% if tecnico_selecionado.pk == t.pk %}selected{% endif %}>{{ t.nome }}</option>
+      {% endfor %}
+    </select>
+    <a href="{% url 'contas:tecnico_list' %}" class="btn btn-sm btn-outline-dark">Gerenciar Técnicos</a>
+    <a href="{% url 'core:painel' %}" class="btn btn-sm btn-dark">Painel ERP</a>
+  </div>
+</div>
+{% endif %}
+
+<header class="vx-page-header p-3 mb-3 bg-white rounded shadow-sm border">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <p class="text-uppercase text-muted small fw-bold mb-0">📲 Aplicativo Operacional · Assistência Técnica</p>
+      <h1 class="h3 fw-bold mb-0">
+        {% if tecnico_selecionado %}
+          Demanda de {{ tecnico_selecionado.nome }}
+        {% else %}
+          Minha Demanda do Dia
+        {% endif %}
+      </h1>
+      <p class="text-muted small mb-0">
+        Olá, {{ user.first_name|default:user.username }}. Operação de hoje ({{ today|date:"d/m/Y" }}).
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-primary fw-bold d-inline-flex align-items-center gap-2" data-install>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+        Instalar no Celular
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Resumo das Demandas do Dia -->
+<div class="row g-2 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card bg-primary text-white p-3 shadow-sm h-100 text-center">
+      <div class="small fw-semibold text-white-50">Demandas de Hoje</div>
+      <div class="display-6 fw-bold">{{ metrics.hoje }}</div>
+      <div class="small text-white-50">OS agendadas</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card bg-success text-white p-3 shadow-sm h-100 text-center">
+      <div class="small fw-semibold text-white-50">Em Atendimento</div>
+      <div class="display-6 fw-bold">{{ metrics.em_andamento }}</div>
+      <div class="small text-white-50">Em execução / rota</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card bg-info text-white p-3 shadow-sm h-100 text-center">
+      <div class="small fw-semibold text-white-50">Chamados Abertos</div>
+      <div class="display-6 fw-bold">{{ metrics.chamados }}</div>
+      <div class="small text-white-50">Atribuídos</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card {% if metrics.atrasadas > 0 %}bg-danger{% else %}bg-secondary{% endif %} text-white p-3 shadow-sm h-100 text-center">
+      <div class="small fw-semibold text-white-50">Atrasadas</div>
+      <div class="display-6 fw-bold">{{ metrics.atrasadas }}</div>
+      <div class="small text-white-50">Atenção</div>
+    </div>
+  </div>
+</div>
+
+<!-- Barra de Acesso Rápido -->
+<nav class="d-flex gap-2 overflow-auto pb-2 mb-3 text-nowrap" aria-label="Minha operação">
+  <a href="{% url 'ordens:lista' %}" class="btn btn-outline-secondary btn-sm">📋 Todas as OS</a>
+  <a href="{% url 'operacao:chamado_lista' %}" class="btn btn-outline-secondary btn-sm">🔔 Meus Chamados ({{ calls_count }})</a>
+  <a href="{% url 'operacao:mobile_qr' %}" class="btn btn-outline-secondary btn-sm">📷 Ler QR / Código</a>
+  <a href="{% url 'operacao:calendario' %}" class="btn btn-outline-secondary btn-sm">📅 Minha Agenda</a>
+  <a href="{% url 'operacao:ponto_home' %}" class="btn btn-outline-secondary btn-sm">⏱️ Registro de Ponto</a>
+</nav>
+
+{% if ongoing %}
+<section class="mb-4" aria-labelledby="em-andamento">
+  <h2 class="h5 fw-bold text-success d-flex align-items-center gap-2" id="em-andamento">
+    <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+    Atendimentos em andamento ({{ ongoing|length }})
+  </h2>
+  {% for row in ongoing %}
+    {% include 'operacao/technician_order.html' %}
+  {% endfor %}
+</section>
+{% endif %}
+
+<!-- Demandas Agendadas e Grupos -->
+{% for title, rows in groups %}
+<section class="mb-4">
+  <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+    <h2 class="h5 fw-bold mb-0">
+      {% if title == 'Hoje' %}
+        📅 Demandas de Hoje ({{ rows|length }})
+      {% elif title == 'Atrasadas' %}
+        ⚠️ Atendimentos Atrasados ({{ rows|length }})
+      {% elif title == 'Próximas' %}
+        📆 Próximos Atendimentos ({{ rows|length }})
+      {% elif title == 'Sem agendamento' %}
+        📋 Aguardando Agendamento ({{ rows|length }})
+      {% elif title == 'Concluídas hoje' %}
+        ✅ Concluídas Hoje ({{ rows|length }})
+      {% else %}
+        {{ title }} ({{ rows|length }})
+      {% endif %}
+    </h2>
+    <span class="badge bg-secondary">{{ rows|length }}</span>
+  </div>
+  {% for row in rows %}
+    {% include 'operacao/technician_order.html' %}
+  {% empty %}
+    <div class="p-3 bg-light rounded text-muted small text-center mb-2">
+      Nenhum atendimento nesta seção.
+    </div>
+  {% endfor %}
+</section>
+{% endfor %}
+
+<!-- Chamados Técnicos -->
+<section class="mb-4" aria-labelledby="meus-chamados">
+  <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+    <h2 class="h5 fw-bold mb-0" id="meus-chamados">🛎️ Chamados Técnicos Atribuídos</h2>
+    <span class="badge bg-info text-dark">{{ calls_count }}</span>
+  </div>
+  {% for call in calls %}
+    <article class="card p-3 mb-3 shadow-sm border-start border-4 border-info">
+      <div class="d-flex justify-content-between align-items-start">
+        <h3 class="h6 fw-bold mb-1">{{ call.titulo }}</h3>
+        <span class="badge bg-light text-dark border">{{ call.get_status_display }}</span>
+      </div>
+      <p class="text-muted small mb-2">
+        <strong>Cliente:</strong> {{ call.cliente }} · {{ call.unidade|default:'Sem unidade' }}<br>
+        <strong>Equipamento:</strong> {{ call.equipamento|default:'Equipamento a confirmar' }}<br>
+        <strong>Agendado:</strong> {{ call.agendada_para|date:'d/m/Y H:i'|default:'Sem horário definido' }}
+      </p>
+      <div>
+        <a class="btn btn-primary btn-sm" href="{% url 'operacao:chamado_detalhe' call.pk %}">Abrir chamado</a>
+      </div>
+    </article>
+  {% empty %}
+    <div class="p-3 bg-light rounded text-muted small text-center">
+      Nenhum chamado pendente no momento.
+    </div>
+  {% endfor %}
+  {% if calls_count > 20 %}
+    <a class="btn btn-outline-primary w-100 mt-2" href="{% url 'operacao:chamado_lista' %}">Ver todos os chamados</a>
+  {% endif %}
+</section>
 {% endblock %}

@@ -160,27 +160,93 @@ def schedule(request,pk):
 @login_required
 def tecnico(request):
     ps.require_planning(request.user)
-    if effective_role(request.user) in ['ADMIN', 'GESTOR']:
-        return redirect('core:painel')
-    today=timezone.localdate()
-    orders=visiveis(request.user, destinos=True).exclude(status__in=ENCERRADAS).order_by('agendada_para','prazo','pk')
-    groups=[]
-    seen=set()
-    for title,rows in [('Hoje',orders.filter(agendada_para__date=today)),('Atrasadas',[row for row in orders if ps.late(row)]),('Próximas',orders.filter(agendada_para__date__gt=today)),('Sem agendamento',orders.filter(agendada_para__isnull=True)),('Concluídas hoje',visiveis(request.user).filter(status__in=['FINALIZADA','APROVADA','FATURADA'],conclusao__date=today))]:
-        items=[]
+    is_gestor = effective_role(request.user) in ['ADMIN', 'GESTOR']
+    today = timezone.localdate()
+
+    from contas.models import Tecnico
+    tecnicos_disponiveis = []
+    tecnico_selecionado = None
+
+    if is_gestor:
+        tecnicos_disponiveis = Tecnico.objects.filter(ativo=True).order_by('nome')
+        tecnico_id = request.GET.get('tecnico')
+        if tecnico_id:
+            try:
+                tecnico_selecionado = tecnicos_disponiveis.filter(pk=int(tecnico_id)).first()
+            except (ValueError, TypeError):
+                tecnico_selecionado = None
+
+    orders = visiveis(request.user, destinos=True).exclude(status__in=ENCERRADAS)
+    if tecnico_selecionado:
+        from django.db.models import Q
+        orders = orders.filter(Q(tecnico=tecnico_selecionado) | Q(auxiliares=tecnico_selecionado)).distinct()
+
+    orders = orders.order_by('agendada_para', 'prazo', 'pk')
+    groups = []
+    seen = set()
+    concluidas_qs = visiveis(request.user)
+    if tecnico_selecionado:
+        from django.db.models import Q
+        concluidas_qs = concluidas_qs.filter(Q(tecnico=tecnico_selecionado) | Q(auxiliares=tecnico_selecionado)).distinct()
+
+    for title, rows in [
+        ('Hoje', orders.filter(agendada_para__date=today)),
+        ('Atrasadas', [row for row in orders if ps.late(row)]),
+        ('Próximas', orders.filter(agendada_para__date__gt=today)),
+        ('Sem agendamento', orders.filter(agendada_para__isnull=True)),
+        ('Concluídas hoje', concluidas_qs.filter(status__in=['FINALIZADA', 'APROVADA', 'FATURADA'], conclusao__date=today)),
+    ]:
+        items = []
         for row in rows:
             if row.pk not in seen:
                 seen.add(row.pk)
                 from .contract_workday import blocked, config
-                if blocked(request.user,row):
-                    target=row.unidade or row.cliente
-                    items.append({'blocked':True,'destination':{'municipio':target.cidade,'contrato':row.contrato.numero,'resumo':str(target)},'activity_url':reverse('operacao:contract_activity',args=[row.pk])})
+                if blocked(request.user, row):
+                    target = row.unidade or row.cliente
+                    items.append({
+                        'blocked': True,
+                        'destination': {'municipio': target.cidade, 'contrato': row.contrato.numero, 'resumo': str(target)},
+                        'activity_url': reverse('operacao:contract_activity', args=[row.pk])
+                    })
                 else:
-                    items.append({'order':row,'address':endereco(row.unidade or row.cliente),'activity_url':reverse('operacao:contract_activity',args=[row.pk]) if config(row) else '', 'route':'https://www.google.com/maps/dir/?'+urlencode({'api':1,'destination':endereco(row.unidade or row.cliente)})})
-        groups.append((title,items))
+                    items.append({
+                        'order': row,
+                        'address': endereco(row.unidade or row.cliente),
+                        'activity_url': reverse('operacao:contract_activity', args=[row.pk]) if config(row) else '',
+                        'route': 'https://www.google.com/maps/dir/?' + urlencode({'api': 1, 'destination': endereco(row.unidade or row.cliente)})
+                    })
+        groups.append((title, items))
+
     from .technician_access import calls_for
-    calls = calls_for(request.user).exclude(status__in=['CANCELADO', 'CONCLUIDO']).select_related('cliente', 'unidade', 'equipamento').order_by('agendada_para', 'pk')
-    # The same cards are reused; an operational section also includes unplanned
-    # or previously scheduled work without removing the existing agenda groups.
+    from .models import Chamado
+    if tecnico_selecionado and tecnico_selecionado.usuario:
+        calls = calls_for(tecnico_selecionado.usuario).exclude(status__in=['CANCELADO', 'CONCLUIDO'])
+    elif not is_gestor:
+        calls = calls_for(request.user).exclude(status__in=['CANCELADO', 'CONCLUIDO'])
+    else:
+        calls = Chamado.objects.exclude(status__in=['CANCELADO', 'CONCLUIDO'])
+
+    calls = calls.select_related('cliente', 'unidade', 'equipamento').order_by('agendada_para', 'pk')
+
     ongoing = [item for _, items in groups for item in items if not item.get('blocked') and item['order'].status in ['EXECUCAO', 'DESLOCAMENTO', 'AG_PECA', 'AG_CLIENTE', 'AG_APROVACAO']]
-    return render(request,'operacao/tecnico.html',{'groups':groups,'calls':calls[:20],'calls_count':calls.count(),'ongoing':ongoing})
+    hoje_items = next((items for title, items in groups if title == 'Hoje'), [])
+    atrasadas_items = next((items for title, items in groups if title == 'Atrasadas'), [])
+
+    metrics = {
+        'hoje': len(hoje_items),
+        'em_andamento': len(ongoing),
+        'atrasadas': len(atrasadas_items),
+        'chamados': calls.count(),
+    }
+
+    return render(request, 'operacao/tecnico.html', {
+        'groups': groups,
+        'calls': calls[:20],
+        'calls_count': calls.count(),
+        'ongoing': ongoing,
+        'metrics': metrics,
+        'is_gestor': is_gestor,
+        'tecnico_selecionado': tecnico_selecionado,
+        'tecnicos_disponiveis': tecnicos_disponiveis,
+        'today': today,
+    })

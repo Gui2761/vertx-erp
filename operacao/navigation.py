@@ -55,7 +55,7 @@ def _menu_uncached(request):
         if membership.role in {'VENDEDOR','PDV'} or request.path.startswith('/vendedor/'):
             links=[('Minha rotina','/vendedor/','grid','central_vendedor'),('Minhas vendas','/vendedor/vendas/','document','central_vendedor'),('Minha meta','/vendedor/meta/','chart','central_vendedor'),('Minha comissão','/vendedor/comissao/','chart','central_vendedor'),('Meu ponto','/vendedor/ponto/','users','ponto'),('Hora extra','/vendedor/ponto/horas-extras/','calendar','ponto'),('Notificações','/vendedor/alertas/','bell','central_vendedor')]
             return {'seller_experience':True,'can_operational_panel':False,'seller_navigation':[{'label':label,'url':url,'icon':icon} for label,url,icon,cap in links if has_capability(request.user,cap) and module_enabled(module_for_path(url))]}
-    if membership and membership.role == 'TECNICO':
+    if (membership and membership.role == 'TECNICO') or (request.path.startswith('/tecnico/') and not request.path.startswith('/tecnico/manifest') and not request.path.startswith('/tecnico/sw.js')):
         from platform_core.access import has_erp_access
         from platform_core.modules import has_capability, module_enabled, module_for_path
         # Presentation uses the active membership and the existing capabilities.
