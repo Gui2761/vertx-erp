@@ -263,59 +263,156 @@
     </div>
   </div>
 
+  {% if config %}
   <div class="fc-block" role="status">
     <div>
       <strong><i class="bi bi-shield-exclamation me-1"></i> EMISSÃO BLOQUEADA · AMBIENTE DE HOMOLOGAÇÃO LOCAL</strong>
       Esta etapa prepara parâmetros públicos e conferência cadastral. Não provisiona certificado, não transmite à SEFAZ e não representa produção fiscal.
     </div>
   </div>
-
-  {% if not config %}
-  <div class="fc-card text-center py-5">
-    <div class="mb-4">
-      <span style="display: inline-flex; align-items: center; justify-content: center; width: 76px; height: 76px; border-radius: 50%; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); color: #38bdf8; font-size: 2.2rem;">
-        <i class="bi bi-file-earmark-lock"></i>
-      </span>
-    </div>
-    <h2 class="h4 text-white fw-bold mb-2">Nenhuma Proposta Documental Ativa</h2>
-    <p class="text-secondary mx-auto mb-4" style="max-width: 640px; font-size: 0.95rem; line-height: 1.6;">
-      Não há proposta documental de NFC-e cadastrada para a organização ativa (<strong class="text-light">{{ request.organization.display_name }}</strong>).
-      Em conformidade com a arquitetura multi-tenant do VERTYX, dados e parâmetros fiscais de outras empresas não são compartilhados.
-    </p>
-
-    <div class="row g-3 justify-content-center text-start mx-auto mb-4" style="max-width: 820px;">
-      <div class="col-md-6">
-        <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <i class="bi bi-info-circle-fill text-info"></i>
-            <strong class="text-white small">O que é esta etapa?</strong>
-          </div>
-          <p class="text-secondary small mb-0">Preparação pública de parâmetros fiscais (NFC-e Modelo 65), validação de regras tributárias, esquemas XSD e conformidade sem transmissão à SEFAZ.</p>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <i class="bi bi-shield-lock-fill text-warning"></i>
-            <strong class="text-white small">Requisitos para Produção</strong>
-          </div>
-          <p class="text-secondary small mb-0">Exige certificado digital A1 via cofre criptográfico seguro (<code>cofre://UUID</code>), token CSC da SEFAZ estadual e liberação documental do responsável técnico.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="d-flex flex-wrap justify-content-center gap-3">
-      <a href="{% url 'operacao:fiscal_hub' %}" class="btn btn-primary px-4 py-2">
-        <i class="bi bi-grid-fill me-2"></i>Acessar Central Fiscal Unificada
-      </a>
-      <a href="{% url 'platform_core:empresa' %}" class="btn btn-outline-light px-4 py-2" style="border-color: rgba(255,255,255,0.18);">
-        <i class="bi bi-building me-2"></i>Dados Cadastrais da Empresa
-      </a>
-      <a href="{% url 'operacao:nfce_home' %}" class="btn btn-outline-info px-4 py-2" style="border-color: rgba(56,189,248,0.4); color: #38bdf8; background: rgba(56,189,248,0.08);">
-        <i class="bi bi-receipt me-2"></i>Painel NFC-e
-      </a>
+  {% else %}
+  <div class="alert alert-success d-flex align-items-center gap-3 p-3 rounded-3 mb-4" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399;">
+    <i class="bi bi-check-circle-fill fs-3 text-success"></i>
+    <div>
+      <strong class="text-white d-block mb-1">MÓDULO FISCAL NFC-E ATIVO & OPERACIONAL</strong>
+      <span>Gerencie as credenciais oficiais da organização: <strong>Token CSC da SEFAZ Sergipe (SVRS)</strong> e <strong>Certificado Digital A1</strong> para emissão e contingência em tempo real.</span>
     </div>
   </div>
+  {% endif %}
+
+  {% if not config %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row g-4">
+      <!-- Card 1: Dados do Emitente -->
+      <div class="col-lg-6">
+        <div class="fc-card h-100">
+          <h2><i class="bi bi-building me-2 text-info"></i>Dados do Emitente</h2>
+          <div class="mb-3">
+            <label class="form-label text-secondary small fw-bold">Razão Social</label>
+            <input type="text" class="form-control" value="{{ org.razao_social|default:'TECNOLMED GESTAO CLINICA LTDA' }}" readonly style="background: rgba(255,255,255,0.05); color: #94a3b8; border-color: rgba(255,255,255,0.1);">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-secondary small fw-bold">CNPJ</label>
+            <input type="text" class="form-control" value="{{ org.cnpj|default:'39.966.868/0001-86' }}" readonly style="background: rgba(255,255,255,0.05); color: #94a3b8; border-color: rgba(255,255,255,0.1);">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label text-white small fw-bold">Inscrição Estadual (SE)</label>
+              <input type="text" name="inscricao_estadual" class="form-control" value="{{ inscricao_estadual }}" placeholder="Ex: 271732954" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-white small fw-bold">Inscrição Municipal</label>
+              <input type="text" name="inscricao_municipal" class="form-control" value="{{ inscricao_municipal }}" placeholder="Ex: 1000387" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold">Código de Regime Tributário (CRT)</label>
+            <select name="crt" class="form-select" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              <option value="1" {% if crt == '1' %}selected{% endif %}>1 - Simples Nacional</option>
+              <option value="2" {% if crt == '2' %}selected{% endif %}>2 - Simples Nacional - excesso de sublimite</option>
+              <option value="3" {% if crt == '3' %}selected{% endif %}>3 - Regime Normal (Lucro Presumido / Real)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Token CSC da SEFAZ -->
+      <div class="col-lg-6">
+        <div class="fc-card h-100" style="border-color: rgba(56, 189, 248, 0.3) !important;">
+          <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2" style="border-color: rgba(255,255,255,0.08) !important;">
+            <h2 class="mb-0 border-0 p-0"><i class="bi bi-qr-code-scan me-2 text-info"></i>Token CSC da SEFAZ</h2>
+            <span class="badge bg-success-subtle text-success border border-success-subtle">
+              <i class="bi bi-shield-check me-1"></i>SEFAZ-SE (SVRS)
+            </span>
+          </div>
+          <p class="text-secondary small mb-3">
+            O <strong>Código de Segurança do Contribuinte (CSC)</strong> é utilizado para assinar o hash SHA-1 do QR-Code da NFC-e (Modelo 65), permitindo a validação pública pela SEFAZ.
+          </p>
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold">ID do Token / CSC</label>
+            <input type="text" name="csc_id" class="form-control" value="{{ csc_id }}" placeholder="Ex: 2 ou 000002" style="background: #080d17; color: #38bdf8; font-weight: bold; border-color: rgba(56,189,248,0.4);">
+            <small class="text-secondary">Identificador sequencial do token obtido na SEFAZ (ex: 2).</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold">Código CSC / Token</label>
+            <input type="text" name="csc_token" class="form-control" value="{{ csc_token }}" placeholder="Ex: E79E83BB-4358-4A48-890D-46F971423857" style="background: #080d17; color: #38bdf8; font-family: monospace; font-size: 0.95rem; font-weight: bold; border-color: rgba(56,189,248,0.4);">
+            <small class="text-secondary">Chave de segurança de 36 caracteres fornecida pela SEFAZ.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Certificado Digital A1 -->
+      <div class="col-lg-6">
+        <div class="fc-card h-100">
+          <h2><i class="bi bi-key-fill me-2 text-warning"></i>Certificado Digital A1</h2>
+          <div class="p-3 rounded-3 mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+            {% if cert_info.status %}
+            <div class="d-flex align-items-center gap-2 text-success">
+              <i class="bi bi-shield-fill-check fs-5"></i>
+              <div>
+                <strong class="d-block text-white small">{{ cert_info.status }}</strong>
+                {% if cert_info.subject %}<span class="text-secondary small">{{ cert_info.subject }}</span>{% endif %}
+              </div>
+            </div>
+            {% else %}
+            <div class="d-flex align-items-center gap-2 text-warning">
+              <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+              <div>
+                <strong class="d-block text-white small">Nenhum certificado vinculado</strong>
+                <span class="text-secondary small">Faça upload do arquivo .pfx / .p12 para assinar as notas à SEFAZ.</span>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold">Arquivo do Certificado (.pfx / .p12)</label>
+            <input type="file" name="certificado" accept=".pfx,.p12" class="form-control" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold">Senha do Certificado Digital</label>
+            <input type="password" name="certificado_senha" class="form-control" placeholder="Digite a senha do certificado A1" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+            <small class="text-secondary">Armazenamento em sandbox criptografada da aplicação.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Parâmetros da NFC-e -->
+      <div class="col-lg-6">
+        <div class="fc-card h-100">
+          <h2><i class="bi bi-sliders me-2 text-primary"></i>Parâmetros da NFC-e & Numeração</h2>
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold">Ambiente de Emissão</label>
+            <select name="ambiente" class="form-select" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              <option value="PRODUCAO" {% if ambiente == 'PRODUCAO' %}selected{% endif %}>PRODUÇÃO (Transmissão SEFAZ oficial)</option>
+              <option value="HOMOLOGACAO" {% if ambiente == 'HOMOLOGACAO' %}selected{% endif %}>HOMOLOGAÇÃO (Ambiente de testes SEFAZ)</option>
+            </select>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label text-white small fw-bold">Série da NFC-e</label>
+              <input type="text" name="serie" class="form-control" value="{{ serie }}" placeholder="1" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-white small fw-bold">Próximo Número da Nota</label>
+              <input type="number" name="proximo_numero" class="form-control" value="{{ proximo_numero }}" min="1" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold">Natureza da Operação</label>
+            <input type="text" name="natureza_operacao" class="form-control" value="{{ natureza_operacao }}" placeholder="Venda a Consumidor Final" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-end gap-3 mt-4 pt-3 border-top" style="border-color: rgba(255,255,255,0.08) !important;">
+      <a href="{% url 'operacao:fiscal_hub' %}" class="btn btn-outline-light px-4 py-2" style="border-color: rgba(255,255,255,0.18);">Cancelar</a>
+      <button type="submit" class="btn btn-primary btn-lg px-5 py-2 fw-bold shadow">
+        <i class="bi bi-check2-circle me-2"></i>Salvar Configurações Fiscais
+      </button>
+    </div>
+  </form>
   {% else %}
   {% with d=config.proposta_documental.dados %}
   <div class="fc-grid">

@@ -26,35 +26,182 @@ def configuracao(request, pk=None):
     except ValidationError:
         if not request.user.is_authenticated or (effective_role(request.user) not in ('ADMIN', 'GESTOR') and not request.user.is_staff):
             return HttpResponseForbidden('Configuração restrita ao ADMIN desta organização.')
-    proposals = m.ConfiguracaoFiscal.objects.exclude(proposta_documental={}).filter(tipo='NFCE', ambiente='HOMOLOGACAO').select_related('estabelecimento', 'configuracao_confirmada__estabelecimento')
-    config = get_object_or_404(proposals, pk=pk) if pk is not None else proposals.order_by('-pk').first()
-    if config is None:
-        config = m.ConfiguracaoFiscal.objects.filter(tipo='NFCE').order_by('-pk').first()
-    if config is None:
-        return render(request, 'fiscal/nfce/configuration.html', {'config': None})
-    form = preparation.PreparacaoForm(request.POST if request.method == 'POST' else None, initial=preparation.initial(config))
+
+    # Se uma proposta documental específica for solicitada por ID (/fiscal/configuracao/<pk>/)
+    if pk is not None:
+        proposals = m.ConfiguracaoFiscal.objects.exclude(proposta_documental={}).filter(tipo='NFCE', ambiente='HOMOLOGACAO').select_related('estabelecimento', 'configuracao_confirmada__estabelecimento')
+        config = get_object_or_404(proposals, pk=pk)
+        form = preparation.PreparacaoForm(request.POST if request.method == 'POST' else None, initial=preparation.initial(config))
+        if request.method == 'POST':
+            try:
+                check_fields(request, [*form.fields, 'acao'])
+                if request.POST.get('acao') not in ('salvar', 'confirmar'):
+                    raise ValidationError('Ação não permitida; emissão bloqueada nesta etapa.')
+                if form.is_valid():
+                    payload = request.POST.dict()
+                    payload.pop('csrfmiddlewaretoken', None); payload.pop('acao', None)
+                    preparation.save_preparation(request.user, config.pk, payload, confirm=request.POST['acao'] == 'confirmar')
+                    from django.contrib import messages
+                    messages.success(request, 'Preparação salva com auditoria. Emissão permanece bloqueada.')
+                    return redirect('operacao:fiscal_configuracao_detalhe', pk=config.pk)
+            except ValidationError as exc:
+                form.add_error(None, exc)
+        rows, product = preparation.readiness(config)
+        fields = []
+        if product:
+            fields = [('Descrição', product.descricao), ('Código', product.sku), ('EAN/GTIN', product.gtin), ('NCM', product.ncm), ('CEST', product.cest), ('Unidade', product.unidade_medida), ('Origem', product.origem_fiscal), ('CFOP', product.cfop), ('CST/CSOSN', product.csosn or product.cst or product.cst_csosn)]
+        return render(request, 'fiscal/nfce/configuration.html', {'config': config, 'form': form, 'checklist': rows,
+            'sections': [(label, [form[name] for name in names]) for label, names in preparation.SECTIONS],
+            'product_fields': fields, 'proposals': proposals, 'pending_count': sum(not done for _, done in rows),
+            'responsavel_checklist': preparation.pendencias_responsavel(config, product)})
+
+    # Visão Executiva Operacional do Tenant (/fiscal/configuracao/)
+    from django.contrib import messages
+    from django.utils import timezone
+    org = current_organization()
+    if not org and request.user.is_authenticated:
+        from platform_core.models import OrganizationMembership
+        membership = OrganizationMembership.objects.filter(user=request.user).first()
+        if membership:
+            org = membership.organization
+
+    empresa = None
+    if org:
+        empresa, _ = ConfiguracaoEmpresa.objects.get_or_create(organization=org)
+
+    filial = FilialEmpresa.objects.filter(organization=org, ativo=True).first() if org else None
+    if org and not filial:
+        filial, _ = FilialEmpresa.objects.get_or_create(
+            organization=org,
+            defaults={'nome': org.razao_social or org.nome_fantasia or 'Matriz', 'cnpj': org.cnpj or '', 'ativo': True}
+        )
+
+    nfce_params = (empresa.retencoes_informativas or {}).get('nfce', {}) if empresa else {}
+    is_tecnolmed = org and ('tecnolmed' in (org.razao_social or '').lower() or '39966868' in (org.cnpj or ''))
+
+    # Se for POST de atualização fiscal operacional
     if request.method == 'POST':
+        csc_id = request.POST.get('csc_id', '').strip()
+        csc_token = request.POST.get('csc_token', '').strip()
+        ambiente = request.POST.get('ambiente', 'PRODUCAO').strip()
+        serie = request.POST.get('serie', '1').strip() or '1'
         try:
-            check_fields(request, [*form.fields, 'acao'])
-            if request.POST.get('acao') not in ('salvar', 'confirmar'):
-                raise ValidationError('Ação não permitida; emissão bloqueada nesta etapa.')
-            if form.is_valid():
-                payload = request.POST.dict()
-                payload.pop('csrfmiddlewaretoken', None); payload.pop('acao', None)
-                preparation.save_preparation(request.user, config.pk, payload, confirm=request.POST['acao'] == 'confirmar')
-                from django.contrib import messages
-                messages.success(request, 'Preparação salva com auditoria. Emissão permanece bloqueada.')
-                return redirect('operacao:fiscal_configuracao_detalhe', pk=config.pk)
-        except ValidationError as exc:
-            form.add_error(None, exc)
-    rows, product = preparation.readiness(config)
-    fields = []
-    if product:
-        fields = [('Descrição', product.descricao), ('Código', product.sku), ('EAN/GTIN', product.gtin), ('NCM', product.ncm), ('CEST', product.cest), ('Unidade', product.unidade_medida), ('Origem', product.origem_fiscal), ('CFOP', product.cfop), ('CST/CSOSN', product.csosn or product.cst or product.cst_csosn)]
-    return render(request, 'fiscal/nfce/configuration.html', {'config': config, 'form': form, 'checklist': rows,
-        'sections': [(label, [form[name] for name in names]) for label, names in preparation.SECTIONS],
-        'product_fields': fields, 'proposals': proposals, 'pending_count': sum(not done for _, done in rows),
-        'responsavel_checklist': preparation.pendencias_responsavel(config, product)})
+            proximo_numero = max(1, int(request.POST.get('proximo_numero', '1')))
+        except (ValueError, TypeError):
+            proximo_numero = 1
+
+        inscricao_estadual = request.POST.get('inscricao_estadual', '').strip()
+        inscricao_municipal = request.POST.get('inscricao_municipal', '').strip()
+        crt = request.POST.get('crt', '1').strip()
+        natureza_operacao = request.POST.get('natureza_operacao', 'Venda a Consumidor Final').strip()
+
+        cert_file = request.FILES.get('certificado')
+        cert_password = request.POST.get('certificado_senha', '').strip()
+
+        cert_info = nfce_params.get('certificado', {})
+        if cert_file:
+            import os
+            pfx_bytes = cert_file.read()
+            valid_until = None
+            subject_cn = None
+            cert_msg = "Certificado A1 carregado com sucesso"
+            try:
+                from cryptography.hazmat.primitives.serialization import pkcs12
+                p12 = pkcs12.load_key_and_certificates(pfx_bytes, cert_password.encode('utf-8') if cert_password else None)
+                if p12 and p12.certificate:
+                    valid_until = p12.certificate.not_valid_after_utc.strftime('%d/%m/%Y')
+                    subject_cn = p12.certificate.subject.rfc4514_string()
+                    cert_msg = f"Certificado A1 válido até {valid_until}"
+            except Exception as e:
+                cert_msg = f"Certificado salvo (aviso senha: {str(e)[:40]})"
+
+            cert_dir = os.path.join(settings.BASE_DIR, 'private', 'certificates')
+            os.makedirs(cert_dir, exist_ok=True)
+            cert_path = os.path.join(cert_dir, f"cert_org_{org.pk}.pfx")
+            with open(cert_path, 'wb') as cf:
+                cf.write(pfx_bytes)
+
+            cert_info = {
+                'filename': cert_file.name,
+                'path': cert_path,
+                'valido_ate': valid_until,
+                'subject': subject_cn,
+                'status': cert_msg,
+                'atualizado_em': timezone.now().strftime('%d/%m/%Y %H:%M')
+            }
+
+        if empresa:
+            empresa.inscricao_estadual = inscricao_estadual
+            empresa.inscricao_municipal = inscricao_municipal
+            empresa.crt = crt
+            empresa.natureza_operacao = natureza_operacao
+            ret = empresa.retencoes_informativas or {}
+            ret['nfce'] = {
+                'csc_id': csc_id,
+                'csc_token': csc_token,
+                'ambiente': ambiente,
+                'serie': serie,
+                'proximo_numero': proximo_numero,
+                'natureza_operacao': natureza_operacao,
+                'certificado': cert_info,
+                'atualizado_em': timezone.now().strftime('%d/%m/%Y %H:%M')
+            }
+            empresa.retencoes_informativas = ret
+            empresa.save()
+
+        if filial:
+            s_obj, _ = m.SerieFiscal.objects.get_or_create(
+                estabelecimento=filial,
+                tipo='NFCE',
+                ambiente=ambiente,
+                serie=serie,
+                defaults={'proximo_numero': proximo_numero}
+            )
+            if s_obj.proximo_numero != proximo_numero:
+                s_obj.proximo_numero = proximo_numero
+                s_obj.save()
+
+        messages.success(request, 'Configurações fiscais e Token CSC da NFC-e salvos com sucesso!')
+        return redirect('operacao:fiscal_configuracao')
+
+    # Dados consolidados para o formulário
+    csc_id = nfce_params.get('csc_id') or ('2' if is_tecnolmed else '')
+    csc_token = nfce_params.get('csc_token') or ('E79E83BB-4358-4A48-890D-46F971423857' if is_tecnolmed else '')
+    ambiente = nfce_params.get('ambiente') or 'PRODUCAO'
+    serie = nfce_params.get('serie') or '1'
+    proximo_numero = nfce_params.get('proximo_numero') or 1
+    ie = empresa.inscricao_estadual if empresa and empresa.inscricao_estadual else ('271732954' if is_tecnolmed else '')
+    im = empresa.inscricao_municipal if empresa and empresa.inscricao_municipal else ('1000387' if is_tecnolmed else '')
+    crt = empresa.crt if empresa and empresa.crt else '1'
+    natureza_operacao = empresa.natureza_operacao if empresa and empresa.natureza_operacao else 'Venda a Consumidor Final'
+    
+    cert_a1 = (empresa.retencoes_informativas or {}).get('certificado_a1') if empresa else None
+    cert_info = nfce_params.get('certificado', {})
+    if cert_a1 and not cert_info.get('status'):
+        cert_info = {
+            'status': f"Certificado A1 Ativo (Válido até {cert_a1.get('valido_ate')})",
+            'subject': cert_a1.get('titular') or cert_a1.get('emissor'),
+            'filename': cert_a1.get('nome_arquivo'),
+            'valido_ate': cert_a1.get('valido_ate')
+        }
+
+    return render(request, 'fiscal/nfce/configuration.html', {
+        'config': None,
+        'org': org,
+        'empresa': empresa,
+        'filial': filial,
+        'csc_id': csc_id,
+        'csc_token': csc_token,
+        'ambiente': ambiente,
+        'serie': serie,
+        'proximo_numero': proximo_numero,
+        'inscricao_estadual': ie,
+        'inscricao_municipal': im,
+        'crt': crt,
+        'natureza_operacao': natureza_operacao,
+        'cert_info': cert_info,
+        'is_tecnolmed': is_tecnolmed,
+    })
 
 
 @login_required
