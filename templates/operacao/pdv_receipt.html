@@ -16,9 +16,18 @@
       <i class="bi bi-printer me-1"></i> Imprimir Cupom
     </button>
     {% if nfce_info %}
-    <span class="badge bg-success py-2 px-3 fs-6">
-      ✓ NFC-e com Valor Fiscal
-    </span>
+      {% if nfce_info.tem_certificado %}
+        <span class="badge bg-success py-2 px-3 fs-6">
+          ✓ NFC-e com Valor Fiscal
+        </span>
+      {% else %}
+        <span class="badge bg-warning text-dark py-2 px-3 fs-6">
+          ⚠️ NFC-e em Contingência (tpEmis=9)
+        </span>
+        <a class="btn btn-warning fw-bold btn-sm" href="{% url 'operacao:fiscal_configuracao' %}" target="_blank">
+          <i class="bi bi-key-fill me-1"></i> Vincular Certificado A1 (.pfx)
+        </a>
+      {% endif %}
     {% endif %}
     <a class="btn btn-outline-primary" href="{% url 'operacao:pdv_home' %}">
       <i class="bi bi-cart-plus me-1"></i> Nova Venda
@@ -45,8 +54,14 @@
     <div class="receipt-divider-double">================================================</div>
     
     {% if nfce_info %}
-      <div class="receipt-title">DANFE NFC-e · DOCUMENTO AUXILIAR DA NOTA FISCAL DE CONSUMIDOR ELETRÔNICA</div>
-      <div class="receipt-sub-center">Não permite aproveitamento de crédito de ICMS</div>
+      {% if nfce_info.tem_certificado %}
+        <div class="receipt-title">DANFE NFC-e · DOCUMENTO AUXILIAR DA NOTA FISCAL DE CONSUMIDOR ELETRÔNICA</div>
+        <div class="receipt-sub-center">Não permite aproveitamento de crédito de ICMS</div>
+      {% else %}
+        <div class="receipt-title">DANFE NFC-e · DOCUMENTO AUXILIAR DA NOTA FISCAL DE CONSUMIDOR ELETRÔNICA</div>
+        <div class="receipt-sub-center fw-bold">EMITIDA EM CONTINGÊNCIA FISCAL (tpEmis=9)</div>
+        <div class="receipt-sub-center small">Pendente de autorização pela SEFAZ</div>
+      {% endif %}
     {% else %}
       <div class="receipt-title">COMPROVANTE NÃO FISCAL</div>
     {% endif %}
@@ -58,7 +73,12 @@
       {% if nfce_info %}
         <div><strong>NFC-e nº:</strong> {{ nfce_info.numero|stringformat:"09d" }} · <strong>Série:</strong> {{ nfce_info.serie }}</div>
         <div><strong>Emissão:</strong> {{ nfce_info.data_autorizacao }}</div>
-        <div><strong>Protocolo de Autorização:</strong> {{ nfce_info.protocolo }}</div>
+        {% if nfce_info.tem_certificado %}
+          <div><strong>Protocolo de Autorização:</strong> {{ nfce_info.protocolo }}</div>
+        {% else %}
+          <div><strong>Situação:</strong> EMITIDA EM CONTINGÊNCIA (tpEmis=9)</div>
+          <div><strong>Autorização:</strong> PENDENTE DE TRANSMISSÃO SEFAZ</div>
+        {% endif %}
       {% else %}
         <div><strong>Venda:</strong> {{ sale.snapshot.numero }}</div>
         <div><strong>Data/Hora:</strong> {{ sale.snapshot.finalizada_em|slice:":10" }} {{ sale.snapshot.finalizada_em|slice:"11:19" }}</div>
@@ -162,8 +182,13 @@
     <!-- Rodapé Fiscal ou Não Fiscal -->
     {% if nfce_info %}
       <footer class="receipt-footer receipt-fiscal-footer">
-        <div class="fiscal-highlight">EMITIDA COM VALOR FISCAL · AUTORIZADA PELA SEFAZ</div>
-        <div class="small-text mt-1">Consulte pela Chave de Acesso em:<br><strong>{{ nfce_info.consulta_url }}</strong></div>
+        {% if nfce_info.tem_certificado %}
+          <div class="fiscal-highlight">EMITIDA COM VALOR FISCAL · AUTORIZADA PELA SEFAZ</div>
+          <div class="small-text mt-1">Consulte pela Chave de Acesso em:<br><strong>{{ nfce_info.consulta_url }}</strong></div>
+        {% else %}
+          <div class="fiscal-highlight" style="border: 2px dashed #000; padding: 4px;">EMITIDA EM CONTINGÊNCIA FISCAL (tpEmis=9)</div>
+          <div class="small-text mt-1">Pendente de transmissão à SEFAZ (Aguardando Certificado A1)<br>Consulte após autorização em: <strong>{{ nfce_info.consulta_url }}</strong></div>
+        {% endif %}
         
         <div class="chave-block my-2">
           <div class="small-label">CHAVE DE ACESSO:</div>
@@ -184,12 +209,21 @@
         <div class="consumer-data">
           CONSUMIDOR: {% if sale.snapshot.cliente_documento %}CPF/CNPJ {{ sale.snapshot.cliente_documento }}{% elif sale.cliente.cpf_cnpj %}{{ sale.cliente.cpf_cnpj }}{% else %}CONSUMIDOR NÃO IDENTIFICADO{% endif %}
         </div>
-        <div class="protocol-line mt-1">
-          Protocolo de Autorização: {{ nfce_info.protocolo }}
-        </div>
-        <div class="protocol-line">
-          Data de Autorização: {{ nfce_info.data_autorizacao }}
-        </div>
+        {% if nfce_info.tem_certificado %}
+          <div class="protocol-line mt-1">
+            Protocolo de Autorização: {{ nfce_info.protocolo }}
+          </div>
+          <div class="protocol-line">
+            Data de Autorização: {{ nfce_info.data_autorizacao }}
+          </div>
+        {% else %}
+          <div class="protocol-line mt-1 fw-bold">
+            EMISSÃO EM CONTINGÊNCIA (tpEmis=9)
+          </div>
+          <div class="small text-muted">
+            Transmissão à SEFAZ pendente de upload do Certificado A1
+          </div>
+        {% endif %}
         <div class="legal-brand mt-2">VERTYX ERP · GESTÃO INTELIGENTE</div>
       </footer>
     {% else %}

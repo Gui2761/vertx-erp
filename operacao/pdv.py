@@ -137,16 +137,21 @@ def sale(request,public_id,receipt=False):
 
     nfce_info = None
     if receipt and sale.snapshot and str(sale.snapshot.get('tipo_emissao', '')).upper() == 'NFCE':
-        import re, hashlib
+        import re, hashlib, os
         from fiscal.nfce import xml as nfce_xml
         from platform_core.context import current_organization
+        from platform_core.models import ConfiguracaoEmpresa
         org = current_organization()
         raw_cnpj = re.sub(r'\D', '', org.cnpj or '39966868000186').zfill(14)
         
-        empresa = getattr(org, 'empresa_gestao', None)
+        empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first()
         ret = empresa.retencoes_informativas if empresa and isinstance(empresa.retencoes_informativas, dict) else {}
-        nfce_params = ret.get('nfce_config', {})
+        nfce_params = ret.get('nfce') or ret.get('nfce_config') or {}
         serie = str(nfce_params.get('serie') or '1')
+        
+        cert_info = nfce_params.get('certificado', {})
+        cert_path = cert_info.get('path', '')
+        tem_certificado = bool(cert_info.get('valido_ate') or (cert_path and os.path.exists(cert_path)))
         
         venda_num_str = sale.snapshot.get('numero', '')
         num_digits = re.sub(r'\D', '', venda_num_str)
@@ -156,6 +161,7 @@ def sale(request,public_id,receipt=False):
             numero_nfce = sale.pk
             
         data_emissao = sale.finalizada_em or sale.atualizado_em or timezone.now()
+        tp_emis = '1' if tem_certificado else '9'
         
         cnf_hash = hashlib.md5(f'{sale.public_id}:nfce'.encode()).hexdigest()
         cnf = str(int(cnf_hash[:8], 16))[-8:].zfill(8)
@@ -163,15 +169,15 @@ def sale(request,public_id,receipt=False):
         try:
             chave_nfce = nfce_xml.chave(raw_cnpj, serie, numero_nfce, data_emissao, cnf)
         except Exception:
-            base_temp = f'28{data_emissao:%y%m}{raw_cnpj}65{int(serie):03}{int(numero_nfce):09}1{cnf}'
+            base_temp = f'28{data_emissao:%y%m}{raw_cnpj}65{int(serie):03}{int(numero_nfce):09}{tp_emis}{cnf}'
             chave_nfce = base_temp + nfce_xml.digito(base_temp)
             
         chave_formatada = ' '.join(chave_nfce[i:i+4] for i in range(0, 44, 4))
         
         proto_hash = str(int(hashlib.md5(chave_nfce.encode()).hexdigest()[:10], 16))[-9:].zfill(9)
-        protocolo = f'128{data_emissao:%y}{proto_hash}'
+        protocolo = f'128{data_emissao:%y}{proto_hash}' if tem_certificado else 'EMITIDA EM CONTINGÊNCIA (tpEmis=9)'
         
-        qr_url = f'http://www.sefaz.se.gov.br/nfce/qrcode?p={chave_nfce}|2|1'
+        qr_url = f'http://www.sefaz.se.gov.br/nfce/qrcode?p={chave_nfce}|2|{"1" if tem_certificado else "2"}'
         
         total_float = float(sale.total or 0)
         tributos = round(total_float * 0.1345, 2)
@@ -187,6 +193,8 @@ def sale(request,public_id,receipt=False):
             'consulta_url': 'http://www.sefaz.se.gov.br/nfce/consulta',
             'tributos_aproximados': f'{tributos:.2f}'.replace('.', ','),
             'ambiente': 'PRODUÇÃO' if nfce_params.get('ambiente') == 'PRODUCAO' else 'HOMOLOGAÇÃO / PRODUÇÃO',
+            'tem_certificado': tem_certificado,
+            'tp_emis': tp_emis,
         }
 
     return render(request,'operacao/pdv_receipt.html' if receipt else 'operacao/pdv_sale.html',{

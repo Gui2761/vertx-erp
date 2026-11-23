@@ -27,33 +27,9 @@ def configuracao(request, pk=None):
         if not request.user.is_authenticated or (effective_role(request.user) not in ('ADMIN', 'GESTOR') and not request.user.is_staff):
             return HttpResponseForbidden('Configuração restrita ao ADMIN desta organização.')
 
-    # Se uma proposta documental específica for solicitada por ID (/fiscal/configuracao/<pk>/)
+    # Se uma rota de proposta for solicitada, redireciona para a configuração operacional da organização
     if pk is not None:
-        proposals = m.ConfiguracaoFiscal.objects.exclude(proposta_documental={}).filter(tipo='NFCE', ambiente='HOMOLOGACAO').select_related('estabelecimento', 'configuracao_confirmada__estabelecimento')
-        config = get_object_or_404(proposals, pk=pk)
-        form = preparation.PreparacaoForm(request.POST if request.method == 'POST' else None, initial=preparation.initial(config))
-        if request.method == 'POST':
-            try:
-                check_fields(request, [*form.fields, 'acao'])
-                if request.POST.get('acao') not in ('salvar', 'confirmar'):
-                    raise ValidationError('Ação não permitida; emissão bloqueada nesta etapa.')
-                if form.is_valid():
-                    payload = request.POST.dict()
-                    payload.pop('csrfmiddlewaretoken', None); payload.pop('acao', None)
-                    preparation.save_preparation(request.user, config.pk, payload, confirm=request.POST['acao'] == 'confirmar')
-                    from django.contrib import messages
-                    messages.success(request, 'Preparação salva com auditoria. Emissão permanece bloqueada.')
-                    return redirect('operacao:fiscal_configuracao_detalhe', pk=config.pk)
-            except ValidationError as exc:
-                form.add_error(None, exc)
-        rows, product = preparation.readiness(config)
-        fields = []
-        if product:
-            fields = [('Descrição', product.descricao), ('Código', product.sku), ('EAN/GTIN', product.gtin), ('NCM', product.ncm), ('CEST', product.cest), ('Unidade', product.unidade_medida), ('Origem', product.origem_fiscal), ('CFOP', product.cfop), ('CST/CSOSN', product.csosn or product.cst or product.cst_csosn)]
-        return render(request, 'fiscal/nfce/configuration.html', {'config': config, 'form': form, 'checklist': rows,
-            'sections': [(label, [form[name] for name in names]) for label, names in preparation.SECTIONS],
-            'product_fields': fields, 'proposals': proposals, 'pending_count': sum(not done for _, done in rows),
-            'responsavel_checklist': preparation.pendencias_responsavel(config, product)})
+        return redirect('operacao:fiscal_configuracao')
 
     # Visão Executiva Operacional do Tenant (/fiscal/configuracao/)
     from django.contrib import messages
@@ -105,25 +81,34 @@ def configuracao(request, pk=None):
             valid_until = None
             subject_cn = None
             cert_msg = "Certificado A1 carregado com sucesso"
+            cert_dir = os.path.join(settings.BASE_DIR, 'private', 'certificates')
+            os.makedirs(cert_dir, exist_ok=True)
+            cert_path = os.path.join(cert_dir, f"cert_org_{org.pk}.pfx")
+            cert_pem_path = os.path.join(cert_dir, f"cert_org_{org.pk}.pem")
+            key_pem_path = os.path.join(cert_dir, f"key_org_{org.pk}.pem")
+            with open(cert_path, 'wb') as cf:
+                cf.write(pfx_bytes)
+
             try:
-                from cryptography.hazmat.primitives.serialization import pkcs12
+                from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
                 p12 = pkcs12.load_key_and_certificates(pfx_bytes, cert_password.encode('utf-8') if cert_password else None)
                 if p12 and p12.certificate:
                     valid_until = p12.certificate.not_valid_after_utc.strftime('%d/%m/%Y')
                     subject_cn = p12.certificate.subject.rfc4514_string()
                     cert_msg = f"Certificado A1 válido até {valid_until}"
+                    with open(cert_pem_path, 'wb') as cp:
+                        cp.write(p12.certificate.public_bytes(Encoding.PEM))
+                    if p12.key:
+                        with open(key_pem_path, 'wb') as kp:
+                            kp.write(p12.key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()))
             except Exception as e:
                 cert_msg = f"Certificado salvo (aviso senha: {str(e)[:40]})"
-
-            cert_dir = os.path.join(settings.BASE_DIR, 'private', 'certificates')
-            os.makedirs(cert_dir, exist_ok=True)
-            cert_path = os.path.join(cert_dir, f"cert_org_{org.pk}.pfx")
-            with open(cert_path, 'wb') as cf:
-                cf.write(pfx_bytes)
 
             cert_info = {
                 'filename': cert_file.name,
                 'path': cert_path,
+                'cert_pem': cert_pem_path if valid_until else None,
+                'key_pem': key_pem_path if valid_until else None,
                 'valido_ate': valid_until,
                 'subject': subject_cn,
                 'status': cert_msg,
@@ -136,7 +121,7 @@ def configuracao(request, pk=None):
             empresa.crt = crt
             empresa.natureza_operacao = natureza_operacao
             ret = empresa.retencoes_informativas or {}
-            ret['nfce'] = {
+            cfg = {
                 'csc_id': csc_id,
                 'csc_token': csc_token,
                 'ambiente': ambiente,
@@ -146,6 +131,8 @@ def configuracao(request, pk=None):
                 'certificado': cert_info,
                 'atualizado_em': timezone.now().strftime('%d/%m/%Y %H:%M')
             }
+            ret['nfce'] = cfg
+            ret['nfce_config'] = cfg
             empresa.retencoes_informativas = ret
             empresa.save()
 
