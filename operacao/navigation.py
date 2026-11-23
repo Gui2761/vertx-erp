@@ -1,7 +1,7 @@
 import urllib.parse
 from platform_core.modules import has_capability, module_enabled
 
-ICON_ALIASES = {'calendar3':'calendar','calendar-check':'calendar','clipboard2-pulse':'document','telephone':'health','file-earmark-text':'document','file-earmark-ruled':'document','bag':'cart','people':'users','box-seam':'stock','arrow-left-right':'arrows','hourglass-split':'calendar','buildings':'stock','list-check':'document','bookmark-check':'document','cart-check':'cart','chat-square-text':'document','truck':'cart','box-arrow-in-down':'stock','person-vcard':'users','cash-stack':'bank','arrow-down-circle':'arrows','arrow-up-circle':'arrows','graph-up':'chart','file-earmark-check':'document','heart-pulse':'health','person-gear':'users','folder':'document','person-lock':'users','bar-chart':'chart','gear':'settings','sliders':'settings','person-check':'users'}
+ICON_ALIASES = {'calendar3':'calendar','calendar-check':'calendar','clipboard2-pulse':'document','telephone':'health','file-earmark-text':'document','file-earmark-ruled':'document','bag':'cart','people':'users','box-seam':'stock','arrow-left-right':'arrows','hourglass-split':'calendar','buildings':'stock','list-check':'document','bookmark-check':'document','cart-check':'cart','chat-square-text':'document','truck':'cart','box-arrow-in-down':'stock','person-vcard':'users','cash-stack':'bank','arrow-down-circle':'arrows','arrow-up-circle':'arrows','graph-up':'chart','file-earmark-check':'document','heart-pulse':'health','person-gear':'users','folder':'document','person-lock':'users','bar-chart':'chart','gear':'settings','sliders':'settings','person-check':'users','credit-card':'bank','shield-check':'settings'}
 
 def menu(request):
     result=_menu(request)
@@ -88,33 +88,30 @@ def _menu_uncached(request):
     if not membership or membership.role not in ['ADMIN','GESTOR']:
         return {'can_operational_panel':panel_access}
     groups=[
-        ('INÍCIO',[('Painel','/assistencia/','grid')]),
-        ('ASSISTÊNCIA',[('Planejamento','/planejamento/','calendar3'),('Ordens de Serviço','/ordens/','clipboard2-pulse'),('Chamados','/chamados/','telephone'),('Preventivas','/preventivas/','calendar-check'),('Contratos','/contratos/','file-earmark-text')]),
-        ('COMERCIAL',[('Orçamentos','/orcamentos/','file-earmark-ruled'),('Vendas e loja','/vendas/','bag')]),
+        ('INÍCIO',[('Painel Geral','/assistencia/','grid'),('Gestão Executiva (DRE)','/gestao/executiva/','chart')]),
+        ('ASSISTÊNCIA',[('Ordens de Serviço','/ordens/','clipboard2-pulse'),('Chamados Técnicos','/chamados/','telephone'),('Preventivas','/preventivas/','calendar-check'),('Planejamento','/planejamento/','calendar3')]),
+        ('COMERCIAL',[('Vendas e loja','/vendas/','bag'),('Orçamentos & Atacado','/orcamentos/','file-earmark-ruled'),('Contratos & Licitações','/contratos/','file-earmark-text')]),
         ('ESTOQUE',[('Painel do estoque','/estoque/painel/','box-seam'),('Produtos e Peças','/estoque/','box-seam'),('Movimentações & Lotes','/estoque/movimentar/','arrow-left-right'),('Depósitos & Inventário','/depositos/','buildings')]),
         ('COMPRAS',[('Compras e Pedidos','/compras/','cart'),('Cotações','/compras/?cotacoes=1','chat-square-text'),('Fornecedores','/estoque/fornecedores/','person-vcard')]),
-        ('FINANCEIRO',[('Dashboard','/financeiro/','cash-stack'),('Contas a receber','/financeiro/lancamentos/?tipo=RECEBER','arrow-down-circle'),('Contas a pagar','/financeiro/lancamentos/?tipo=PAGAR','arrow-up-circle'),('Bancos e Caixas','/bancos/','bank'),('Movimentações & Conciliação','/financeiro/movimentacoes/','arrows'),('Central Fiscal (CBS/IBS)','/fiscal/hub/','file-earmark-check')]),
+        ('FINANCEIRO',[('Dashboard','/financeiro/','cash-stack'),('Maquinetas & Taxas','/financeiro/maquinetas/','credit-card'),('Contas a receber','/financeiro/lancamentos/?tipo=RECEBER','arrow-down-circle'),('Contas a pagar','/financeiro/lancamentos/?tipo=PAGAR','arrow-up-circle'),('Bancos e Caixas','/bancos/','bank'),('Movimentações & Conciliação','/financeiro/movimentacoes/','arrows'),('Central Fiscal (NFC-e / NF-e)','/fiscal/hub/','file-earmark-check'),('Configuração Fiscal (CSC)','/fiscal/configuracao/','shield-check')]),
         ('CADASTROS',[('Clientes e Unidades','/clientes/','people'),('Equipamentos','/equipamentos/','heart-pulse'),('Técnicos','/contas/tecnicos/','person-gear'),('Carga em massa (Excel)','/integracoes/migracao/','stock')]),
-        ('RELATÓRIOS',[('Relatórios','/relatorios/','bar-chart')]),
-        ('CONFIGURAÇÕES',[('Configurações','/configuracoes/','gear'),('Usuários','/contas/usuarios/','person-check'),('Minha Assinatura','/vertyx/empresa/plano/','bookmark-check'),('Notificações','/notificacoes/','bell')])]
+        ('RELATÓRIOS',[('Relatórios','/relatorios/','bar-chart'),('Gestão Executiva','/gestao/executiva/','chart')]),
+        ('CONFIGURAÇÕES',[('Configurações','/configuracoes/','gear'),('Maquinetas & Cartões','/financeiro/maquinetas/','credit-card'),('Configuração Fiscal (CSC)','/fiscal/configuracao/','shield-check'),('Usuários','/contas/usuarios/','person-check'),('Minha Assinatura','/vertyx/empresa/plano/','bookmark-check'),('Notificações','/notificacoes/','bell')])]
     if panel_access:
-        groups[1][1].insert(1,('Painel de TV (Operações)','/painel-operacional/','grid'))
-    if module_enabled('relatorios_completos') and has_capability(request.user, 'executivo'):
-        groups[0][1].append(('Gestão executiva','/gestao/executiva/','chart'))
-    pdv_links=[('Terminal do PDV','/pdv/','cart'),('Gestão de Caixas','/pdv/?gestao=1','bank'),('Histórico de Vendas','/pdv/historico/','document')]
+        groups[0][1].insert(1,('Painel de TV (Operações)','/painel-operacional/','grid'))
+    pdv_links=[('Terminal do PDV','/pdv/','cart'),('Gestão de Caixas','/pdv/?gestao=1','bank'),('Histórico de Vendas','/pdv/historico/','document'),('Maquinetas de Cartão','/financeiro/maquinetas/','credit-card')]
     groups.insert(-1,('RH / PONTO',[('Funcionários','/rh/funcionarios/','users'),('Jornadas e Escalas','/rh/jornadas/','calendar'),('Meu ponto','/ponto/','users')]))
     by_title=dict(groups)
     groups=[
-        ('Operacional',by_title['INÍCIO']+by_title['ASSISTÊNCIA']),
-        ('Vendas',by_title['COMERCIAL']),
+        ('Financeiro',by_title['FINANCEIRO']),
         ('PDV',pdv_links),
+        ('Vendas',by_title['COMERCIAL']),
         ('Estoque',by_title['ESTOQUE']),
         ('Compras',by_title['COMPRAS']),
-        ('Financeiro',by_title['FINANCEIRO']),
-        ('Cadastros',by_title['CADASTROS']),
         ('RH',by_title['RH / PONTO']),
         ('Relatórios',by_title['RELATÓRIOS']),
         ('Configurações',by_title['CONFIGURAÇÕES']),
+        ('Operacional',by_title['INÍCIO']+by_title['ASSISTÊNCIA']),
     ]
     from platform_core.modules import module_for_path, module_enabled, product_module_enabled, required_modules_for_path
     from gestao.permissions import allowed

@@ -80,6 +80,190 @@
     </div>
   </div>
 
+  <!-- SEÇÃO EXECUTIVA: OS 3 PILARES COMERCIAIS (VAREJO, ATACADO E SERVIÇOS) -->
+  <div class="card mb-4 shadow-sm" style="background: #121a29; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 14px;">
+    <div class="card-header bg-transparent py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2" style="border-color: rgba(255, 255, 255, 0.08) !important;">
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+            <i class="bi bi-diagram-3-fill fs-5"></i>
+          </span>
+          <h2 class="h5 font-bold text-white mb-0">Divisões de Negócio: Varejo, Atacado & Serviços</h2>
+        </div>
+        <span class="text-secondary small">Métricas comerciais segregadas da operação conforme o modelo de negócio da TECNOLMED</span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+          Faturamento Bruto: <strong class="text-white">R$ {{ data.segmentacao.faturamento_bruto|floatformat:2 }}</strong>
+        </span>
+      </div>
+    </div>
+    <div class="card-body p-4">
+      <!-- Barra de Distribuição de Faturamento -->
+      <div class="mb-4">
+        <div class="d-flex justify-content-between small text-secondary mb-2">
+          <span>Distribuição do Faturamento no Período</span>
+          <span>
+            <strong class="text-info">{{ data.segmentacao.varejo.percent }}% Varejo</strong> · 
+            <strong class="text-primary">{{ data.segmentacao.atacado.percent }}% Atacado</strong> · 
+            <strong class="text-warning">{{ data.segmentacao.servicos.percent }}% Serviços</strong>
+          </span>
+        </div>
+        <div class="progress" style="height: 12px; background: rgba(255,255,255,0.06); border-radius: 6px; overflow: hidden;">
+          <div class="progress-bar bg-info" role="progressbar" style="width: {{ data.segmentacao.varejo.percent }}%" title="Varejo: {{ data.segmentacao.varejo.percent }}%"></div>
+          <div class="progress-bar bg-primary" role="progressbar" style="width: {{ data.segmentacao.atacado.percent }}%" title="Atacado: {{ data.segmentacao.atacado.percent }}%"></div>
+          <div class="progress-bar bg-warning" role="progressbar" style="width: {{ data.segmentacao.servicos.percent }}%" title="Serviços: {{ data.segmentacao.servicos.percent }}%"></div>
+        </div>
+      </div>
+
+      <!-- 3 Cards Segmentados -->
+      <div class="row g-3">
+        <!-- 1. Varejo (PDV / Balcão) -->
+        <div class="col-12 col-md-4">
+          <div class="p-3 rounded-3 h-100" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25);">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="small fw-bold text-info text-uppercase"><i class="bi bi-shop me-1"></i> 1. Varejo (Balcão / PDV)</span>
+              <span class="badge bg-info-subtle text-info">{{ data.segmentacao.varejo.percent }}%</span>
+            </div>
+            <div class="h3 font-bold text-white mb-2">
+              R$ {{ data.segmentacao.varejo.total|floatformat:2 }}
+            </div>
+            <div class="row g-2 small text-secondary pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
+              <div class="col-6">Vendas: <strong class="text-light">{{ data.segmentacao.varejo.qtd }}</strong></div>
+              <div class="col-6 text-end">Ticket médio: <strong class="text-light">R$ {{ data.segmentacao.varejo.ticket|floatformat:2 }}</strong></div>
+              <div class="col-6">Margem bruta: <strong class="text-success">R$ {{ data.segmentacao.varejo.margem|floatformat:2 }}</strong></div>
+              <div class="col-6 text-end"><a href="{% url 'operacao:pdv_home' %}" class="text-info text-decoration-none">Abrir PDV →</a></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Atacado & Licitações -->
+        <div class="col-12 col-md-4">
+          <div class="p-3 rounded-3 h-100" style="background: rgba(37, 99, 235, 0.05); border: 1px solid rgba(37, 99, 235, 0.25);">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="small fw-bold text-primary text-uppercase"><i class="bi bi-buildings-fill me-1"></i> 2. Atacado & Licitações</span>
+              <span class="badge bg-primary-subtle text-primary">{{ data.segmentacao.atacado.percent }}%</span>
+            </div>
+            <div class="h3 font-bold text-white mb-2">
+              R$ {{ data.segmentacao.atacado.total|floatformat:2 }}
+            </div>
+            <div class="row g-2 small text-secondary pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
+              <div class="col-6">Contratos/Vendas: <strong class="text-light">{{ data.segmentacao.atacado.qtd }}</strong></div>
+              <div class="col-6 text-end">Ticket médio: <strong class="text-light">R$ {{ data.segmentacao.atacado.ticket|floatformat:2 }}</strong></div>
+              <div class="col-6">Margem bruta: <strong class="text-success">R$ {{ data.segmentacao.atacado.margem|floatformat:2 }}</strong></div>
+              <div class="col-6 text-end"><a href="/orcamentos/" class="text-primary text-decoration-none">Propostas →</a></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Serviços & Manutenção Hospitalar -->
+        <div class="col-12 col-md-4">
+          <div class="p-3 rounded-3 h-100" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25);">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="small fw-bold text-warning text-uppercase"><i class="bi bi-wrench-adjustable-circle me-1"></i> 3. Serviços & Manutenção</span>
+              <span class="badge bg-warning-subtle text-warning">{{ data.segmentacao.servicos.percent }}%</span>
+            </div>
+            <div class="h3 font-bold text-white mb-2">
+              R$ {{ data.segmentacao.servicos.total|floatformat:2 }}
+            </div>
+            <div class="row g-2 small text-secondary pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
+              <div class="col-6">OS faturadas: <strong class="text-light">{{ data.segmentacao.servicos.qtd }}</strong></div>
+              <div class="col-6 text-end">Ticket médio: <strong class="text-light">R$ {{ data.segmentacao.servicos.ticket|floatformat:2 }}</strong></div>
+              <div class="col-6">Custo peças OS: <strong class="text-light">R$ {{ data.segmentacao.servicos.custo|floatformat:2 }}</strong></div>
+              <div class="col-6 text-end"><a href="/ordens/" class="text-warning text-decoration-none">Ver OS →</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRE EXECUTIVO: APURAÇÃO DO LUCRO REAL LÍQUIDO E DEDUÇÃO DE TAXAS -->
+  <div class="card mb-4 shadow-sm" style="background: #121a29; border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 14px;">
+    <div class="card-header bg-transparent py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2" style="border-color: rgba(255, 255, 255, 0.08) !important;">
+      <div class="d-flex align-items-center gap-2">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.15); color: #34d399;">
+          <i class="bi bi-calculator-fill fs-5"></i>
+        </span>
+        <div>
+          <h2 class="h5 font-bold text-white mb-0">Demonstrativo do Resultado (DRE) · Lucro Real Líquido</h2>
+          <span class="text-secondary small">Dedução exata de taxas de maquinetas de cartões, custos de produtos (CMV) e despesas fixas</span>
+        </div>
+      </div>
+      <a href="{% url 'operacao:financeiro_maquinetas' %}" class="btn btn-sm btn-outline-info">
+        <i class="bi bi-credit-card me-1"></i> Configurar Maquinetas & Taxas
+      </a>
+    </div>
+    <div class="card-body p-4">
+      <div class="row g-3 align-items-center">
+        <!-- Tabela do DRE -->
+        <div class="col-12 col-lg-8">
+          <div class="table-responsive">
+            <table class="table table-dark table-sm mb-0 align-middle" style="background: transparent;">
+              <tbody>
+                <tr class="border-bottom" style="border-color: rgba(255,255,255,0.08) !important;">
+                  <td class="py-2 text-white"><i class="bi bi-plus-circle text-success me-2"></i><strong>(+) Faturamento Bruto da Operação</strong></td>
+                  <td class="text-end py-2 text-white fw-bold">R$ {{ data.dre.faturamento_bruto|floatformat:2 }}</td>
+                  <td class="text-end py-2 text-secondary small">100%</td>
+                </tr>
+                <tr class="border-bottom" style="border-color: rgba(255,255,255,0.08) !important;">
+                  <td class="py-2 text-warning ps-4">
+                    <i class="bi bi-dash-circle text-warning me-2"></i>(-) Dedução de Taxas de Maquinetas / Cartões
+                    <small class="d-block text-secondary">Apurado via {{ data.taxas_cartao.maquinetas_qtd }} maquinetas cadastradas (Débito: {{ data.taxas_cartao.debito_taxa_media }}% | Crédito: {{ data.taxas_cartao.credito_taxa_media }}%)</small>
+                  </td>
+                  <td class="text-end py-2 text-warning fw-bold">- R$ {{ data.dre.taxas_cartao|floatformat:2 }}</td>
+                  <td class="text-end py-2 text-secondary small">Taxas de Cartão</td>
+                </tr>
+                <tr class="border-bottom" style="border-color: rgba(255,255,255,0.08) !important;">
+                  <td class="py-2 text-white"><i class="bi bi-arrow-right-short text-info me-2"></i><strong>(=) Receita Operacional Líquida</strong></td>
+                  <td class="text-end py-2 text-info fw-bold">R$ {{ data.dre.faturamento_liquido|floatformat:2 }}</td>
+                  <td class="text-end py-2 text-secondary small">Líquido de taxas</td>
+                </tr>
+                <tr class="border-bottom" style="border-color: rgba(255,255,255,0.08) !important;">
+                  <td class="py-2 text-danger ps-4">
+                    <i class="bi bi-dash-circle text-danger me-2"></i>(-) Custo das Mercadorias & Peças (CMV)
+                    <small class="d-block text-secondary">Lotes e movimentações oficiais registradas</small>
+                  </td>
+                  <td class="text-end py-2 text-danger fw-bold">- R$ {{ data.dre.custos_cmv_pecas|floatformat:2 }}</td>
+                  <td class="text-end py-2 text-secondary small">Custo Direto</td>
+                </tr>
+                <tr class="border-bottom" style="border-color: rgba(255,255,255,0.08) !important;">
+                  <td class="py-2 text-danger ps-4">
+                    <i class="bi bi-dash-circle text-danger me-2"></i>(-) Despesas Operacionais / Custos Fixos
+                    <small class="d-block text-secondary">Contas a pagar e despesas administrativas do período</small>
+                  </td>
+                  <td class="text-end py-2 text-danger fw-bold">- R$ {{ data.dre.despesas_fixas|floatformat:2 }}</td>
+                  <td class="text-end py-2 text-secondary small">Custos Fixos</td>
+                </tr>
+                <tr class="table-active" style="background: rgba(16, 185, 129, 0.1) !important;">
+                  <td class="py-3 text-success fs-6"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>(=) LUCRO REAL LÍQUIDO DA EMPRESA</strong></td>
+                  <td class="text-end py-3 text-success fw-bold fs-5">R$ {{ data.dre.lucro_liquido_real|floatformat:2 }}</td>
+                  <td class="text-end py-3 text-success fw-bold">{{ data.dre.margem_liquida_percent }}% margem</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Card de Destaque Lucro Líquido -->
+        <div class="col-12 col-lg-4">
+          <div class="p-4 rounded-3 text-center" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3);">
+            <span class="text-secondary small fw-bold text-uppercase d-block mb-1">Lucro Real Líquido</span>
+            <div class="display-6 font-bold text-success mb-1">
+              R$ {{ data.dre.lucro_liquido_real|floatformat:2 }}
+            </div>
+            <div class="badge bg-success-subtle text-success border border-success-subtle mb-3">
+              Margem Líquida Real: {{ data.dre.margem_liquida_percent }}%
+            </div>
+            <p class="text-secondary small mb-0">
+              Resultado final após o desconto de <strong>taxas das maquinetas</strong>, <strong>custo de produtos</strong> e <strong>despesas fixas</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Primary Metric Cards -->
   <div class="row g-3 mb-4">
     <!-- Card 1: Vendas Líquidas -->

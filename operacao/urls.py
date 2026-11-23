@@ -18,6 +18,7 @@ from . import inventory_views
 from . import executive
 from . import mobile
 from . import contract_workday_views
+from . import maquinetas
 app_name = 'operacao'
 urlpatterns = [
     path('integracoes/migracao/',migration_views.home,name='migration_home'),
@@ -169,6 +170,7 @@ urlpatterns = [
     path('fiscal/recebidas/', fiscal_hub_views.fiscal_notas_recebidas, name='fiscal_notas_recebidas'),
     path('fiscal/recebidas/<int:pk>/', fiscal_hub_views.fiscal_nota_recebida_detalhe, name='fiscal_nota_recebida_detalhe'),
     path('financeiro/movimentacoes/', views.financeiro_movimentacoes, name='financeiro_movimentacoes'),
+    path('financeiro/maquinetas/', maquinetas.maquinetas_view, name='financeiro_maquinetas'),
 ]
 for resource, prefix in {'conhecimento': 'conhecimento', 'deposito': 'depositos', 'categoria': 'categorias-pecas', 'chamado': 'chamados', 'checklist': 'checklists', 'plano': 'preventivas', 'compra': 'compras', 'venda': 'vendas', 'banco': 'bancos', 'extrato': 'bancos/extrato', 'fiscal': 'fiscal', 'documento': 'documentos', 'portal_acesso': 'portal-acessos'}.items():
     urlpatterns += [

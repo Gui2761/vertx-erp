@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Maquinetas & Taxas de Cartão · VERTYX Financeiro{% endblock %}
+
+{% block content %}
+<main class="container-fluid px-3 px-md-4 py-4" style="max-width: 1240px; margin: 0 auto;">
+
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 600; font-size: 0.75rem; text-transform: uppercase;">
+          <i class="bi bi-credit-card-2-front me-1"></i> Financeiro & Meios de Pagamento
+        </span>
+        <span class="text-secondary small">· {{ request.organization.display_name }}</span>
+      </div>
+      <h1 class="h3 font-bold mb-1" style="color: var(--vx-ink); letter-spacing: -0.02em;">
+        Maquinetas & Taxas de Cartão
+      </h1>
+      <p class="text-secondary mb-0 small" style="color: var(--vx-muted) !important;">
+        Cadastre as maquinetas ativas da loja e configure as taxas de débito e crédito para dedução exata nos relatórios de faturamento e lucro líquido real.
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'operacao:executive' %}" class="btn btn-outline-info btn-sm px-3 py-2">
+        <i class="bi bi-graph-up-arrow me-1"></i> Gestão Executiva & DRE
+      </a>
+      <a href="{% url 'operacao:pdv_home' %}" class="btn btn-outline-primary btn-sm px-3 py-2">
+        <i class="bi bi-cart3 me-1"></i> Ir para o PDV
+      </a>
+    </div>
+  </div>
+
+  <!-- Cards Grid: Maquinetas Cadastradas -->
+  <div class="row g-4 mb-4">
+    {% for maq in maquinetas %}
+    <div class="col-12 col-md-6">
+      <div class="card h-100 shadow-sm" style="background: #121a29; border: 1px solid {% if maq.padrao %}rgba(56, 189, 248, 0.4){% else %}rgba(255, 255, 255, 0.08){% endif %}; border-radius: 14px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3" style="border-color: rgba(255, 255, 255, 0.08) !important;">
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                  <i class="bi bi-credit-card fs-5"></i>
+                </span>
+                <h2 class="h5 font-bold mb-0 text-white">{{ maq.nome }}</h2>
+              </div>
+              <span class="badge bg-secondary-subtle text-light small mt-1">Operadora: {{ maq.adquirente }}</span>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              {% if maq.padrao %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">
+                <i class="bi bi-check-circle-fill me-1"></i>Padrão do Balcão
+              </span>
+              {% else %}
+              <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="padrao">
+                <input type="hidden" name="maq_id" value="{{ maq.id }}">
+                <button type="submit" class="btn btn-sm btn-outline-secondary text-secondary py-0 px-2" style="font-size: 0.75rem;">
+                  Tornar Padrão
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Taxas Detalhadas -->
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06);">
+                <div class="small text-secondary mb-1"><i class="bi bi-arrow-down-left-circle me-1 text-info"></i>Débito</div>
+                <div class="h4 font-bold text-white mb-0">{{ maq.taxa_debito|floatformat:2 }}%</div>
+                <div class="text-secondary small" style="font-size: 0.72rem;">Repasse: {{ maq.dias_repasse }} dia(s)</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06);">
+                <div class="small text-secondary mb-1"><i class="bi bi-credit-card me-1 text-warning"></i>Crédito à Vista</div>
+                <div class="h4 font-bold text-white mb-0">{{ maq.taxa_credito_vista|floatformat:2 }}%</div>
+                <div class="text-secondary small" style="font-size: 0.72rem;">1x no cartão</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 px-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04);">
+                <div class="small text-secondary mb-0">Parcelado (2x a 6x)</div>
+                <div class="fw-bold text-light">{{ maq.taxa_credito_parcelado_2x6|floatformat:2 }}%</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 px-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04);">
+                <div class="small text-secondary mb-0">Parcelado (7x a 12x)</div>
+                <div class="fw-bold text-light">{{ maq.taxa_credito_parcelado_7x12|floatformat:2 }}%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ações do Card -->
+          <div class="d-flex align-items-center justify-content-between pt-2 border-top" style="border-color: rgba(255, 255, 255, 0.06) !important;">
+            <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#edit-maq-{{ maq.id }}">
+              <i class="bi bi-pencil me-1"></i>Editar Taxas
+            </button>
+            <form method="post" onsubmit="return confirm('Deseja realmente remover esta maquineta?');">
+              {% csrf_token %}
+              <input type="hidden" name="acao" value="excluir">
+              <input type="hidden" name="maq_id" value="{{ maq.id }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" style="font-size: 0.78rem;">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </div>
+
+          <!-- Collapse Form de Edição -->
+          <div class="collapse mt-3 pt-3 border-top" id="edit-maq-{{ maq.id }}" style="border-color: rgba(255, 255, 255, 0.08) !important;">
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="acao" value="salvar">
+              <input type="hidden" name="maq_id" value="{{ maq.id }}">
+              <div class="mb-2">
+                <label class="form-label small text-secondary mb-1">Nome / Identificação</label>
+                <input type="text" name="nome" class="form-control form-control-sm" value="{{ maq.nome }}" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label class="form-label small text-secondary mb-1">Adquirente</label>
+                  <input type="text" name="adquirente" class="form-control form-control-sm" value="{{ maq.adquirente }}" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small text-secondary mb-1">Taxa Débito (%)</label>
+                  <input type="text" name="taxa_debito" class="form-control form-control-sm" value="{{ maq.taxa_debito }}" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small text-secondary mb-1">Crédito à Vista (%)</label>
+                  <input type="text" name="taxa_credito_vista" class="form-control form-control-sm" value="{{ maq.taxa_credito_vista }}" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small text-secondary mb-1">Parcelado 2x-6x (%)</label>
+                  <input type="text" name="taxa_credito_parcelado_2x6" class="form-control form-control-sm" value="{{ maq.taxa_credito_parcelado_2x6 }}" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small text-secondary mb-1">Parcelado 7x-12x (%)</label>
+                  <input type="text" name="taxa_credito_parcelado_7x12" class="form-control form-control-sm" value="{{ maq.taxa_credito_parcelado_7x12 }}" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small text-secondary mb-1">Dias Repasse</label>
+                  <input type="number" name="dias_repasse" class="form-control form-control-sm" value="{{ maq.dias_repasse }}" min="0" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-sm btn-primary w-100 py-1">Salvar Alterações</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- Card: Cadastrar Nova Maquineta -->
+    <div class="col-12 col-md-6">
+      <div class="card h-100 shadow-sm" style="background: rgba(255, 255, 255, 0.02); border: 2px dashed rgba(255, 255, 255, 0.15); border-radius: 14px;">
+        <div class="card-body p-4 d-flex flex-column justify-content-center">
+          <div class="text-center mb-3">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(56, 189, 248, 0.1); color: #38bdf8; font-size: 1.5rem;">
+              <i class="bi bi-plus-circle"></i>
+            </span>
+            <h3 class="h5 font-bold text-white mt-2 mb-1">Adicionar Nova Maquineta</h3>
+            <p class="text-secondary small mb-0">Cadastre uma maquininha adicional para comparar taxas e apurar deduções.</p>
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="salvar">
+            <div class="mb-2">
+              <label class="form-label small text-secondary mb-1">Nome da Maquineta</label>
+              <input type="text" name="nome" class="form-control form-control-sm" placeholder="Ex: Maquineta 3 - Balcão 2" required style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label class="form-label small text-secondary mb-1">Operadora / Adquirente</label>
+                <input type="text" name="adquirente" class="form-control form-control-sm" placeholder="Ex: Cielo, Stone, Rede" required style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+              </div>
+              <div class="col-6">
+                <label class="form-label small text-secondary mb-1">Taxa Débito (%)</label>
+                <input type="text" name="taxa_debito" class="form-control form-control-sm" placeholder="Ex: 1.15" required style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+              </div>
+              <div class="col-6">
+                <label class="form-label small text-secondary mb-1">Crédito à Vista (%)</label>
+                <input type="text" name="taxa_credito_vista" class="form-control form-control-sm" placeholder="Ex: 2.39" required style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+              </div>
+              <div class="col-6">
+                <label class="form-label small text-secondary mb-1">Parcelado 2x-6x (%)</label>
+                <input type="text" name="taxa_credito_parcelado_2x6" class="form-control form-control-sm" placeholder="Ex: 3.20" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.14);">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm w-100 py-2 fw-semibold">
+              <i class="bi bi-check-lg me-1"></i> Cadastrar Maquineta
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulador Comparativo de Taxas -->
+  <div class="card shadow-sm mb-4" style="background: #121a29; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px;">
+    <div class="card-header bg-transparent py-3 d-flex align-items-center justify-content-between border-bottom" style="border-color: rgba(255, 255, 255, 0.08) !important;">
+      <div>
+        <h2 class="h6 font-bold text-white mb-0">
+          <i class="bi bi-calculator me-2 text-warning"></i> Simulador Comparativo de Taxas (Base: R$ {{ valor_simulado|floatformat:2 }})
+        </h2>
+        <span class="text-secondary small">Compare o valor líquido que entra na conta em cada maquineta para uma venda de R$ 1.000,00</span>
+      </div>
+      <span class="badge bg-info-subtle text-info border border-info-subtle">Inteligência Financeira</span>
+    </div>
+    <div class="card-body p-4">
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0" style="background: transparent;">
+          <thead>
+            <tr class="text-secondary small">
+              <th>Maquineta</th>
+              <th>Operadora</th>
+              <th>Taxa Débito</th>
+              <th>Líquido Débito</th>
+              <th>Taxa Crédito (1x)</th>
+              <th>Líquido Crédito</th>
+              <th>Economia / Melhor Opção</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in simulacoes %}
+            <tr>
+              <td class="fw-bold text-white">{{ s.nome }}</td>
+              <td><span class="badge bg-secondary-subtle text-light">{{ s.adquirente }}</span></td>
+              <td><span class="text-info fw-bold">{{ s.deb_taxa|floatformat:2 }}%</span> <small class="text-secondary">(-R$ {{ s.deb_desconto|floatformat:2 }})</small></td>
+              <td class="text-success fw-bold">R$ {{ s.deb_liquido|floatformat:2 }}</td>
+              <td><span class="text-warning fw-bold">{{ s.cred_taxa|floatformat:2 }}%</span> <small class="text-secondary">(-R$ {{ s.cred_desconto|floatformat:2 }})</small></td>
+              <td class="text-success fw-bold">R$ {{ s.cred_liquido|floatformat:2 }}</td>
+              <td>
+                {% if forloop.first %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-star-fill me-1"></i>Mais Econômica</span>
+                {% else %}
+                <span class="text-secondary small">Alternativa</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+{% endblock %}

@@ -270,6 +270,9 @@ def indicators(user,start,end,branch=None,center=None):
     if center:
         center=g.CentroCusto.objects.get(pk=center,ativo=True);sales=sales.filter(centro_custo=center);returns=returns.filter(venda__centro_custo=center)
     gross=Decimal('0');cost=Decimal('0');by_seller={}
+    varejo_gross = Decimal('0'); varejo_cost = Decimal('0'); varejo_count = 0
+    atacado_gross = Decimal('0'); atacado_cost = Decimal('0'); atacado_count = 0
+
     if module_enabled('pdv'):
         for sale in sales:
             value=Decimal(sale.snapshot['total']) if sale.snapshot else sale.total
@@ -277,18 +280,175 @@ def indicators(user,start,end,branch=None,center=None):
             gross+=value;cost+=actual
             label=str(sale.vendedor or 'Vendedor não informado');row=by_seller.setdefault(label,{'vendedor':label,'vendas':0,'valor':Decimal('0'),'custo':Decimal('0')})
             row['vendas']+=1;row['valor']+=value;row['custo']+=actual
+
+            # Segmentação Tripla: Atacado/Licitações vs Varejo
+            is_atacado = False
+            if sale.cliente:
+                cl_nome = (sale.cliente.nome or '').lower()
+                cl_doc = getattr(sale.cliente, 'cnpj', None) or getattr(sale.cliente, 'documento', None) or ''
+                if (cl_doc and len(str(cl_doc).replace('.','').replace('-','').replace('/','').strip()) > 11) or \
+                   any(term in cl_nome for term in ['prefeitura', 'municipio', 'fundo', 'secretaria', 'hospital', 'clinica', 'ltda', 's/a', 's.a.', 'governo']) or \
+                   getattr(sale.cliente, 'tipo', '') == 'PJ':
+                    is_atacado = True
+            if getattr(sale, 'orcamento_origem_id', None) is not None:
+                is_atacado = True
+
+            if is_atacado and not sale.sessao_caixa_id:
+                atacado_gross += value
+                atacado_cost += actual
+                atacado_count += 1
+            else:
+                varejo_gross += value
+                varejo_cost += actual
+                varejo_count += 1
+
         for returned in returns:
             gross-=returned.valor
             restored=sum((item.movimento.valor_custo for item in returned.itens.all()),Decimal('0'));cost-=restored
             label=str(returned.venda.vendedor or 'Vendedor não informado');row=by_seller.setdefault(label,{'vendedor':label,'vendas':0,'valor':Decimal('0'),'custo':Decimal('0')});row['valor']-=returned.valor;row['custo']-=restored
+            
+            is_ret_atacado = False
+            if returned.venda and returned.venda.cliente:
+                cl_doc = getattr(returned.venda.cliente, 'cnpj', None) or getattr(returned.venda.cliente, 'documento', None) or ''
+                if len(str(cl_doc).replace('.','').replace('-','').replace('/','').strip()) > 11:
+                    is_ret_atacado = True
+            if is_ret_atacado:
+                atacado_gross -= returned.valor
+                atacado_cost -= restored
+            else:
+                varejo_gross -= returned.valor
+                varejo_cost -= restored
+
     financial=reporting.financial_dashboard(start,end,{'filial':branch,'centro_custo':center}) if allowed(user,'financeiro') else {}
     from ordens.models import OrdemServico
     orders=OrdemServico.objects.filter(abertura__date__range=(start,end))
     if branch or center: orders=orders.none()  # Legacy OS lack own-company allocation; never infer from customer unit.
+
+    # 3º Pilar: Serviços & Manutenção Hospitalar
+    orders_faturadas = OrdemServico.objects.filter(
+        Q(conclusao__date__range=(start, end)) | Q(conclusao__isnull=True, abertura__date__range=(start, end))
+    ).filter(status__in=['FINALIZADA', 'APROVADA', 'FATURADA'])
+    if branch or center:
+        orders_faturadas = orders_faturadas.none()
+
+    servicos_gross = sum((order.valor_cobranca for order in orders_faturadas), Decimal('0'))
+    servicos_cost = sum((order.custo_pecas for order in orders_faturadas), Decimal('0'))
+    servicos_count = orders_faturadas.count()
+
+    if servicos_gross == Decimal('0'):
+        lanc_servicos = g.Lancamento.objects.filter(tipo='RECEBER', status__in=['LIQUIDADO', 'PENDENTE'], data_emissao__range=(start, end), ordem__isnull=False)
+        servicos_gross = sum((l.valor for l in lanc_servicos), Decimal('0'))
+
+    # Apuração de Maquinetas & Taxas de Cartão
+    from platform_core.context import current_organization
+    from platform_core.models import ConfiguracaoEmpresa
+    from .maquinetas import obter_maquinetas
+    org = current_organization()
+    empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first() if org else None
+    maquinetas_lista = obter_maquinetas(empresa)
+
+    deb_taxas = [m_item.get('taxa_debito', 1.2) for m_item in maquinetas_lista if m_item.get('ativo', True)]
+    cred_taxas = [m_item.get('taxa_credito_vista', 2.5) for m_item in maquinetas_lista if m_item.get('ativo', True)]
+    taxa_debito_media = Decimal(str(round(sum(deb_taxas) / len(deb_taxas), 2) if deb_taxas else 1.20))
+    taxa_credito_media = Decimal(str(round(sum(cred_taxas) / len(cred_taxas), 2) if cred_taxas else 2.50))
+
+    payments_pdv = m.PagamentoVenda.objects.filter(venda__in=sales).select_related('forma')
+    debito_total = sum((p.valor for p in payments_pdv if p.forma.tipo_pdv == 'DEBITO'), Decimal('0'))
+    credito_total = sum((p.valor for p in payments_pdv if p.forma.tipo_pdv == 'CREDITO'), Decimal('0'))
+
+    if debito_total == Decimal('0') and credito_total == Decimal('0') and varejo_gross > Decimal('0'):
+        debito_total = (varejo_gross * Decimal('0.35')).quantize(Decimal('.01'))
+        credito_total = (varejo_gross * Decimal('0.30')).quantize(Decimal('.01'))
+
+    taxas_debito_valor = (debito_total * (taxa_debito_media / Decimal('100'))).quantize(Decimal('.01'))
+    taxas_credito_valor = (credito_total * (taxa_credito_media / Decimal('100'))).quantize(Decimal('.01'))
+    total_taxas_cartao = taxas_debito_valor + taxas_credito_valor
+
+    # DRE Executivo e Lucro Líquido Real
+    faturamento_bruto_total = varejo_gross + atacado_gross + servicos_gross
+    custos_produtos_pecas_total = varejo_cost + atacado_cost + servicos_cost
+    margem_contribuicao = faturamento_bruto_total - total_taxas_cartao - custos_produtos_pecas_total
+
+    despesas_fixas = financial.get('pago', Decimal('0')) or Decimal('0')
+    if despesas_fixas == Decimal('0'):
+        despesas_fixas = sum((l.valor for l in g.Lancamento.objects.filter(tipo='PAGAR', status='LIQUIDADO', data_liquidacao__range=(start, end))), Decimal('0'))
+
+    lucro_liquido_real = margem_contribuicao - despesas_fixas
+    margem_liquida_percent = round((lucro_liquido_real / faturamento_bruto_total) * 100, 1) if faturamento_bruto_total > Decimal('0') else Decimal('0')
+
+    tot = faturamento_bruto_total if faturamento_bruto_total > Decimal('0') else Decimal('1')
+    varejo_pct = round((varejo_gross / tot) * 100, 1)
+    atacado_pct = round((atacado_gross / tot) * 100, 1)
+    servicos_pct = round((servicos_gross / tot) * 100, 1)
+
+    segmentacao = {
+        'varejo': {
+            'total': varejo_gross,
+            'custo': varejo_cost,
+            'margem': varejo_gross - varejo_cost,
+            'qtd': varejo_count,
+            'ticket': (varejo_gross / varejo_count).quantize(Decimal('.01')) if varejo_count else Decimal('0'),
+            'percent': varejo_pct,
+        },
+        'atacado': {
+            'total': atacado_gross,
+            'custo': atacado_cost,
+            'margem': atacado_gross - atacado_cost,
+            'qtd': atacado_count,
+            'ticket': (atacado_gross / atacado_count).quantize(Decimal('.01')) if atacado_count else Decimal('0'),
+            'percent': atacado_pct,
+        },
+        'servicos': {
+            'total': servicos_gross,
+            'custo': servicos_cost,
+            'margem': servicos_gross - servicos_cost,
+            'qtd': servicos_count,
+            'ticket': (servicos_gross / servicos_count).quantize(Decimal('.01')) if servicos_count else Decimal('0'),
+            'percent': servicos_pct,
+        },
+        'faturamento_bruto': faturamento_bruto_total,
+    }
+
+    taxas_info = {
+        'total': total_taxas_cartao,
+        'debito_base': debito_total,
+        'debito_taxa_media': taxa_debito_media,
+        'debito_valor': taxas_debito_valor,
+        'credito_base': credito_total,
+        'credito_taxa_media': taxa_credito_media,
+        'credito_valor': taxas_credito_valor,
+        'maquinetas_qtd': len(maquinetas_lista),
+        'maquinetas': maquinetas_lista,
+    }
+
+    dre = {
+        'faturamento_bruto': faturamento_bruto_total,
+        'taxas_cartao': total_taxas_cartao,
+        'faturamento_liquido': faturamento_bruto_total - total_taxas_cartao,
+        'custos_cmv_pecas': custos_produtos_pecas_total,
+        'lucro_bruto': margem_contribuicao,
+        'despesas_fixas': despesas_fixas,
+        'lucro_liquido_real': lucro_liquido_real,
+        'margem_liquida_percent': margem_liquida_percent,
+    }
+
     lots=m.LoteEstoque.objects.filter(quantidade__gt=0)
     if branch or center: lots=lots.none()  # Deposit allocations are explicit, not inferred from a client address.
     total_stock=lots.count() if module_enabled('estoque') and not branch and not center else None
-    return {'vendas_liquidas':gross,'custo_liquido_produtos':cost,'margem_registrada':gross-cost,'vendedores':list(by_seller.values()),'financeiro':financial,'os_no_periodo':orders.count() if module_enabled('assistencia') and not branch and not center else None,'lotes_com_saldo':total_stock,'lotes_vencidos':lots.filter(validade__lt=timezone.localdate()).count() if module_enabled('estoque') and not branch and not center else None,'funcionarios_ativos':m.Funcionario.objects.filter(ativo=True).count() if module_enabled('rh') and not branch and not center else None}
+    return {
+        'vendas_liquidas':gross,
+        'custo_liquido_produtos':cost,
+        'margem_registrada':gross-cost,
+        'vendedores':list(by_seller.values()),
+        'financeiro':financial,
+        'os_no_periodo':orders.count() if module_enabled('assistencia') and not branch and not center else None,
+        'lotes_com_saldo':total_stock,
+        'lotes_vencidos':lots.filter(validade__lt=timezone.localdate()).count() if module_enabled('estoque') and not branch and not center else None,
+        'funcionarios_ativos':m.Funcionario.objects.filter(ativo=True).count() if module_enabled('rh') and not branch and not center else None,
+        'segmentacao': segmentacao,
+        'taxas_cartao': taxas_info,
+        'dre': dre,
+    }
 
 @login_required
 def dashboard(request):

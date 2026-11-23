@@ -1,6 +1,7 @@
 """Seller experience over official PDV, personnel and notification records."""
 import logging
 import uuid
+from decimal import Decimal
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
