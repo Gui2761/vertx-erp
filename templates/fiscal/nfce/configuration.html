@@ -293,11 +293,11 @@
           <h2><i class="bi bi-building me-2 text-info"></i>Dados do Emitente</h2>
           <div class="mb-3">
             <label class="form-label text-secondary small fw-bold">Razão Social</label>
-            <input type="text" class="form-control" value="{{ org.razao_social|default:'TECNOLMED GESTAO CLINICA LTDA' }}" readonly style="background: rgba(255,255,255,0.05); color: #94a3b8; border-color: rgba(255,255,255,0.1);">
+            <input type="text" class="form-control" value="{{ org.razao_social|default:empresa.razao_social|default:'Razão Social da Organização' }}" readonly style="background: rgba(255,255,255,0.05); color: #94a3b8; border-color: rgba(255,255,255,0.1);">
           </div>
           <div class="mb-3">
             <label class="form-label text-secondary small fw-bold">CNPJ</label>
-            <input type="text" class="form-control" value="{{ org.cnpj|default:'39.966.868/0001-86' }}" readonly style="background: rgba(255,255,255,0.05); color: #94a3b8; border-color: rgba(255,255,255,0.1);">
+            <input type="text" class="form-control" value="{{ org.cnpj|default:empresa.cnpj|default:'CNPJ não informado' }}" readonly style="background: rgba(255,255,255,0.05); color: #94a3b8; border-color: rgba(255,255,255,0.1);">
           </div>
           <div class="row g-2 mb-3">
             <div class="col-md-6">

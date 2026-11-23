@@ -42,12 +42,12 @@
   <article class="thermal-receipt width-80mm" id="thermalSlip">
     <!-- Cabeçalho do Estabelecimento -->
     <header class="receipt-header">
-      <div class="company-name">{{ organization.razao_social|default:sale.snapshot.organization|upper }}</div>
-      <div class="receipt-sub">{{ organization.endereco|default:'Aracaju - SE' }}</div>
-      {% if organization.telefone %}<div class="receipt-sub">Tel: {{ organization.telefone }}</div>{% endif %}
+      <div class="company-name">{{ organization.razao_social|default:empresa.razao_social|default:sale.snapshot.organization|upper }}</div>
+      {% if organization.endereco or empresa.endereco %}<div class="receipt-sub">{{ organization.endereco|default:empresa.endereco }}</div>{% endif %}
+      {% if organization.telefone or empresa.telefone %}<div class="receipt-sub">Tel: {{ organization.telefone|default:empresa.telefone }}</div>{% endif %}
       <div class="receipt-sub">
-        CNPJ: {{ organization.cnpj|default:'39.966.868/0001-86' }}
-        {% if organization.inscricao_estadual %} · IE: {{ organization.inscricao_estadual }}{% else %} · IE: 271732954{% endif %}
+        CNPJ: {{ organization.cnpj|default:empresa.cnpj|default:'—' }}
+        {% if empresa.inscricao_estadual or organization.inscricao_estadual %} · IE: {{ empresa.inscricao_estadual|default:organization.inscricao_estadual }}{% endif %}
       </div>
     </header>
 

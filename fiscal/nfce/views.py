@@ -53,7 +53,6 @@ def configuracao(request, pk=None):
         )
 
     nfce_params = (empresa.retencoes_informativas or {}).get('nfce', {}) if empresa else {}
-    is_tecnolmed = org and ('tecnolmed' in (org.razao_social or '').lower() or '39966868' in (org.cnpj or ''))
 
     # Se for POST de atualização fiscal operacional
     if request.method == 'POST':
@@ -152,13 +151,13 @@ def configuracao(request, pk=None):
         return redirect('operacao:fiscal_configuracao')
 
     # Dados consolidados para o formulário
-    csc_id = nfce_params.get('csc_id') or ('2' if is_tecnolmed else '')
-    csc_token = nfce_params.get('csc_token') or ('E79E83BB-4358-4A48-890D-46F971423857' if is_tecnolmed else '')
+    csc_id = nfce_params.get('csc_id') or ''
+    csc_token = nfce_params.get('csc_token') or ''
     ambiente = nfce_params.get('ambiente') or 'PRODUCAO'
     serie = nfce_params.get('serie') or '1'
     proximo_numero = nfce_params.get('proximo_numero') or 1
-    ie = empresa.inscricao_estadual if empresa and empresa.inscricao_estadual else ('271732954' if is_tecnolmed else '')
-    im = empresa.inscricao_municipal if empresa and empresa.inscricao_municipal else ('1000387' if is_tecnolmed else '')
+    ie = empresa.inscricao_estadual if empresa and empresa.inscricao_estadual else ''
+    im = empresa.inscricao_municipal if empresa and empresa.inscricao_municipal else ''
     crt = empresa.crt if empresa and empresa.crt else '1'
     natureza_operacao = empresa.natureza_operacao if empresa and empresa.natureza_operacao else 'Venda a Consumidor Final'
     
@@ -187,7 +186,6 @@ def configuracao(request, pk=None):
         'crt': crt,
         'natureza_operacao': natureza_operacao,
         'cert_info': cert_info,
-        'is_tecnolmed': is_tecnolmed,
     })
 
 

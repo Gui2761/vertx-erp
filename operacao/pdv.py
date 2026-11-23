@@ -141,10 +141,10 @@ def sale(request,public_id,receipt=False):
         from fiscal.nfce import xml as nfce_xml
         from platform_core.context import current_organization
         from platform_core.models import ConfiguracaoEmpresa
-        org = current_organization()
-        raw_cnpj = re.sub(r'\D', '', org.cnpj or '39966868000186').zfill(14)
-        
-        empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first()
+        org = getattr(sale, 'organization', None) or current_organization()
+        empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first() if org else None
+        cnpj_source = (org.cnpj if org else '') or getattr(empresa, 'cnpj', '') or ''
+        raw_cnpj = re.sub(r'\D', '', cnpj_source).zfill(14)
         ret = empresa.retencoes_informativas if empresa and isinstance(empresa.retencoes_informativas, dict) else {}
         nfce_params = ret.get('nfce') or ret.get('nfce_config') or {}
         serie = str(nfce_params.get('serie') or '1')
@@ -200,6 +200,8 @@ def sale(request,public_id,receipt=False):
     return render(request,'operacao/pdv_receipt.html' if receipt else 'operacao/pdv_sale.html',{
         'sale': sale,
         'session': session,
+        'organization': org,
+        'empresa': empresa,
         'items': sale.itens.select_related('peca'),
         'forms': g.FormaPagamento.objects.filter(ativo=True).exclude(tipo_pdv=''),
         'contas': m.ContaBancaria.objects.filter(ativo=True) if not is_seller(request.user) else m.ContaBancaria.objects.none(),
