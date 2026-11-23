@@ -29,7 +29,11 @@
     const value = Number(input.value) + Number(button.dataset.qtyDelta);
     if (Number.isFinite(value) && value > 0) { input.value = value.toFixed(3); form.requestSubmit(); }
   }));
-  const cents = value => {const number=Number(value);return Number.isFinite(number)?Math.round(number*100):0;};
+  const cents = value => {
+    const clean = String(value ?? '').trim().replace(',', '.');
+    const number = Number(clean);
+    return Number.isFinite(number) ? Math.round(number * 100) : 0;
+  };
   const currency = value => (value/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const change = document.querySelector('[data-seller-change]');
   
@@ -126,12 +130,19 @@
     const total=payments.reduce((sum,row)=>sum+cents(row.querySelector('.valor').value),0);
     if(!payments.length || total!==due){
       event.preventDefault();
+      const errBox = document.getElementById('checkout-error-msg');
+      if (errBox) {
+        errBox.textContent = 'Os pagamentos devem somar exatamente ' + currency(due) + ' (atual: ' + currency(total) + ').';
+        errBox.style.display = 'block';
+        errBox.scrollIntoView({block:'center'});
+      }
       if (change) {
         change.textContent='Os pagamentos devem somar exatamente '+currency(due)+'.';
-        change.scrollIntoView({block:'center'});
       }
       return;
     }
+    const errBox = document.getElementById('checkout-error-msg');
+    if (errBox) errBox.style.display = 'none';
     const rows = payments.map(row => {
       const result = { forma: row.querySelector('.forma').value, valor: row.querySelector('.valor').value };
       const received = row.querySelector('.recebido')?.value;

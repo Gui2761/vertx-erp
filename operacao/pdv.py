@@ -120,6 +120,8 @@ def sale(request,public_id,receipt=False):
                 doc = request.POST.get('cliente_documento', '').strip()
                 tipo = request.POST.get('tipo_emissao', 'CUPOM').strip().upper()
                 c.finalize(request.user,public_id,json.loads(request.POST['pagamentos']),request.POST['request_id'],cliente_documento=doc,tipo_emissao=tipo)
+                messages.success(request,'Venda finalizada com sucesso.')
+                return redirect('operacao:pdv_receipt',public_id=public_id)
             elif action=='estado': c.sale_state(request.user,public_id,request.POST['estado'],request.POST.get('motivo',''))
             elif action=='devolver':
                 from gestao.products import number

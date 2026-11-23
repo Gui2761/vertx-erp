@@ -40,8 +40,8 @@
         <input name="quantidade" value="{{ row.quantidade|stringformat:'.3f' }}" type="hidden">
         <label for="item-discount-{{ row.pk }}" class="small">Desconto R$</label>
         <input id="item-discount-{{ row.pk }}" name="desconto" type="number" step=".01" min="0" value="{{ row.desconto|stringformat:'.2f' }}">
-        <label for="item-reason-{{ row.pk }}" class="small">Motivo</label>
-        <input id="item-reason-{{ row.pk }}" name="motivo" required placeholder="Ex: Desconto autorizado">
+        <label for="item-reason-{{ row.pk }}" class="small">Motivo (opcional)</label>
+        <input id="item-reason-{{ row.pk }}" name="motivo" placeholder="Ex: Desconto balcão">
         <button class="sv-button mt-1" style="font-size: 12px;">Aplicar desconto</button>
       </form>
     </details>

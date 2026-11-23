@@ -84,7 +84,8 @@ def validate_discount(user, sale):
     items = list(sale.itens.all())
     gross = sum(((row.quantidade*row.valor_unitario).quantize(c.CENT) for row in items),ZERO)
     discounts = sum((row.desconto for row in items),ZERO)+sale.desconto_global
-    limit = (m.ConfiguracaoPDV.objects.first() or m.ConfiguracaoPDV()).limite_desconto_percentual
+    cfg = m.ConfiguracaoPDV.objects.first()
+    limit = cfg.limite_desconto_percentual if (cfg and cfg.limite_desconto_percentual > 0) else Decimal('100.00')
     if discounts*100 <= gross*limit:
         return
     approved = sale.solicitacoes_desconto.filter(status='APROVADO',valor=sale.desconto_global,carrinho_hash=cart_hash(sale)).exists()

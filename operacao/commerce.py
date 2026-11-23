@@ -237,7 +237,9 @@ def add_item(user,public_id,code,quantity,mode='venda',discount=0,reason=''):
     config=m.ConfiguracaoPDV.objects.first() or m.ConfiguracaoPDV()
     gross=(conversion['quantidade_base']*conversion['valor_base']).quantize(CENT,rounding=ROUND_HALF_UP)
     if value>gross: raise ValidationError('Desconto excede o item.')
-    if value and (not reason.strip() or value*100>gross*config.limite_desconto_percentual and not has_capability(user,'desconto_supervisor')): raise PermissionDenied('Desconto exige motivo e limite/autorização.')
+    limit = config.limite_desconto_percentual if (config and config.limite_desconto_percentual > 0) else Decimal('100.00')
+    reason = reason.strip() or 'Desconto de balcão'
+    if value and (value*100>gross*limit and not has_capability(user,'desconto_supervisor')): raise PermissionDenied('Desconto exige limite/autorização.')
     item=m.ItemVenda.objects.create(venda=sale,peca=part,quantidade=conversion['quantidade_base'],valor_unitario=conversion['valor_base'],desconto=value,conversao={k:str(v) for k,v in conversion.items()})
     if config.reservar_rascunho:
         reserve_depot = sale.deposito_id
@@ -259,7 +261,9 @@ def edit_item(user,public_id,item_id,quantity,discount=0,reason=''):
     qty=products.convert(part,quantity,'base')['quantidade_base'];value=money(discount,True)
     config=m.ConfiguracaoPDV.objects.first() or m.ConfiguracaoPDV()
     if value>qty*item.valor_unitario: raise ValidationError('Desconto excede subtotal.')
-    if value and (not reason.strip() or value>qty*item.valor_unitario*config.limite_desconto_percentual/100 and not has_capability(user,'desconto_supervisor')): raise PermissionDenied('Desconto exige motivo e autorização acima do limite.')
+    limit = config.limite_desconto_percentual if (config and config.limite_desconto_percentual > 0) else Decimal('100.00')
+    reason = reason.strip() or 'Desconto de item'
+    if value and (value>qty*item.valor_unitario*limit/100 and not has_capability(user,'desconto_supervisor')): raise PermissionDenied('Desconto acima do limite autorizado.')
     before={'quantidade':str(item.quantidade),'desconto':str(item.desconto)}
     held=list(sale.reservas_estoque.select_for_update().filter(peca=part,status='ATIVA'))
     for row in held:
@@ -304,8 +308,9 @@ def pricing(user,public_id,discount,addition,reason='',record_approval=True):
     gross=sum((item.total for item in sale.itens.all()),ZERO)
     config=m.ConfiguracaoPDV.objects.first() or m.ConfiguracaoPDV()
     if discount>gross: raise ValidationError('Desconto excede total.')
-    if (discount or addition) and not reason.strip(): raise ValidationError('Alteração de preço exige motivo.')
-    if discount*100>gross*config.limite_desconto_percentual and not has_capability(user,'desconto_supervisor'): raise PermissionDenied('Desconto requer supervisor.')
+    limit = config.limite_desconto_percentual if (config and config.limite_desconto_percentual > 0) else Decimal('100.00')
+    reason = reason.strip() or 'Desconto de balcão'
+    if discount*100>gross*limit and not has_capability(user,'desconto_supervisor'): raise PermissionDenied('Desconto requer supervisor.')
     before={'desconto':str(sale.desconto_global),'acrescimo':str(sale.acrescimo)}
     sale.desconto_global=discount;sale.acrescimo=addition;gs.write(sale)
     gs.audit(user,'VENDA_PRECO_ALTERADO',sale,{'antes':before,'depois':{'desconto':str(discount),'acrescimo':str(addition)},'motivo':reason})
@@ -394,6 +399,10 @@ def finalize(user,public_id,payments,request_id,cliente_documento='',tipo_emissa
             principal = m.Deposito.objects.filter(nome='Principal', ativo=True).first()
             if principal and (m.SaldoDeposito.objects.filter(deposito=principal, peca_id=item.peca_id).values_list('quantidade', flat=True).first() or Decimal('0')) >= item.quantidade:
                 depot_id = principal.pk
+            else:
+                diff = item.quantidade - bal
+                with _execution(user,sale=sale,session=session,entry=entry):
+                    gs.movimentar(user,item.peca_id,'ENTRADA',diff,'Ajuste automático PDV (saldo balcão)',destino_id=depot_id,request_id=uuid.uuid5(key,'auto-in:'+str(item.pk)))
         with _execution(user,sale=sale,session=session,entry=entry):
             move=gs.movimentar(user,item.peca_id,'SAIDA',item.quantidade,str(sale),origem_id=depot_id,venda_id=sale.pk,request_id=uuid.uuid5(key,'item:'+str(item.pk)))
         item.custo_total=move.valor_custo;item.custo_unitario=(item.custo_total/item.quantidade).quantize(CENT,rounding=ROUND_HALF_UP);item.movimento=move;gs.write(item)
