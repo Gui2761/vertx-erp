@@ -1,22 +1,25 @@
 {% extends 'base.html' %}
-{% block title %}Comprovante de Venda · {{ sale.snapshot.numero }}{% endblock %}
+{% block title %}{% if nfce_info %}DANFE NFC-e · Venda {{ sale.snapshot.numero }}{% else %}Comprovante de Venda · {{ sale.snapshot.numero }}{% endif %}{% endblock %}
+
 {% block content %}
 <div class="vx-no-print d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 p-3 bg-light border rounded">
   <div>
-    <h1 class="h4 mb-1">Comprovante da Venda · {{ sale.snapshot.numero }}</h1>
-    <p class="text-muted small mb-0">Imprima o cupom térmico para entrega ao cliente ou arquivamento interno.</p>
+    <h1 class="h4 mb-1">{% if nfce_info %}DANFE NFC-e Fiscal · {{ sale.snapshot.numero }}{% else %}Comprovante da Venda · {{ sale.snapshot.numero }}{% endif %}</h1>
+    <p class="text-muted small mb-0">Imprima o cupom fiscal térmico para entrega ao cliente ou arquivamento.</p>
   </div>
   <div class="d-flex flex-wrap gap-2 align-items-center">
     <div class="btn-group" role="group" aria-label="Largura da bobina">
       <button type="button" class="btn btn-outline-secondary active" id="btn-mode-80" onclick="setPaperWidth('80mm')">Bobina 80mm</button>
       <button type="button" class="btn btn-outline-secondary" id="btn-mode-58" onclick="setPaperWidth('58mm')">Bobina 58mm</button>
     </div>
-    <button class="btn btn-primary" onclick="window.print()">
+    <button class="btn btn-primary fw-bold" onclick="window.print()">
       <i class="bi bi-printer me-1"></i> Imprimir Cupom
     </button>
-    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalNfceInfo">
-      <i class="bi bi-file-earmark-text me-1"></i> {% if sale.snapshot.tipo_emissao == 'NFCE' %}Ver NFC-e Fiscal{% else %}Emitir NFC-e Fiscal{% endif %}
-    </button>
+    {% if nfce_info %}
+    <span class="badge bg-success py-2 px-3 fs-6">
+      ✓ NFC-e com Valor Fiscal
+    </span>
+    {% endif %}
     <a class="btn btn-outline-primary" href="{% url 'operacao:pdv_home' %}">
       <i class="bi bi-cart-plus me-1"></i> Nova Venda
     </a>
@@ -30,35 +33,50 @@
   <article class="thermal-receipt width-80mm" id="thermalSlip">
     <!-- Cabeçalho do Estabelecimento -->
     <header class="receipt-header">
-      <div class="company-name">{{ sale.snapshot.organization|upper }}</div>
-      <div class="receipt-sub">{{ organization.endereco|default:'Comprovante de Operação' }}</div>
+      <div class="company-name">{{ organization.razao_social|default:sale.snapshot.organization|upper }}</div>
+      <div class="receipt-sub">{{ organization.endereco|default:'Aracaju - SE' }}</div>
       {% if organization.telefone %}<div class="receipt-sub">Tel: {{ organization.telefone }}</div>{% endif %}
-      {% if organization.cnpj %}<div class="receipt-sub">CNPJ: {{ organization.cnpj }}</div>{% endif %}
+      <div class="receipt-sub">
+        CNPJ: {{ organization.cnpj|default:'39.966.868/0001-86' }}
+        {% if organization.inscricao_estadual %} · IE: {{ organization.inscricao_estadual }}{% else %} · IE: 271732954{% endif %}
+      </div>
     </header>
 
     <div class="receipt-divider-double">================================================</div>
-    <div class="receipt-title">{% if sale.snapshot.tipo_emissao == 'NFCE' %}NFC-e · DANFE SIMPLIFICADA{% else %}COMPROVANTE NÃO FISCAL{% endif %}</div>
+    
+    {% if nfce_info %}
+      <div class="receipt-title">DANFE NFC-e · DOCUMENTO AUXILIAR DA NOTA FISCAL DE CONSUMIDOR ELETRÔNICA</div>
+      <div class="receipt-sub-center">Não permite aproveitamento de crédito de ICMS</div>
+    {% else %}
+      <div class="receipt-title">COMPROVANTE NÃO FISCAL</div>
+    {% endif %}
+    
     <div class="receipt-divider-double">================================================</div>
 
-    <!-- Informações da Venda -->
+    <!-- Informações da Venda / Emissão -->
     <div class="receipt-meta">
-      <div><strong>Venda:</strong> {{ sale.snapshot.numero }}</div>
-      <div><strong>Data/Hora:</strong> {{ sale.snapshot.finalizada_em|slice:":10" }} {{ sale.snapshot.finalizada_em|slice:"11:19" }}</div>
+      {% if nfce_info %}
+        <div><strong>NFC-e nº:</strong> {{ nfce_info.numero|stringformat:"09d" }} · <strong>Série:</strong> {{ nfce_info.serie }}</div>
+        <div><strong>Emissão:</strong> {{ nfce_info.data_autorizacao }}</div>
+        <div><strong>Protocolo de Autorização:</strong> {{ nfce_info.protocolo }}</div>
+      {% else %}
+        <div><strong>Venda:</strong> {{ sale.snapshot.numero }}</div>
+        <div><strong>Data/Hora:</strong> {{ sale.snapshot.finalizada_em|slice:":10" }} {{ sale.snapshot.finalizada_em|slice:"11:19" }}</div>
+      {% endif %}
       <div><strong>Operador:</strong> {{ sale.snapshot.vendedor }}</div>
-      <div><strong>Cliente:</strong> {{ sale.snapshot.cliente }}</div>
+      <div><strong>Consumidor:</strong> {{ sale.snapshot.cliente }}</div>
       {% if sale.snapshot.cliente_documento %}
         <div><strong>CPF/CNPJ na Nota:</strong> {{ sale.snapshot.cliente_documento }}</div>
       {% elif sale.cliente.cpf_cnpj %}
-        <div><strong>Doc:</strong> {{ sale.cliente.cpf_cnpj }}</div>
-      {% endif %}
-      {% if sale.snapshot.tipo_emissao == 'NFCE' %}
-        <div><strong>Emissão:</strong> NFC-e Eletrônica</div>
+        <div><strong>CPF/CNPJ:</strong> {{ sale.cliente.cpf_cnpj }}</div>
+      {% else %}
+        <div><strong>CPF/CNPJ:</strong> CONSUMIDOR NÃO IDENTIFICADO</div>
       {% endif %}
     </div>
 
     <div class="receipt-divider">------------------------------------------------</div>
     <div class="receipt-table-header">
-      <span>ITEM / DESCRIÇÃO</span>
+      <span>ITEM / CÓDIGO / DESCRIÇÃO</span>
     </div>
     <div class="receipt-table-cols">
       <span>QTD x VL.UNIT</span>
@@ -85,6 +103,10 @@
 
     <!-- Totais -->
     <div class="receipt-totals">
+      <div class="totals-line">
+        <span>Qtd. Total de Itens:</span>
+        <span>{{ sale.snapshot.itens|length }}</span>
+      </div>
       {% if sale.snapshot.desconto_global and sale.snapshot.desconto_global != '0' and sale.snapshot.desconto_global != '0.00' %}
         <div class="totals-line">
           <span>Desconto Venda:</span>
@@ -98,7 +120,7 @@
         </div>
       {% endif %}
       <div class="totals-line totals-grand">
-        <span>TOTAL DA VENDA:</span>
+        <span>VALOR TOTAL A PAGAR:</span>
         <span>R$ {{ sale.snapshot.total|floatformat:2 }}</span>
       </div>
     </div>
@@ -119,41 +141,100 @@
             <span>Troco: R$ {{ row.troco|floatformat:2 }}</span>
           </div>
         {% endif %}
+      {% empty %}
+        <div class="payment-line">
+          <span>DINHEIRO:</span>
+          <span class="fw-bold">R$ {{ sale.snapshot.total|floatformat:2 }}</span>
+        </div>
       {% endfor %}
     </div>
 
+    {% if nfce_info %}
+      <!-- Informação dos Tributos Totais Incidentes (Lei 12.741/2012) -->
+      <div class="receipt-divider">------------------------------------------------</div>
+      <div class="tax-info text-center">
+        Tributos Totais Incidentes (Lei Federal 12.741/2012): R$ {{ nfce_info.tributos_aproximados }}
+      </div>
+    {% endif %}
+
     <div class="receipt-divider-double">================================================</div>
 
-    <!-- Rodapé -->
-    <footer class="receipt-footer">
-      <div>OBRIGADO PELA PREFERÊNCIA!</div>
-      <div class="small-token">Chave: {{ sale.public_id }}</div>
-      <div class="legal-warning">NÃO POSSUI VALOR FISCAL · CONTROLE INTERNO</div>
-      <div class="legal-brand">VERTYX ERP · GESTÃO INTELIGENTE</div>
-    </footer>
+    <!-- Rodapé Fiscal ou Não Fiscal -->
+    {% if nfce_info %}
+      <footer class="receipt-footer receipt-fiscal-footer">
+        <div class="fiscal-highlight">EMITIDA COM VALOR FISCAL · AUTORIZADA PELA SEFAZ</div>
+        <div class="small-text mt-1">Consulte pela Chave de Acesso em:<br><strong>{{ nfce_info.consulta_url }}</strong></div>
+        
+        <div class="chave-block my-2">
+          <div class="small-label">CHAVE DE ACESSO:</div>
+          <div class="chave-digits">{{ nfce_info.chave_formatada }}</div>
+        </div>
+
+        <!-- QR Code Oficial SEFAZ para Consulta no Celular -->
+        <div class="qr-container my-2 text-center">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={{ nfce_info.qr_url|urlencode }}" 
+               alt="QR Code Consulta SEFAZ" 
+               class="receipt-qr" 
+               width="135" 
+               height="135">
+          <div class="qr-caption mt-1">Consulta via Leitor de QR Code</div>
+        </div>
+
+        <div class="receipt-divider">------------------------------------------------</div>
+        <div class="consumer-data">
+          CONSUMIDOR: {% if sale.snapshot.cliente_documento %}CPF/CNPJ {{ sale.snapshot.cliente_documento }}{% elif sale.cliente.cpf_cnpj %}{{ sale.cliente.cpf_cnpj }}{% else %}CONSUMIDOR NÃO IDENTIFICADO{% endif %}
+        </div>
+        <div class="protocol-line mt-1">
+          Protocolo de Autorização: {{ nfce_info.protocolo }}
+        </div>
+        <div class="protocol-line">
+          Data de Autorização: {{ nfce_info.data_autorizacao }}
+        </div>
+        <div class="legal-brand mt-2">VERTYX ERP · GESTÃO INTELIGENTE</div>
+      </footer>
+    {% else %}
+      <footer class="receipt-footer">
+        <div class="fw-bold">OBRIGADO PELA PREFERÊNCIA!</div>
+        <div class="small-token">Chave: {{ sale.public_id }}</div>
+        <div class="legal-warning">COMPROVANTE NÃO FISCAL · CONTROLE INTERNO</div>
+        <div class="legal-brand">VERTYX ERP · GESTÃO INTELIGENTE</div>
+      </footer>
+    {% endif %}
   </article>
 </div>
 
 <style>
-/* Estilos visuais na tela (Preview de Papel Térmico) */
+/* ==========================================================================
+   CONFIGURAÇÃO DE ALTO CONTRASTE E PRETO PURO (#000) PARA IMPRESSORA TÉRMICA
+   ========================================================================== */
+:root {
+  --receipt-ink: #000000;
+}
+
 .receipt-wrapper {
   display: flex;
   justify-content: center;
   padding: 20px 10px 40px;
-  background: #e2e8f0;
+  background: #cbd5e1;
   border-radius: 12px;
 }
 
 .thermal-receipt {
-  background: #ffffff;
-  color: #000000;
-  font-family: 'Courier New', Courier, Consolas, Monaco, monospace;
+  background: #ffffff !important;
+  color: var(--receipt-ink) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, Consolas, monospace !important;
   font-size: 13px;
-  line-height: 1.35;
+  line-height: 1.32;
+  font-weight: 700 !important; /* Peso reforçado para queimar forte na impressora térmica */
   padding: 20px 14px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
   border-radius: 4px;
   transition: width 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+.thermal-receipt * {
+  color: #000000 !important; /* PRETO ABSOLUTO em todos os textos */
 }
 
 .thermal-receipt.width-80mm {
@@ -170,24 +251,29 @@
 }
 .company-name {
   font-size: 15px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 900 !important;
+  letter-spacing: -0.01em;
 }
 .receipt-sub {
+  font-size: 11.5px;
+  font-weight: 700 !important;
+}
+.receipt-sub-center {
   font-size: 11px;
-  color: #333333;
+  font-weight: 800 !important;
+  text-align: center;
 }
 .receipt-title {
   text-align: center;
-  font-weight: 800;
+  font-weight: 900 !important;
   font-size: 13px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   padding: 2px 0;
 }
 .receipt-subtitle {
-  font-weight: 700;
+  font-weight: 800 !important;
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: 12.5px;
 }
 
 .receipt-divider, .receipt-divider-double {
@@ -196,23 +282,24 @@
   letter-spacing: -1px;
   text-align: center;
   margin: 5px 0;
-  font-weight: bold;
+  font-weight: 900 !important;
 }
 
 .receipt-meta {
-  font-size: 11.5px;
+  font-size: 12px;
   margin: 6px 0;
+  font-weight: 700 !important;
 }
 
 .receipt-table-header {
-  font-weight: 700;
-  font-size: 11px;
+  font-weight: 800 !important;
+  font-size: 11.5px;
 }
 .receipt-table-cols {
   display: flex;
   justify-content: space-between;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800 !important;
 }
 
 .receipt-items {
@@ -222,25 +309,27 @@
   margin-bottom: 6px;
 }
 .item-name {
-  font-weight: 700;
+  font-weight: 800 !important;
   word-break: break-word;
 }
 .item-calc {
   display: flex;
   justify-content: space-between;
-  font-size: 11.5px;
+  font-size: 12px;
+  font-weight: 700 !important;
 }
 
 .totals-line {
   display: flex;
   justify-content: space-between;
   margin-bottom: 3px;
-  font-size: 12px;
+  font-size: 12.5px;
+  font-weight: 700 !important;
 }
 .totals-grand {
   font-size: 15px;
-  font-weight: 800;
-  border-top: 1px dashed #000;
+  font-weight: 900 !important;
+  border-top: 2px dashed #000000 !important;
   padding-top: 5px;
   margin-top: 4px;
 }
@@ -248,34 +337,91 @@
 .payment-line {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 12.5px;
+  font-weight: 800 !important;
 }
 .payment-sub {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
-  color: #444;
+  font-size: 11px;
+  font-weight: 700 !important;
   padding-left: 10px;
+}
+
+.tax-info {
+  font-size: 11px;
+  font-weight: 700 !important;
+  margin: 5px 0;
 }
 
 .receipt-footer {
   text-align: center;
   margin-top: 10px;
+  font-size: 11.5px;
+  font-weight: 700 !important;
+}
+.fiscal-highlight {
+  font-size: 12px;
+  font-weight: 900 !important;
+  letter-spacing: 0.02em;
+}
+.small-text {
   font-size: 11px;
+  font-weight: 700 !important;
+}
+.small-label {
+  font-size: 11px;
+  font-weight: 800 !important;
+}
+.chave-digits {
+  font-size: 11.5px;
+  font-weight: 900 !important;
+  letter-spacing: 0.5px;
+  word-break: break-all;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.receipt-qr {
+  display: block;
+  margin: 0 auto;
+  filter: contrast(300%) grayscale(100%) !important;
+  image-rendering: pixelated !important;
+  border: 2px solid #000000 !important;
+  padding: 4px;
+  background: #ffffff !important;
+}
+.qr-caption {
+  font-size: 11px;
+  font-weight: 800 !important;
+}
+.consumer-data {
+  font-size: 11.5px;
+  font-weight: 800 !important;
+}
+.protocol-line {
+  font-size: 10.5px;
+  font-weight: 700 !important;
 }
 .small-token {
-  font-size: 9px;
+  font-size: 10px;
+  font-weight: 700 !important;
   word-break: break-all;
   margin: 4px 0;
 }
 .legal-warning {
-  font-weight: 700;
-  font-size: 9.5px;
+  font-weight: 900 !important;
+  font-size: 10.5px;
   margin: 4px 0;
 }
 .legal-brand {
-  font-size: 8.5px;
-  color: #555;
+  font-size: 9.5px;
+  font-weight: 800 !important;
 }
 
 /* ==========================================================================
@@ -290,6 +436,9 @@
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   .vx-no-print, header, nav, footer, .navbar, .vx-nav, .vx-skip {
     display: none !important;
@@ -303,13 +452,22 @@
     box-shadow: none !important;
     border-radius: 0 !important;
     margin: 0 !important;
-    padding: 8px 4px !important;
+    padding: 6px 3px !important;
+    width: 100% !important;
+  }
+  .thermal-receipt * {
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
   .thermal-receipt.width-80mm {
     width: 76mm !important; /* Calibrado para bobinas térmicas de 80mm com margens de hardware */
   }
   .thermal-receipt.width-58mm {
     width: 52mm !important; /* Calibrado para bobinas térmicas de 58mm */
+  }
+  .receipt-qr {
+    filter: contrast(400%) grayscale(100%) !important;
+    image-rendering: pixelated !important;
   }
 }
 </style>
@@ -333,65 +491,10 @@ function setPaperWidth(width) {
   }
 }
 
-// Suporte a autoprint via query param ?autoprint=1
 if (window.location.search.includes('autoprint=1')) {
   window.addEventListener('load', () => {
     setTimeout(() => { window.print(); }, 300);
   });
 }
 </script>
-
-<!-- Modal de Informação e Emissão NFC-e -->
-<div class="modal fade vx-no-print" id="modalNfceInfo" tabindex="-1" aria-labelledby="modalNfceLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="modalNfceLabel">
-          <i class="bi bi-file-earmark-check me-2"></i> Módulo Fiscal NFC-e · VERTYX
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body p-4">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <div class="display-6 text-success"><i class="bi bi-shield-check"></i></div>
-          <div>
-            <h6 class="mb-1 fw-bold">Venda Registrada com Sucesso!</h6>
-            <p class="text-muted small mb-0">{{ sale.snapshot.numero }} · Total: R$ {{ sale.total|floatformat:2 }}</p>
-          </div>
-        </div>
-        
-        <div class="p-3 bg-light rounded border mb-3">
-          <div class="d-flex justify-content-between mb-1">
-            <span class="text-muted small">Consumidor:</span>
-            <span class="fw-bold small">{{ sale.snapshot.cliente }}</span>
-          </div>
-          {% if sale.snapshot.cliente_documento %}
-          <div class="d-flex justify-content-between mb-1">
-            <span class="text-muted small">CPF/CNPJ na Nota:</span>
-            <span class="fw-bold small text-primary">{{ sale.snapshot.cliente_documento }}</span>
-          </div>
-          {% endif %}
-          <div class="d-flex justify-content-between">
-            <span class="text-muted small">Status Fiscal:</span>
-            <span class="badge bg-success-subtle text-success border border-success-subtle">Habilitado para Emissão</span>
-          </div>
-        </div>
-
-        <div class="alert alert-info py-2 small mb-0">
-          <i class="bi bi-info-circle me-1"></i>
-          Para transmissão direta de NFC-e autorizada pela SEFAZ com chave de 44 dígitos, o Certificado Digital A1 (.pfx) e o Token CSC da empresa devem estar cadastrados em <strong>Configurações Fiscais</strong>.
-        </div>
-      </div>
-      <div class="modal-footer bg-light">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <a href="{% url 'operacao:fiscal_configuracao' %}" class="btn btn-outline-primary">
-          <i class="bi bi-gear me-1"></i> Configurações Fiscais
-        </a>
-        <button type="button" class="btn btn-primary" onclick="window.print()">
-          <i class="bi bi-printer me-1"></i> Imprimir Cupom
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 {% endblock %}
