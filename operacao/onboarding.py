@@ -272,10 +272,8 @@ def cadastro_inicial(request):
                 from cryptography.x509.oid import NameOID, ObjectIdentifier
 
                 key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-                cnpj_val = re.sub(r'\D', '', org.cnpj or '27173295400010')
-                if len(cnpj_val) != 14:
-                    cnpj_val = '27173295400010'
-                org_title = org.nome_fantasia or org.razao_social or 'TECNOLMED'
+                cnpj_val = re.sub(r'\D', '', org.cnpj or '').zfill(14)
+                org_title = org.nome_fantasia or org.razao_social or 'Organizacao'
                 subject_cn = f"{org_title}:{cnpj_val}"
 
                 cnpj_bytes = b'\x0c\x0e' + cnpj_val.encode('ascii')

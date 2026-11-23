@@ -37,8 +37,8 @@ def _default_estabelecimento():
             organization=org,
             codigo='MATRIZ',
             nome=org.nome_fantasia or org.razao_social or 'Matriz',
-            cnpj=org.cnpj or '00000000000191',
-            endereco=org.endereco or 'Endereço da Matriz',
+            cnpj=org.cnpj or '',
+            endereco=org.endereco or '',
             ativo=True,
         )
     return estab

@@ -79,6 +79,14 @@ def _xml_nfce_minimo(
     tp_emis: str = '1',
     justificativa: str = '',
     ambiente_cod: str = '2',
+    logradouro: str = 'Rua Principal',
+    nro: str = 'S/N',
+    bairro: str = 'Centro',
+    municipio_nome: str = 'Aracaju',
+    uf: str = 'SE',
+    cep: str = '49000000',
+    ie: str = 'ISENTO',
+    crt: str = '1',
 ) -> tuple[bytes, str]:
     cnf = f'{(numero * 9137 + 12345) % 100000000:08d}'
     base = f'{uf_cod}{emissao_dt:%y%m}{cnpj}65{int(serie):03}{int(numero):09}{tp_emis}{cnf}'
@@ -120,10 +128,10 @@ def _xml_nfce_minimo(
     etree.SubElement(emit, NS + 'CNPJ').text = cnpj
     etree.SubElement(emit, NS + 'xNome').text = razao[:60]
     end = etree.SubElement(emit, NS + 'enderEmit')
-    for k, v in [('xLgr', 'Rua Comercial'), ('nro', '100'), ('xBairro', 'Centro'), ('cMun', mun_ibge), ('xMun', 'Aracaju'), ('UF', 'SE'), ('CEP', '49000000')]:
-        etree.SubElement(end, NS + k).text = v
-    etree.SubElement(emit, NS + 'IE').text = 'ISENTO'
-    etree.SubElement(emit, NS + 'CRT').text = '1'
+    for k, v in [('xLgr', logradouro), ('nro', nro), ('xBairro', bairro), ('cMun', mun_ibge), ('xMun', municipio_nome), ('UF', uf), ('CEP', cep)]:
+        etree.SubElement(end, NS + k).text = str(v)
+    etree.SubElement(emit, NS + 'IE').text = str(ie)
+    etree.SubElement(emit, NS + 'CRT').text = str(crt)
 
     total_val = Decimal('0.00')
     for idx, item in enumerate(itens, start=1):
@@ -210,7 +218,7 @@ def emitir_nfce_pdv_com_rtc(
     total = sum((Decimal(str(i.get('valor') or i.get('valor_base') or '0.00')) for i in itens), Decimal('0.00')).quantize(Decimal('.01'))
     emissao_dt = timezone.now()
     org = estabelecimento.organization
-    cnpj = ''.join(ch for ch in (estabelecimento.cnpj or org.cnpj or '00000000000191') if ch.isdigit()).zfill(14)[:14]
+    cnpj = ''.join(ch for ch in (estabelecimento.cnpj or (org.cnpj if org else '') or '') if ch.isdigit()).zfill(14)[:14]
     tp_emis = '9' if contingencia_offline else '1'
 
     xml_bytes, chave = _xml_nfce_minimo(
@@ -224,6 +232,13 @@ def emitir_nfce_pdv_com_rtc(
         itens=itens,
         tp_emis=tp_emis,
         justificativa=motivo_contingencia if contingencia_offline else '',
+        logradouro=estabelecimento.endereco or (org.endereco if org else '') or 'Rua Principal',
+        nro='S/N',
+        bairro='Centro',
+        municipio_nome=getattr(org, 'cidade', '') or 'Aracaju',
+        uf=getattr(org, 'uf', '') or 'SE',
+        cep=getattr(org, 'cep', '') or '49000000',
+        ie=estabelecimento.inscricao_estadual or 'ISENTO',
     )
 
     nota_json = None

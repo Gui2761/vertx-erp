@@ -176,7 +176,7 @@ class BaseBancoProvider:
         nosso_num = str(remote.get('nosso_numero') or f'{abs(hash(txid)) % 10**12:012d}')
         pix = remote.get('pix_copia_cola') or (
             gerar_pix_brcode(
-                chave_pix=self.integracao.chave_pix or f'{self.integracao.organization.cnpj or "00000000000191"}',
+                chave_pix=self.integracao.chave_pix or f'{self.integracao.organization.cnpj or ""}',
                 nome_recebedor=self.integracao.organization.razao_social,
                 cidade=self.integracao.organization.cidade or 'ARACAJU',
                 valor=valor,

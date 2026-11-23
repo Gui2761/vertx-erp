@@ -38,7 +38,7 @@ def _resolver_emitente_snapshot(doc: m.DocumentoFiscal) -> dict[str, Any]:
     end = dict(getattr(perfil, 'endereco_estruturado', {}) or {})
     uf = (getattr(perfil, 'uf', '') or org.uf or 'SE').upper()[:2]
     mun_ibge = getattr(perfil, 'municipio_ibge', '') or '2800308'
-    cnpj = (estab.cnpj if estab and estab.cnpj else org.cnpj) or '00000000000191'
+    cnpj = (estab.cnpj if estab and estab.cnpj else org.cnpj) or ''
     razao = org.razao_social or (estab.nome if estab else 'VERTYX ERP')
     ie = (estab.inscricao_estadual if estab else '') or 'ISENTO'
     end_txt = (estab.endereco if estab else org.endereco) or 'Endereço fiscal do emitente'

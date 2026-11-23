@@ -43,7 +43,7 @@ def _montar_dados_dps_e_rtc(
     org = doc.organization
     estab = doc.estabelecimento
     perfil = getattr(estab, 'perfil_fiscal', None) if estab else None
-    cnpj_prest = _digits((estab.cnpj if estab and estab.cnpj else org.cnpj) or '00000000000191').zfill(14)[:14]
+    cnpj_prest = _digits((estab.cnpj if estab and estab.cnpj else org.cnpj) or '').zfill(14)[:14]
     mun_ibge = _digits((doc.municipio or (getattr(perfil, 'municipio_ibge', '') if perfil else '') or '2800308')).zfill(7)[:7]
     uf = (getattr(perfil, 'uf', '') if perfil else '') or org.uf or 'SE'
 
@@ -198,7 +198,7 @@ class MotorNFSeContingencia:
             'data_emissao': timezone.now().strftime('%d/%m/%Y %H:%M'),
             'municipio': f'{doc.municipio or "ADN"} · PROVISÓRIO',
             'prestador_nome': f"{doc.organization.razao_social} [EM CONTINGÊNCIA RPS]",
-            'prestador_cnpj': doc.organization.cnpj or '00000000000191',
+            'prestador_cnpj': doc.organization.cnpj or '',
             'prestador_im': getattr(doc.estabelecimento, 'inscricao_municipal', '') or '1001',
             'tomador_nome': doc.cliente.nome_razao_social if doc.cliente else 'Tomador',
             'tomador_doc': doc.cliente.cpf_cnpj if doc.cliente else '-',
@@ -343,7 +343,7 @@ def emitir_nfse_com_contingencia(
                     'data_emissao': timezone.now().strftime('%d/%m/%Y %H:%M'),
                     'municipio': municipio,
                     'prestador_nome': org.razao_social,
-                    'prestador_cnpj': org.cnpj or '00000000000191',
+                    'prestador_cnpj': org.cnpj or '',
                     'tomador_nome': cliente.nome_razao_social,
                     'tomador_doc': cliente.cpf_cnpj,
                     'descricao_servico': descricao,
@@ -443,7 +443,7 @@ def sincronizar_nfse_contingencia(
                 'data_emissao': timezone.now().strftime('%d/%m/%Y %H:%M'),
                 'municipio': doc.municipio or 'ADN',
                 'prestador_nome': doc.organization.razao_social,
-                'prestador_cnpj': doc.organization.cnpj or '00000000000191',
+                'prestador_cnpj': doc.organization.cnpj or '',
                 'tomador_nome': doc.cliente.nome_razao_social if doc.cliente else 'Tomador',
                 'tomador_doc': doc.cliente.cpf_cnpj if doc.cliente else '-',
                 'descricao_servico': doc.descricao,

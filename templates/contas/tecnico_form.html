@@ -163,7 +163,8 @@ function updateWhatsAppInvite() {
   }
 
   const pwaUrl = 'https://vertyxerp.com.br/tecnico/';
-  const msg = `Olá ${nome}! Aqui está o seu acesso ao Aplicativo do Técnico VERTYX (TECNOLMED).\n\n📲 Acesse suas Demandas do Dia e Ordens de Serviço pelo link:\n${pwaUrl}\n\n💡 Como instalar no seu celular:\n1. Abra o link no Chrome (Android) ou Safari (iPhone)\n2. Toque no menu do navegador (ou Compartilhar) e selecione 'Adicionar à tela de início'\n3. O aplicativo ficará instalado na palma da sua mão para você consultar e atualizar os atendimentos do dia.`;
+  const orgName = "{{ request.organization.nome_fantasia|default:request.organization.razao_social|default:'VERTYX'|escapejs }}";
+  const msg = `Olá ${nome}! Aqui está o seu acesso ao Aplicativo do Técnico VERTYX (${orgName}).\n\n📲 Acesse suas Demandas do Dia e Ordens de Serviço pelo link:\n${pwaUrl}\n\n💡 Como instalar no seu celular:\n1. Abra o link no Chrome (Android) ou Safari (iPhone)\n2. Toque no menu do navegador (ou Compartilhar) e selecione 'Adicionar à tela de início'\n3. O aplicativo ficará instalado na palma da sua mão para você consultar e atualizar os atendimentos do dia.`;
 
   const waUrl = `https://wa.me/${fullDigits}?text=${encodeURIComponent(msg)}`;
   sendBtn.setAttribute('href', waUrl);

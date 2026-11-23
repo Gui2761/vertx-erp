@@ -141,8 +141,9 @@ class Tecnico(OrganizationOwned):
         if not digits:
             return ""
         primeiro_nome = self.nome.split()[0] if self.nome else "Técnico"
+        org_nome = getattr(self.organization, 'nome_fantasia', None) or getattr(self.organization, 'razao_social', None) or 'VERTYX'
         msg = (
-            f"Olá {primeiro_nome}! Aqui está o seu acesso ao Aplicativo do Técnico VERTYX (TECNOLMED).\n\n"
+            f"Olá {primeiro_nome}! Aqui está o seu acesso ao Aplicativo do Técnico VERTYX ({org_nome}).\n\n"
             f"📲 Acesse suas Demandas do Dia e Ordens de Serviço pelo link:\n"
             f"https://vertyxerp.com.br/tecnico/\n\n"
             f"💡 Como instalar no seu celular:\n"
