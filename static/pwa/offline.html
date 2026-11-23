@@ -1,1 +1,249 @@
-<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VERTYX • Sem conexão</title><style>body{font:18px system-ui;color:#112b3e;background:#f4f7fa;margin:15vh auto;padding:24px;max-width:500px}a{color:#006f74}</style><h1>Sem conexão</h1><p>Reconecte à internet para acessar a agenda ou registrar um atendimento com segurança.</p><a href="/tecnico/">Tentar novamente</a></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b111d">
+  <title>VERTYX · Modo Offline</title>
+  <style>
+    :root {
+      --bg: #0b111d;
+      --card-bg: #131c2e;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f4f7fa;
+      --text-muted: #94a3b8;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .offline-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 32px 28px;
+      max-width: 580px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+      text-align: center;
+    }
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .badge-status.online {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+    }
+    p.desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+    .actions-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    .action-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s ease;
+    }
+    .action-item:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+    .action-info h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .action-info p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .btn-action {
+      background: var(--primary);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      white-space: nowrap;
+      margin-left: 12px;
+    }
+    .btn-retry {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-retry:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .auto-tip {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-card">
+    <div id="statusBadge" class="badge-status">
+      <span class="dot"></span>
+      <span id="statusText">Modo Offline · Sem Conexão</span>
+    </div>
+
+    <h1>Operação Local VERTYX</h1>
+    <p class="desc">
+      A conexão com a internet foi interrompida, mas o sistema continua operando localmente no seu computador. Acesse os módulos disponíveis offline abaixo:
+    </p>
+
+    <div class="actions-grid">
+      <!-- PDV Offline -->
+      <a href="/static/pwa/pdv-offline.html" class="action-item">
+        <div class="action-info">
+          <h3>🛒 Caixa e Vendas Offline (PDV)</h3>
+          <p>Passe produtos, use leitor de código de barras e emita comprovantes. As vendas são salvas localmente e sincronizam ao reconectar.</p>
+        </div>
+        <span class="btn-action">Abrir Caixa</span>
+      </a>
+
+      <!-- Técnico PWA -->
+      <a href="/tecnico/" class="action-item">
+        <div class="action-info">
+          <h3>📲 Demandas do Técnico</h3>
+          <p>Consulte as ordens de serviço, endereços e chamados agendados que já foram carregados neste dispositivo.</p>
+        </div>
+        <span class="btn-action">Ver Agenda</span>
+      </a>
+
+      <!-- Painel Principal em Cache -->
+      <a href="/" class="action-item">
+        <div class="action-info">
+          <h3>🏠 Painel ERP (Versão em Cache)</h3>
+          <p>Acesse as últimas telas e relatórios navegados antes da queda de conexão.</p>
+        </div>
+        <span class="btn-action">Abrir Painel</span>
+      </a>
+    </div>
+
+    <button type="button" class="btn-retry" onclick="retryConnection()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+      </svg>
+      Verificar Conexão e Recarregar
+    </button>
+
+    <p class="auto-tip">
+      💡 Assim que a internet ou Wi-Fi for restabelecido, o sistema recarregará automaticamente.
+    </p>
+  </div>
+
+  <script>
+    function notifyOnline() {
+      const badge = document.getElementById('statusBadge');
+      const text = document.getElementById('statusText');
+      badge.className = 'badge-status online';
+      text.textContent = 'Conexão Restabelecida! Recarregando...';
+      setTimeout(() => {
+        const lastUrl = sessionStorage.getItem('vx_last_online_url') || '/';
+        window.location.href = lastUrl;
+      }, 1200);
+    }
+
+    function retryConnection() {
+      const text = document.getElementById('statusText');
+      text.textContent = 'Verificando conexão...';
+      fetch('/static/pwa/icon-192.png?ping=' + Date.now(), { cache: 'no-store' })
+        .then(res => {
+          if (res.ok) {
+            notifyOnline();
+          } else {
+            text.textContent = 'Modo Offline · Sem Conexão';
+          }
+        })
+        .catch(() => {
+          text.textContent = 'Modo Offline · Sem Conexão';
+        });
+    }
+
+    window.addEventListener('online', notifyOnline);
+    setInterval(() => {
+      if (navigator.onLine) {
+        retryConnection();
+      }
+    }, 3000);
+  </script>
+</body>
+</html>

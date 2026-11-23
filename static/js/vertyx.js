@@ -64,6 +64,38 @@ document.addEventListener('DOMContentLoaded',()=>{
     report();addEventListener('online',report);addEventListener('offline',report);
     document.addEventListener('submit',event=>{if(!navigator.onLine){event.preventDefault();report();connection.scrollIntoView({block:'nearest'});}},true);
   }
+
+  // Banner global de modo offline e persistência de navegação
+  const updateGlobalOfflineBanner = () => {
+    let banner = document.getElementById('vx-global-offline-banner');
+    if (!navigator.onLine) {
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'vx-global-offline-banner';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#d97706;color:#ffffff;text-align:center;padding:7px 14px;font-size:13px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;gap:8px;';
+        document.body.prepend(banner);
+      }
+      banner.innerHTML = '<span>📡</span> <span>Modo Offline Ativo · Operando com dados locais salvos em cache. O sistema sincronizará ao reconectar.</span> <a href="/static/pwa/pdv-offline.html" style="color:#fff;text-decoration:underline;margin-left:8px;font-weight:700;">Abrir Caixa Offline</a>';
+      banner.style.display = 'flex';
+      banner.style.background = '#d97706';
+    } else if (banner && banner.style.display !== 'none') {
+      banner.style.background = '#059669';
+      banner.innerHTML = '<span>✅</span> <span>Conexão Restabelecida! Atualizando informações...</span>';
+      setTimeout(() => {
+        banner.style.display = 'none';
+      }, 2500);
+    }
+  };
+
+  if (navigator.onLine) {
+    sessionStorage.setItem('vx_last_online_url', window.location.href);
+  }
+  window.addEventListener('online', () => {
+    sessionStorage.setItem('vx_last_online_url', window.location.href);
+    updateGlobalOfflineBanner();
+  });
+  window.addEventListener('offline', updateGlobalOfflineBanner);
+  if (!navigator.onLine) updateGlobalOfflineBanner();
   const sidebarToggles=document.querySelectorAll('[data-sidebar-toggle]');
   if(sidebarToggles.length){
     const apply=(collapsed)=>{
