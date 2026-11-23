@@ -271,6 +271,12 @@
         if (selectedIndex >= 0 && selectedIndex < currentResults.length) {
           e.preventDefault();
           addItemDirect(currentResults[selectedIndex].sku);
+        } else {
+          const val = searchInput.value.trim();
+          if (/^\d{6,}$/.test(val)) {
+            e.preventDefault();
+            addItemDirect(val);
+          }
         }
       } else if (e.key === 'Escape') {
         closeDropdown();
@@ -286,8 +292,13 @@
 
   window.addEventListener('DOMContentLoaded',()=>{
     if(!document.querySelector('dialog[open]')){
-      const sb=document.getElementById('codigo-busca');
-      if(sb){sb.focus();if(sb.value)sb.select();}
+      const bc = document.getElementById('seller-barcode-code');
+      if (bc) {
+        bc.focus();
+      } else {
+        const sb = document.getElementById('codigo-busca');
+        if (sb) { sb.focus(); if (sb.value) sb.select(); }
+      }
     }
   });
 })();

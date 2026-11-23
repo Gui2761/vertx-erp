@@ -53,6 +53,33 @@
   }
 }
 
+/* ==========================================================================
+   PDV FULLSCREEN CASHIER TERMINAL (Frente de Caixa Balcão)
+   ========================================================================== */
+body.vx-pdv-fullscreen .vx-nav,
+body.vx-pdv-fullscreen .vx-breadcrumb,
+body.vx-pdv-fullscreen .vx-desktop-collapse-btn,
+body.vx-pdv-fullscreen .vx-navbar-header,
+body.vx-pdv-fullscreen .vx-sidebar-search,
+body.vx-pdv-fullscreen .vx-sidebar-footer {
+  display: none !important;
+}
+
+body.vx-pdv-fullscreen .vx-main {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+@media (min-width: 992px) {
+  body.vx-pdv-fullscreen .vx-main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+}
+
 .vx-seller .vx-breadcrumb {
   margin: 0 0 20px 0;
   color: #94a3b8;
@@ -272,7 +299,7 @@
 }
 
 .sv-card h1, .sv-card h2, .sv-card h3, .sv-card h4, .sv-card h5, .sv-card h6,
-.sv-card strong {
+.sv-card strong:not(.sv-price) {
   color: #ffffff !important;
 }
 
@@ -1076,10 +1103,31 @@
   border-bottom: 1px dashed rgba(255, 255, 255, 0.12) !important;
 }
 
-.sv-price {
-  font-size: 18px !important;
+.sv-price-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+}
+
+.sv-price-tag-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #94a3b8 !important;
+}
+
+.sv-price,
+.sv-card .sv-price,
+.sv-product-card .sv-price,
+strong.sv-price,
+.sv-card strong.sv-price,
+.sv-product-card strong.sv-price {
+  font-size: 19px !important;
   font-weight: 800 !important;
-  color: #34d399 !important;
+  color: #10b981 !important;
+  line-height: 1.2 !important;
+  display: inline-block !important;
 }
 
 .sv-stock-badge {
@@ -1667,6 +1715,20 @@
 [data-theme="light"] .sv-product-title,
 [data-theme="light"] .sv-console-products h3 {
   color: #0f172a !important;
+}
+
+[data-theme="light"] .sv-price-tag-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .sv-price,
+[data-theme="light"] .sv-card .sv-price,
+[data-theme="light"] .sv-product-card .sv-price,
+[data-theme="light"] strong.sv-price,
+[data-theme="light"] .sv-card strong.sv-price,
+[data-theme="light"] .sv-product-card strong.sv-price,
+[data-theme="light"] .sv-auto-price {
+  color: #047857 !important;
 }
 
 [data-theme="light"] .sv-button {
