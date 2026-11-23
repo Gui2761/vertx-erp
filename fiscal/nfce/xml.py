@@ -94,10 +94,21 @@ def produto_validar(row, crt, date):
     if decimal(row['quantidade'],3) <= 0: raise ValidationError(label+'quantidade deve ser positiva.')
 
 
+UF_TO_IBGE = {
+    'RO': '11', 'AC': '12', 'AM': '13', 'RR': '14', 'PA': '15', 'AP': '16', 'TO': '17',
+    'MA': '21', 'PI': '22', 'CE': '23', 'RN': '24', 'PB': '25', 'PE': '26', 'AL': '27',
+    'SE': '28', 'BA': '29', 'MG': '31', 'ES': '32', 'RJ': '33', 'SP': '35', 'PR': '41',
+    'SC': '42', 'RS': '43', 'MS': '50', 'MT': '51', 'GO': '52', 'DF': '53'
+}
+
+
 def gerar(snapshot, numero, emissao, cnf):
     emit = snapshot['emitente']; items = snapshot['itens']; total = decimal(snapshot['total'])
-    if not items or snapshot.get('ambiente') != 'HOMOLOGACAO' or emit['uf'] != 'SE' or not emit['municipio_ibge'].startswith('28'):
-        raise ValidationError('Somente NFC-e presencial, interna, normal em Sergipe/homologação.')
+    uf_emit = emit.get('uf') or 'SE'
+    mun_ibge = emit.get('municipio_ibge') or ''
+    c_uf = UF_TO_IBGE.get(uf_emit, mun_ibge[:2] if len(mun_ibge) >= 2 else '28')
+    if not items or snapshot.get('ambiente') != 'HOMOLOGACAO' or not uf_emit or not mun_ibge:
+        raise ValidationError('Somente NFC-e presencial, interna, normal/homologação com emitente completo.')
     for item in items: produto_validar(item, emit['crt'], emissao.date())
     if sum((decimal(row['liquido']) for row in items), Decimal(0)) != total:
         raise ValidationError('Total dos itens não coincide com a venda confirmada.')
@@ -105,13 +116,13 @@ def gerar(snapshot, numero, emissao, cnf):
     root = etree.Element(NS+'NFe', nsmap={None:NFE})
     inf = etree.SubElement(root, NS+'infNFe', Id='NFe'+key, versao='4.00')
     ide = etree.SubElement(inf, NS+'ide')
-    for k,v in [('cUF','28'),('cNF',cnf),('natOp',snapshot['natureza']),('mod','65'),('serie',int(snapshot['serie'])),('nNF',numero),('dhEmi',emissao.isoformat(timespec='seconds')),('tpNF','1'),('idDest','1'),('cMunFG',emit['municipio_ibge']),('tpImp','4'),('tpEmis','1'),('cDV',key[-1]),('tpAmb','2'),('finNFe','1'),('indFinal','1'),('indPres','1'),('procEmi','0'),('verProc','VERTYX-NFCE-HOM-2')]: tag(ide,k,v)
+    for k,v in [('cUF',c_uf),('cNF',cnf),('natOp',snapshot['natureza']),('mod','65'),('serie',int(snapshot['serie'])),('nNF',numero),('dhEmi',emissao.isoformat(timespec='seconds')),('tpNF','1'),('idDest','1'),('cMunFG',mun_ibge),('tpImp','4'),('tpEmis','1'),('cDV',key[-1]),('tpAmb','2'),('finNFe','1'),('indFinal','1'),('indPres','1'),('procEmi','0'),('verProc','VERTYX-NFCE-HOM-2')]: tag(ide,k,v)
     issuer = etree.SubElement(inf, NS+'emit')
     tag(issuer,'CNPJ',emit['cnpj']);tag(issuer,'xNome',emit['razao_social'])
     address = etree.SubElement(issuer,NS+'enderEmit')
     for key_, field in [('xLgr','logradouro'),('nro','numero'),('xCpl','complemento'),('xBairro','bairro')]:
         if emit['endereco'].get(field): tag(address,key_,emit['endereco'][field])
-    for k,v in [('cMun',emit['municipio_ibge']),('xMun',emit['municipio_nome']),('UF','SE'),('CEP',emit['endereco']['cep']),('cPais','1058'),('xPais','BRASIL')]:tag(address,k,v)
+    for k,v in [('cMun',mun_ibge),('xMun',emit['municipio_nome']),('UF',uf_emit),('CEP',emit['endereco']['cep']),('cPais','1058'),('xPais','BRASIL')]:tag(address,k,v)
     tag(issuer,'IE',emit['ie']);tag(issuer,'CRT',emit['crt'])
     if snapshot.get('destinatario'):
         dest=etree.SubElement(inf,NS+'dest'); customer=snapshot['destinatario']

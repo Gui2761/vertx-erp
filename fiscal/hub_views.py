@@ -116,7 +116,7 @@ def fiscal_hub(request):
                     estab,
                     cliente=cliente,
                     codigo_servico=request.POST.get('codigo_servico', '010701'),
-                    municipio=request.POST.get('municipio', '2800308'),
+                    municipio=request.POST.get('municipio') or getattr(getattr(estab, 'perfil_fiscal', None), 'municipio_ibge', '') or '',
                     descricao=desc,
                     valor=val,
                     usar_contingencia_direta=contingencia_direta,

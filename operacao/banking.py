@@ -52,9 +52,9 @@ def gerar_pix_brcode(
     txid: str,
 ) -> str:
     """Gera string Pix Copia e Cola (EMVCo BR Code) válida com CRC-16."""
-    chave = (chave_pix or 'pix@vertyx.local').strip()[:77]
+    chave = (chave_pix or '').strip()[:77]
     nome = re.sub(r'[^A-Za-z0-9 ]', '', nome_recebedor or 'VERTYX ERP')[:25] or 'VERTYX ERP'
-    cid = re.sub(r'[^A-Za-z0-9 ]', '', cidade or 'ARACAJU')[:15] or 'ARACAJU'
+    cid = re.sub(r'[^A-Za-z0-9 ]', '', cidade or 'BRASIL')[:15] or 'BRASIL'
     tx_limpo = re.sub(r'[^A-Za-z0-9]', '', txid or 'VERTYX01')[:25] or 'VERTYX01'
     mai = _tlv('00', 'br.gov.bcb.pix') + _tlv('01', chave)
     add_data = _tlv('05', tx_limpo)
@@ -178,7 +178,7 @@ class BaseBancoProvider:
             gerar_pix_brcode(
                 chave_pix=self.integracao.chave_pix or f'{self.integracao.organization.cnpj or ""}',
                 nome_recebedor=self.integracao.organization.razao_social,
-                cidade=self.integracao.organization.cidade or 'ARACAJU',
+                cidade=self.integracao.organization.cidade or 'BRASIL',
                 valor=valor,
                 txid=txid,
             )

@@ -36,30 +36,32 @@ def _resolver_emitente_snapshot(doc: m.DocumentoFiscal) -> dict[str, Any]:
     estab = doc.estabelecimento
     perfil = getattr(estab, 'perfil_fiscal', None) if estab else None
     end = dict(getattr(perfil, 'endereco_estruturado', {}) or {})
-    uf = (getattr(perfil, 'uf', '') or org.uf or 'SE').upper()[:2]
-    mun_ibge = getattr(perfil, 'municipio_ibge', '') or '2800308'
-    cnpj = (estab.cnpj if estab and estab.cnpj else org.cnpj) or ''
-    razao = org.razao_social or (estab.nome if estab else 'VERTYX ERP')
-    ie = (estab.inscricao_estadual if estab else '') or 'ISENTO'
-    end_txt = (estab.endereco if estab else org.endereco) or 'Endereço fiscal do emitente'
+    uf = (getattr(perfil, 'uf', '') or (org.uf if org else '') or '').upper()[:2]
+    mun_ibge = getattr(perfil, 'municipio_ibge', '') or ''
+    cnpj = (estab.cnpj if estab and estab.cnpj else (org.cnpj if org else '')) or ''
+    razao = (org.razao_social if org else '') or (estab.nome if estab else '')
+    ie = (estab.inscricao_estadual if estab else '') or ''
+    end_txt = (estab.endereco if estab else (org.endereco if org else '')) or ''
+    cid_txt = end.get('municipio') or (org.cidade if org else '') or ''
+    cep_txt = re.sub(r'\D', '', end.get('cep') or getattr(org, 'cep', '') or '')
     return {
         'cnpj': ''.join(ch for ch in cnpj if ch.isdigit()).zfill(14)[:14],
         'razao_social': razao,
-        'ie': ie,
+        'ie': ie or 'ISENTO',
         'uf': uf,
         'municipio_ibge': mun_ibge,
-        'municipio': end.get('municipio') or org.cidade or 'Aracaju',
-        'municipio_nome': end.get('municipio') or org.cidade or 'Aracaju',
+        'municipio': cid_txt,
+        'municipio_nome': cid_txt,
         'logradouro': end.get('logradouro') or end_txt,
         'numero': end.get('numero') or 'S/N',
-        'bairro': end.get('bairro') or 'Centro',
-        'cep': end.get('cep') or '49000000',
+        'bairro': end.get('bairro') or '',
+        'cep': cep_txt,
         'crt': (doc.regra_fiscal.parametros.get('crt') if doc.regra_fiscal_id and isinstance(doc.regra_fiscal.parametros, dict) else None) or '1',
         'endereco': {
             'logradouro': end.get('logradouro') or end_txt,
             'numero': end.get('numero') or 'S/N',
-            'bairro': end.get('bairro') or 'Centro',
-            'cep': end.get('cep') or '49000000',
+            'bairro': end.get('bairro') or '',
+            'cep': cep_txt,
         },
     }
 
@@ -67,17 +69,18 @@ def _resolver_emitente_snapshot(doc: m.DocumentoFiscal) -> dict[str, Any]:
 def _resolver_destinatario_snapshot(doc: m.DocumentoFiscal) -> dict[str, Any]:
     cli = doc.cliente
     if not cli:
-        return {'nome': 'Consumidor não identificado', 'documento': '', 'uf': 'SE', 'municipio_ibge': '2800308'}
+        return {'nome': 'Consumidor não identificado', 'documento': '', 'uf': '', 'municipio_ibge': ''}
+    dest_cep = re.sub(r'\D', '', getattr(cli, 'cep', '') or '')
     return {
         'nome': cli.nome_razao_social,
         'documento': cli.cpf_cnpj,
-        'uf': (getattr(cli, 'uf', '') or doc.organization.uf or 'SE')[:2],
-        'municipio_ibge': getattr(cli, 'codigo_municipio_ibge', '') or '2800308',
-        'municipio': getattr(cli, 'cidade', '') or doc.organization.cidade or 'Aracaju',
-        'logradouro': getattr(cli, 'endereco', '') or 'Endereço destinatário',
-        'numero': 'S/N',
-        'bairro': 'Centro',
-        'cep': '49000000',
+        'uf': (getattr(cli, 'uf', '') or (doc.organization.uf if doc.organization else '') or '')[:2],
+        'municipio_ibge': getattr(cli, 'codigo_municipio_ibge', '') or '',
+        'municipio': getattr(cli, 'cidade', '') or (doc.organization.cidade if doc.organization else '') or '',
+        'logradouro': getattr(cli, 'endereco', '') or '',
+        'numero': getattr(cli, 'numero', '') or 'S/N',
+        'bairro': getattr(cli, 'bairro', '') or '',
+        'cep': dest_cep,
         'ie': getattr(cli, 'inscricao_estadual', '') or '',
     }
 

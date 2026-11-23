@@ -317,6 +317,44 @@
               <option value="3" {% if crt == '3' %}selected{% endif %}>3 - Regime Normal (Lucro Presumido / Real)</option>
             </select>
           </div>
+
+          <div class="border-top pt-3 mt-3" style="border-color: rgba(255,255,255,0.08) !important;">
+            <h6 class="text-info fw-bold small mb-2"><i class="bi bi-geo-alt me-1"></i>Endereço Fiscal do Emitente</h6>
+            <div class="row g-2 mb-2">
+              <div class="col-md-9">
+                <label class="form-label text-white small fw-bold">Logradouro / Rua</label>
+                <input type="text" name="logradouro" class="form-control" value="{{ logradouro }}" placeholder="Ex: Av. Principal" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label text-white small fw-bold">Número</label>
+                <input type="text" name="numero" class="form-control" value="{{ numero }}" placeholder="Ex: 100 ou S/N" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              </div>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-md-6">
+                <label class="form-label text-white small fw-bold">Bairro</label>
+                <input type="text" name="bairro" class="form-control" value="{{ bairro }}" placeholder="Ex: Bairro" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-white small fw-bold">CEP</label>
+                <input type="text" name="cep" class="form-control" value="{{ cep }}" placeholder="Ex: 49000-000" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label class="form-label text-white small fw-bold">Município</label>
+                <input type="text" name="municipio" class="form-control" value="{{ municipio }}" placeholder="Ex: Aracaju" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label text-white small fw-bold">UF</label>
+                <input type="text" name="uf" class="form-control text-uppercase" value="{{ uf }}" maxlength="2" placeholder="SE" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label text-white small fw-bold">Cód. IBGE</label>
+                <input type="text" name="ibge" class="form-control" value="{{ ibge }}" placeholder="2800308" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

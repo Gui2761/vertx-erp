@@ -43,12 +43,12 @@ def _montar_dados_dps_e_rtc(
     org = doc.organization
     estab = doc.estabelecimento
     perfil = getattr(estab, 'perfil_fiscal', None) if estab else None
-    cnpj_prest = _digits((estab.cnpj if estab and estab.cnpj else org.cnpj) or '').zfill(14)[:14]
-    mun_ibge = _digits((doc.municipio or (getattr(perfil, 'municipio_ibge', '') if perfil else '') or '2800308')).zfill(7)[:7]
-    uf = (getattr(perfil, 'uf', '') if perfil else '') or org.uf or 'SE'
+    cnpj_prest = _digits((estab.cnpj if estab and estab.cnpj else (org.cnpj if org else '')) or '').zfill(14)[:14]
+    mun_ibge = _digits(doc.municipio or (getattr(perfil, 'municipio_ibge', '') if perfil else '') or '').zfill(7)[:7]
+    uf = (getattr(perfil, 'uf', '') if perfil else '') or (org.uf if org else '') or ''
 
     cli = doc.cliente
-    doc_tom = _digits(cli.cpf_cnpj) if cli else '00000000000'
+    doc_tom = _digits(cli.cpf_cnpj) if cli and cli.cpf_cnpj else ''
     nome_tom = cli.nome_razao_social if cli else 'Tomador não identificado'
 
     amb = TipoAmbiente.HOMOLOGACAO if doc.ambiente != 'PRODUCAO' else TipoAmbiente.PRODUCAO
@@ -61,19 +61,19 @@ def _montar_dados_dps_e_rtc(
         ambiente=amb,
         prestador=PrestadorDPS(
             cnpj=cnpj_prest,
-            razao_social=org.razao_social or 'VERTYX ERP',
-            inscricao_municipal=(estab.inscricao_municipal if estab else '') or '1001',
+            razao_social=(org.razao_social if org else '') or (estab.nome if estab else ''),
+            inscricao_municipal=(estab.inscricao_municipal if estab else '') or getattr(org, 'inscricao_municipal', '') or '',
         ),
         tomador=TomadorDPS(
             cnpj_cpf=doc_tom,
             razao_social_nome=nome_tom,
             endereco=EnderecoNacional(
                 municipio_ibge=mun_ibge,
-                cep='49000000',
-                logradouro=(getattr(cli, 'endereco', '') if cli else '') or 'Av. Principal',
-                numero='100',
-                bairro='Centro',
-                uf=uf[:2],
+                cep=re.sub(r'\D', '', getattr(cli, 'cep', '') or '') if cli else '',
+                logradouro=(getattr(cli, 'endereco', '') if cli else '') or '',
+                numero=getattr(cli, 'numero', '') if cli else 'S/N',
+                bairro=getattr(cli, 'bairro', '') if cli else '',
+                uf=((getattr(cli, 'uf', '') if cli else '') or uf)[:2],
             ),
             email=getattr(cli, 'email', '') if cli else '',
         ),
@@ -177,11 +177,12 @@ class MotorNFSeContingencia:
 
         det = getattr(doc, 'detalhesnfse', None)
         if det is None:
+            mun_inc = _digits(doc.municipio or (getattr(perfil, 'municipio_ibge', '') if perfil else '') or '').zfill(7)[:7]
             det = m.DetalhesNFSe(
                 documento=doc,
                 competencia=timezone.localdate(),
                 codigo_servico=doc.codigo_servico,
-                municipio_incidencia=_digits(doc.municipio or '2800308').zfill(7)[:7],
+                municipio_incidencia=mun_inc,
             )
         det.identificador_dps_rps = dps_id
         det.modo_emissao = 'CONTINGENCIA_RPS'
@@ -199,7 +200,7 @@ class MotorNFSeContingencia:
             'municipio': f'{doc.municipio or "ADN"} · PROVISÓRIO',
             'prestador_nome': f"{doc.organization.razao_social} [EM CONTINGÊNCIA RPS]",
             'prestador_cnpj': doc.organization.cnpj or '',
-            'prestador_im': getattr(doc.estabelecimento, 'inscricao_municipal', '') or '1001',
+            'prestador_im': getattr(doc.estabelecimento, 'inscricao_municipal', '') or getattr(doc.organization, 'inscricao_municipal', '') or '',
             'tomador_nome': doc.cliente.nome_razao_social if doc.cliente else 'Tomador',
             'tomador_doc': doc.cliente.cpf_cnpj if doc.cliente else '-',
             'descricao_servico': f"[RPS OFFLINE · {motivo_contingencia.strip()}] {doc.descricao}",
@@ -297,11 +298,12 @@ def emitir_nfse_com_contingencia(
             impostos={'rtc': rtc_override} if rtc_override else {},
             criado_por=user,
         )
+        mun_inc = _digits(municipio or getattr(getattr(estab, 'perfil_fiscal', None), 'municipio_ibge', '') or '').zfill(7)[:7]
         write(m.DetalhesNFSe(
             documento=doc,
             competencia=timezone.localdate(),
             codigo_servico=codigo_servico,
-            municipio_incidencia=_digits(municipio or '2800308').zfill(7)[:7],
+            municipio_incidencia=mun_inc,
         ))
 
     if not usar_contingencia_direta:

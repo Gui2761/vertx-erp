@@ -163,8 +163,8 @@ def validar_config(config,serie,cred,regra):
     # Duplicate branches for a legal issuer must not split the numbering ledger.
     if m.SerieFiscal.objects.filter(tipo='NFCE',ambiente='HOMOLOGACAO',serie=serie.serie,estabelecimento__cnpj=branch.cnpj).exclude(estabelecimento=branch).exists():
         raise ValidationError('Mesmo emitente/série cadastrado em outro estabelecimento; numeração deve ser única.')
-    if profile.uf!='SE' or not profile.municipio_ibge.startswith('28') or company.crt not in ('1','2','3','4'):
-        raise ValidationError('UF/município/CRT incompatíveis com NFC-e de Sergipe.')
+    if not profile.uf or not profile.municipio_ibge or len(profile.municipio_ibge) != 7 or company.crt not in ('1','2','3','4'):
+        raise ValidationError('UF/município/CRT incompatíveis ou incompletos para emissão NFC-e.')
     if not cfg.urls_confirmadas or not cfg.qr_url or not cfg.consulta_url or not cfg.fonte_urls or cfg.qr_versao!='3':
         raise ValidationError('URLs oficiais de QR/consulta SE e aplicabilidade QR v3 não confirmadas.')
     if not cfg.schema_aplicabilidade_confirmada or not cfg.schema_release:

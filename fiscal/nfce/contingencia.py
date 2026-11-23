@@ -79,14 +79,14 @@ def _xml_nfce_minimo(
     tp_emis: str = '1',
     justificativa: str = '',
     ambiente_cod: str = '2',
-    logradouro: str = 'Rua Principal',
-    nro: str = 'S/N',
-    bairro: str = 'Centro',
-    municipio_nome: str = 'Aracaju',
-    uf: str = 'SE',
-    cep: str = '49000000',
-    ie: str = 'ISENTO',
-    crt: str = '1',
+    logradouro: str = '',
+    nro: str = '',
+    bairro: str = '',
+    municipio_nome: str = '',
+    uf: str = '',
+    cep: str = '',
+    ie: str = '',
+    crt: str = '',
 ) -> tuple[bytes, str]:
     cnf = f'{(numero * 9137 + 12345) % 100000000:08d}'
     base = f'{uf_cod}{emissao_dt:%y%m}{cnpj}65{int(serie):03}{int(numero):09}{tp_emis}{cnf}'
@@ -128,10 +128,10 @@ def _xml_nfce_minimo(
     etree.SubElement(emit, NS + 'CNPJ').text = cnpj
     etree.SubElement(emit, NS + 'xNome').text = razao[:60]
     end = etree.SubElement(emit, NS + 'enderEmit')
-    for k, v in [('xLgr', logradouro), ('nro', nro), ('xBairro', bairro), ('cMun', mun_ibge), ('xMun', municipio_nome), ('UF', uf), ('CEP', cep)]:
+    for k, v in [('xLgr', logradouro), ('nro', nro or 'S/N'), ('xBairro', bairro), ('cMun', mun_ibge), ('xMun', municipio_nome), ('UF', uf), ('CEP', cep)]:
         etree.SubElement(end, NS + k).text = str(v)
-    etree.SubElement(emit, NS + 'IE').text = str(ie)
-    etree.SubElement(emit, NS + 'CRT').text = str(crt)
+    etree.SubElement(emit, NS + 'IE').text = str(ie or 'ISENTO')
+    etree.SubElement(emit, NS + 'CRT').text = str(crt or '1')
 
     total_val = Decimal('0.00')
     for idx, item in enumerate(itens, start=1):
@@ -221,24 +221,51 @@ def emitir_nfce_pdv_com_rtc(
     cnpj = ''.join(ch for ch in (estabelecimento.cnpj or (org.cnpj if org else '') or '') if ch.isdigit()).zfill(14)[:14]
     tp_emis = '9' if contingencia_offline else '1'
 
+    perfil = getattr(estabelecimento, 'perfil_fiscal', None)
+    end_dict = dict(getattr(perfil, 'endereco_estruturado', {}) or {})
+    
+    from platform_core.models import ConfiguracaoEmpresa
+    empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first() if org else None
+    nfce_cfg = (empresa.retencoes_informativas or {}).get('nfce', {}) if empresa else {}
+    end_fiscal = nfce_cfg.get('endereco', {})
+
+    logr = end_fiscal.get('logradouro') or end_dict.get('logradouro') or estabelecimento.endereco or (org.endereco if org else '') or ''
+    nro_val = end_fiscal.get('numero') or end_dict.get('numero') or ''
+    bairro_val = end_fiscal.get('bairro') or end_dict.get('bairro') or ''
+    cidade_val = end_fiscal.get('municipio') or getattr(org, 'cidade', '') or ''
+    uf_val = (end_fiscal.get('uf') or getattr(perfil, 'uf', '') or (org.uf if org else '') or '').upper()[:2]
+    cep_val = re.sub(r'\D', '', end_fiscal.get('cep') or end_dict.get('cep') or getattr(org, 'cep', '') or '')
+    ie_val = estabelecimento.inscricao_estadual or (empresa.inscricao_estadual if empresa else '') or ''
+    crt_val = getattr(empresa, 'crt', '') or '1'
+    ibge_cod = end_fiscal.get('ibge') or getattr(perfil, 'municipio_ibge', '') or ''
+
+    UF_TO_IBGE = {
+        'RO': '11', 'AC': '12', 'AM': '13', 'RR': '14', 'PA': '15', 'AP': '16', 'TO': '17',
+        'MA': '21', 'PI': '22', 'CE': '23', 'RN': '24', 'PB': '25', 'PE': '26', 'AL': '27',
+        'SE': '28', 'BA': '29', 'MG': '31', 'ES': '32', 'RJ': '33', 'SP': '35', 'PR': '41',
+        'SC': '42', 'RS': '43', 'MS': '50', 'MT': '51', 'GO': '52', 'DF': '53'
+    }
+    uf_cod = str(ibge_cod)[:2] if ibge_cod and len(str(ibge_cod)) >= 2 else UF_TO_IBGE.get(uf_val, '28')
+
     xml_bytes, chave = _xml_nfce_minimo(
-        uf_cod='28',
+        uf_cod=uf_cod,
         cnpj=cnpj,
         razao=org.razao_social or estabelecimento.nome,
-        mun_ibge=getattr(getattr(estabelecimento, 'perfil_fiscal', None), 'municipio_ibge', '2800308'),
+        mun_ibge=ibge_cod,
         serie=serie_locked.serie,
         numero=numero,
         emissao_dt=emissao_dt,
         itens=itens,
         tp_emis=tp_emis,
         justificativa=motivo_contingencia if contingencia_offline else '',
-        logradouro=estabelecimento.endereco or (org.endereco if org else '') or 'Rua Principal',
-        nro='S/N',
-        bairro='Centro',
-        municipio_nome=getattr(org, 'cidade', '') or 'Aracaju',
-        uf=getattr(org, 'uf', '') or 'SE',
-        cep=getattr(org, 'cep', '') or '49000000',
-        ie=estabelecimento.inscricao_estadual or 'ISENTO',
+        logradouro=logr,
+        nro=nro_val,
+        bairro=bairro_val,
+        municipio_nome=cidade_val,
+        uf=uf_val,
+        cep=cep_val,
+        ie=ie_val,
+        crt=crt_val,
     )
 
     nota_json = None

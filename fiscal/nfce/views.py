@@ -70,6 +70,23 @@ def configuracao(request, pk=None):
         crt = request.POST.get('crt', '1').strip()
         natureza_operacao = request.POST.get('natureza_operacao', 'Venda a Consumidor Final').strip()
 
+        logradouro = request.POST.get('logradouro', '').strip()
+        numero_end = request.POST.get('numero', '').strip()
+        bairro = request.POST.get('bairro', '').strip()
+        cep = request.POST.get('cep', '').strip()
+        municipio = request.POST.get('municipio', '').strip()
+        uf = request.POST.get('uf', '').strip().upper()
+        ibge = request.POST.get('ibge', '').strip()
+
+        if org:
+            if logradouro:
+                org.endereco = f"{logradouro}, {numero_end}".strip(', ') if numero_end else logradouro
+            if municipio:
+                org.cidade = municipio
+            if uf:
+                org.uf = uf
+            org.save()
+
         cert_file = request.FILES.get('certificado')
         cert_password = request.POST.get('certificado_senha', '').strip()
 
@@ -128,6 +145,15 @@ def configuracao(request, pk=None):
                 'proximo_numero': proximo_numero,
                 'natureza_operacao': natureza_operacao,
                 'certificado': cert_info,
+                'endereco': {
+                    'logradouro': logradouro,
+                    'numero': numero_end,
+                    'bairro': bairro,
+                    'cep': cep,
+                    'municipio': municipio,
+                    'uf': uf,
+                    'ibge': ibge
+                },
                 'atualizado_em': timezone.now().strftime('%d/%m/%Y %H:%M')
             }
             ret['nfce'] = cfg
@@ -136,6 +162,36 @@ def configuracao(request, pk=None):
             empresa.save()
 
         if filial:
+            if org and org.endereco:
+                filial.endereco = org.endereco
+                filial.save()
+            perfil = m.PerfilFiscalEstabelecimento.objects.filter(estabelecimento=filial).first()
+            if perfil:
+                if ibge:
+                    perfil.municipio_ibge = ibge
+                if uf:
+                    perfil.uf = uf
+                perfil.endereco_estruturado = {
+                    'logradouro': logradouro,
+                    'numero': numero_end,
+                    'bairro': bairro,
+                    'cep': cep,
+                    'municipio': municipio,
+                }
+                perfil.save()
+            elif ibge and uf:
+                m.PerfilFiscalEstabelecimento.objects.create(
+                    estabelecimento=filial,
+                    municipio_ibge=ibge,
+                    uf=uf,
+                    endereco_estruturado={
+                        'logradouro': logradouro,
+                        'numero': numero_end,
+                        'bairro': bairro,
+                        'cep': cep,
+                        'municipio': municipio,
+                    }
+                )
             s_obj, _ = m.SerieFiscal.objects.get_or_create(
                 estabelecimento=filial,
                 tipo='NFCE',
@@ -171,6 +227,18 @@ def configuracao(request, pk=None):
             'valido_ate': cert_a1.get('valido_ate')
         }
 
+    end_info = nfce_params.get('endereco', {})
+    perfil = m.PerfilFiscalEstabelecimento.objects.filter(estabelecimento=filial).first() if filial else None
+    perfil_end = getattr(perfil, 'endereco_estruturado', {}) or {} if perfil else {}
+
+    logradouro = end_info.get('logradouro') or perfil_end.get('logradouro') or (org.endereco if org else '')
+    numero_end = end_info.get('numero') or perfil_end.get('numero') or ''
+    bairro = end_info.get('bairro') or perfil_end.get('bairro') or ''
+    cep = end_info.get('cep') or perfil_end.get('cep') or getattr(org, 'cep', '')
+    municipio = end_info.get('municipio') or getattr(org, 'cidade', '')
+    uf = end_info.get('uf') or (getattr(perfil, 'uf', '') if perfil else '') or getattr(org, 'uf', '')
+    ibge = end_info.get('ibge') or (getattr(perfil, 'municipio_ibge', '') if perfil else '')
+
     return render(request, 'fiscal/nfce/configuration.html', {
         'config': None,
         'org': org,
@@ -186,6 +254,13 @@ def configuracao(request, pk=None):
         'crt': crt,
         'natureza_operacao': natureza_operacao,
         'cert_info': cert_info,
+        'logradouro': logradouro,
+        'numero': numero_end,
+        'bairro': bairro,
+        'cep': cep,
+        'municipio': municipio,
+        'uf': uf,
+        'ibge': ibge,
     })
 
 
