@@ -392,10 +392,16 @@
             <div class="col-md-6">
               <label class="form-label text-white small fw-bold">Série da NFC-e</label>
               <input type="text" name="serie" class="form-control" value="{{ serie }}" placeholder="1" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              <div class="text-secondary small mt-1" style="font-size: 0.78rem;">
+                💡 Se já emitiu notas na Série 1 em outro sistema, você pode usar uma nova série (ex: <strong>2</strong>) para iniciar a numeração do 1 sem conflito na SEFAZ.
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label text-white small fw-bold">Próximo Número da Nota</label>
               <input type="number" name="proximo_numero" class="form-control" value="{{ proximo_numero }}" min="1" style="background: #080d17; color: #fff; border-color: rgba(255,255,255,0.18);">
+              <div class="text-secondary small mt-1" style="font-size: 0.78rem;">
+                💡 Se mantiver a Série 1, coloque o número seguinte à última nota emitida (ex: <strong>801</strong> se a última foi 800) para evitar rejeição de duplicidade.
+              </div>
             </div>
           </div>
           <div class="mb-3">
