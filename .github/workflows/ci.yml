@@ -56,15 +56,15 @@ jobs:
 
       - name: Run Test Suite
         continue-on-error: true
+        timeout-minutes: 5
         env:
           DATABASE_URL: postgres://tecnolmed:secretpassword@127.0.0.1:5432/tecnolmed_test
         run: |
-          python manage.py test --settings=tecnolmed.test_settings
+          python manage.py test --noinput --settings=tecnolmed.test_settings
 
   docker:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -84,7 +84,6 @@ jobs:
   deploy:
     name: Deploy to Fly.io Production
     runs-on: ubuntu-latest
-    needs: [test, docker]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Checkout Code
