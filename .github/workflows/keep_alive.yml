@@ -1,0 +1,23 @@
+name: Keep Alive - Render 24/7 Always On
+
+on:
+  schedule:
+    # Executa a cada 10 minutos para garantir que o Render nunca entre em modo de suspensão
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Permite disparo manual a qualquer momento
+
+jobs:
+  ping:
+    name: Keep Alive Ping
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Vertyx Health Endpoint
+        run: |
+          echo "Disparando ping de atividade para o Render..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://vertyx-erp.onrender.com/health/)
+          echo "Status retornado pelo Render: $STATUS"
+          if [ "$STATUS" = "200" ]; then
+            echo "Render ativo e saudável!"
+          else
+            echo "Aviso: Render retornou código $STATUS"
+          fi
