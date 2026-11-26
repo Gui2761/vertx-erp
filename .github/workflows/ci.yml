@@ -93,6 +93,13 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy Application
-        run: flyctl deploy --remote-only
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "::error ::FLY_API_TOKEN está vazio nos Secrets do GitHub!"
+            exit 1
+          fi
+          echo "Token presente, executando deploy..."
+          flyctl deploy --remote-only -a vertyx-erp --verbose
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_ACCESS_TOKEN: ${{ secrets.FLY_API_TOKEN }}
