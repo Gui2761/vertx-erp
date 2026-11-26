@@ -377,6 +377,10 @@ class CompetenciaFolhaMunicipal(RHMunicipalRecord):
     class Meta:
         constraints = [models.UniqueConstraint(fields=['organization', 'ano', 'mes'], name='rhmun_comp_folha_org_mes')]
 
+    def __str__(self):
+        desc = f' - {self.descricao}' if self.descricao else ''
+        return f'{self.mes:02d}/{self.ano} ({self.get_status_display()}){desc}'
+
 
 class EventoFolhaMunicipal(RHMunicipalRecord):
     class Natureza(models.TextChoices):

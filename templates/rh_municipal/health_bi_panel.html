@@ -11,7 +11,7 @@
   .bi-grid{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.25rem}
   @media (max-width:960px){.bi-grid{grid-template-columns:1fr}}
   .bi-badge{display:inline-flex;align-items:center;padding:.2rem .6rem;border-radius:999px;font-size:.75rem;font-weight:700}
-  .bi-META{background:#dcfce7;color:#166534}.bi-ATENCAO{background:#fef3c7;color:#92400e}.bi-CRITICO{background:#fee2e2;color:#991b1b}
+  .bi-META{background:#dcfce7;color:#166534}.bi-ATENCAO{background:#fef3c7;color:#92400e}.bi-CRITICO{background:#fee2e2;color:#991b1b}.bi-SEM_BASE{background:#e2e8f0;color:#334155}
   .bi-bar-wrap{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:.35rem}
   .bi-bar{height:100%;border-radius:999px}
   .bi-filter{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
@@ -63,7 +63,7 @@
             <td>{{ row.indicador }}</td>
             <td>{{ row.meta }}</td>
             <td><strong>{{ row.valor_atual }}</strong></td>
-            <td><span class="bi-badge bi-{{ row.status }}">{{ row.status }}</span></td>
+            <td><span class="bi-badge bi-{{ row.status }}">{% if row.status == 'SEM_BASE' %}SEM BASE{% else %}{{ row.status }}{% endif %}</span></td>
             <td><small>{{ row.detalhe }}</small></td>
           </tr>
           {% endfor %}

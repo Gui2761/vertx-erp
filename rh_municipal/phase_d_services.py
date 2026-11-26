@@ -183,9 +183,11 @@ def close_property_inventory(actor, inventory_id):
     row = scoped_queryset(actor, m.InventarioPatrimonial.objects.select_for_update()).filter(organization=org).get(pk=inventory_id)
     if row.status == m.InventarioPatrimonial.Status.ENCERRADO:
         raise ValidationError('O inventário já está encerrado.')
-    pending = row.itens.filter(resultado=m.ItemInventarioPatrimonial.Resultado.PENDENTE).exists()
-    if pending:
-        raise ValidationError('Conclua a conferência dos bens antes de encerrar o inventário.')
+    pending = row.itens.filter(resultado=m.ItemInventarioPatrimonial.Resultado.PENDENTE).select_related('bem')
+    if pending.exists():
+        pending_list = [f"{item.tombamento_informado or (item.bem.tombamento if item.bem else 'Item ' + str(item.pk))}" for item in pending[:5]]
+        msg = f"Ainda restam {pending.count()} bem(ns) pendente(s) de conferência ({', '.join(pending_list)}). Registre a conferência de todos os itens antes de encerrar o inventário."
+        raise ValidationError(msg)
     row.status, row.encerrado_em = m.InventarioPatrimonial.Status.ENCERRADO, timezone.now()
     row.save(update_fields=['status', 'encerrado_em', 'atualizado_em'])
     audit_public(actor, 'INVENTARIO_PATRIMONIAL_ENCERRADO', row, {'itens': row.itens.count()})

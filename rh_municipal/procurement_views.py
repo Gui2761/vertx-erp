@@ -33,7 +33,7 @@ SCREENS = {
         'module': 'compras_publicas', 'permission': 'compras.view',
         'title': 'Compras Públicas', 'eyebrow': 'SOLICITAÇÕES · COTAÇÕES · PROCESSOS',
         'intro': 'Registre demandas por secretaria, reúna itens e cotações e acompanhe aprovações com trilha de auditoria.',
-        'actions': ('solicitacao', 'item_solicitacao', 'modalidade', 'pesquisa', 'cotacao', 'cotacao_item', 'documento_solicitacao'),
+        'actions': ('solicitacao', 'item_solicitacao', 'fornecedor', 'modalidade', 'pesquisa', 'cotacao', 'cotacao_item', 'documento_solicitacao'),
         'sections': (
             ('Solicitações de compra', procurement.SolicitacaoCompra, ('numero', 'exercicio', 'secretaria__nome', 'get_status_display')),
             ('Pesquisas de preço', procurement.PesquisaPrecoMunicipal, ('data_referencia', 'solicitacao__numero', 'processo__numero', 'observacoes')),
@@ -46,7 +46,7 @@ SCREENS = {
         'module': 'licitacoes_publicas', 'permission': 'licitacao.view',
         'title': 'Licitações e Processos', 'eyebrow': 'PROCESSO · EDITAL · PARTICIPAÇÃO · JULGAMENTO',
         'intro': 'Organize processos, itens, lotes, propostas, julgamento e histórico. Regras legais e modalidades são parametrizadas pela Prefeitura.',
-        'actions': ('processo', 'lote', 'item_processo', 'licitacao', 'participante', 'proposta', 'proposta_item', 'documento_processo'),
+        'actions': ('processo', 'lote', 'item_processo', 'licitacao', 'fornecedor', 'participante', 'proposta', 'proposta_item', 'documento_processo'),
         'sections': (
             ('Processos de contratação', procurement.ProcessoContratacaoMunicipal, ('numero', 'exercicio', 'objeto', 'get_status_display')),
             ('Editais / publicações', procurement.LicitacaoMunicipal, ('numero_edital', 'processo__numero', 'data_publicacao', 'meio_publicacao')),
@@ -60,7 +60,7 @@ SCREENS = {
         'module': 'registro_precos', 'permission': 'price_registry.view',
         'title': 'Registro de Preços', 'eyebrow': 'ATAS · ITENS · SALDO · UTILIZAÇÃO',
         'intro': 'Acompanhe atas, vigências e saldo registrado. Utilizações são transacionais, idempotentes por referência e não podem superar o saldo.',
-        'actions': ('ata', 'ata_item', 'ata_uso', 'documento_contrato'),
+        'actions': ('fornecedor', 'ata', 'ata_item', 'ata_uso', 'documento_contrato'),
         'sections': (
             ('Atas', procurement.AtaRegistroPrecosMunicipal, ('numero', 'exercicio', 'fornecedor__nome', 'get_status_display')),
             ('Itens e saldo', procurement.ItemAtaRegistroPrecosMunicipal, ('ata__numero', 'item_processo__descricao', 'quantidade_registrada', 'saldo')),
@@ -72,7 +72,7 @@ SCREENS = {
         'module': 'contratos_publicos', 'permission': 'contract.view',
         'title': 'Contratos Públicos', 'eyebrow': 'CONTRATOS · ADITIVOS · EXECUÇÃO',
         'intro': 'Gerencie contratos, alterações auditadas, entregas, medições, ocorrências e fiscalização. Empenho e pagamento oficial ainda não são executados.',
-        'actions': ('contrato', 'contrato_item', 'aditivo', 'execucao'),
+        'actions': ('fornecedor', 'contrato', 'contrato_item', 'aditivo', 'execucao'),
         'sections': (
             ('Contratos', procurement.ContratoPublicoMunicipal, ('numero', 'exercicio', 'fornecedor__nome', 'get_status_display')),
             ('Itens e saldo contratual', procurement.ItemContratoPublicoMunicipal, ('contrato__numero', 'descricao', 'quantidade_contratada', 'saldo_quantidade')),
@@ -86,6 +86,7 @@ SCREENS = {
 
 ACTION_MODULE_PERMISSION = {
     'solicitacao': ('compras_publicas', 'compras.manage'),
+    'fornecedor': ('compras_publicas', 'compras.manage'),
     'item_solicitacao': ('compras_publicas', 'compras.manage'),
     'modalidade': ('compras_publicas', 'compras.manage'),
     'pesquisa': ('compras_publicas', 'cotacao.manage'),
@@ -188,6 +189,9 @@ def procurement_screen(request, family):
     form_error = ''
     if action in ACTION_MODULE_PERMISSION:
         action_module, action_permission = ACTION_MODULE_PERMISSION[action]
+        if action == 'fornecedor':
+            action_module = module
+            action_permission = config['permission'].replace('.view', '.manage')
         require_municipal_permission(request.user, action_permission, module=action_module)
         if action == 'ata_uso':
             form = AtaUsoForm(data=request.POST if request.method == 'POST' else None, actor=request.user)

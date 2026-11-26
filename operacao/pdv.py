@@ -44,7 +44,7 @@ def home(request):
         try:
             session=c.open_cash(request.user,int(request.POST['conta']),request.POST['contado'],request.POST['request_id'])
         except (ValidationError,ValueError,KeyError,ObjectDoesNotExist) as exc: messages.error(request,'; '.join(exc.messages) if isinstance(exc,ValidationError) else 'Revise os dados do caixa.')
-        else: return redirect('operacao:pdv_cash',public_id=session.public_id)
+        else: return redirect(f"{reverse('operacao:pdv_cash_opening', kwargs={'public_id': session.public_id})}?autoprint=1")
     sessions=m.SessaoCaixa.objects.select_related('conta','operador').order_by('-aberto_em')
     if not has_capability(request.user,'caixa_supervisor'): sessions=sessions.filter(operador=request.user)
     org_id=current_organization().pk
@@ -75,8 +75,14 @@ def cash(request,public_id):
             if action=='venda':
                 sale=c.new_sale(request.user,public_id,customer_id=request.POST.get('cliente') or None,seller_id=request.POST.get('vendedor') or None,branch_id=request.POST.get('filial') or None,center_id=request.POST.get('centro_custo') or None,request_id=request.POST.get('request_id'))
                 return redirect('operacao:pdv_sale',public_id=sale.public_id)
-            if action=='fechar': c.close_cash(request.user,public_id,request.POST['contado'],request.POST.get('motivo',''))
-            elif action=='movimento': c.cash_operation(request.user,public_id,request.POST['tipo'],request.POST['valor'],request.POST.get('motivo',''),request.POST['request_id'])
+            if action=='fechar':
+                c.close_cash(request.user,public_id,request.POST['contado'],request.POST.get('motivo',''))
+                messages.success(request,'Caixa encerrado com sucesso.')
+                return redirect(f"{reverse('operacao:pdv_cash_closing', kwargs={'public_id': public_id})}?autoprint=1")
+            elif action=='movimento':
+                ev = c.cash_operation(request.user,public_id,request.POST['tipo'],request.POST['valor'],request.POST.get('motivo',''),request.POST['request_id'])
+                messages.success(request,'Operação registrada com sucesso.')
+                return redirect(f"{reverse('operacao:pdv_cash_movement', kwargs={'public_id': public_id, 'evento_id': ev.pk})}?autoprint=1")
             elif action=='converter':
                 if is_seller(request.user):
                     from django.core.exceptions import PermissionDenied
@@ -294,4 +300,117 @@ def autocomplete(request, public_id=None):
             'tem_estoque': avail > 0,
         })
     return JsonResponse({'results': results})
+
+
+def _company_receipt_context(org=None):
+    from platform_core.context import current_organization
+    from platform_core.models import ConfiguracaoEmpresa
+    org = org or current_organization()
+    empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first() if org else None
+    return {'organization': org, 'empresa': empresa}
+
+
+@login_required
+def cash_receipt_opening(request, public_id):
+    try:
+        session = c.own_session(request.user, public_id, True)
+    except m.SessaoCaixa.DoesNotExist:
+        raise Http404
+    ctx = _company_receipt_context(getattr(session, 'organization', None))
+    ctx.update({
+        'titulo': 'ABERTURA',
+        'tipo': 'ABERTURA',
+        'pdv_nome': session.conta.nome,
+        'operador_nome': session.operador.get_full_name() or session.operador.username,
+        'operacao_id': str(session.abertura_id),
+        'data_operacao': session.aberto_em,
+        'saldo_abertura': session.saldo_abertura,
+        'back_url': reverse('operacao:pdv_cash', kwargs={'public_id': public_id}),
+    })
+    return render(request, 'operacao/pdv_cash_receipt.html', ctx)
+
+
+@login_required
+def cash_receipt_closing(request, public_id):
+    try:
+        session = c.own_session(request.user, public_id, True)
+    except m.SessaoCaixa.DoesNotExist:
+        raise Http404
+    ctx = _company_receipt_context(getattr(session, 'organization', None))
+    sales = session.venda_set.filter(status='FINALIZADA')
+    payments = m.PagamentoVenda.objects.filter(venda__in=sales).select_related('forma', 'pagamento')
+
+    val_dinheiro = Decimal('0.00')
+    val_pix = Decimal('0.00')
+    val_credito = Decimal('0.00')
+    val_debito = Decimal('0.00')
+    val_outros = Decimal('0.00')
+
+    for p in payments:
+        fname = (p.forma.nome or '').upper() if p.forma else ''
+        fcode = getattr(p.forma, 'codigo', '') or ''
+        amt = p.pagamento.valor if p.pagamento else Decimal('0.00')
+        if 'DINHEIRO' in fname or fcode == 'DINHEIRO':
+            val_dinheiro += amt
+        elif 'PIX' in fname or fcode == 'PIX':
+            val_pix += amt
+        elif 'CRÉDITO' in fname or 'CREDITO' in fname or 'CC' in fcode:
+            val_credito += amt
+        elif 'DÉBITO' in fname or 'DEBITO' in fname or 'CD' in fcode:
+            val_debito += amt
+        else:
+            val_outros += amt
+
+    val_total = val_dinheiro + val_pix + val_credito + val_debito + val_outros
+    dif_dinheiro = session.diferenca if session.diferenca is not None else Decimal('0.00')
+
+    ctx.update({
+        'titulo': 'FECHAMENTO DE PDV',
+        'tipo': 'FECHAMENTO',
+        'pdv_nome': session.conta.nome,
+        'operador_nome': (session.fechado_por or session.operador).get_full_name() or (session.fechado_por or session.operador).username,
+        'operacao_id': str(session.public_id),
+        'data_operacao': session.fechado_em or timezone.now(),
+        'valores': {
+            'dinheiro': f'{val_dinheiro:.2f}'.replace('.', ','),
+            'pix': f'{val_pix:.2f}'.replace('.', ','),
+            'credito': f'{val_credito:.2f}'.replace('.', ','),
+            'debito': f'{val_debito:.2f}'.replace('.', ','),
+            'total': f'{val_total:.2f}'.replace('.', ','),
+        },
+        'diferencas': {
+            'dinheiro': f'{dif_dinheiro:.2f}'.replace('.', ','),
+            'pix': '0,00',
+            'credito': '0,00',
+            'debito': '0,00',
+            'total': f'{dif_dinheiro:.2f}'.replace('.', ','),
+        },
+        'justificativa': session.justificativa,
+        'back_url': reverse('operacao:pdv_home'),
+    })
+    return render(request, 'operacao/pdv_cash_receipt.html', ctx)
+
+
+@login_required
+def cash_receipt_movement(request, public_id, evento_id):
+    try:
+        session = c.own_session(request.user, public_id, True)
+    except m.SessaoCaixa.DoesNotExist:
+        raise Http404
+    evento = get_object_or_404(m.EventoCaixa, sessao=session, pk=evento_id)
+    ctx = _company_receipt_context(getattr(session, 'organization', None))
+    tipo_label = 'REFORÇO' if evento.tipo == 'SUPRIMENTO' else evento.tipo
+    ctx.update({
+        'titulo': tipo_label,
+        'tipo': evento.tipo,
+        'pdv_nome': session.conta.nome,
+        'operador_nome': evento.movimento.usuario.get_full_name() or evento.movimento.usuario.username,
+        'operacao_id': str(evento.movimento.referencia),
+        'data_operacao': evento.criado_em,
+        'valor': evento.movimento.valor,
+        'motivo': evento.movimento.descricao,
+        'back_url': reverse('operacao:pdv_cash', kwargs={'public_id': public_id}),
+    })
+    return render(request, 'operacao/pdv_cash_receipt.html', ctx)
+
 

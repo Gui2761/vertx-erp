@@ -107,6 +107,10 @@ class ContribuinteMunicipal(PhaseFRecord):
             models.UniqueConstraint(fields=['organization', 'documento'], name='rhmun_contrib_doc_org'),
         ]
 
+    def __str__(self):
+        doc = f' ({self.documento})' if self.documento else ''
+        return f'{self.codigo} · {self.nome}{doc}'
+
     def clean(self):
         super().clean()
         expected = 11 if self.tipo == self.Tipo.PESSOA_FISICA else 14

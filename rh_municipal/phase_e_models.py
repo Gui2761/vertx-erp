@@ -135,6 +135,9 @@ class ProtocoloMunicipal(PhaseERecord):
         ordering = ['-recebido_em', '-pk']
         constraints = [models.UniqueConstraint(fields=['organization', 'exercicio', 'numero'], name='rhmun_protocolo_num_org')]
 
+    def __str__(self):
+        return f'{self.numero} · {self.assunto}'
+
 
 class ProcessoDigitalMunicipal(PhaseERecord):
     class Status(models.TextChoices):
@@ -184,6 +187,9 @@ class ProcessoDigitalMunicipal(PhaseERecord):
         ordering = ['-criado_em', '-pk']
         constraints = [models.UniqueConstraint(fields=['organization', 'exercicio', 'numero'], name='rhmun_processo_digital_num_org')]
 
+    def __str__(self):
+        return f'{self.numero} · {self.titulo}'
+
 
 class ParteProcessoMunicipal(PhaseERecord):
     class Tipo(models.TextChoices):
@@ -216,8 +222,8 @@ class TramiteProcessoMunicipal(PhaseEImmutable):
 
     processo = models.ForeignKey(ProcessoDigitalMunicipal, on_delete=models.PROTECT, related_name='tramitacoes')
     acao = models.CharField(max_length=16, choices=Acao.choices)
-    status_anterior = models.CharField(max_length=24, blank=True)
-    status_novo = models.CharField(max_length=24, blank=True)
+    status_anterior = models.CharField(max_length=24, choices=ProcessoDigitalMunicipal.Status.choices, blank=True)
+    status_novo = models.CharField(max_length=24, choices=ProcessoDigitalMunicipal.Status.choices, blank=True)
     secretaria_origem = models.ForeignKey('rh_municipal.Secretaria', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
     secretaria_destino = models.ForeignKey('rh_municipal.Secretaria', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
     departamento_origem = models.ForeignKey('rh_municipal.DepartamentoMunicipal', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
@@ -295,6 +301,9 @@ class DocumentoProcessoMunicipal(PhaseERecord):
     criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='documentos_processos_municipais_criados')
     criado_em = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f'{self.titulo} ({self.get_categoria_display()})'
+
 
 class VersaoDocumentoProcessoMunicipal(PhaseEImmutable):
     documento = models.ForeignKey(DocumentoProcessoMunicipal, on_delete=models.PROTECT, related_name='versoes')
@@ -310,6 +319,9 @@ class VersaoDocumentoProcessoMunicipal(PhaseEImmutable):
     class Meta:
         ordering = ['documento_id', '-numero_versao']
         constraints = [models.UniqueConstraint(fields=['organization', 'documento', 'numero_versao'], name='rhmun_doc_proc_versao_org')]
+
+    def __str__(self):
+        return f'v{self.numero_versao} · {self.nome_original}'
 
     def clean(self):
         super().clean()

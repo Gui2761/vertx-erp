@@ -234,6 +234,9 @@ class DepositoAlmoxarifadoMunicipal(FaseDRecord):
         ordering = ['nome']
         constraints = [models.UniqueConstraint(fields=['organization', 'codigo'], name='rhmun_deposito_codigo_org')]
 
+    def __str__(self):
+        return f'{self.codigo} · {self.nome}'
+
 
 class ItemAlmoxarifadoMunicipal(FaseDRecord):
     codigo = models.CharField(max_length=60)
@@ -247,6 +250,9 @@ class ItemAlmoxarifadoMunicipal(FaseDRecord):
     class Meta:
         ordering = ['nome']
         constraints = [models.UniqueConstraint(fields=['organization', 'codigo'], name='rhmun_item_almox_codigo_org')]
+
+    def __str__(self):
+        return f'{self.codigo} · {self.nome} ({self.unidade_medida})'
 
 
 class SaldoAlmoxarifadoMunicipal(FaseDRecord):

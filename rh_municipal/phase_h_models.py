@@ -58,6 +58,9 @@ class EscolaMunicipal(EducationRecord):
     class Meta:
         constraints = [models.UniqueConstraint(fields=['organization', 'unidade'], name='rhmun_escola_unidade_org')]
 
+    def __str__(self):
+        return f'{self.unidade.nome} ({self.get_tipo_display()})'
+
 
 class AnoLetivoMunicipal(EducationRecord):
     nome = models.CharField(max_length=80)
@@ -68,6 +71,9 @@ class AnoLetivoMunicipal(EducationRecord):
     class Meta:
         ordering = ['-inicio']
         constraints = [models.UniqueConstraint(fields=['organization', 'nome'], name='rhmun_ano_letivo_org_nome')]
+
+    def __str__(self):
+        return self.nome
 
     def clean(self):
         super().clean()
@@ -103,6 +109,9 @@ class TurmaMunicipal(EducationRecord):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['organization', 'escola', 'ano_letivo', 'codigo'], name='rhmun_turma_escola_ano_codigo')]
+
+    def __str__(self):
+        return f'{self.codigo} · {self.etapa} ({self.get_turno_display()})'
 
     def clean(self):
         super().clean()

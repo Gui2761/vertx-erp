@@ -463,7 +463,7 @@
    ========================================================================== */
 @media print {
   @page {
-    margin: 0;
+    margin: 0 !important;
     size: auto;
   }
   body, html {
@@ -479,14 +479,18 @@
   }
   .receipt-wrapper {
     padding: 0 !important;
+    margin: 0 !important;
     background: none !important;
-    display: block !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
   }
   .thermal-receipt {
     box-shadow: none !important;
     border-radius: 0 !important;
     margin: 0 !important;
-    padding: 6px 3px !important;
+    padding: 4px 2px !important;
+    box-sizing: border-box !important;
     width: 100% !important;
   }
   .thermal-receipt * {
@@ -494,10 +498,12 @@
     font-weight: 700 !important;
   }
   .thermal-receipt.width-80mm {
-    width: 76mm !important; /* Calibrado para bobinas térmicas de 80mm com margens de hardware */
+    width: 74mm !important;
+    max-width: 74mm !important;
   }
   .thermal-receipt.width-58mm {
-    width: 52mm !important; /* Calibrado para bobinas térmicas de 58mm */
+    width: 50mm !important;
+    max-width: 50mm !important;
   }
   .receipt-qr {
     filter: contrast(400%) grayscale(100%) !important;

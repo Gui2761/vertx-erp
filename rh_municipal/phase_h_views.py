@@ -88,6 +88,24 @@ def student_register(request):
     if not (_can(request.user, 'educacao.enrollment.manage') and _can(request.user, 'educacao.students.manage')):
         raise PermissionDenied('Matrículas escolares não contratadas ou não autorizadas.')
     organization = current_organization()
+    
+    # Bootstrap automático de Ano Letivo e Turma padrão se ainda não existirem
+    if not m.AnoLetivoMunicipal.objects.filter(organization=organization).exists():
+        from datetime import date
+        cur_year = date.today().year
+        m.AnoLetivoMunicipal.objects.get_or_create(
+            organization=organization, nome=str(cur_year),
+            defaults={'inicio': date(cur_year, 2, 1), 'fim': date(cur_year, 12, 15), 'ativo': True}
+        )
+    ano_padrao = m.AnoLetivoMunicipal.objects.filter(organization=organization, ativo=True).first()
+    for school in m.EscolaMunicipal.objects.filter(organization=organization, ativa=True):
+        if not m.TurmaMunicipal.objects.filter(organization=organization, escola=school).exists() and ano_padrao:
+            m.TurmaMunicipal.objects.create(
+                organization=organization, escola=school, ano_letivo=ano_padrao,
+                codigo='TURMA-101', etapa='Ensino Fundamental', turno=m.TurmaMunicipal.Turno.MANHA,
+                capacidade=35, ativa=True
+            )
+
     form = StudentEnrollmentForm(request.POST or None, organization=organization)
     if request.method == 'POST' and form.is_valid():
         try:

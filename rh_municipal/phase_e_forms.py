@@ -22,10 +22,10 @@ class ProtocolForm(forms.ModelForm):
 
     def __init__(self, *args, actor, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['secretaria'].queryset = scoped_queryset(actor, Secretaria.objects.filter(ativo=True))
-        self.fields['departamento'].queryset = scoped_queryset(actor, DepartamentoMunicipal.objects.filter(ativo=True))
-        self.fields['setor'].queryset = scoped_queryset(actor, SetorMunicipal.objects.filter(ativo=True))
-        self.fields['unidade'].queryset = scoped_queryset(actor, UnidadeMunicipal.objects.filter(ativo=True))
+        self.fields['secretaria'].queryset = scoped_queryset(actor, Secretaria.objects.filter(organization=org, ativo=True))
+        self.fields['departamento'].queryset = scoped_queryset(actor, DepartamentoMunicipal.objects.filter(organization=org, ativo=True))
+        self.fields['setor'].queryset = scoped_queryset(actor, SetorMunicipal.objects.filter(organization=org, ativo=True))
+        self.fields['unidade'].queryset = scoped_queryset(actor, UnidadeMunicipal.objects.filter(organization=org, ativo=True))
         self.fields['responsavel'].queryset = get_user_model().objects.filter(
             memberships__organization=current_organization(), memberships__status=OrganizationMembership.Status.ACTIVE,
             is_active=True,
@@ -43,10 +43,10 @@ class ProcessForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         org = current_organization()
         self.fields['protocolo'].queryset = scoped_queryset(actor, m.ProtocoloMunicipal.objects.filter(organization=org)).filter(processo_digital__isnull=True)
-        self.fields['secretaria'].queryset = scoped_queryset(actor, Secretaria.objects.filter(ativo=True))
-        self.fields['departamento'].queryset = scoped_queryset(actor, DepartamentoMunicipal.objects.filter(ativo=True))
-        self.fields['setor'].queryset = scoped_queryset(actor, SetorMunicipal.objects.filter(ativo=True))
-        self.fields['unidade'].queryset = scoped_queryset(actor, UnidadeMunicipal.objects.filter(ativo=True))
+        self.fields['secretaria'].queryset = scoped_queryset(actor, Secretaria.objects.filter(organization=org, ativo=True))
+        self.fields['departamento'].queryset = scoped_queryset(actor, DepartamentoMunicipal.objects.filter(organization=org, ativo=True))
+        self.fields['setor'].queryset = scoped_queryset(actor, SetorMunicipal.objects.filter(organization=org, ativo=True))
+        self.fields['unidade'].queryset = scoped_queryset(actor, UnidadeMunicipal.objects.filter(organization=org, ativo=True))
         self.fields['responsavel'].queryset = get_user_model().objects.filter(
             memberships__organization=org, memberships__status=OrganizationMembership.Status.ACTIVE,
             is_active=True,
@@ -65,10 +65,10 @@ class ProcessTransitionForm(forms.Form):
     def __init__(self, *args, actor, **kwargs):
         super().__init__(*args, **kwargs)
         org = current_organization()
-        self.fields['secretaria'].queryset = scoped_queryset(actor, Secretaria.objects.filter(ativo=True))
-        self.fields['departamento'].queryset = scoped_queryset(actor, DepartamentoMunicipal.objects.filter(ativo=True))
-        self.fields['setor'].queryset = scoped_queryset(actor, SetorMunicipal.objects.filter(ativo=True))
-        self.fields['unidade'].queryset = scoped_queryset(actor, UnidadeMunicipal.objects.filter(ativo=True))
+        self.fields['secretaria'].queryset = scoped_queryset(actor, Secretaria.objects.filter(organization=org, ativo=True))
+        self.fields['departamento'].queryset = scoped_queryset(actor, DepartamentoMunicipal.objects.filter(organization=org, ativo=True))
+        self.fields['setor'].queryset = scoped_queryset(actor, SetorMunicipal.objects.filter(organization=org, ativo=True))
+        self.fields['unidade'].queryset = scoped_queryset(actor, UnidadeMunicipal.objects.filter(organization=org, ativo=True))
         self.fields['responsavel'].queryset = get_user_model().objects.filter(
             memberships__organization=org, memberships__status=OrganizationMembership.Status.ACTIVE,
             is_active=True,
@@ -127,10 +127,10 @@ class TransparencyForm(forms.ModelForm):
 
     def __init__(self, *args, actor, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['secretaria'].queryset = scoped_queryset(actor, Secretaria.objects.filter(ativo=True))
-        self.fields['departamento'].queryset = scoped_queryset(actor, DepartamentoMunicipal.objects.filter(ativo=True))
-        self.fields['setor'].queryset = scoped_queryset(actor, SetorMunicipal.objects.filter(ativo=True))
-        self.fields['unidade'].queryset = scoped_queryset(actor, UnidadeMunicipal.objects.filter(ativo=True))
+        self.fields['secretaria'].queryset = scoped_queryset(actor, Secretaria.objects.filter(organization=org, ativo=True))
+        self.fields['departamento'].queryset = scoped_queryset(actor, DepartamentoMunicipal.objects.filter(organization=org, ativo=True))
+        self.fields['setor'].queryset = scoped_queryset(actor, SetorMunicipal.objects.filter(organization=org, ativo=True))
+        self.fields['unidade'].queryset = scoped_queryset(actor, UnidadeMunicipal.objects.filter(organization=org, ativo=True))
 
 
 class PublicManifestationForm(PublicStyledForm):

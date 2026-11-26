@@ -244,3 +244,10 @@ class MunicipalPhaseETests(MunicipalFixtures):
             self.client.get(reverse('rh_municipal_public:public_tracking_form', args=[self.c.slug])).status_code,
             404,
         )
+
+    def test_process_detail_view_without_protocol_and_empty_fields(self):
+        process = self._process()  # autuado sem protocolo
+        response = self.client.get(reverse('rh_municipal_public:process_detail', args=[process.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, process.numero)
+        self.assertContains(response, process.titulo)

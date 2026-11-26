@@ -148,8 +148,8 @@ def terminal(request):
                     account_id = int(request.POST.get('conta', ''))
                 except (TypeError, ValueError):
                     raise ValidationError('Selecione um caixa válido e tente novamente.') from None
-                c.open_cash(request.user,account_id,request.POST.get('contado'),request.POST.get('request_id'))
-                return redirect('operacao:pdv_home')
+                sess = c.open_cash(request.user,account_id,request.POST.get('contado'),request.POST.get('request_id'))
+                return redirect(f"{reverse('operacao:pdv_cash_opening', kwargs={'public_id': sess.public_id})}?autoprint=1")
             if request.POST.get('action')=='venda':
                 sale=c.new_sale(request.user,request.POST['caixa'],request_id=request.POST['request_id'])
                 return redirect('operacao:pdv_sale',public_id=sale.public_id)

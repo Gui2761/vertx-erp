@@ -727,6 +727,8 @@ def scoped_queryset(user, queryset, *, capability=None):
         return queryset.none()
     if any(row.escopo == AcessoMunicipal.Escopo.PREFEITURA for row in accesses):
         return queryset
+    if queryset.model._meta.model_name in {'fornecedor', 'modalidadecontratacaomunicipal'}:
+        return queryset
     if queryset.model._meta.model_name == 'decisaopontomunicipal':
         query = Q(pk__in=[])
         for access in accesses:

@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% block title %}Comprovante de Caixa · {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="vx-no-print d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 p-3 bg-light border rounded">
+  <div>
+    <h1 class="h4 mb-1">Comprovante de {{ titulo }}</h1>
+    <p class="text-muted small mb-0">Imprima a filipeta térmica para conferência física, arquivo de tesouraria ou assinatura.</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="btn-group" role="group" aria-label="Largura da bobina">
+      <button type="button" class="btn btn-outline-secondary active" id="btn-mode-80" onclick="setPaperWidth('80mm')">Bobina 80mm</button>
+      <button type="button" class="btn btn-outline-secondary" id="btn-mode-58" onclick="setPaperWidth('58mm')">Bobina 58mm</button>
+    </div>
+    <button class="btn btn-primary fw-bold" onclick="window.print()">
+      <i class="bi bi-printer me-1"></i> Imprimir Comprovante
+    </button>
+    <a class="btn btn-outline-secondary" href="{{ back_url|default:'/pdv/' }}">
+      <i class="bi bi-arrow-left me-1"></i> Voltar ao PDV
+    </a>
+  </div>
+</div>
+
+<div class="receipt-wrapper">
+  <article class="thermal-receipt width-80mm" id="thermalSlip">
+    <!-- Cabeçalho do Estabelecimento -->
+    <header class="receipt-header">
+      <div class="company-name">{{ organization.razao_social|default:empresa.razao_social|default:'TECNOLMED GESTAO CLINICA LTDA ME'|upper }}</div>
+      {% if organization.endereco or empresa.endereco %}<div class="receipt-sub">{{ organization.endereco|default:empresa.endereco }}</div>{% endif %}
+      {% if organization.telefone or empresa.telefone %}<div class="receipt-sub">TELEFONE: {{ organization.telefone|default:empresa.telefone }}</div>{% endif %}
+      <div class="receipt-sub">
+        CNPJ: {{ organization.cnpj|default:empresa.cnpj|default:'39.966.868/0001-86' }}
+        {% if empresa.inscricao_estadual or organization.inscricao_estadual %} · IE: {{ empresa.inscricao_estadual|default:organization.inscricao_estadual }}{% endif %}
+      </div>
+    </header>
+
+    <div class="receipt-divider">--------------------------------------------------</div>
+
+    <div class="receipt-row-plain">DATA: {{ data_operacao|date:'d/m/Y H:i:s' }}</div>
+
+    <div class="receipt-title">{{ titulo|upper }}</div>
+
+    <div class="receipt-row-plain">PDV: {{ pdv_nome|default:'PDV 1' }} &nbsp; OPERADOR: {{ operador_nome|upper }}</div>
+    <div class="receipt-row-plain receipt-uuid">OPERACAO: {{ operacao_id }}</div>
+
+    <div class="receipt-divider">--------------------------------------------------</div>
+
+    {% if tipo == 'ABERTURA' %}
+      <div class="receipt-line-item">
+        <span>DINHEIRO:</span>
+        <span class="price">R$ {{ saldo_abertura|floatformat:2 }}</span>
+      </div>
+      <div class="receipt-divider">--------------------------------------------------</div>
+      <div class="receipt-line-item bold">
+        <span>TOTAL:</span>
+        <span class="price">R$ {{ saldo_abertura|floatformat:2 }}</span>
+      </div>
+    {% elif tipo == 'SANGRIA' or tipo == 'REFORCO' or tipo == 'SUPRIMENTO' %}
+      <div class="receipt-line-item">
+        <span>DINHEIRO:</span>
+        <span class="price">R$ {{ valor|floatformat:2 }}</span>
+      </div>
+      {% if motivo %}
+        <div class="receipt-row-plain mt-1">MOTIVO: {{ motivo }}</div>
+      {% endif %}
+      <div class="receipt-divider">--------------------------------------------------</div>
+      <div class="receipt-line-item bold">
+        <span>TOTAL:</span>
+        <span class="price">R$ {{ valor|floatformat:2 }}</span>
+      </div>
+    {% elif tipo == 'FECHAMENTO' %}
+      <div class="receipt-section-title">VALORES CALCULADOS:</div>
+      <div class="receipt-line-item">
+        <span>DINHEIRO:</span>
+        <span class="price">R$ {{ valores.dinheiro|default:'0,00' }}</span>
+      </div>
+      <div class="receipt-line-item">
+        <span>PIX:</span>
+        <span class="price">R$ {{ valores.pix|default:'0,00' }}</span>
+      </div>
+      <div class="receipt-line-item">
+        <span>CARTAO DE CREDITO:</span>
+        <span class="price">R$ {{ valores.credito|default:'0,00' }}</span>
+      </div>
+      <div class="receipt-line-item">
+        <span>CARTAO DE DEBITO:</span>
+        <span class="price">R$ {{ valores.debito|default:'0,00' }}</span>
+      </div>
+      <div class="receipt-line-item bold border-top-dash">
+        <span>TOTAL:</span>
+        <span class="price">R$ {{ valores.total|default:'0,00' }}</span>
+      </div>
+
+      <div class="receipt-section-title mt-2">DIFERENCAS:</div>
+      <div class="receipt-line-item">
+        <span>DINHEIRO:</span>
+        <span class="price">R$ {{ diferencas.dinheiro|default:'0,00' }}</span>
+      </div>
+      <div class="receipt-line-item">
+        <span>PIX:</span>
+        <span class="price">R$ {{ diferencas.pix|default:'0,00' }}</span>
+      </div>
+      <div class="receipt-line-item">
+        <span>CARTAO DE CREDITO:</span>
+        <span class="price">R$ {{ diferencas.credito|default:'0,00' }}</span>
+      </div>
+      <div class="receipt-line-item">
+        <span>CARTAO DE DEBITO:</span>
+        <span class="price">R$ {{ diferencas.debito|default:'0,00' }}</span>
+      </div>
+      <div class="receipt-line-item bold border-top-dash">
+        <span>TOTAL:</span>
+        <span class="price">R$ {{ diferencas.total|default:'0,00' }}</span>
+      </div>
+
+      {% if justificativa %}
+        <div class="receipt-row-plain mt-2">JUSTIFICATIVA: {{ justificativa }}</div>
+      {% endif %}
+    {% endif %}
+
+    <div class="receipt-divider mt-4">--------------------------------------------------</div>
+    <div class="receipt-signature-line">ASSINATURA DO OPERADOR</div>
+  </article>
+</div>
+
+<style>
+.receipt-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background-color: #e2e8f0;
+}
+.thermal-receipt {
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  padding: 16px 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  font-weight: 700;
+}
+.thermal-receipt.width-80mm {
+  width: 76mm;
+}
+.thermal-receipt.width-58mm {
+  width: 52mm;
+  font-size: 10px;
+}
+.receipt-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.company-name {
+  font-weight: 900;
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+.receipt-sub {
+  font-size: 10px;
+}
+.receipt-divider {
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: -1px;
+  margin: 6px 0;
+  color: #000;
+  font-weight: 900;
+}
+.receipt-title {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 900;
+  margin: 8px 0;
+}
+.receipt-row-plain {
+  font-size: 10.5px;
+  margin: 2px 0;
+}
+.receipt-uuid {
+  word-break: break-all;
+  font-size: 9.5px;
+}
+.receipt-section-title {
+  font-weight: 900;
+  font-size: 11px;
+  margin-top: 6px;
+  margin-bottom: 3px;
+}
+.receipt-line-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0;
+}
+.receipt-line-item.bold {
+  font-weight: 900;
+}
+.border-top-dash {
+  border-top: 1px dashed #000;
+  padding-top: 2px;
+  margin-top: 3px;
+}
+.receipt-signature-line {
+  text-align: center;
+  margin-top: 4px;
+  font-weight: 900;
+  font-size: 10.5px;
+}
+
+@media print {
+  @page {
+    margin: 0 !important;
+    size: auto;
+  }
+  body, html {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .vx-no-print, header, nav, footer, .navbar, .vx-nav, .vx-skip {
+    display: none !important;
+  }
+  .receipt-wrapper {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: none !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+  }
+  .thermal-receipt {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 4px 2px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+  .thermal-receipt * {
+    color: #000000 !important;
+    font-weight: 700 !important;
+  }
+  .thermal-receipt.width-80mm {
+    width: 74mm !important;
+    max-width: 74mm !important;
+  }
+  .thermal-receipt.width-58mm {
+    width: 50mm !important;
+    max-width: 50mm !important;
+  }
+}
+</style>
+
+<script>
+function setPaperWidth(width) {
+  const slip = document.getElementById('thermalSlip');
+  const btn80 = document.getElementById('btn-mode-80');
+  const btn58 = document.getElementById('btn-mode-58');
+  if (width === '58mm') {
+    slip.classList.remove('width-80mm');
+    slip.classList.add('width-58mm');
+    btn58.classList.add('active');
+    btn80.classList.remove('active');
+  } else {
+    slip.classList.remove('width-58mm');
+    slip.classList.add('width-80mm');
+    btn80.classList.add('active');
+    btn58.classList.remove('active');
+  }
+}
+if (window.location.search.includes('autoprint=1')) {
+  window.addEventListener('load', () => {
+    setTimeout(() => { window.print(); }, 300);
+  });
+}
+</script>
+{% endblock %}

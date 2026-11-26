@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django import forms
 
+from gestao.models import Fornecedor
 from platform_core.context import current_organization
 
 from .phase_b_models import (
@@ -29,6 +30,9 @@ MODEL_ACTIONS = {
     )),
     'modalidade': ('Modalidade / fundamento parametrizável', ModalidadeContratacaoMunicipal, (
         'codigo', 'nome', 'fundamento_referencia', 'descricao', 'ativo',
+    )),
+    'fornecedor': ('Cadastrar fornecedor', Fornecedor, (
+        'nome', 'nome_fantasia', 'documento', 'contato', 'telefone', 'email', 'ativo',
     )),
     'pesquisa': ('Pesquisa de preços', PesquisaPrecoMunicipal, ('solicitacao', 'processo', 'data_referencia', 'observacoes')),
     'cotacao': ('Cotação de fornecedor', CotacaoFornecedorMunicipal, (
@@ -186,8 +190,19 @@ def procurement_model_form(action, *, actor, data=None, files=None):
             field.widget.attrs.update({'class': css})
             if isinstance(field, forms.ModelChoiceField):
                 related = field.queryset.model
-                if any(item.name == 'organization' for item in related._meta.fields):
-                    field.queryset = scoped_queryset(actor, related.objects.filter(organization=org))
+                from django.contrib.auth import get_user_model
+                from platform_core.models import OrganizationMembership
+                if related == get_user_model():
+                    field.queryset = related.objects.filter(
+                        memberships__organization=org,
+                        memberships__status=OrganizationMembership.Status.ACTIVE,
+                        is_active=True,
+                    ).distinct()
+                elif any(item.name == 'organization' for item in related._meta.fields):
+                    qs = related.objects.filter(organization=org)
+                    if any(item.name == 'ativo' for item in related._meta.fields):
+                        qs = qs.filter(ativo=True)
+                    field.queryset = scoped_queryset(actor, qs)
             if isinstance(field, forms.DecimalField):
                 field.widget.attrs['inputmode'] = 'decimal'
             if isinstance(field, forms.DateField):

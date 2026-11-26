@@ -91,7 +91,10 @@ def _next_number(org, family, today=None):
 
 
 def _same_tenant(row, org, field):
-    related = getattr(row, field, None)
+    if isinstance(row, dict):
+        related = row.get(field)
+    else:
+        related = getattr(row, field, None)
     if related is None:
         return
     related_org_id = getattr(related, 'organization_id', None)
@@ -134,8 +137,11 @@ def create_process(actor, *, data):
     for field in ('protocolo', 'secretaria', 'departamento', 'setor', 'unidade', 'responsavel'):
         _same_tenant(data, org, field)
     protocol = data.get('protocolo')
-    if protocol and (protocol.organization_id != org.pk or hasattr(protocol, 'processo_digital')):
-        raise ValidationError('O protocolo não pertence a esta Prefeitura ou já está vinculado a processo.')
+    if protocol:
+        if protocol.organization_id != org.pk:
+            raise ValidationError({'protocolo': 'O protocolo pertence a outra Prefeitura.'})
+        if m.ProcessoDigitalMunicipal.objects.filter(protocolo=protocol).exists():
+            raise ValidationError({'protocolo': 'O protocolo selecionado já está vinculado a outro processo.'})
     year, sequence = _next_number(org, m.ContadorExpedienteMunicipal.Familia.PROCESSO)
     row = m.ProcessoDigitalMunicipal(organization=org, numero=f'PROC-{sequence}', exercicio=year, criado_por=actor, **data)
     row.save()
