@@ -141,14 +141,15 @@ def sale(request,public_id,receipt=False):
         from .seller import sale_context
         return render(request,'operacao/seller_pdv.html',sale_context(request,sale,session))
 
+    from platform_core.context import current_organization
+    from platform_core.models import ConfiguracaoEmpresa
+    org = getattr(sale, 'organization', None) or current_organization()
+    empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first() if org else None
+
     nfce_info = None
     if receipt and sale.snapshot and str(sale.snapshot.get('tipo_emissao', '')).upper() == 'NFCE':
         import re, hashlib, os
         from fiscal.nfce import xml as nfce_xml
-        from platform_core.context import current_organization
-        from platform_core.models import ConfiguracaoEmpresa
-        org = getattr(sale, 'organization', None) or current_organization()
-        empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first() if org else None
         cnpj_source = (org.cnpj if org else '') or getattr(empresa, 'cnpj', '') or ''
         raw_cnpj = re.sub(r'\D', '', cnpj_source).zfill(14)
         ret = empresa.retencoes_informativas if empresa and isinstance(empresa.retencoes_informativas, dict) else {}

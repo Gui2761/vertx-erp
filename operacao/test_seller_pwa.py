@@ -319,6 +319,17 @@ class SellerPWATests(SellerData,TestCase):
         self.assertNotContains(response,str(self.other_session.public_id))
         self.assertNotContains(response,'Conversão de orçamento')
 
+    def test_terminal_abrir_caixa_redirects_to_cash_opening_receipt(self):
+        with tenant_context(self.a):
+            conta_nova = m.ContaBancaria.objects.create(nome='Caixa Teste Abertura', tipo='CAIXA', deposito_padrao=self.depot)
+        req_id = uuid.uuid4()
+        response = self.client.post(
+            reverse('operacao:pdv_home'),
+            {'action': 'abrir', 'conta': conta_nova.pk, 'contado': '150.00', 'request_id': str(req_id)}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/comprovante-abertura/?autoprint=1', response['Location'])
+
     def test_goal_can_be_updated_without_duplicate_and_foreign_seller_denied(self):
         self.client.force_login(self.admin)
         for amount in ['100.01','250.99']:
