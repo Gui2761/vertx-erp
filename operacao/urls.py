@@ -8,6 +8,7 @@ from . import seller
 from . import pdv_offline
 from fiscal import views as fiscal_views
 from fiscal import hub_views as fiscal_hub_views
+from fiscal import carteira_views as fiscal_carteira_views
 from fiscal.nfce import views as nfce_views
 from integracoes import views as migration_views
 from . import banking_views
@@ -26,6 +27,7 @@ urlpatterns = [
     path('integracoes/migracao/enviar/<str:kind>/',migration_views.upload,name='migration_upload'),
     path('integracoes/migracao/lotes/<uuid:key>/colunas/',migration_views.mapping,name='migration_mapping'),
     path('integracoes/migracao/lotes/<uuid:key>/conferir/',migration_views.preview,name='migration_preview'),
+    path('integracoes/migracao/lotes/<uuid:key>/atualizar-correspondentes/',migration_views.mark_matching_update,name='migration_mark_matching_update'),
     path('integracoes/migracao/lotes/<uuid:key>/linha/<int:number>/',migration_views.edit,name='migration_edit'),
     path('integracoes/migracao/lotes/<uuid:key>/iniciar/',migration_views.start,name='migration_start'),
     path('integracoes/migracao/lotes/<uuid:key>/progresso/',migration_views.progress,name='migration_progress'),
@@ -168,6 +170,13 @@ urlpatterns = [
     path('bancos/integracao/', banking_views.bancos_integracao, name='bancos_integracao'),
     path('api/bancos/webhook/<uuid:org_id>/<int:integracao_id>/', banking_views.webhook_banco_publico, name='webhook_banco_publico'),
     path('fiscal/hub/', fiscal_hub_views.fiscal_hub, name='fiscal_hub'),
+    path('fiscal/carteira/', fiscal_carteira_views.carteira_dashboard, name='fiscal_carteira_dashboard'),
+    path('fiscal/carteira/clientes/', fiscal_carteira_views.carteira_clientes, name='fiscal_carteira_clientes'),
+    path('fiscal/carteira/clientes/<uuid:public_id>/', fiscal_carteira_views.carteira_cliente_detalhe, name='fiscal_carteira_cliente_detalhe'),
+    path('fiscal/carteira/pendencias/', fiscal_carteira_views.carteira_pendencias, name='fiscal_carteira_pendencias'),
+    path('fiscal/carteira/pendencias/<int:pk>/', fiscal_carteira_views.carteira_pendencia_detalhe, name='fiscal_carteira_pendencia_detalhe'),
+    path('fiscal/carteira/obrigacoes/', fiscal_carteira_views.carteira_obrigacoes, name='fiscal_carteira_obrigacoes'),
+    path('fiscal/carteira/comunicacoes/<uuid:token>/confirmar/', fiscal_carteira_views.confirmar_comunicacao, name='fiscal_carteira_confirmar_comunicacao'),
     path('fiscal/nfe/<int:pk>/danfe/', fiscal_hub_views.fiscal_nfe_danfe, name='nfe_danfe'),
     path('fiscal/documentos/<int:pk>/nota.json', fiscal_hub_views.fiscal_nota_json, name='fiscal_nota_json'),
     path('fiscal/recebidas/', fiscal_hub_views.fiscal_notas_recebidas, name='fiscal_notas_recebidas'),

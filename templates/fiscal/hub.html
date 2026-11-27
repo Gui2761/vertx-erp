@@ -10,6 +10,9 @@
       <p class="text-secondary small mb-0">NF-e (Modelo 55), NFS-e Nacional + Contingência RPS, NFC-e PDV Offline e espelho <code>nota.json</code> (NT 2025.002).</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-success btn-sm" href="{% url 'operacao:fiscal_carteira_dashboard' %}">
+        <i class="bi bi-briefcase-fill me-1"></i>VERTYX Contábil (Carteira Fiscal)
+      </a>
       <a class="btn btn-outline-primary btn-sm" href="{% url 'operacao:fiscal_notas_recebidas' %}">
         <i class="bi bi-inbox-fill me-1"></i>Notas Recebidas Automáticas <span class="badge text-bg-primary ms-1">{{ recebidas_count }}</span>
       </a>

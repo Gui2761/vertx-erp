@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Clientes &amp; CNPJs · VERTYX Contábil{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "fiscal/carteira_subnav.html" %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-8">
+      <div class="card p-3 h-100">
+        <form method="get" class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label small text-secondary mb-1">Buscar CNPJ ou Razão Social</label>
+            <input type="text" name="q" value="{{ filtro_q }}" class="form-control form-control-sm" placeholder="Ex.: Tecnolmed ou 00.000...">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-secondary mb-1">Regime Tributário</label>
+            <select name="regime" class="form-select form-select-sm">
+              <option value="">Todos</option>
+              {% for c, l in regimes_choices %}<option value="{{ c }}" {% if filtro_regime == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-secondary mb-1">Situação Fiscal</label>
+            <select name="situacao" class="form-select form-select-sm">
+              <option value="">Todas</option>
+              {% for c, l in situacoes_fiscais %}<option value="{{ c }}" {% if filtro_situacao == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1"></i>Filtrar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card p-3 h-100 d-flex flex-row align-items-center justify-content-between gap-2">
+        <div>
+          <div class="fw-semibold">Ações de Carteira</div>
+          <div class="small text-secondary">{{ empresas|length }} CNPJ(s) listado(s)</div>
+        </div>
+        {% if pode_escrever_carteira %}
+        <div class="d-flex gap-2">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="importar_erp">
+            <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-arrow-repeat me-1"></i>Importar do ERP</button>
+          </form>
+          <a href="#novo-cnpj" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Novo CNPJ</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista da Carteira -->
+  <div class="card p-3 mb-4">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Razão Social / CNPJ</th>
+            <th>Regime Tributário</th>
+            <th>Responsável Interno</th>
+            <th>Certificado / Procuração</th>
+            <th>Saúde Fiscal</th>
+            <th>Situação</th>
+            <th class="text-end">Ficha Única</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in empresas %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ emp.razao_social }}</div>
+              <div class="small text-secondary"><code>{{ emp.cnpj_formatado }}</code> {% if emp.cidade %}· {{ emp.cidade }}/{{ emp.uf }}{% endif %}</div>
+            </td>
+            <td><span class="badge text-bg-secondary">{{ emp.get_regime_tributario_display }}</span></td>
+            <td class="small">
+              {% if emp.responsavel_interno %}{{ emp.responsavel_interno.get_full_name|default:emp.responsavel_interno.username }}{% else %}<span class="text-secondary">Não definido</span>{% endif %}
+              <div class="text-secondary">{{ emp.get_departamento_padrao_display }}</div>
+            </td>
+            <td class="small">
+              <div>Certificado: <strong>{{ emp.get_certificado_tipo_display }}</strong> {% if emp.certificado_validade %}({{ emp.certificado_validade|date:"d/m/Y" }}){% endif %}</div>
+              <div>e-CAC: {% if emp.procuracao_ecac_ativa %}<span class="text-success">Ativa</span>{% if emp.procuracao_validade %} ({{ emp.procuracao_validade|date:"d/m/Y" }}){% endif %}{% else %}<span class="text-warning">Pendente</span>{% endif %}</div>
+            </td>
+            <td>
+              <span class="badge {% if emp.saude_diag.score >= 85 %}text-bg-success{% elif emp.saude_diag.score >= 65 %}text-bg-warning{% else %}text-bg-danger{% endif %}">
+                {{ emp.saude_diag.score }}/100
+              </span>
+            </td>
+            <td>
+              <span class="badge {% if emp.situacao_fiscal == 'REGULAR' %}text-bg-success{% elif emp.situacao_fiscal == 'ALERTA' %}text-bg-warning{% else %}text-bg-danger{% endif %}">
+                {{ emp.get_situacao_fiscal_display }}
+              </span>
+            </td>
+            <td class="text-end">
+              <a href="{% url 'operacao:fiscal_carteira_cliente_detalhe' emp.public_id %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-folder2-open me-1"></i>Ficha Fiscal
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-4 text-secondary">Nenhum CNPJ encontrado na carteira para os filtros atuais.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if pode_escrever_carteira %}
+  <!-- Cadastro de Novo Cliente/CNPJ na Carteira -->
+  <div id="novo-cnpj" class="card p-4">
+    <h2 class="h5 mb-3"><i class="bi bi-building-add me-2"></i>Cadastrar Cliente / CNPJ na Carteira Contábil</h2>
+    <form method="post" class="row g-3">
+      {% csrf_token %}
+      <input type="hidden" name="acao" value="nova_empresa">
+      <div class="col-md-5">
+        <label class="form-label small">Razão Social *</label>
+        <input type="text" name="razao_social" class="form-control form-control-sm" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small">Nome Fantasia</label>
+        <input type="text" name="nome_fantasia" class="form-control form-control-sm">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">CNPJ (14 dígitos) *</label>
+        <input type="text" name="cnpj" class="form-control form-control-sm" placeholder="00.000.000/0001-00" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Regime Tributário</label>
+        <select name="regime_tributario" class="form-select form-select-sm">
+          {% for c, l in regimes_choices %}<option value="{{ c }}">{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Responsável Interno</label>
+        <select name="responsavel_interno_id" class="form-select form-select-sm">
+          <option value="">Selecionar responsável...</option>
+          {% for u in equipe_membros %}<option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Departamento Principal</label>
+        <select name="departamento_padrao" class="form-select form-select-sm">
+          {% for c, l in departamentos_choices %}<option value="{{ c }}">{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Vincular Cliente ERP (opcional)</label>
+        <select name="cliente_id" class="form-select form-select-sm">
+          <option value="">Sem vínculo direto</option>
+          {% for cli in clientes_erp %}<option value="{{ cli.pk }}">{{ cli.nome_razao_social }} ({{ cli.cpf_cnpj }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Certificado Digital</label>
+        <select name="certificado_tipo" class="form-select form-select-sm">
+          {% for c, l in certificados_choices %}<option value="{{ c }}">{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Validade do Certificado</label>
+        <input type="date" name="certificado_validade" class="form-control form-control-sm">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Validade Procuração e-CAC</label>
+        <input type="date" name="procuracao_validade" class="form-control form-control-sm">
+        <div class="form-check mt-1">
+          <input class="form-check-input" type="checkbox" name="procuracao_ecac_ativa" value="1" id="chk-ecac">
+          <label class="form-check-label small" for="chk-ecac">Procuração e-CAC ativa</label>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Honorário Mensal (R$)</label>
+        <input type="text" name="honorario_mensal" value="0.00" class="form-control form-control-sm">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small">WhatsApp do Cliente</label>
+        <input type="text" name="whatsapp_contato" class="form-control form-control-sm" placeholder="(79) 99999-9999">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small">E-mail Fiscal/Contábil</label>
+        <input type="email" name="email_contato" class="form-control form-control-sm">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Cidade</label>
+        <input type="text" name="cidade" class="form-control form-control-sm">
+      </div>
+      <div class="col-md-1">
+        <label class="form-label small">UF</label>
+        <input type="text" name="uf" maxlength="2" class="form-control form-control-sm">
+      </div>
+      <div class="col-12">
+        <label class="form-label small">Observações Fiscais / Particularidades</label>
+        <textarea name="observacoes" rows="2" class="form-control form-control-sm"></textarea>
+      </div>
+      <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i>Salvar na Carteira Fiscal</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

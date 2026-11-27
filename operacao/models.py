@@ -777,3 +777,14 @@ from .nfce_models import ConfiguracaoNFCe, TributacaoProdutoNFCe, ArtefatoNFCe, 
 from .import_models import LoteImportacao, LinhaImportacao  # noqa: E402,F401
 from .banking_models import IntegracaoBancaria, CobrancaBancaria, WebhookBancarioEvento  # noqa: E402,F401
 from .dfe_models import ConfiguracaoDFeRecebimento, NotaFiscalRecebida, ManifestacaoDFeEvento  # noqa: E402,F401
+from .contabil_models import (  # noqa: E402,F401
+    DepartamentoContabil,
+    RegimeTributarioCarteira,
+    EmpresaCarteiraContabil,
+    CertidaoFiscalCarteira,
+    ObrigacaoFiscalCarteira,
+    PendenciaFiscalCarteira,
+    ComunicacaoClienteContabil,
+    EventoHistoricoContabil,
+    PreAnaliseComercialCNPJ,
+)

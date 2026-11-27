@@ -265,6 +265,19 @@ def edit_row(user,key,number,corrections,action):
     return obj
 
 @transaction.atomic
+def mark_matching_rows_update(user,key):
+    obj=batch(user,key,True);writable(obj)
+    if obj.status!='CONFERIR':raise ValidationError('Confirme antes a correspondência das colunas.')
+    if obj.tipo=='estoque':raise ValidationError('Atualização em lote não se aplica a entradas de estoque.')
+    updated=0
+    for row in obj.linhas.filter(alvo__isnull=False).exclude(acao__in=['ATUALIZAR','IGNORAR']):
+        row.acao='ATUALIZAR';gs.write(row);updated+=1
+    if updated:
+        analyze(user,obj)
+        gs.audit(user,'IMPORTACAO_LOTE_MARCADO_ATUALIZAR',obj,{'linhas_marcadas':updated,'tipo':obj.tipo})
+    return updated
+
+@transaction.atomic
 def start(user,key,allow_partial=False):
     obj=batch(user,key,True);writable(obj)
     if obj.status!='CONFERIR':raise ValidationError('Confira as colunas e os dados antes de importar.')

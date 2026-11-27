@@ -85,6 +85,25 @@ def _menu_uncached(request):
         if panel_access:
             links.append({'label':'Painel de TV (Operações)','url':'/painel-operacional/','icon':'grid'})
         return {'can_operational_panel':panel_access,'executive_navigation':[{'title':'ASSISTÊNCIA','links':links}]}
+    if membership and membership.role in ['CONTABILIDADE', 'FINANCEIRO'] and not (match and match.app_name=='platform_core'):
+        contabil_links = [
+            {'label': 'Dashboard Fiscal', 'url': '/fiscal/carteira/', 'icon': 'chart'},
+            {'label': 'Clientes & CNPJs', 'url': '/fiscal/carteira/clientes/', 'icon': 'users'},
+            {'label': 'Central de Pendências', 'url': '/fiscal/carteira/pendencias/', 'icon': 'document'},
+            {'label': 'Certidões & Obrigações', 'url': '/fiscal/carteira/obrigacoes/', 'icon': 'calendar'},
+            {'label': 'Central Fiscal (NF-e / NFC-e)', 'url': '/fiscal/hub/', 'icon': 'document'},
+        ]
+        fin_links = [
+            {'label': 'Dashboard Financeiro', 'url': '/financeiro/', 'icon': 'bank'},
+            {'label': 'Contas a receber', 'url': '/financeiro/lancamentos/?tipo=RECEBER', 'icon': 'arrows'},
+            {'label': 'Contas a pagar', 'url': '/financeiro/lancamentos/?tipo=PAGAR', 'icon': 'arrows'},
+        ]
+        nav = []
+        if module_enabled('fiscal'):
+            nav.append({'title': 'Contábil & Fiscal', 'links': contabil_links})
+        if module_enabled('financeiro'):
+            nav.append({'title': 'Financeiro', 'links': fin_links})
+        return {'can_operational_panel': False, 'executive_navigation': nav, 'administrative_navigation': True}
     if not membership or membership.role not in ['ADMIN','GESTOR']:
         return {'can_operational_panel':panel_access}
     groups=[
@@ -93,7 +112,7 @@ def _menu_uncached(request):
         ('COMERCIAL',[('Vendas e loja','/vendas/','bag'),('Orçamentos & Atacado','/orcamentos/','file-earmark-ruled'),('Contratos & Licitações','/contratos/','file-earmark-text')]),
         ('ESTOQUE',[('Painel do estoque','/estoque/painel/','box-seam'),('Produtos e Peças','/estoque/','box-seam'),('Movimentações & Lotes','/estoque/movimentar/','arrow-left-right'),('Depósitos & Inventário','/depositos/','buildings')]),
         ('COMPRAS',[('Compras e Pedidos','/compras/','cart'),('Cotações','/compras/?cotacoes=1','chat-square-text'),('Fornecedores','/estoque/fornecedores/','person-vcard')]),
-        ('FINANCEIRO',[('Dashboard','/financeiro/','cash-stack'),('Maquinetas & Taxas','/financeiro/maquinetas/','credit-card'),('Contas a receber','/financeiro/lancamentos/?tipo=RECEBER','arrow-down-circle'),('Contas a pagar','/financeiro/lancamentos/?tipo=PAGAR','arrow-up-circle'),('Bancos e Caixas','/bancos/','bank'),('Movimentações & Conciliação','/financeiro/movimentacoes/','arrows'),('Central Fiscal (NFC-e / NF-e)','/fiscal/hub/','file-earmark-check'),('Configuração Fiscal (CSC)','/fiscal/configuracao/','shield-check')]),
+        ('FINANCEIRO',[('Dashboard','/financeiro/','cash-stack'),('VERTYX Contábil (Carteira)','/fiscal/carteira/','file-earmark-check'),('Clientes & CNPJs Fiscais','/fiscal/carteira/clientes/','person-vcard'),('Pendências Contábeis','/fiscal/carteira/pendencias/','list-check'),('Certidões & Obrigações','/fiscal/carteira/obrigacoes/','calendar-check'),('Maquinetas & Taxas','/financeiro/maquinetas/','credit-card'),('Contas a receber','/financeiro/lancamentos/?tipo=RECEBER','arrow-down-circle'),('Contas a pagar','/financeiro/lancamentos/?tipo=PAGAR','arrow-up-circle'),('Bancos e Caixas','/bancos/','bank'),('Movimentações & Conciliação','/financeiro/movimentacoes/','arrows'),('Central Fiscal (NFC-e / NF-e)','/fiscal/hub/','file-earmark-check'),('Configuração Fiscal (CSC)','/fiscal/configuracao/','shield-check')]),
         ('CADASTROS',[('Clientes e Unidades','/clientes/','people'),('Equipamentos','/equipamentos/','heart-pulse'),('Técnicos','/contas/tecnicos/','person-gear'),('Carga em massa (Excel)','/integracoes/migracao/','stock')]),
         ('RELATÓRIOS',[('Relatórios','/relatorios/','bar-chart'),('Gestão Executiva','/gestao/executiva/','chart')]),
         ('CONFIGURAÇÕES',[('Configurações','/configuracoes/','gear'),('Maquinetas & Cartões','/financeiro/maquinetas/','credit-card'),('Configuração Fiscal (CSC)','/fiscal/configuracao/','shield-check'),('Usuários','/contas/usuarios/','person-check'),('Minha Assinatura','/vertyx/empresa/plano/','bookmark-check'),('Notificações','/notificacoes/','bell')])]

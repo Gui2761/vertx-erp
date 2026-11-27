@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Central de Pendências · VERTYX Contábil{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "fiscal/carteira_subnav.html" %}
+
+  <!-- Pipeline das 6 Etapas Rastreáveis (Slide 06 PDF) -->
+  <div class="row g-2 mb-4">
+    {% for etapa in etapas_fluxo %}
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="card p-2 text-center h-100">
+        <div class="small text-secondary">{{ etapa.nome }}</div>
+        <div class="h4 mb-0 fw-bold {% if etapa.codigo == 'AUDITAR' %}text-success{% else %}text-primary{% endif %}">{{ etapa.total }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Filtros -->
+  <div class="card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small text-secondary mb-1">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for c, l in status_choices %}<option value="{{ c }}" {% if filtro_status == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-secondary mb-1">Prioridade</label>
+        <select name="prioridade" class="form-select form-select-sm">
+          <option value="">Todas</option>
+          {% for c, l in prioridade_choices %}<option value="{{ c }}" {% if filtro_prioridade == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-secondary mb-1">Departamento</label>
+        <select name="departamento" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for c, l in departamentos_choices %}<option value="{{ c }}" {% if filtro_departamento == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+        <a href="#nova-pendencia" class="btn btn-sm btn-success"><i class="bi bi-plus-lg me-1"></i>Nova</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabela Operacional de Pendências -->
+  <div class="card p-3 mb-4">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Código / Pendência</th>
+            <th>Empresa Afetada</th>
+            <th>Depto / Responsável</th>
+            <th>Prioridade</th>
+            <th>Etapa do Fluxo</th>
+            <th>Prazo / Status</th>
+            <th class="text-end">Tratar</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pendencias %}
+          <tr>
+            <td>
+              <div class="fw-semibold"><code>{{ p.codigo }}</code> · {{ p.titulo }}</div>
+              {% if p.descricao %}<div class="small text-secondary">{{ p.descricao|truncatechars:80 }}</div>{% endif %}
+            </td>
+            <td>
+              <a href="{% url 'operacao:fiscal_carteira_cliente_detalhe' p.empresa.public_id %}" class="text-decoration-none fw-semibold">{{ p.empresa.razao_social }}</a>
+              <div class="small text-secondary"><code>{{ p.empresa.cnpj_formatado }}</code></div>
+            </td>
+            <td class="small">
+              <span class="badge text-bg-secondary">{{ p.get_departamento_display }}</span>
+              <div class="mt-1">{% if p.responsavel %}{{ p.responsavel.get_full_name|default:p.responsavel.username }}{% else %}<span class="text-warning">Aguardando delegação</span>{% endif %}</div>
+            </td>
+            <td>
+              <span class="badge {% if p.prioridade == 'CRITICA' %}text-bg-danger{% elif p.prioridade == 'ALTA' %}text-bg-warning{% elif p.prioridade == 'MEDIA' %}text-bg-primary{% else %}text-bg-secondary{% endif %}">
+                {{ p.get_prioridade_display }}
+              </span>
+            </td>
+            <td><span class="badge text-bg-dark">{{ p.get_etapa_fluxo_display }}</span></td>
+            <td class="small">
+              <div>{% if p.prazo %}<span class="{% if p.atrasada %}text-danger fw-bold{% endif %}">{{ p.prazo|date:"d/m/Y" }}</span>{% else %}Sem prazo{% endif %}</div>
+              <span class="badge {% if p.status == 'RESOLVIDO' %}text-bg-success{% elif p.status == 'EM_ANDAMENTO' %}text-bg-info{% else %}text-bg-warning{% endif %}">{{ p.get_status_display }}</span>
+            </td>
+            <td class="text-end">
+              <a href="{% url 'operacao:fiscal_carteira_pendencia_detalhe' p.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-arrow-right-circle me-1"></i>Resolver
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-4 text-secondary">Nenhuma pendência encontrada para os filtros selecionados.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if pode_escrever_carteira %}
+  <div id="nova-pendencia" class="card p-4">
+    <h2 class="h5 mb-3"><i class="bi bi-plus-circle me-2"></i>Abrir Nova Pendência Operacional</h2>
+    <form method="post" enctype="multipart/form-data" class="row g-3">
+      {% csrf_token %}
+      <div class="col-md-4">
+        <label class="form-label small">Empresa Afetada *</label>
+        <select name="empresa_id" class="form-select form-select-sm" required>
+          <option value="">Selecione o CNPJ...</option>
+          {% for emp in empresas %}<option value="{{ emp.pk }}">{{ emp.razao_social }} ({{ emp.cnpj_formatado }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-5">
+        <label class="form-label small">Título da Pendência *</label>
+        <input type="text" name="titulo" class="form-control form-control-sm" placeholder="Ex.: Divergência PGDAS-D / CND Municipal bloqueada" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Prioridade</label>
+        <select name="prioridade" class="form-select form-select-sm">
+          {% for c, l in prioridade_choices %}<option value="{{ c }}" {% if c == 'ALTA' %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Departamento</label>
+        <select name="departamento" class="form-select form-select-sm">
+          {% for c, l in departamentos_choices %}<option value="{{ c }}">{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Delegar para Responsável</label>
+        <select name="responsavel_id" class="form-select form-select-sm">
+          <option value="">Definir depois (Etapa 01)</option>
+          {% for u in equipe_membros %}<option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Prazo Limite</label>
+        <input type="date" name="prazo" value="{{ prazo_padrao }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Anexo / Evidência (opcional)</label>
+        <input type="file" name="anexo" class="form-control form-control-sm">
+      </div>
+      <div class="col-12">
+        <label class="form-label small">Descrição Operacional &amp; Providência</label>
+        <textarea name="descricao" rows="2" class="form-control form-control-sm" placeholder="Detalhe o problema detectado e os documentos ou apurações necessárias..."></textarea>
+      </div>
+      <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i>Registrar Pendência Rastreável</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

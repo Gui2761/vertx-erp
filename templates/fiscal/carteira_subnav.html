@@ -1,0 +1,27 @@
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span class="badge rounded-pill text-bg-success"><i class="bi bi-shield-check me-1"></i>VERTYX CONTÁBIL</span>
+      <span class="badge rounded-pill text-bg-secondary">Fluxo Rastreável · Multi-Tenant</span>
+    </div>
+    <h1 class="h3 mb-0">Gestão &amp; Inteligência Fiscal da Carteira</h1>
+    <p class="text-secondary small mb-0">Monitorar · Delegar · Comunicar · Resolver · Auditar em uma única central operacional.</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-sm {% if aba_carteira == 'dashboard' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:fiscal_carteira_dashboard' %}">
+      <i class="bi bi-speedometer2 me-1"></i>01 · Dashboard Fiscal
+    </a>
+    <a class="btn btn-sm {% if aba_carteira == 'clientes' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:fiscal_carteira_clientes' %}">
+      <i class="bi bi-buildings me-1"></i>02 · Clientes / CNPJs
+    </a>
+    <a class="btn btn-sm {% if aba_carteira == 'pendencias' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:fiscal_carteira_pendencias' %}">
+      <i class="bi bi-kanban me-1"></i>03 · Pendências
+    </a>
+    <a class="btn btn-sm {% if aba_carteira == 'obrigacoes' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:fiscal_carteira_obrigacoes' %}">
+      <i class="bi bi-calendar2-check me-1"></i>04 · Certidões &amp; Obrigações
+    </a>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'operacao:fiscal_hub' %}">
+      <i class="bi bi-receipt me-1"></i>Emissão NF-e / NFC-e
+    </a>
+  </div>
+</div>

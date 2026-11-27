@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db import OperationalError
 from django.core.paginator import Paginator
 from django.http import FileResponse,Http404,HttpResponse,JsonResponse
 from django.shortcuts import render,redirect,get_object_or_404
@@ -120,6 +121,19 @@ def edit(request,key,number):
             if form.is_valid():s.edit_row(request.user,key,number,{k:v for k,v in form.cleaned_data.items() if k!='acao'},form.cleaned_data['acao']);return redirect('operacao:migration_preview',key=key)
         except ValidationError as exc:form.add_error(None,exc)
     return page(request,'edit',4,lote=obj,row=row,form=form)
+
+@guard
+@require_http_methods(['POST'])
+def mark_matching_update(request,key):
+    get_batch(request,key)
+    try:
+        updated=s.mark_matching_rows_update(request.user,key)
+        messages.success(request,f'{updated} cadastro(s) correspondente(s) marcado(s) para atualização sem criar duplicatas.')
+    except ValidationError as exc:
+        for message in exc.messages:messages.error(request,message)
+    except OperationalError:
+        messages.error(request,'O banco de dados demorou para responder durante a conferência. Tente novamente em instantes.')
+    return redirect('operacao:migration_preview',key=key)
 
 @guard
 @require_http_methods(['POST'])

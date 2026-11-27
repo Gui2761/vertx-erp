@@ -168,6 +168,7 @@ def analytics_at_least(level, organization=None, erp_code=None):
 CAPABILITIES = {
     'migracao': ('', ('ADMIN', 'GESTOR')),
     'fiscal_consultar': ('fiscal', ('ADMIN', 'GESTOR', 'FINANCEIRO', 'CONTABILIDADE')),
+    'fiscal_carteira_escrever': ('fiscal', ('ADMIN', 'GESTOR', 'FINANCEIRO', 'CONTABILIDADE')),
     'fiscal_emitir': ('fiscal', ('ADMIN', 'GESTOR', 'FINANCEIRO')),
     'fiscal_cancelar': ('fiscal', ('ADMIN', 'GESTOR', 'FINANCEIRO')),
     'fiscal_configurar': ('fiscal', ('ADMIN', 'GESTOR')),

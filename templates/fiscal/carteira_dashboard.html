@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Fiscal · VERTYX Contábil{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "fiscal/carteira_subnav.html" %}
+
+  <div class="card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small text-secondary mb-1">Filtrar por Responsável Interno</label>
+        <select name="responsavel" class="form-select form-select-sm">
+          <option value="">Toda a equipe contábil/fiscal</option>
+          {% for u in equipe_membros %}
+          <option value="{{ u.pk }}" {% if filtro_responsavel == u.pk %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-secondary mb-1">Filtrar por Departamento</label>
+        <select name="departamento" class="form-select form-select-sm">
+          <option value="">Todos os departamentos</option>
+          {% for code, label in departamentos_choices %}
+          <option value="{{ code }}" {% if filtro_departamento == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Aplicar filtros</button>
+        {% if filtro_responsavel or filtro_departamento %}
+        <a href="{% url 'operacao:fiscal_carteira_dashboard' %}" class="btn btn-sm btn-outline-secondary">Limpar</a>
+        {% endif %}
+        {% if pode_escrever_carteira %}
+        <button type="submit" form="form-sync-erp" class="btn btn-sm btn-outline-success ms-auto" title="Importa automaticamente os Clientes PJ já cadastrados no ERP">
+          <i class="bi bi-arrow-repeat me-1"></i>Sincronizar CNPJs do ERP
+        </button>
+        {% endif %}
+      </div>
+    </form>
+    {% if pode_escrever_carteira %}
+    <form id="form-sync-erp" method="post" class="d-none">
+      {% csrf_token %}
+      <input type="hidden" name="acao" value="importar_erp">
+    </form>
+    {% endif %}
+  </div>
+
+  <!-- KPIs Principais da Carteira -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3">
+        <div class="text-secondary small">Total de Empresas</div>
+        <div class="h2 mb-1 fw-bold">{{ kpis.total_empresas }}</div>
+        <div class="small">
+          <span class="text-success fw-semibold">{{ kpis.empresas_regulares }} regulares</span> ·
+          <span class="text-danger fw-semibold">{{ kpis.empresas_irregulares }} irregulares</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3">
+        <div class="text-secondary small">Certidões a Vencer (30d)</div>
+        <div class="h2 mb-1 fw-bold text-warning">{{ kpis.certidoes_vencendo }}</div>
+        <div class="small text-secondary">{{ kpis.certidoes_irregulares }} vencida(s)/irregular(es)</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3">
+        <div class="text-secondary small">Obrigações Pendentes</div>
+        <div class="h2 mb-1 fw-bold">{{ kpis.obrigacoes_pendentes }}</div>
+        <div class="small {% if kpis.obrigacoes_atrasadas %}text-danger fw-semibold{% else %}text-secondary{% endif %}">
+          {{ kpis.obrigacoes_atrasadas }} em atraso
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3">
+        <div class="text-secondary small">Guias em Aberto</div>
+        <div class="h2 mb-1 fw-bold text-info">{{ kpis.guias_em_aberto_qtd }}</div>
+        <div class="small text-secondary">R$ {{ kpis.guias_em_aberto_valor|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3">
+        <div class="text-secondary small">Alertas Críticos</div>
+        <div class="h2 mb-1 fw-bold {% if kpis.alertas_criticos %}text-danger{% else %}text-success{% endif %}">{{ kpis.alertas_criticos }}</div>
+        <div class="small text-secondary">{{ kpis.clientes_em_risco }} cliente(s) em risco</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3">
+        <div class="text-secondary small">Índice de Saúde Fiscal</div>
+        <div class="h2 mb-1 fw-bold {% if kpis.indice_saude_fiscal >= 80 %}text-success{% elif kpis.indice_saude_fiscal >= 60 %}text-warning{% else %}text-danger{% endif %}">
+          {{ kpis.indice_saude_fiscal }}<span class="fs-6">/100</span>
+        </div>
+        <div class="small text-secondary">
+          {% if kpis.tempo_medio_resolucao_horas %}SLA médio: {{ kpis.tempo_medio_resolucao_horas }}h{% else %}SLA sem baixas{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fluxo Diferencial Operacional -->
+  <div class="card p-3 mb-4 border-primary border-opacity-25">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <div class="small fw-semibold text-uppercase text-primary"><i class="bi bi-diagram-3 me-1"></i>Fluxo Operacional Rastreável VERTYX Contábil</div>
+      <div class="d-flex flex-wrap align-items-center gap-2 small">
+        <span class="badge text-bg-dark">01 Detectar</span><i class="bi bi-arrow-right text-secondary"></i>
+        <span class="badge text-bg-dark">02 Delegar</span><i class="bi bi-arrow-right text-secondary"></i>
+        <span class="badge text-bg-dark">03 Executar</span><i class="bi bi-arrow-right text-secondary"></i>
+        <span class="badge text-bg-dark">04 Comunicar Cliente</span><i class="bi bi-arrow-right text-secondary"></i>
+        <span class="badge text-bg-dark">05 Resolver</span><i class="bi bi-arrow-right text-secondary"></i>
+        <span class="badge text-bg-success">06 Auditar Histórico</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <!-- Pendências por Departamento -->
+    <div class="col-lg-5">
+      <div class="card h-100 p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">Pendências por Departamento</h2>
+          <a href="{% url 'operacao:fiscal_carteira_pendencias' %}" class="btn btn-sm btn-outline-primary">Abrir Central ({{ kpis.pendencias_abertas_total }})</a>
+        </div>
+        {% for dep in kpis.pendencias_por_departamento %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small mb-1">
+            <span class="fw-semibold">{{ dep.nome }}</span>
+            <span>{{ dep.total }} pendência(s)</span>
+          </div>
+          <div class="progress" style="height: 10px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ dep.percentual }}%" aria-valuenow="{{ dep.total }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+        {% endfor %}
+
+        <hr>
+        <h3 class="h6 mb-2">Próximos Vencimentos Fiscais</h3>
+        {% if kpis.proximas_obrigacoes %}
+        <div class="list-group list-group-flush small">
+          {% for ob in kpis.proximas_obrigacoes %}
+          <div class="list-group-item px-0 d-flex justify-content-between align-items-center bg-transparent">
+            <div>
+              <div class="fw-semibold">{{ ob.get_tipo_display }} ({{ ob.competencia }})</div>
+              <div class="text-secondary">{{ ob.empresa.razao_social }}</div>
+            </div>
+            <span class="badge {% if ob.esta_atrasada %}text-bg-danger{% else %}text-bg-warning{% endif %}">{{ ob.vencimento|date:"d/m/Y" }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-secondary small mb-0">Nenhuma obrigação pendente no filtro selecionado.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Ranking de Empresas Críticas -->
+    <div class="col-lg-7">
+      <div class="card h-100 p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">Ranking de Saúde Fiscal &amp; Empresas Críticas</h2>
+          <a href="{% url 'operacao:fiscal_carteira_clientes' %}" class="btn btn-sm btn-outline-secondary">Ver todos os CNPJs</a>
+        </div>
+        {% if kpis.ranking_criticas %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Empresa / CNPJ</th>
+                <th>Regime</th>
+                <th>Saúde</th>
+                <th>Diagnóstico</th>
+                <th class="text-end">Ficha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for emp in kpis.ranking_criticas %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ emp.razao_social }}</div>
+                  <div class="small text-secondary"><code>{{ emp.cnpj_formatado }}</code></div>
+                </td>
+                <td><span class="badge text-bg-secondary">{{ emp.get_regime_tributario_display }}</span></td>
+                <td>
+                  <span class="badge {% if emp.saude_diag.score >= 85 %}text-bg-success{% elif emp.saude_diag.score >= 65 %}text-bg-warning{% else %}text-bg-danger{% endif %}">
+                    {{ emp.saude_diag.score }}/100
+                  </span>
+                </td>
+                <td class="small text-secondary">
+                  {% if emp.saude_diag.motivos %}{{ emp.saude_diag.motivos|join:" · " }}{% else %}Situação fiscal regular{% endif %}
+                </td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'operacao:fiscal_carteira_cliente_detalhe' emp.public_id %}">Abrir</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-secondary">
+          <i class="bi bi-buildings fs-2 d-block mb-2"></i>
+          <p class="mb-2">Nenhuma empresa cadastrada na carteira contábil ainda.</p>
+          <a href="{% url 'operacao:fiscal_carteira_clientes' %}" class="btn btn-sm btn-primary">Cadastrar primeiro CNPJ</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Pré-Análise Comercial por CNPJ (Captação de Novos Clientes) -->
+  <div class="card p-3">
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <span class="badge text-bg-info mb-1">Expansão da Carteira</span>
+        <h2 class="h5 mb-1">Pré-Análise Comercial por CNPJ</h2>
+        <p class="small text-secondary mb-3">Valide dígitos oficiais, consulte dados públicos disponíveis e gere diagnóstico inicial para captação de novos clientes contábeis.</p>
+        {% if pode_escrever_carteira %}
+        <form method="post" class="row g-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="pre_analise">
+          <div class="col-sm-6">
+            <input type="text" name="cnpj" class="form-control form-control-sm" placeholder="CNPJ (14 dígitos)" required>
+          </div>
+          <div class="col-sm-6">
+            <select name="regime_estimado" class="form-select form-select-sm">
+              {% for code, label in regimes_choices %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <input type="text" name="razao_social" class="form-control form-control-sm" placeholder="Razão social (opcional — busca automática se disponível)">
+          </div>
+          <div class="col-12">
+            <input type="text" name="pendencias_conhecidas" class="form-control form-control-sm" placeholder="Pendências relatadas pelo prospect (ex.: PGDAS atrasado, CND vencida)">
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-search me-1"></i>Executar Pré-Análise Comercial</button>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+      <div class="col-lg-7">
+        <h3 class="h6 mb-2">Últimos Diagnósticos de Prospecção</h3>
+        {% if pre_analises %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>CNPJ / Prospect</th>
+                <th>Diagnóstico Inicial</th>
+                <th>Oportunidade</th>
+                <th class="text-end">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pa in pre_analises %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ pa.razao_social_identificada }}</div>
+                  <div class="small text-secondary"><code>{{ pa.cnpj_formatado }}</code></div>
+                </td>
+                <td class="small text-secondary">{{ pa.diagnostico_inicial|truncatechars:120 }}</td>
+                <td>
+                  <span class="badge {% if pa.nivel_oportunidade == 'ALTA' %}text-bg-success{% elif pa.nivel_oportunidade == 'MEDIA' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">
+                    {{ pa.get_nivel_oportunidade_display }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  {% if pa.convertido_empresa %}
+                  <a href="{% url 'operacao:fiscal_carteira_cliente_detalhe' pa.convertido_empresa.public_id %}" class="btn btn-sm btn-outline-success">Na Carteira</a>
+                  {% elif pode_escrever_carteira %}
+                  <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="acao" value="converter_pre_analise">
+                    <input type="hidden" name="analise_id" value="{{ pa.pk }}">
+                    <button type="submit" class="btn btn-sm btn-success">Integrar Cliente</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-secondary small mb-0">Nenhuma pré-análise realizada ainda. Consulte um CNPJ ao lado para iniciar a prospecção.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

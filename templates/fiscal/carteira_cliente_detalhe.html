@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}{{ empresa.razao_social }} · Ficha de Saúde Fiscal{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "fiscal/carteira_subnav.html" %}
+
+  <!-- Cabeçalho Ficha Única por CNPJ (Slide 04 PDF) -->
+  <div class="card p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge text-bg-secondary">{{ empresa.get_regime_tributario_display }}</span>
+          <span class="badge {% if empresa.situacao_cadastral == 'ATIVA' %}text-bg-success{% else %}text-bg-danger{% endif %}">Situação Cadastral: {{ empresa.get_situacao_cadastral_display }}</span>
+          <span class="badge {% if saude.score >= 85 %}text-bg-success{% elif saude.score >= 65 %}text-bg-warning{% else %}text-bg-danger{% endif %}">Saúde Fiscal: {{ saude.score }}/100</span>
+        </div>
+        <h2 class="h4 mb-1">{{ empresa.razao_social }}</h2>
+        <p class="text-secondary small mb-0">
+          CNPJ: <code>{{ empresa.cnpj_formatado }}</code>
+          · Responsável: <strong>{% if empresa.responsavel_interno %}{{ empresa.responsavel_interno.get_full_name|default:empresa.responsavel_interno.username }}{% else %}Equipe Fiscal{% endif %}</strong>
+          {% if empresa.whatsapp_contato %}· WhatsApp: {{ empresa.whatsapp_contato }}{% endif %}
+          {% if empresa.email_contato %}· E-mail: {{ empresa.email_contato }}{% endif %}
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'operacao:fiscal_carteira_pendencias' %}?status=ABERTO" class="btn btn-sm btn-outline-warning">
+          <i class="bi bi-exclamation-octagon me-1"></i>{{ saude.pendencias_abertas }} Pendência(s)
+        </a>
+        <a href="{% url 'operacao:fiscal_carteira_obrigacoes' %}?empresa={{ empresa.pk }}" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-calendar2-check me-1"></i>Certidões &amp; Obrigações
+        </a>
+      </div>
+    </div>
+
+    <hr>
+    <div class="row g-3 small">
+      {% for item in resumo_esferas %}
+      <div class="col-md-4 col-xl-2">
+        <div class="p-2 rounded border h-100">
+          <div class="text-secondary">{{ item.nome }}</div>
+          {% if item.certidao %}
+            <div class="fw-semibold {% if item.certidao.esta_vencida or item.certidao.situacao == 'IRREGULAR' %}text-danger{% elif item.certidao.proxima_vencimento %}text-warning{% else %}text-success{% endif %}">
+              {% if item.certidao.esta_vencida %}Vencida ({{ item.certidao.validade|date:"d/m/Y" }})
+              {% elif item.certidao.proxima_vencimento %}Vence em {{ item.certidao.dias_para_vencer }} dias
+              {% else %}{{ item.certidao.get_situacao_display }}{% endif %}
+            </div>
+          {% else %}
+            <div class="text-secondary">Não monitorada</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+      <div class="col-md-4 col-xl-2">
+        <div class="p-2 rounded border h-100">
+          <div class="text-secondary">Certificado &amp; e-CAC</div>
+          <div class="fw-semibold">
+            {{ empresa.get_certificado_tipo_display }}
+            {% if empresa.certificado_validade %}({{ empresa.certificado_validade|date:"d/m/Y" }}){% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Coluna Esquerda: Edição Cadastral + Comunicação Rápida + Ocorrência -->
+    <div class="col-lg-5">
+      {% if pode_escrever_carteira %}
+      <div class="card p-3 mb-3">
+        <h3 class="h6 mb-3"><i class="bi bi-chat-dots me-1"></i>Comunicar Cliente (WhatsApp / E-mail)</h3>
+        <form method="post" class="row g-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="enviar_comunicacao">
+          <div class="col-6">
+            <select name="canal" class="form-select form-select-sm">
+              {% for c, l in canais_comunicacao %}<option value="{{ c }}">{{ l }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <select name="tipo" class="form-select form-select-sm">
+              {% for c, l in tipos_comunicacao %}<option value="{{ c }}">{{ l }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <input type="text" name="destinatario" value="{{ empresa.whatsapp_contato|default:empresa.email_contato }}" class="form-control form-control-sm" placeholder="WhatsApp ou E-mail do cliente" required>
+          </div>
+          <div class="col-12">
+            <input type="text" name="assunto" class="form-control form-control-sm" placeholder="Assunto (ex.: Solicitação de Extratos / Guia DAS)" required>
+          </div>
+          <div class="col-12">
+            <input type="text" name="documento_solicitado" class="form-control form-control-sm" placeholder="Documento solicitado (opcional)">
+          </div>
+          <div class="col-12">
+            <textarea name="mensagem" rows="2" class="form-control form-control-sm" placeholder="Mensagem ao empresário..." required></textarea>
+          </div>
+          <div class="col-12 d-grid">
+            <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-send me-1"></i>Registrar &amp; Gerar Disparo</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card p-3 mb-3">
+        <h3 class="h6 mb-2"><i class="bi bi-journal-plus me-1"></i>Registrar Ocorrência no Histórico</h3>
+        <form method="post" enctype="multipart/form-data" class="row g-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="registrar_ocorrencia">
+          <div class="col-12">
+            <textarea name="descricao" rows="2" class="form-control form-control-sm" placeholder="Descreva a ocorrência fiscal, societária ou atendimento realizado..." required></textarea>
+          </div>
+          <div class="col-8">
+            <input type="file" name="anexo" class="form-control form-control-sm">
+          </div>
+          <div class="col-4 d-grid">
+            <button type="submit" class="btn btn-sm btn-primary">Registrar</button>
+          </div>
+        </form>
+      </div>
+
+      <details class="card p-3">
+        <summary class="fw-semibold cursor-pointer"><i class="bi bi-pencil-square me-1"></i>Editar Dados do CNPJ, Certificado e Procuração</summary>
+        <form method="post" class="row g-2 mt-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="atualizar_empresa">
+          <input type="hidden" name="cnpj" value="{{ empresa.cnpj }}">
+          <div class="col-12">
+            <label class="form-label small mb-0">Razão Social</label>
+            <input type="text" name="razao_social" value="{{ empresa.razao_social }}" class="form-control form-control-sm" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-0">Regime</label>
+            <select name="regime_tributario" class="form-select form-select-sm">
+              {% for c, l in regimes_choices %}<option value="{{ c }}" {% if empresa.regime_tributario == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-0">Situação Cadastral</label>
+            <select name="situacao_cadastral" class="form-select form-select-sm">
+              {% for c, l in situacoes_cadastrais %}<option value="{{ c }}" {% if empresa.situacao_cadastral == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-0">Responsável Interno</label>
+            <select name="responsavel_interno_id" class="form-select form-select-sm">
+              <option value="">Sem responsável</option>
+              {% for u in equipe_membros %}<option value="{{ u.pk }}" {% if empresa.responsavel_interno_id == u.pk %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-0">Certificado</label>
+            <select name="certificado_tipo" class="form-select form-select-sm">
+              {% for c, l in certificados_choices %}<option value="{{ c }}" {% if empresa.certificado_tipo == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-0">Validade Certificado</label>
+            <input type="date" name="certificado_validade" value="{{ empresa.certificado_validade|date:'Y-m-d' }}" class="form-control form-control-sm">
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-0">Validade Procuração</label>
+            <input type="date" name="procuracao_validade" value="{{ empresa.procuracao_validade|date:'Y-m-d' }}" class="form-control form-control-sm">
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="procuracao_ecac_ativa" value="1" id="ecac-det" {% if empresa.procuracao_ecac_ativa %}checked{% endif %}>
+              <label class="form-check-label small" for="ecac-det">Procuração e-CAC ativa</label>
+            </div>
+          </div>
+          <div class="col-6">
+            <input type="text" name="whatsapp_contato" value="{{ empresa.whatsapp_contato }}" class="form-control form-control-sm" placeholder="WhatsApp">
+          </div>
+          <div class="col-6">
+            <input type="email" name="email_contato" value="{{ empresa.email_contato }}" class="form-control form-control-sm" placeholder="E-mail">
+          </div>
+          <div class="col-12 d-grid mt-2">
+            <button type="submit" class="btn btn-sm btn-primary">Salvar Alterações</button>
+          </div>
+        </form>
+      </details>
+      {% endif %}
+    </div>
+
+    <!-- Coluna Direita: Pendências, Comunicações e Trilha Imutável -->
+    <div class="col-lg-7">
+      <div class="card p-3 mb-3">
+        <h3 class="h6 mb-2">Comunicações Enviadas ao Cliente</h3>
+        {% if comunicacoes %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle small mb-0">
+            <thead>
+              <tr>
+                <th>Data / Canal</th>
+                <th>Assunto / Documento</th>
+                <th>Recebimento</th>
+                <th class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for com in comunicacoes %}
+              <tr>
+                <td>{{ com.enviado_em|date:"d/m H:i" }} · <span class="badge text-bg-secondary">{{ com.get_canal_display }}</span></td>
+                <td>
+                  <div class="fw-semibold">{{ com.assunto }}</div>
+                  {% if com.documento_solicitado %}<div class="text-secondary">Doc: {{ com.documento_solicitado }}</div>{% endif %}
+                </td>
+                <td>
+                  {% if com.confirmado_recebimento %}
+                  <span class="badge text-bg-success">Confirmado {{ com.confirmado_em|date:"d/m H:i" }}</span>
+                  {% else %}
+                  <span class="badge text-bg-warning">Aguardando</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% if com.canal == 'WHATSAPP' %}
+                  <a href="{{ com.whatsapp_link }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success py-0"><i class="bi bi-whatsapp"></i></a>
+                  {% endif %}
+                  {% if not com.confirmado_recebimento and pode_escrever_carteira %}
+                  <a href="{% url 'operacao:fiscal_carteira_confirmar_comunicacao' com.token_confirmacao %}" class="btn btn-sm btn-outline-primary py-0">Confirmar</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="small text-secondary mb-0">Nenhuma mensagem enviada ainda para este CNPJ.</p>
+        {% endif %}
+      </div>
+
+      <div class="card p-3">
+        <h3 class="h6 mb-3"><i class="bi bi-shield-lock me-1"></i>Histórico Imutável &amp; Auditoria do CNPJ</h3>
+        <div class="list-group list-group-flush small">
+          {% for ev in historico %}
+          <div class="list-group-item px-0 bg-transparent">
+            <div class="d-flex justify-content-between">
+              <span class="fw-semibold text-primary">{{ ev.get_tipo_evento_display }}</span>
+              <span class="text-secondary">{{ ev.criado_em|date:"d/m/Y H:i" }} · {{ ev.autor.username }}</span>
+            </div>
+            <div class="mt-1">{{ ev.descricao }}</div>
+            {% if ev.anexo %}
+            <div class="mt-1">
+              <a href="/documentos/{{ ev.anexo.pk }}/arquivo/" class="btn btn-sm btn-outline-secondary py-0"><i class="bi bi-paperclip me-1"></i>{{ ev.anexo.titulo }}</a>
+            </div>
+            {% endif %}
+          </div>
+          {% empty %}
+          <p class="text-secondary mb-0">Sem eventos registrados.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
