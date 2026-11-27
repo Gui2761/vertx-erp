@@ -735,9 +735,187 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   color: #0369a1;
 }
 
-@media (max-width: 991px) {
+/* ==========================================================================
+   RESPONSIVIDADE MOBILE & ADAPTATIVA (Smartphones, Tablets & Telas Menores)
+   ========================================================================== */
+
+@media (max-width: 991.98px) {
+  /* Navbar móvel fixada no topo com z-index seguro */
+  .vx-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1040;
+    padding: 0.65rem 0.85rem !important;
+    background-color: var(--vx-bg-darker, #0b111d) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    border-bottom: 1px solid var(--vx-border);
+  }
+
+  .vx-nav .container-fluid {
+    padding: 0;
+  }
+
+  /* Gaveta móvel com rolagem suave independente */
+  .vx-nav #menuPrincipal {
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.85rem 0.35rem 3rem;
+    overscroll-behavior: contain;
+  }
+
+  .vx-nav #menuPrincipal .navbar-nav {
+    gap: 4px;
+  }
+
+  .vx-nav .nav-link {
+    min-height: 42px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.9rem;
+  }
+
+  .vx-nav-group summary, .vx-nav-group > span {
+    padding: 0.65rem 0.85rem !important;
+    min-height: 42px;
+  }
+
+  /* Conteúdo Principal Otimizado */
   .vx-main {
-    padding: 1.5rem;
+    margin-left: 0 !important;
+    padding: 1rem 0.85rem 4rem;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Breadcrumb com scroll horizontal suave */
+  .vx-breadcrumb {
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    margin-bottom: 1rem;
+    scrollbar-width: none;
+  }
+  .vx-breadcrumb::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Subnavs com abas em rolagem horizontal tipo App */
+  .border-bottom > .d-flex.flex-wrap.gap-2,
+  .vx-subnav-buttons {
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+    width: 100%;
+    scrollbar-width: none;
+  }
+  .border-bottom > .d-flex.flex-wrap.gap-2::-webkit-scrollbar,
+  .vx-subnav-buttons::-webkit-scrollbar {
+    display: none;
+  }
+  .border-bottom > .d-flex.flex-wrap.gap-2 > .btn,
+  .vx-subnav-buttons > .btn {
+    flex-shrink: 0;
+  }
+
+  /* Tabelas Responsivas Globais */
+  .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--vx-border);
+    border-radius: var(--vx-radius-sm);
+    margin-bottom: 1rem;
+    width: 100%;
+  }
+
+  .card-body > table:not(.table-responsive table),
+  .card > table:not(.table-responsive table),
+  .vx-card > table:not(.table-responsive table) {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table td, .table th {
+    padding: 0.6rem 0.5rem;
+    font-size: 0.84rem;
+    white-space: nowrap;
+  }
+
+  .table td.text-wrap,
+  .table th.text-wrap,
+  .table td.cell-wrap {
+    white-space: normal;
+    min-width: 160px;
+  }
+
+  /* Botões e controles com área de toque mínima acessível */
+  .btn {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-sm {
+    min-height: 32px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+  .btn-lg {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 576px) {
+  /* Smartphones (360px - 576px) */
+  .vx-main {
+    padding: 0.75rem 0.5rem 3.5rem;
+  }
+
+  .vx-nav .vx-brand-lockup {
+    font-size: 18px;
+    gap: 6px;
+  }
+  .vx-nav .vx-brand-lockup .vx-brand-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Evitar zoom automático do iOS Safari */
+  .form-control,
+  .form-select,
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Cabeçalhos de página empilhados harmoniosamente */
+  .d-flex.flex-wrap.justify-content-between.align-items-center,
+  .d-flex.flex-wrap.justify-content-between.align-items-start {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+
+  .d-flex.flex-wrap.justify-content-between.align-items-center > div:last-child,
+  .d-flex.flex-wrap.justify-content-between.align-items-start > div:last-child {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Cards e diálogos */
+  .card-body {
+    padding: 0.85rem;
+  }
+
+  .modal-dialog {
+    margin: 0.5rem !important;
+    max-width: calc(100% - 1rem) !important;
   }
 }
 

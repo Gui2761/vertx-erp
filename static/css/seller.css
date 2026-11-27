@@ -1695,13 +1695,58 @@ strong.sv-price,
   }
 }
 
-@media (max-width: 950px) {
+@media (max-width: 991.98px) {
   .sv-console-products,
   .sv-products {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
   .sv-console-workspace {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+  .sv-entry-panel {
+    padding: 14px !important;
+    overflow-y: visible !important;
+  }
+  .sv-summary-panel {
+    border-left: none !important;
+    border-top: 2px solid rgba(255, 255, 255, 0.1) !important;
+    padding: 0 !important;
+  }
+  .sv-console-top {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+  }
+  .sv-console-top > div {
+    font-size: 0.85rem !important;
+  }
+  .sv-console-brand strong {
+    font-size: 18px !important;
+  }
+  .sv-workspace {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .sv-page {
+    padding: 14px 10px 40px !important;
+  }
+  .sv-card,
+  .vx-seller .sv-card {
+    padding: 16px !important;
+  }
+  .sv-console-amounts {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    padding: 10px 14px !important;
+  }
+  .sv-footer-total {
+    margin-left: 0 !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+    padding-top: 8px !important;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1) !important;
   }
   .sv-quick-actions {
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1717,6 +1762,68 @@ strong.sv-price,
   }
   .sv-quick-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px !important;
+    padding: 6px !important;
+  }
+  .sv-quick-actions button,
+  .sv-quick-actions a {
+    padding: 8px 4px !important;
+    min-height: 48px !important;
+  }
+  .sv-quick-actions kbd {
+    font-size: 0.65rem !important;
+  }
+  .sv-quick-actions span {
+    font-size: 0.72rem !important;
+  }
+  /* Leitor de código de barras */
+  .sv-barcode-form {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .sv-barcode-form > div {
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+  .sv-barcode-form .sv-button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  /* Checkout Dialog / Modal de Pagamento no Mobile */
+  .sv-payment-dialog {
+    width: calc(100% - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+    padding: 16px 14px !important;
+    border-radius: 16px !important;
+  }
+  .sv-payment-total-banner {
+    padding: 10px 12px !important;
+  }
+  .sv-total-amount {
+    font-size: 24px !important;
+  }
+  .sv-emission-pills {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  .sv-pill-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  .sv-payment-pill {
+    padding: 10px 8px !important;
+    font-size: 0.84rem !important;
+    min-height: 44px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .sv-quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .sv-console-top .d-flex {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 
