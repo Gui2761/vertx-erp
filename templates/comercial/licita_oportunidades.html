@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}Central de Oportunidades · VERTYX Licita{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "comercial/licita_subnav.html" %}
+
+  <!-- KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Encontradas (Novas)</div>
+        <div class="h2 mb-1 fw-bold text-info">{{ kpis.total_encontradas }}</div>
+        <div class="small text-muted">Aguardando triagem</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Em Análise &amp; Docs</div>
+        <div class="h2 mb-1 fw-bold text-warning">{{ kpis.total_analise|add:kpis.total_documentacao }}</div>
+        <div class="small text-muted">Checklist em andamento</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Propostas &amp; Disputa</div>
+        <div class="h2 mb-1 fw-bold text-primary">{{ kpis.total_propostas|add:kpis.total_disputa }}</div>
+        <div class="small text-muted">Na esteira de envio</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Vencidas</div>
+        <div class="h2 mb-1 fw-bold text-success">{{ kpis.total_vencidas }}</div>
+        <div class="small text-muted">Homologadas</div>
+      </div>
+    </div>
+    <div class="col-12 col-xl-4">
+      <div class="card h-100 p-3 shadow-sm border-0 bg-primary text-white">
+        <div class="small opacity-75">Pipeline Total Ativo</div>
+        <div class="h2 mb-1 fw-bold text-white">R$ {{ kpis.valor_total_pipeline|floatformat:2 }}</div>
+        <div class="small opacity-75">{{ kpis.total_radares_ativos }} radar(es) monitorando o PNCP</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros & Sincronização PNCP -->
+  <div class="card shadow-sm border-0 p-3 mb-4">
+    <div class="row g-2 align-items-center">
+      <div class="col-lg-6">
+        <form method="get" class="d-flex gap-2">
+          <input type="text" name="q" class="form-control form-control-sm" placeholder="Buscar por órgão, objeto, controle PNCP..." value="{{ busca }}">
+          <select name="uf" class="form-select form-select-sm w-auto">
+            <option value="">Todas UFs</option>
+            <option value="SE" {% if uf_filtro == 'SE' %}selected{% endif %}>Sergipe (SE)</option>
+            <option value="AL" {% if uf_filtro == 'AL' %}selected{% endif %}>Alagoas (AL)</option>
+            <option value="BA" {% if uf_filtro == 'BA' %}selected{% endif %}>Bahia (BA)</option>
+          </select>
+          <select name="etapa" class="form-select form-select-sm w-auto">
+            <option value="">Todas Etapas</option>
+            {% for cod, label in etapas_choices %}
+            <option value="{{ cod }}" {% if etapa_filtro == cod %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+          {% if busca or uf_filtro or etapa_filtro %}
+          <a href="{% url 'operacao:licita_oportunidades' %}" class="btn btn-sm btn-outline-secondary">Limpar</a>
+          {% endif %}
+        </form>
+      </div>
+
+      <div class="col-lg-6 d-flex justify-content-lg-end gap-2 mt-2 mt-lg-0">
+        {% if pode_escrever %}
+        {% for r in radares %}
+        <form method="post" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="sincronizar_radar">
+          <input type="hidden" name="radar_id" value="{{ r.pk }}">
+          <button type="submit" class="btn btn-sm btn-outline-info" title="Varre a API oficial do PNCP agora">
+            <i class="bi bi-arrow-repeat me-1"></i>Sincronizar {{ r.nome|truncatechars:20 }}
+          </button>
+        </form>
+        {% endfor %}
+        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modal-nova-licitacao">
+          <i class="bi bi-plus-lg me-1"></i>Cadastrar Manualmente
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Oportunidades -->
+  <div class="card shadow-sm border-0 p-3">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Órgão / Estado</th>
+            <th>Objeto da Contratação</th>
+            <th>Modalidade</th>
+            <th>Valor Estimado (R$)</th>
+            <th>Checklist Documental</th>
+            <th>Etapa no Funil</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for op in oportunidades %}
+          <tr>
+            <td style="min-width: 200px;">
+              <div class="fw-bold">{{ op.orgao_nome|truncatechars:35 }}</div>
+              <div class="small text-muted">
+                <span class="badge text-bg-light border">{{ op.uf }}</span>
+                {% if op.municipio %} · {{ op.municipio }}{% endif %}
+              </div>
+            </td>
+            <td style="max-width: 320px;">
+              <div class="text-truncate fw-semibold" title="{{ op.objeto }}">{{ op.objeto|truncatechars:85 }}</div>
+              <div class="small text-muted">Controle: {{ op.numero_controle_pncp|truncatechars:30 }}</div>
+            </td>
+            <td>
+              <span class="badge text-bg-secondary">{{ op.modalidade_nome }}</span>
+              {% if op.numero_edital %}<div class="small text-muted">Nº {{ op.numero_edital }}</div>{% endif %}
+            </td>
+            <td class="fw-bold text-dark">
+              R$ {{ op.valor_total_estimado|floatformat:2 }}
+            </td>
+            <td>
+              {% if op.total_requisitos > 0 %}
+              <div class="small">
+                <span class="text-success fw-bold">{{ op.requisitos_atendidos }} conf.</span> ·
+                <span class="text-warning fw-bold">{{ op.requisitos_pendentes }} pend.</span>
+                {% if op.requisitos_impedimentos > 0 %}
+                · <span class="text-danger fw-bold">{{ op.requisitos_impedimentos }} imp.</span>
+                {% endif %}
+              </div>
+              <div class="progress" style="height: 5px;">
+                <div class="progress-bar bg-success" style="width: {% widthratio op.requisitos_atendidos op.total_requisitos 100 %}%;"></div>
+              </div>
+              {% else %}
+              <span class="small text-muted">Sem análise</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {% if op.etapa == 'VENCIDA' %}text-bg-success{% elif op.etapa == 'EM_DISPUTA' %}text-bg-primary{% elif op.etapa == 'ENCONTRADA' %}text-bg-info text-white{% else %}text-bg-warning{% endif %}">
+                {{ op.get_etapa_display }}
+              </span>
+            </td>
+            <td class="text-end">
+              <a href="{% url 'operacao:licita_detalhe' pk=op.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-file-earmark-text me-1"></i>Abrir
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-secondary">
+              Nenhuma oportunidade encontrada com os filtros selecionados.<br>
+              Clique em <strong>"Sincronizar"</strong> acima para consultar a API oficial do PNCP.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Cadastrar Licitação Manualmente -->
+  {% if pode_escrever %}
+  <div class="modal fade" id="modal-nova-licitacao" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <form method="post" class="modal-content">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="salvar_oportunidade">
+        <div class="modal-header">
+          <h5 class="modal-title">Cadastrar Oportunidade / Processo Licitatório</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-8">
+            <label class="form-label small">Órgão Comprador</label>
+            <input type="text" name="orgao_nome" class="form-control" placeholder="Ex: Secretaria Municipal de Saúde de Teotônio Vilela" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">CNPJ do Órgão</label>
+            <input type="text" name="orgao_cnpj" class="form-control" placeholder="Opcional">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small">UF</label>
+            <input type="text" name="uf" class="form-control" value="AL" maxlength="2" required>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label small">Município</label>
+            <input type="text" name="municipio" class="form-control" placeholder="Ex: Teotônio Vilela">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label small">Modalidade</label>
+            <select name="modalidade_nome" class="form-select">
+              <option value="Pregão Eletrônico">Pregão Eletrônico</option>
+              <option value="Dispensa de Licitação">Dispensa de Licitação</option>
+              <option value="Concorrência Eletrônica">Concorrência Eletrônica</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Nº do Edital / Processo</label>
+            <input type="text" name="numero_edital" class="form-control" placeholder="Ex: Pregão Eletrônico 005/2026">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Valor Total Estimado (R$)</label>
+            <input type="text" name="valor_total_estimado" class="form-control" placeholder="Ex: 150000.00" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Objeto da Contratação</label>
+            <textarea name="objeto" class="form-control" rows="3" placeholder="Descrição completa do que a administração pública está licitando..." required></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Link Oficial PNCP / Portal de Compras</label>
+            <input type="url" name="link_fonte_pncp" class="form-control" placeholder="https://pncp.gov.br/app/editais/...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-sm btn-primary">Cadastrar Oportunidade</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span class="badge rounded-pill text-bg-info text-white"><i class="bi bi-bank me-1"></i>VERTYX LICITA</span>
+      <span class="badge rounded-pill text-bg-secondary">Radar PNCP · Análise IA de Edital · Funil de 6 Etapas</span>
+    </div>
+    <h1 class="h3 mb-0">Gestão Comercial de Contratações &amp; Licitações Públicas</h1>
+    <p class="text-secondary small mb-0">Captura Automática PNCP · Checklist de Exigências c/ Citação · Funil Integrado ao Piso Sustentável</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-sm {% if aba_licita == 'oportunidades' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:licita_oportunidades' %}">
+      <i class="bi bi-list-stars me-1"></i>01 · Central de Oportunidades
+    </a>
+    <a class="btn btn-sm {% if aba_licita == 'funil' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:licita_funil' %}">
+      <i class="bi bi-kanban me-1"></i>02 · Funil Comercial (6 Etapas)
+    </a>
+    <a class="btn btn-sm {% if aba_licita == 'radares' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:licita_radares' %}">
+      <i class="bi bi-broadcast-pin me-1"></i>03 · Radares &amp; Filtros PNCP
+    </a>
+    <a class="btn btn-sm btn-outline-success" href="{% url 'operacao:pricing_dashboard' %}">
+      <i class="bi bi-calculator me-1"></i>Market &amp; Pricing
+    </a>
+  </div>
+</div>

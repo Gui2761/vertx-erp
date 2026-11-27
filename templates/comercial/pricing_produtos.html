@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block title %}Produtos &amp; Preço de Venda · Market &amp; Pricing{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "comercial/pricing_subnav.html" %}
+
+  <div class="card shadow-sm border-0 p-3 mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <form method="get" class="d-flex gap-2">
+        <input type="text" name="q" class="form-control form-control-sm" placeholder="Buscar por produto, marca, SKU..." value="{{ busca }}">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1"></i>Buscar</button>
+        {% if busca %}
+        <a href="{% url 'operacao:pricing_produtos' %}" class="btn btn-sm btn-outline-secondary">Limpar</a>
+        {% endif %}
+      </form>
+      {% if pode_escrever %}
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modal-novo-produto">
+          <i class="bi bi-plus-lg me-1"></i>Novo Cálculo de Preço
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modal-nova-pesquisa">
+          <i class="bi bi-tag me-1"></i>Registrar Concorrente
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Tabela de Produtos Precificados -->
+  <div class="card shadow-sm border-0 p-3 mb-4">
+    <h2 class="h5 mb-3 fw-bold"><i class="bi bi-table me-2 text-primary"></i>Planilha Dinâmica de Formação de Preço (Produtos)</h2>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Produto / Referência</th>
+            <th>Custo Aquisição + Frete</th>
+            <th>Fixos (%)</th>
+            <th>Tributos (%)</th>
+            <th>Margem (%)</th>
+            <th>Preço Break-even</th>
+            <th>Preço-Alvo Sugerido</th>
+            <th>Pesquisa Concorrência</th>
+            {% if pode_escrever %}<th class="text-end">Ações</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in produtos %}
+          <tr>
+            <td>
+              <div class="fw-bold">{{ p.nome_produto }}</div>
+              <div class="small text-muted">
+                {% if p.marca %}{{ p.marca }}{% endif %}
+                {% if p.modelo %} · Mod: {{ p.modelo }}{% endif %}
+                {% if p.sku_referencia %} · SKU: {{ p.sku_referencia }}{% endif %}
+              </div>
+            </td>
+            <td>
+              <div class="fw-semibold">R$ {{ p.custo_base|floatformat:2 }}</div>
+              <div class="small text-muted">(Aq: R$ {{ p.custo_aquisicao|floatformat:2 }} + Fr: R$ {{ p.custo_frete_seguro|floatformat:2 }})</div>
+            </td>
+            <td>{{ p.percentual_despesas_fixas }}%</td>
+            <td>{{ p.percentual_tributos }}%</td>
+            <td class="fw-bold text-success">{{ p.percentual_margem_desejada }}%</td>
+            <td>
+              <span class="badge text-bg-light border text-dark fw-bold">R$ {{ p.preco_equilibrio|floatformat:2 }}</span>
+            </td>
+            <td>
+              <span class="badge text-bg-success fs-6">R$ {{ p.preco_alvo|floatformat:2 }}</span>
+            </td>
+            <td>
+              {% with pesq=p.pesquisas_concorrentes.first %}
+              {% if pesq %}
+              <div>
+                <span class="fw-semibold">R$ {{ pesq.preco_identificado|floatformat:2 }}</span>
+                <span class="small text-muted">({{ pesq.concorrente_fornecedor }})</span>
+              </div>
+              <div class="small">
+                Margem no concorrente:
+                <span class="{% if pesq.margem_cenario < 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                  {{ pesq.margem_cenario }}%
+                </span>
+              </div>
+              {% else %}
+              <span class="text-muted small">Sem coleta regional</span>
+              {% endif %}
+              {% endwith %}
+            </td>
+            {% if pode_escrever %}
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-editar-prod-{{ p.pk }}">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </td>
+            {% endif %}
+          </tr>
+
+          {% if pode_escrever %}
+          <!-- Modal Editar Produto -->
+          <div class="modal fade" id="modal-editar-prod-{{ p.pk }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+              <form method="post" class="modal-content">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="salvar_produto">
+                <input type="hidden" name="produto_id" value="{{ p.pk }}">
+                <div class="modal-header">
+                  <h5 class="modal-title">Editar Precificação: {{ p.nome_produto }}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body row g-3">
+                  <div class="col-md-8">
+                    <label class="form-label small">Nome / Descrição do Produto</label>
+                    <input type="text" name="nome_produto" class="form-control" value="{{ p.nome_produto }}" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small">SKU / Referência</label>
+                    <input type="text" name="sku_referencia" class="form-control" value="{{ p.sku_referencia }}">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small">Custo de Aquisição (R$)</label>
+                    <input type="text" name="custo_aquisicao" class="form-control" value="{{ p.custo_aquisicao }}" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small">Frete &amp; Seguro na Compra (R$)</label>
+                    <input type="text" name="custo_frete_seguro" class="form-control" value="{{ p.custo_frete_seguro }}" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small">Despesas Fixas (%)</label>
+                    <input type="text" name="percentual_despesas_fixas" class="form-control" value="{{ p.percentual_despesas_fixas }}" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small">Tributos sobre Venda (%)</label>
+                    <input type="text" name="percentual_tributos" class="form-control" value="{{ p.percentual_tributos }}" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small">Taxas Variáveis (%)</label>
+                    <input type="text" name="percentual_outras_variaveis" class="form-control" value="{{ p.percentual_outras_variaveis }}">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small text-success fw-bold">Margem Desejada (%)</label>
+                    <input type="text" name="percentual_margem_desejada" class="form-control border-success" value="{{ p.percentual_margem_desejada }}" required>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-sm btn-primary">Salvar Precificação</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          {% endif %}
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-4 text-secondary">Nenhum produto cadastrado na calculadora.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Novo Produto -->
+  {% if pode_escrever %}
+  <div class="modal fade" id="modal-novo-produto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <form method="post" class="modal-content">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="salvar_produto">
+        <div class="modal-header">
+          <h5 class="modal-title">Novo Cálculo de Preço de Produto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-8">
+            <label class="form-label small">Nome / Descrição do Produto</label>
+            <input type="text" name="nome_produto" class="form-control" placeholder="Ex: Cama Hospitalar Elétrica 3 Movimentos" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">SKU / Referência</label>
+            <input type="text" name="sku_referencia" class="form-control" placeholder="Ex: CAM-ELET-01">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Custo de Aquisição (R$)</label>
+            <input type="text" name="custo_aquisicao" class="form-control" placeholder="Ex: 2100.00" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Frete &amp; Seguro na Compra (R$)</label>
+            <input type="text" name="custo_frete_seguro" class="form-control" placeholder="Ex: 150.00" value="0.00">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small">Despesas Fixas (%)</label>
+            <input type="text" name="percentual_despesas_fixas" class="form-control" value="15.00" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small">Tributos sobre Venda (%)</label>
+            <input type="text" name="percentual_tributos" class="form-control" value="8.00" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small">Taxas Variáveis (%)</label>
+            <input type="text" name="percentual_outras_variaveis" class="form-control" value="0.00">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-success fw-bold">Margem Desejada (%)</label>
+            <input type="text" name="percentual_margem_desejada" class="form-control border-success" value="15.00" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-sm btn-primary">Calcular &amp; Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Nova Pesquisa Concorrente -->
+  <div class="modal fade" id="modal-nova-pesquisa" tabindex="-1">
+    <div class="modal-dialog">
+      <form method="post" class="modal-content">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="salvar_pesquisa">
+        <div class="modal-header">
+          <h5 class="modal-title">Registrar Preço de Concorrente Regional</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-12">
+            <label class="form-label small">Vincular a Produto Cadastrado</label>
+            <select name="produto_calculo_id" class="form-select">
+              <option value="">Item Avulso / Não Vinculado</option>
+              {% for p in produtos %}
+              <option value="{{ p.pk }}">{{ p.nome_produto }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Descrição do Item</label>
+            <input type="text" name="descricao_item" class="form-control" placeholder="Ex: Cama Hospitalar Fowler" required>
+          </div>
+          <div class="col-md-7">
+            <label class="form-label small">Concorrente / Loja / Órgão</label>
+            <input type="text" name="concorrente_fornecedor" class="form-control" placeholder="Ex: Distribuidora Médica Nordeste" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small">Município</label>
+            <input type="text" name="municipio" class="form-control" value="Aracaju" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small">UF</label>
+            <input type="text" name="uf" class="form-control" value="SE" maxlength="2" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Canal / Origem</label>
+            <select name="canal" class="form-select">
+              <option value="VAREJO">Varejo Local</option>
+              <option value="ATACADO">Atacado / Distribuidor</option>
+              <option value="CONTRATO_PUBLICO">Contrato / Ata Pública</option>
+              <option value="INTERNET">Internet</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-primary fw-bold">Preço Identificado (R$)</label>
+            <input type="text" name="preco_identificado" class="form-control border-primary" placeholder="Ex: 2850.00" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Link / Fonte / Observações</label>
+            <input type="text" name="link_fonte" class="form-control" placeholder="Link do anúncio ou processo licitatório">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-sm btn-primary">Registrar Coleta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

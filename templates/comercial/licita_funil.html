@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Funil de Licitações · VERTYX Licita{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "comercial/licita_subnav.html" %}
+
+  <div class="card shadow-sm border-0 p-3 mb-4">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <h2 class="h5 mb-0 fw-bold"><i class="bi bi-kanban me-2 text-primary"></i>Funil de Gestão Comercial das Licitações</h2>
+        <p class="text-secondary small mb-0">Pipeline das 6 etapas estratégicas: Encontradas &rarr; Em Análise &rarr; Documentação &rarr; Propostas &rarr; Em Disputa &rarr; Vencidas.</p>
+      </div>
+      <a href="{% url 'operacao:licita_oportunidades' %}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-list-ul me-1"></i>Visão em Lista
+      </a>
+    </div>
+  </div>
+
+  <!-- Kanban das 6 Etapas -->
+  <div class="row g-3 flex-nowrap overflow-auto pb-4">
+    {% for codigo, label, ops in funil_colunas %}
+    <div class="col-12 col-md-4 col-xl-2" style="min-width: 250px;">
+      <div class="card bg-light border-0 h-100 shadow-sm">
+        <div class="card-header bg-white border-0 py-2 d-flex align-items-center justify-content-between">
+          <span class="fw-bold small text-truncate">{{ label }}</span>
+          <span class="badge text-bg-secondary rounded-pill">{{ ops.count }}</span>
+        </div>
+        <div class="card-body p-2 d-flex flex-column gap-2" style="max-height: 70vh; overflow-y: auto;">
+          {% for op in ops %}
+          <div class="card shadow-sm border-0 p-2 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge text-bg-light border text-dark">{{ op.uf }}</span>
+              <span class="small fw-bold text-success">R$ {{ op.valor_total_estimado|floatformat:0 }}</span>
+            </div>
+            <div class="fw-semibold small text-truncate" title="{{ op.orgao_nome }}">{{ op.orgao_nome }}</div>
+            <p class="small text-muted mb-2 text-truncate" title="{{ op.objeto }}">{{ op.objeto }}</p>
+
+            <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+              <a href="{% url 'operacao:licita_detalhe' pk=op.pk %}" class="btn btn-sm btn-link p-0 text-primary small">
+                Detalhes &rarr;
+              </a>
+
+              {% if pode_escrever %}
+              <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary py-0 px-1 dropdown-toggle" data-bs-toggle="dropdown">
+                  Mover
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end small">
+                  {% for c, l in funil_colunas %}
+                  {% if c != codigo %}
+                  <li>
+                    <form method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="oportunidade_id" value="{{ op.pk }}">
+                      <input type="hidden" name="nova_etapa" value="{{ c }}">
+                      <button type="submit" class="dropdown-item py-1">{{ l }}</button>
+                    </form>
+                  </li>
+                  {% endif %}
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-center py-4 text-muted small">Nenhuma licitação nesta etapa.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -74,6 +74,7 @@ PRODUCT_ROUTE_PREFIXES = (
     ('/pdv/', 'assistencia'),
     ('/vendedor/', 'assistencia'),
     ('/vendas/', 'assistencia'),
+    ('/comercial/', 'assistencia'),
     ('/estoque/', 'assistencia'),
     ('/depositos/', 'assistencia'),
     ('/inventarios/', 'assistencia'),

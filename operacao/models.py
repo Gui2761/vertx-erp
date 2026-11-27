@@ -788,3 +788,17 @@ from .contabil_models import (  # noqa: E402,F401
     EventoHistoricoContabil,
     PreAnaliseComercialCNPJ,
 )
+from .pricing_models import (  # noqa: E402,F401
+    CentroCustoRateio,
+    CalculadoraPrecoProduto,
+    CalculadoraHoraTecnica,
+    PesquisaPrecoConcorrente,
+    SimulacaoLanceEdital,
+    HistoricoCalculoPreco,
+)
+from .licita_models import (  # noqa: E402,F401
+    RadarFiltroPNCP,
+    OportunidadeLicitacao,
+    AnaliseEditalRequisito,
+    HistoricoLicitacaoEvento,
+)

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Simulador de Lances · Market &amp; Pricing{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "comercial/pricing_subnav.html" %}
+
+  <div class="card shadow-sm border-0 p-3 mb-4">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <h2 class="h5 mb-0 fw-bold"><i class="bi bi-shield-shaded me-2 text-primary"></i>Simulador de Lances &amp; Trava de Piso Sustentável</h2>
+        <p class="text-secondary small mb-0">Composição real de custos: Peças + Horas Técnicas + Deslocamento + Risco. Alerta antes de ofertar abaixo do break-even.</p>
+      </div>
+      {% if pode_escrever %}
+      <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modal-nova-simulacao">
+        <i class="bi bi-plus-lg me-1"></i>Nova Simulação de Lance
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    {% for s in simulacoes %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100 shadow-sm border-0 p-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="badge text-bg-secondary">{{ s.orgao_comprador|truncatechars:20 }}</span>
+          {% if s.lance_abaixo_do_piso %}
+          <span class="badge text-bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>Abaixo do Piso</span>
+          {% else %}
+          <span class="badge text-bg-success"><i class="bi bi-check-circle me-1"></i>Viável</span>
+          {% endif %}
+        </div>
+        <h3 class="h6 fw-bold mb-1">{{ s.titulo_edital }}</h3>
+        <p class="text-secondary small mb-3">{{ s.objeto_resumo|truncatechars:90 }}</p>
+
+        <ul class="list-group list-group-flush small mb-3">
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-secondary">Custo Total Composto:</span>
+            <span class="fw-semibold">R$ {{ s.custo_total_composto|floatformat:2 }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-secondary">Piso Sem Lucro (Break-even):</span>
+            <span class="fw-bold text-dark">R$ {{ s.piso_sem_lucro|floatformat:2 }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-secondary">Lance Sugerido (com margem):</span>
+            <span class="fw-bold text-success">R$ {{ s.lance_com_margem|floatformat:2 }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-secondary">Lance Simulado na Disputa:</span>
+            <span class="fw-bold {% if s.lance_abaixo_do_piso %}text-danger{% else %}text-primary{% endif %}">
+              R$ {{ s.lance_simulado_disputa|default:0|floatformat:2 }}
+            </span>
+          </li>
+        </ul>
+
+        <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+          <span class="small text-muted">
+            Lucro estimado: <strong class="{% if s.calcular_lucro_lance < 0 %}text-danger{% else %}text-success{% endif %}">
+              R$ {{ s.calcular_lucro_lance|floatformat:2 }}
+            </strong>
+          </span>
+          <a href="{% url 'operacao:pricing_simulacao_detalhe' pk=s.pk %}" class="btn btn-sm btn-outline-primary">
+            Detalhar &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+      <div class="text-secondary mb-3">Nenhuma simulação de lance cadastrada.</div>
+      {% if pode_escrever %}
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-nova-simulacao">
+        <i class="bi bi-plus-lg me-1"></i>Criar Primeira Simulação
+      </button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if pode_escrever %}
+  <div class="modal fade" id="modal-nova-simulacao" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <form method="post" class="modal-content">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="salvar_simulacao">
+        <div class="modal-header">
+          <h5 class="modal-title">Nova Simulação de Lance para Edital</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-6">
+            <label class="form-label small">Título / Nº do Edital</label>
+            <input type="text" name="titulo_edital" class="form-control" placeholder="Ex: Pregão 012/2026 - SMS Estância" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Órgão / Prefeitura Compradora</label>
+            <input type="text" name="orgao_comprador" class="form-control" placeholder="Ex: Prefeitura Municipal de Estância" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Resumo do Objeto</label>
+            <textarea name="objeto_resumo" class="form-control" rows="2" placeholder="Ex: Manutenção preventiva e corretiva de equipamentos médico-hospitalares" required></textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Peças &amp; Equipamentos (R$)</label>
+            <input type="text" name="custos_pecas_equipamentos" class="form-control" value="0.00" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Horas Técnicas Estimadas</label>
+            <input type="text" name="horas_tecnicas_estimadas" class="form-control" value="0.00" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Especialidade / Calculadora de Hora</label>
+            <select name="calculadora_hora_id" class="form-select">
+              <option value="">Informar Custo Manual</option>
+              {% for ch in calculadoras_hora %}
+              <option value="{{ ch.pk }}">{{ ch.especialidade }} (R$ {{ ch.custo_por_hora }}/h)</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Custo Hora Aplicado (R$)</label>
+            <input type="text" name="custo_hora_aplicado" class="form-control" value="0.00">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Deslocamento &amp; Diárias (R$)</label>
+            <input type="text" name="custos_deslocamento_logistica" class="form-control" value="0.00">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Outras Despesas Diretas (R$)</label>
+            <input type="text" name="outras_despesas_diretas" class="form-control" value="0.00">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Taxa de Risco (%)</label>
+            <input type="text" name="percentual_taxa_risco" class="form-control" value="5.00" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Tributos sobre Faturamento (%)</label>
+            <input type="text" name="percentual_tributos" class="form-control" value="8.00" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-success fw-bold">Margem Desejada (%)</label>
+            <input type="text" name="percentual_margem_minima" class="form-control border-success" value="15.00" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-primary fw-bold">Lance Inicial a Simular (R$)</label>
+            <input type="text" name="lance_simulado_disputa" class="form-control border-primary" placeholder="Ex: 90000.00">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-sm btn-primary">Salvar &amp; Calcular Trava</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

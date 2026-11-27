@@ -1,0 +1,27 @@
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span class="badge rounded-pill text-bg-primary"><i class="bi bi-calculator me-1"></i>VERTYX MARKET &amp; PRICING</span>
+      <span class="badge rounded-pill text-bg-secondary">Rateio ERP · Preço de Venda · Trava de Piso</span>
+    </div>
+    <h1 class="h3 mb-0">Engenharia de Preços, Margem &amp; Hora Técnica</h1>
+    <p class="text-secondary small mb-0">Custos Reais · Break-even · Hora Faturável · Pesquisa Concorrencial · Alerta de Prejuízo</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-sm {% if aba_pricing == 'dashboard' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:pricing_dashboard' %}">
+      <i class="bi bi-speedometer2 me-1"></i>Painel Geral
+    </a>
+    <a class="btn btn-sm {% if aba_pricing == 'produtos' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:pricing_produtos' %}">
+      <i class="bi bi-box-seam me-1"></i>Produtos &amp; Peças
+    </a>
+    <a class="btn btn-sm {% if aba_pricing == 'hora_tecnica' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:pricing_hora_tecnica' %}">
+      <i class="bi bi-wrench-adjustable me-1"></i>Hora Técnica
+    </a>
+    <a class="btn btn-sm {% if aba_pricing == 'simulacoes' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'operacao:pricing_simulacoes' %}">
+      <i class="bi bi-shield-shaded me-1"></i>Simulador de Lances
+    </a>
+    <a class="btn btn-sm btn-outline-info" href="{% url 'operacao:licita_oportunidades' %}">
+      <i class="bi bi-search me-1"></i>VERTYX Licita (PNCP)
+    </a>
+  </div>
+</div>

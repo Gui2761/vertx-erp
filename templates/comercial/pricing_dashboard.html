@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Market &amp; Pricing · VERTYX ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "comercial/pricing_subnav.html" %}
+
+  <!-- KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Produtos Precificados</div>
+        <div class="h2 mb-1 fw-bold text-primary">{{ kpis.total_produtos_calculados }}</div>
+        <div class="small text-muted">Com margem e break-even</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Especialidades Técnicas</div>
+        <div class="h2 mb-1 fw-bold text-success">{{ kpis.total_especialidades_tecnicas }}</div>
+        <div class="small text-muted">Capacidade operacional</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Horas Faturáveis / Mês</div>
+        <div class="h2 mb-1 fw-bold text-info">{{ kpis.total_horas_faturaveis_mes|floatformat:1 }} h</div>
+        <div class="small text-muted">Base de absorção técnica</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Simulações de Lances</div>
+        <div class="h2 mb-1 fw-bold">{{ kpis.total_simulacoes_lance }}</div>
+        <div class="small {% if kpis.simulacoes_em_alerta_piso %}text-danger fw-bold{% else %}text-muted{% endif %}">
+          {{ kpis.simulacoes_em_alerta_piso }} com alerta de piso (prejuízo)
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-2">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Pesquisas Concorrenciais</div>
+        <div class="h2 mb-1 fw-bold text-secondary">{{ kpis.total_pesquisas_concorrentes }}</div>
+        <div class="small text-muted">Mercado SE &amp; AL</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Centros de Custo & Rateios ERP -->
+  <div class="card shadow-sm border-0 p-3 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h2 class="h5 mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-primary"></i>Centros de Custo &amp; Rateio de Despesas Fixas</h2>
+        <p class="text-secondary small mb-0">Absorção de custos operacionais reais para formação matemática do preço de venda.</p>
+      </div>
+      {% if pode_escrever %}
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="inicializar_centros">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-arrow-clockwise me-1"></i>Redefinir Padrões ERP
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Centro de Custo</th>
+            <th>Nome / Escopo</th>
+            <th>Rateio (%)</th>
+            <th>Custo Fixo Mensal (R$)</th>
+            <th>Composição / Observações</th>
+            {% if pode_escrever %}<th class="text-end">Ações</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for cc in centros_custo %}
+          <tr>
+            <td class="fw-bold">
+              {% if cc.codigo == 'LOJA' %}<span class="badge text-bg-primary">Loja</span>
+              {% elif cc.codigo == 'ASSISTENCIA' %}<span class="badge text-bg-success">Assistência</span>
+              {% else %}<span class="badge text-bg-secondary">Compartilhado</span>{% endif %}
+            </td>
+            <td>{{ cc.nome }}</td>
+            <td class="fw-bold">{{ cc.percentual_rateio }}%</td>
+            <td class="fw-bold text-success">R$ {{ cc.custo_fixo_mensal|floatformat:2 }}</td>
+            <td class="text-secondary small">{{ cc.observacoes|truncatechars:80 }}</td>
+            {% if pode_escrever %}
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-cc-{{ cc.pk }}">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </td>
+            {% endif %}
+          </tr>
+
+          {% if pode_escrever %}
+          <div class="modal fade" id="modal-cc-{{ cc.pk }}" tabindex="-1">
+            <div class="modal-dialog">
+              <form method="post" class="modal-content">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="salvar_centro">
+                <input type="hidden" name="centro_id" value="{{ cc.pk }}">
+                <div class="modal-header">
+                  <h5 class="modal-title">Editar {{ cc.nome }}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-3">
+                    <label class="form-label small">Percentual de Rateio (%)</label>
+                    <input type="text" name="percentual_rateio" class="form-control" value="{{ cc.percentual_rateio }}" required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small">Custo Fixo Mensal (R$)</label>
+                    <input type="text" name="custo_fixo_mensal" class="form-control" value="{{ cc.custo_fixo_mensal }}" required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small">Observações</label>
+                    <textarea name="observacoes" class="form-control" rows="3">{{ cc.observacoes }}</textarea>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-sm btn-primary">Salvar Alterações</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          {% endif %}
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-4 text-secondary">Nenhum centro de custo cadastrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Resumo Produtos & Simulações -->
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 p-3 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 mb-0 fw-bold"><i class="bi bi-box-seam me-2 text-primary"></i>Produtos Recentes (Preço-Alvo)</h2>
+          <a href="{% url 'operacao:pricing_produtos' %}" class="btn btn-sm btn-link p-0">Ver todos &rarr;</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Produto</th>
+                <th>Custo Base</th>
+                <th>Break-even</th>
+                <th>Preço-Alvo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in produtos_recentes %}
+              <tr>
+                <td class="fw-semibold">{{ p.nome_produto|truncatechars:28 }}</td>
+                <td>R$ {{ p.custo_base|floatformat:2 }}</td>
+                <td class="text-secondary">R$ {{ p.preco_equilibrio|floatformat:2 }}</td>
+                <td class="fw-bold text-success">R$ {{ p.preco_alvo|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center py-3 text-muted">Nenhum produto cadastrado na calculadora.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 p-3 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 mb-0 fw-bold"><i class="bi bi-shield-shaded me-2 text-primary"></i>Simulações de Lances &amp; Pisos</h2>
+          <a href="{% url 'operacao:pricing_simulacoes' %}" class="btn btn-sm btn-link p-0">Ver todas &rarr;</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Edital / Órgão</th>
+                <th>Piso Sustentável</th>
+                <th>Lance Simulado</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in simulacoes_recentes %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ s.titulo_edital|truncatechars:24 }}</div>
+                  <div class="small text-muted">{{ s.orgao_comprador|truncatechars:24 }}</div>
+                </td>
+                <td class="fw-bold">R$ {{ s.piso_sem_lucro|floatformat:2 }}</td>
+                <td class="fw-bold">R$ {{ s.lance_simulado_disputa|default:0|floatformat:2 }}</td>
+                <td>
+                  {% if s.lance_abaixo_do_piso %}
+                  <span class="badge text-bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>Abaixo do Piso</span>
+                  {% else %}
+                  <span class="badge text-bg-success"><i class="bi bi-check-circle me-1"></i>Viável</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center py-3 text-muted">Nenhuma simulação registrada.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

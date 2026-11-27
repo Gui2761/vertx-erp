@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Simulação {{ sim.titulo_edital }} · Market &amp; Pricing{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "comercial/pricing_subnav.html" %}
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <a href="{% url 'operacao:pricing_simulacoes' %}" class="btn btn-sm btn-outline-secondary mb-2">&larr; Voltar às Simulações</a>
+      <h1 class="h3 mb-0 fw-bold">{{ sim.titulo_edital }}</h1>
+      <p class="text-secondary small mb-0">{{ sim.orgao_comprador }}</p>
+    </div>
+    {% if sim.licitacao_vinculada %}
+    <a href="{% url 'operacao:licita_detalhe' pk=sim.licitacao_vinculada.pk %}" class="btn btn-sm btn-info text-white">
+      <i class="bi bi-box-arrow-up-right me-1"></i>Ver no VERTYX Licita
+    </a>
+    {% endif %}
+  </div>
+
+  {% if sim.lance_abaixo_do_piso %}
+  <div class="alert alert-danger d-flex align-items-center mb-4">
+    <i class="bi bi-exclamation-octagon-fill fs-2 me-3"></i>
+    <div>
+      <h5 class="alert-heading mb-1 fw-bold">ALERTA CRÍTICO: LANCE ABAIXO DO PISO SUSTENTÁVEL!</h5>
+      <div>O lance simulado de <strong>R$ {{ sim.lance_simulado_disputa|floatformat:2 }}</strong> não cobre os custos compostos da operação (Piso Break-even: <strong>R$ {{ sim.piso_sem_lucro|floatformat:2 }}</strong>). Prejuízo estimado: <strong class="text-danger">R$ {{ lucro_lance_atual|floatformat:2 }}</strong>.</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4 mb-4">
+    <div class="col-md-3">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Custo Total Composto</div>
+        <div class="h3 mb-1 fw-bold">R$ {{ sim.custo_total_composto|floatformat:2 }}</div>
+        <div class="small text-muted">Inclui {{ sim.percentual_taxa_risco }}% de risco</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card h-100 p-3 shadow-sm border-0 border-start border-warning border-4">
+        <div class="text-secondary small">Piso Sustentável (Sem Lucro)</div>
+        <div class="h3 mb-1 fw-bold text-dark">R$ {{ sim.piso_sem_lucro|floatformat:2 }}</div>
+        <div class="small text-muted">Break-even absoluto</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card h-100 p-3 shadow-sm border-0 border-start border-success border-4">
+        <div class="text-secondary small">Lance Alvo (com Margem {{ sim.percentual_margem_minima }}%)</div>
+        <div class="h3 mb-1 fw-bold text-success">R$ {{ sim.lance_com_margem|floatformat:2 }}</div>
+        <div class="small text-muted">Preço ideal competitivo</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card h-100 p-3 shadow-sm border-0 {% if sim.lance_abaixo_do_piso %}border-start border-danger border-4{% else %}border-start border-primary border-4{% endif %}">
+        <div class="text-secondary small">Lance Simulado Atual</div>
+        <div class="h3 mb-1 fw-bold {% if sim.lance_abaixo_do_piso %}text-danger{% else %}text-primary{% endif %}">
+          R$ {{ sim.lance_simulado_disputa|default:0|floatformat:2 }}
+        </div>
+        <div class="small {% if lucro_lance_atual < 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+          Resultado: R$ {{ lucro_lance_atual|floatformat:2 }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Memória de Cálculo & Simulação Rápida de Lance -->
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card shadow-sm border-0 p-3 h-100">
+        <h2 class="h5 fw-bold mb-3"><i class="bi bi-calculator me-2 text-primary"></i>Memória de Cálculo dos Custos</h2>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <tbody>
+              <tr>
+                <td>Peças &amp; Equipamentos</td>
+                <td class="text-end fw-semibold">R$ {{ sim.custos_pecas_equipamentos|floatformat:2 }}</td>
+              </tr>
+              <tr>
+                <td>
+                  Horas Técnicas
+                  <span class="small text-muted">({{ sim.horas_tecnicas_estimadas }}h × R$ {{ sim.custo_hora_aplicado|floatformat:2 }}/h)</span>
+                </td>
+                <td class="text-end fw-semibold">R$ {{ sim.custo_horas_total|floatformat:2 }}</td>
+              </tr>
+              <tr>
+                <td>Deslocamento, Diárias &amp; Logística</td>
+                <td class="text-end fw-semibold">R$ {{ sim.custos_deslocamento_logistica|floatformat:2 }}</td>
+              </tr>
+              <tr>
+                <td>Outras Despesas Diretas</td>
+                <td class="text-end fw-semibold">R$ {{ sim.outras_despesas_diretas|floatformat:2 }}</td>
+              </tr>
+              <tr class="table-light">
+                <td class="fw-bold">Subtotal de Custos Diretos</td>
+                <td class="text-end fw-bold">R$ {{ sim.subtotal_custos_diretos|floatformat:2 }}</td>
+              </tr>
+              <tr>
+                <td>Taxa de Risco / Imprevistos ({{ sim.percentual_taxa_risco }}%)</td>
+                <td class="text-end text-muted">R$ {{ sim.valor_taxa_risco|floatformat:2 }}</td>
+              </tr>
+              <tr class="table-primary fw-bold">
+                <td>Custo Total Composto</td>
+                <td class="text-end">R$ {{ sim.custo_total_composto|floatformat:2 }}</td>
+              </tr>
+              <tr>
+                <td>Tributos sobre Faturamento</td>
+                <td class="text-end">{{ sim.percentual_tributos }}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-sm border-0 p-3 h-100">
+        <h2 class="h5 fw-bold mb-3"><i class="bi bi-speedometer me-2 text-primary"></i>Simular Novo Lance na Disputa</h2>
+        <p class="text-secondary small">Digite o valor ofertado durante a sessão pública para conferir margem e validar o piso em tempo real.</p>
+
+        {% if pode_escrever %}
+        <form method="post" class="mb-4">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="atualizar_lance">
+          <div class="input-group mb-2">
+            <span class="input-group-text">R$</span>
+            <input type="text" name="lance_simulado_disputa" class="form-control form-control-lg fw-bold" value="{{ sim.lance_simulado_disputa|default:'' }}" placeholder="Ex: 88500.00" required>
+            <button type="submit" class="btn btn-primary px-4">Testar Lance</button>
+          </div>
+          <div class="small text-muted">Piso sem lucro: R$ {{ sim.piso_sem_lucro|floatformat:2 }}</div>
+        </form>
+        {% endif %}
+
+        <div class="p-3 bg-light rounded border">
+          <h6 class="fw-bold mb-2">Cenários de Decisão:</h6>
+          <div class="d-flex justify-content-between small py-1 border-bottom">
+            <span>Lance a R$ {{ sim.lance_com_margem|floatformat:2 }} (Margem Alvo):</span>
+            <span class="text-success fw-bold">Lucro de R$ {{ sim.lucro_lance_com_margem|floatformat:2 }}</span>
+          </div>
+          <div class="d-flex justify-content-between small py-1 border-bottom">
+            <span>Lance a R$ {{ sim.piso_sem_lucro|floatformat:2 }} (Piso Mínimo):</span>
+            <span class="text-secondary fw-bold">Lucro Zero (Break-even)</span>
+          </div>
+          {% if sim.lance_simulado_disputa %}
+          <div class="d-flex justify-content-between small py-1 mt-1">
+            <span>Lance Atual (R$ {{ sim.lance_simulado_disputa|floatformat:2 }}):</span>
+            <span class="{% if lucro_lance_atual < 0 %}text-danger fw-bold{% else %}text-success fw-bold{% endif %}">
+              Lucro de R$ {{ lucro_lance_atual|floatformat:2 }}
+            </span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Hora Técnica · Market &amp; Pricing{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "comercial/pricing_subnav.html" %}
+
+  <div class="card shadow-sm border-0 p-3 mb-4">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <h2 class="h5 mb-0 fw-bold"><i class="bi bi-wrench-adjustable me-2 text-primary"></i>Formação da Hora Técnica da Assistência</h2>
+        <p class="text-secondary small mb-0">Cálculo de absorção por capacidade produtiva: Nº Técnicos × Dias Úteis × Horas × % Ocupação.</p>
+      </div>
+      {% if pode_escrever %}
+      <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modal-nova-hora">
+        <i class="bi bi-plus-lg me-1"></i>Nova Especialidade Técnica
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    {% for h in especialidades %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100 shadow-sm border-0 p-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="badge text-bg-primary">Assistência Especializada</span>
+          {% if pode_escrever %}
+          <button class="btn btn-sm btn-outline-secondary py-0" data-bs-toggle="modal" data-bs-target="#modal-hora-{{ h.pk }}">
+            <i class="bi bi-pencil"></i>
+          </button>
+          {% endif %}
+        </div>
+        <h3 class="h5 fw-bold mb-1">{{ h.especialidade }}</h3>
+        <div class="text-muted small mb-3">Capacidade técnica faturável do centro operacional</div>
+
+        <ul class="list-group list-group-flush small mb-3">
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-secondary">Equipe Dedicada:</span>
+            <span class="fw-semibold">{{ h.num_tecnicos }} técnico(s) · {{ h.horas_dia }}h/dia</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-secondary">Taxa de Ocupação Faturável:</span>
+            <span class="fw-semibold">{{ h.percentual_ocupacao_faturavel }}%</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-secondary">Horas Faturáveis / Mês:</span>
+            <span class="fw-bold text-primary">{{ h.horas_faturaveis_mes }} horas</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-secondary">Custo Fixo Mensal do Centro:</span>
+            <span class="fw-semibold">R$ {{ h.custo_mensal_centro|floatformat:2 }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-secondary">Custo Absorvido por Hora:</span>
+            <span class="fw-bold text-dark">R$ {{ h.custo_por_hora|floatformat:2 }}/h</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-secondary">Tributos + Margem:</span>
+            <span>{{ h.percentual_tributos }}% trib + {{ h.percentual_margem }}% margem</span>
+          </li>
+        </ul>
+
+        <div class="mt-auto p-2 rounded bg-light border text-center">
+          <div class="small text-secondary">Hora Técnica Sugerida:</div>
+          <div class="h4 mb-0 fw-bold text-success">R$ {{ h.hora_sugerida|floatformat:2 }} <span class="fs-6">/ hora</span></div>
+        </div>
+      </div>
+    </div>
+
+    {% if pode_escrever %}
+    <div class="modal fade" id="modal-hora-{{ h.pk }}" tabindex="-1">
+      <div class="modal-dialog">
+        <form method="post" class="modal-content">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="salvar_hora">
+          <input type="hidden" name="hora_id" value="{{ h.pk }}">
+          <div class="modal-header">
+            <h5 class="modal-title">Editar {{ h.especialidade }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body row g-3">
+            <div class="col-12">
+              <label class="form-label small">Especialidade / Segmento</label>
+              <input type="text" name="especialidade" class="form-control" value="{{ h.especialidade }}" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Nº Técnicos</label>
+              <input type="number" name="num_tecnicos" class="form-control" value="{{ h.num_tecnicos }}" min="1" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Dias Úteis</label>
+              <input type="number" name="dias_uteis_mes" class="form-control" value="{{ h.dias_uteis_mes }}" min="1" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Horas/Dia</label>
+              <input type="text" name="horas_dia" class="form-control" value="{{ h.horas_dia }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">% Ocupação Faturável</label>
+              <input type="text" name="percentual_ocupacao_faturavel" class="form-control" value="{{ h.percentual_ocupacao_faturavel }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Custo Mensal (R$)</label>
+              <input type="text" name="custo_mensal_centro" class="form-control" value="{{ h.custo_mensal_centro }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Tributos (%)</label>
+              <input type="text" name="percentual_tributos" class="form-control" value="{{ h.percentual_tributos }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-success fw-bold">Margem (%)</label>
+              <input type="text" name="percentual_margem" class="form-control border-success" value="{{ h.percentual_margem }}" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% empty %}
+    <div class="col-12 text-center py-5">
+      <div class="text-secondary mb-3">Nenhuma especialidade técnica cadastrada para cálculo da hora faturável.</div>
+      {% if pode_escrever %}
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-nova-hora">
+        <i class="bi bi-plus-lg me-1"></i>Cadastrar Primeira Especialidade
+      </button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if pode_escrever %}
+  <div class="modal fade" id="modal-nova-hora" tabindex="-1">
+    <div class="modal-dialog">
+      <form method="post" class="modal-content">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="salvar_hora">
+        <div class="modal-header">
+          <h5 class="modal-title">Nova Especialidade Técnica</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-12">
+            <label class="form-label small">Especialidade / Segmento</label>
+            <input type="text" name="especialidade" class="form-control" placeholder="Ex: Engenharia Clínica Hospitalar" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Nº Técnicos</label>
+            <input type="number" name="num_tecnicos" class="form-control" value="2" min="1" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Dias Úteis</label>
+            <input type="number" name="dias_uteis_mes" class="form-control" value="22" min="1" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Horas/Dia</label>
+            <input type="text" name="horas_dia" class="form-control" value="8.00" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">% Ocupação Faturável</label>
+            <input type="text" name="percentual_ocupacao_faturavel" class="form-control" value="65.00" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Custo Mensal (R$)</label>
+            <input type="text" name="custo_mensal_centro" class="form-control" placeholder="Ex: 13500.00" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Tributos (%)</label>
+            <input type="text" name="percentual_tributos" class="form-control" value="12.00" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-success fw-bold">Margem (%)</label>
+            <input type="text" name="percentual_margem" class="form-control border-success" value="25.00" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-sm btn-primary">Salvar Especialidade</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

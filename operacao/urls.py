@@ -20,6 +20,8 @@ from . import executive
 from . import mobile
 from . import contract_workday_views
 from . import maquinetas
+from . import pricing_views
+from . import licita_views
 app_name = 'operacao'
 urlpatterns = [
     path('integracoes/migracao/',migration_views.home,name='migration_home'),
@@ -183,6 +185,17 @@ urlpatterns = [
     path('fiscal/recebidas/<int:pk>/', fiscal_hub_views.fiscal_nota_recebida_detalhe, name='fiscal_nota_recebida_detalhe'),
     path('financeiro/movimentacoes/', views.financeiro_movimentacoes, name='financeiro_movimentacoes'),
     path('financeiro/maquinetas/', maquinetas.maquinetas_view, name='financeiro_maquinetas'),
+    # VERTYX Market & Pricing
+    path('comercial/pricing/', pricing_views.pricing_dashboard, name='pricing_dashboard'),
+    path('comercial/pricing/produtos/', pricing_views.pricing_produtos, name='pricing_produtos'),
+    path('comercial/pricing/hora-tecnica/', pricing_views.pricing_hora_tecnica, name='pricing_hora_tecnica'),
+    path('comercial/pricing/simulacoes/', pricing_views.pricing_simulacoes, name='pricing_simulacoes'),
+    path('comercial/pricing/simulacoes/<int:pk>/', pricing_views.pricing_simulacao_detalhe, name='pricing_simulacao_detalhe'),
+    # VERTYX Licita
+    path('comercial/licita/', licita_views.licita_oportunidades, name='licita_oportunidades'),
+    path('comercial/licita/radares/', licita_views.licita_radares, name='licita_radares'),
+    path('comercial/licita/funil/', licita_views.licita_funil, name='licita_funil'),
+    path('comercial/licita/<int:pk>/', licita_views.licita_detalhe, name='licita_detalhe'),
 ]
 for resource, prefix in {'conhecimento': 'conhecimento', 'deposito': 'depositos', 'categoria': 'categorias-pecas', 'chamado': 'chamados', 'checklist': 'checklists', 'plano': 'preventivas', 'compra': 'compras', 'venda': 'vendas', 'banco': 'bancos', 'extrato': 'bancos/extrato', 'fiscal': 'fiscal', 'documento': 'documentos', 'portal_acesso': 'portal-acessos'}.items():
     urlpatterns += [

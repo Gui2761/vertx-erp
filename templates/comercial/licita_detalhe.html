@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block title %}{{ op.numero_edital|default:op.numero_controle_pncp }} · VERTYX Licita{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  {% include "comercial/licita_subnav.html" %}
+
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <a href="{% url 'operacao:licita_oportunidades' %}" class="btn btn-sm btn-outline-secondary mb-2">&larr; Voltar às Oportunidades</a>
+      <h1 class="h3 mb-1 fw-bold">{{ op.orgao_nome }}</h1>
+      <div class="d-flex flex-wrap align-items-center gap-2 text-secondary small">
+        <span class="badge text-bg-primary">{{ op.modalidade_nome }}</span>
+        <span>UF: <strong>{{ op.uf }}</strong></span>
+        {% if op.municipio %}<span>· Município: <strong>{{ op.municipio }}</strong></span>{% endif %}
+        <span>· Controle PNCP: <code>{{ op.numero_controle_pncp }}</code></span>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      {% if op.link_fonte_pncp %}
+      <a href="{{ op.link_fonte_pncp }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-info">
+        <i class="bi bi-box-arrow-up-right me-1"></i>Acessar PNCP Oficial
+      </a>
+      {% endif %}
+
+      {% if pode_escrever %}
+      <div class="dropdown">
+        <button class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+          Etapa: {{ op.get_etapa_display }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          {% for c, l in etapas_choices %}
+          <li>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="acao" value="atualizar_etapa">
+              <input type="hidden" name="etapa" value="{{ c }}">
+              <button type="submit" class="dropdown-item {% if op.etapa == c %}active{% endif %}">{{ l }}</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Cards de Resumo & Status do Checklist -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Valor Estimado do Órgão</div>
+        <div class="h3 mb-1 fw-bold text-dark">R$ {{ op.valor_total_estimado|floatformat:2 }}</div>
+        <div class="small text-muted">Orçamento de referência</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card h-100 p-3 shadow-sm border-0">
+        <div class="text-secondary small">Conformidade Documental</div>
+        <div class="h3 mb-1 fw-bold text-success">{{ op.requisitos_atendidos }} / {{ op.total_requisitos }}</div>
+        <div class="small text-muted">{{ op.requisitos_pendentes }} pendente(s) · {{ op.requisitos_impedimentos }} impedimento(s)</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card h-100 p-3 shadow-sm border-0 border-start border-warning border-4">
+        <div class="text-secondary small">Piso Sustentável (Pricing)</div>
+        <div class="h3 mb-1 fw-bold">
+          {% if op.simulacao_pricing %}
+          R$ {{ op.simulacao_pricing.piso_sem_lucro|floatformat:2 }}
+          {% else %}
+          <span class="text-muted fs-6">Não Calculado</span>
+          {% endif %}
+        </div>
+        <div class="small text-muted">Trava para evitar prejuízo</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card h-100 p-3 shadow-sm border-0 border-start border-success border-4">
+        <div class="text-secondary small">Lance com Margem Alvo</div>
+        <div class="h3 mb-1 fw-bold text-success">
+          {% if op.simulacao_pricing %}
+          R$ {{ op.simulacao_pricing.lance_com_margem|floatformat:2 }}
+          {% else %}
+          <span class="text-muted fs-6">Pendente Simulação</span>
+          {% endif %}
+        </div>
+        <div class="small text-muted">Sugestão competitiva</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Objeto da Contratação -->
+  <div class="card shadow-sm border-0 p-3 mb-4">
+    <h2 class="h6 fw-bold mb-2 text-secondary"><i class="bi bi-card-text me-2"></i>Objeto da Licitação</h2>
+    <div class="p-3 bg-light rounded text-dark fs-6">{{ op.objeto }}</div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Checklist de Exigências do Edital c/ Citação -->
+    <div class="col-lg-7">
+      <div class="card shadow-sm border-0 p-3 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <h2 class="h5 fw-bold mb-0"><i class="bi bi-check2-square me-2 text-primary"></i>Checklist de Requisitos do Edital</h2>
+            <p class="text-secondary small mb-0">Rastreabilidade obrigatória com indicação de página e trecho original.</p>
+          </div>
+          {% if pode_escrever %}
+          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-novo-requisito">
+            <i class="bi bi-plus-lg me-1"></i>Adicionar Exigência
+          </button>
+          {% endif %}
+        </div>
+
+        <div class="d-flex flex-column gap-3">
+          {% for req in requisitos %}
+          <div class="p-3 rounded border {% if req.status == 'CONFORME' %}border-success-subtle bg-success-subtle bg-opacity-10{% elif req.status == 'IMPEDIMENTO' %}border-danger-subtle bg-danger-subtle bg-opacity-10{% else %}bg-white{% endif %}">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="badge text-bg-light border text-dark">{{ req.get_categoria_display }}</span>
+              <span class="badge {% if req.status == 'CONFORME' %}text-bg-success{% elif req.status == 'IMPEDIMENTO' %}text-bg-danger{% else %}text-bg-warning{% endif %}">
+                {{ req.get_status_display }}
+              </span>
+            </div>
+
+            <h4 class="h6 fw-bold mb-1">{{ req.titulo }}</h4>
+            <p class="small text-secondary mb-2">{{ req.descricao_detalhada }}</p>
+
+            <!-- Trecho Citado e Página -->
+            <div class="p-2 rounded bg-light border-start border-primary border-3 small mb-2">
+              <div class="text-primary fw-semibold mb-1">
+                <i class="bi bi-bookmark me-1"></i>Página {{ req.pagina_edital }} do Edital:
+              </div>
+              <em class="text-dark">"{{ req.trecho_citado }}"</em>
+            </div>
+
+            {% if req.parecer_conferencia %}
+            <div class="small text-muted mb-2">
+              <strong>Parecer:</strong> {{ req.parecer_conferencia }}
+              {% if req.conferido_por %}<span class="text-secondary">({{ req.conferido_por.get_full_name|default:req.conferido_por.username }})</span>{% endif %}
+            </div>
+            {% endif %}
+
+            {% if pode_escrever %}
+            <div class="d-flex justify-content-end gap-1 pt-2 border-top">
+              <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="salvar_requisito">
+                <input type="hidden" name="requisito_id" value="{{ req.pk }}">
+                <input type="hidden" name="categoria" value="{{ req.categoria }}">
+                <input type="hidden" name="titulo" value="{{ req.titulo }}">
+                <input type="hidden" name="descricao_detalhada" value="{{ req.descricao_detalhada }}">
+                <input type="hidden" name="pagina_edital" value="{{ req.pagina_edital }}">
+                <input type="hidden" name="trecho_citado" value="{{ req.trecho_citado }}">
+                <input type="hidden" name="status" value="CONFORME">
+                <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Marcar como atendido">
+                  <i class="bi bi-check-lg me-1"></i>Conforme
+                </button>
+              </form>
+
+              <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="salvar_requisito">
+                <input type="hidden" name="requisito_id" value="{{ req.pk }}">
+                <input type="hidden" name="categoria" value="{{ req.categoria }}">
+                <input type="hidden" name="titulo" value="{{ req.titulo }}">
+                <input type="hidden" name="descricao_detalhada" value="{{ req.descricao_detalhada }}">
+                <input type="hidden" name="pagina_edital" value="{{ req.pagina_edital }}">
+                <input type="hidden" name="trecho_citado" value="{{ req.trecho_citado }}">
+                <input type="hidden" name="status" value="IMPEDIMENTO">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Marcar impedimento crítico">
+                  <i class="bi bi-x-lg me-1"></i>Impedimento
+                </button>
+              </form>
+            </div>
+            {% endif %}
+          </div>
+          {% empty %}
+          <div class="text-center py-4 text-muted">Nenhum requisito extraído deste edital.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulador de Lance Integrado ao Market & Pricing -->
+    <div class="col-lg-5">
+      <div class="card shadow-sm border-0 p-3 h-100">
+        <h2 class="h5 fw-bold mb-2"><i class="bi bi-calculator me-2 text-primary"></i>Simulador de Lance Integrado</h2>
+        <p class="text-secondary small mb-3">Composição de custos reais do ERP e limite sustentável de disputa.</p>
+
+        {% if op.simulacao_pricing and op.simulacao_pricing.lance_abaixo_do_piso %}
+        <div class="alert alert-danger p-2 mb-3 small">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>
+          <strong>Lance atual está ABAIXO do piso!</strong> Prejuízo estimado se contratado.
+        </div>
+        {% endif %}
+
+        {% if pode_escrever %}
+        <form method="post" class="row g-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="gerar_simulacao_pricing">
+          <div class="col-md-6">
+            <label class="form-label small">Peças / Equipamentos (R$)</label>
+            <input type="text" name="custos_pecas_equipamentos" class="form-control form-control-sm" value="{{ op.simulacao_pricing.custos_pecas_equipamentos|default:'0.00' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Horas Técnicas Estimadas</label>
+            <input type="text" name="horas_tecnicas_estimadas" class="form-control form-control-sm" value="{{ op.simulacao_pricing.horas_tecnicas_estimadas|default:'0.00' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Custo Hora Aplicado (R$)</label>
+            <input type="text" name="custo_hora_aplicado" class="form-control form-control-sm" value="{{ op.simulacao_pricing.custo_hora_aplicado|default:'65.00' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Deslocamento &amp; Logística (R$)</label>
+            <input type="text" name="custos_deslocamento_logistica" class="form-control form-control-sm" value="{{ op.simulacao_pricing.custos_deslocamento_logistica|default:'0.00' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Taxa Risco (%)</label>
+            <input type="text" name="percentual_taxa_risco" class="form-control form-control-sm" value="{{ op.simulacao_pricing.percentual_taxa_risco|default:'5.00' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Tributos (%)</label>
+            <input type="text" name="percentual_tributos" class="form-control form-control-sm" value="{{ op.simulacao_pricing.percentual_tributos|default:'8.00' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-success fw-bold">Margem (%)</label>
+            <input type="text" name="percentual_margem_minima" class="form-control form-control-sm border-success" value="{{ op.simulacao_pricing.percentual_margem_minima|default:'15.00' }}">
+          </div>
+          <div class="col-12 mt-2">
+            <label class="form-label small text-primary fw-bold">Lance Simulado na Disputa (R$)</label>
+            <input type="text" name="lance_simulado_disputa" class="form-control form-control-lg border-primary fw-bold" value="{{ op.simulacao_pricing.lance_simulado_disputa|default:'' }}" placeholder="Ex: 85000.00">
+          </div>
+          <div class="col-12 mt-3">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-shield-check me-1"></i>Calcular &amp; Validar Piso de Lance
+            </button>
+          </div>
+        </form>
+        {% endif %}
+
+        {% if op.simulacao_pricing %}
+        <div class="p-3 bg-light rounded border mt-3 small">
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span>Custo Total Composto:</span>
+            <strong>R$ {{ op.simulacao_pricing.custo_total_composto|floatformat:2 }}</strong>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span>Piso Sem Lucro (Break-even):</span>
+            <strong class="text-dark">R$ {{ op.simulacao_pricing.piso_sem_lucro|floatformat:2 }}</strong>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span>Lance com Margem Alvo:</span>
+            <strong class="text-success">R$ {{ op.simulacao_pricing.lance_com_margem|floatformat:2 }}</strong>
+          </div>
+          {% if op.simulacao_pricing.lance_simulado_disputa %}
+          <div class="d-flex justify-content-between py-1">
+            <span>Resultado no Lance:</span>
+            <strong class="{% if op.simulacao_pricing.calcular_lucro_lance < 0 %}text-danger{% else %}text-success{% endif %}">
+              R$ {{ op.simulacao_pricing.calcular_lucro_lance|floatformat:2 }}
+            </strong>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Adicionar Requisito -->
+  {% if pode_escrever %}
+  <div class="modal fade" id="modal-novo-requisito" tabindex="-1">
+    <div class="modal-dialog">
+      <form method="post" class="modal-content">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="salvar_requisito">
+        <div class="modal-header">
+          <h5 class="modal-title">Nova Exigência do Edital</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-6">
+            <label class="form-label small">Categoria</label>
+            <select name="categoria" class="form-select">
+              {% for cod, rot in categorias_requisitos %}
+              <option value="{{ cod }}">{{ rot }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Página do Edital</label>
+            <input type="number" name="pagina_edital" class="form-control" value="1" min="1" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Título do Requisito</label>
+            <input type="text" name="titulo" class="form-control" placeholder="Ex: Atestado de Capacidade Técnica Hospitalar" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Trecho Original do Edital (Citação Direta)</label>
+            <textarea name="trecho_citado" class="form-control" rows="3" placeholder="Transcreva exatamente a cláusula do edital para fins de auditoria e recurso..." required></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Descrição / Observações</label>
+            <input type="text" name="descricao_detalhada" class="form-control" placeholder="Instruções para atendimento">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-sm btn-primary">Registrar Exigência</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
