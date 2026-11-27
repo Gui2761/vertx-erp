@@ -17,13 +17,14 @@ def route_allowed(match, user=None):
     if namespace == 'clientes':
         return name == 'cliente_create'  # Existing limited creation permission.
     if namespace == 'operacao':
-        if name in {'pdv_home','pdv_cash','pdv_sale','pdv_products','pdv_receipt','pdv_history','pdv_offline','pdv_prepare','pdv_sync','pdv_sync_context','pdv_offline_shell'}:
+        if name in {'pdv_home','pdv_cash','pdv_sale','pdv_products','pdv_receipt','pdv_history','pdv_offline','pdv_prepare','pdv_sync','pdv_sync_context','pdv_offline_shell','pdv_cash_opening','pdv_cash_closing','pdv_cash_movement'}:
             from platform_core.modules import has_capability
             return bool(user and has_capability(user,'operar_pdv'))
         return name in {
             'seller_home','seller_sales','seller_goal','seller_commission','seller_alerts',
             'seller_customer','seller_notice_read','pdv_home','pdv_cash','pdv_sale',
-            'pdv_products','pdv_receipt','ponto_home','ponto_mirror','ponto_overtime',
+            'pdv_products','pdv_receipt','pdv_cash_opening','pdv_cash_closing','pdv_cash_movement',
+            'ponto_home','ponto_mirror','ponto_overtime',
             'documento_arquivo','documento_lista','documento_detalhe','documento_novo',
             'manifest','pdv_manifest','pdv_manifest_scoped','seller_manifest','worker','pdv_worker','seller_worker',
             'seller_login','pdv_login','seller_ponto','seller_overtime','seller_mirror','seller_sale_detail',

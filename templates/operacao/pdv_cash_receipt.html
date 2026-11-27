@@ -25,12 +25,12 @@
   <article class="thermal-receipt width-80mm" id="thermalSlip">
     <!-- Cabeçalho do Estabelecimento -->
     <header class="receipt-header">
-      <div class="company-name">{{ organization.razao_social|default:empresa.razao_social|default:'TECNOLMED GESTAO CLINICA LTDA ME'|upper }}</div>
-      {% if organization.endereco or empresa.endereco %}<div class="receipt-sub">{{ organization.endereco|default:empresa.endereco }}</div>{% endif %}
-      {% if organization.telefone or empresa.telefone %}<div class="receipt-sub">TELEFONE: {{ organization.telefone|default:empresa.telefone }}</div>{% endif %}
+      <div class="company-name">{{ company_razao_social|default:'TECNOLMED GESTAO CLINICA LTDA ME'|upper }}</div>
+      {% if company_endereco %}<div class="receipt-sub">{{ company_endereco }}</div>{% endif %}
+      {% if company_telefone %}<div class="receipt-sub">TELEFONE: {{ company_telefone }}</div>{% endif %}
       <div class="receipt-sub">
-        CNPJ: {{ organization.cnpj|default:empresa.cnpj|default:'39.966.868/0001-86' }}
-        {% if empresa.inscricao_estadual or organization.inscricao_estadual %} · IE: {{ empresa.inscricao_estadual|default:organization.inscricao_estadual }}{% endif %}
+        CNPJ: {{ company_cnpj|default:'39.966.868/0001-86' }}
+        {% if company_ie %} · IE: {{ company_ie }}{% endif %}
       </div>
     </header>
 

@@ -2,7 +2,7 @@
 import uuid
 from decimal import Decimal, ROUND_HALF_UP
 from django.core.exceptions import ValidationError, PermissionDenied
-from django.db import transaction
+from django.db import transaction, connection
 from django.db.models import Sum
 from django.utils import timezone
 from platform_core.modules import require_capability, has_capability, module_enabled
@@ -23,9 +23,12 @@ def token(value):
     try: return uuid.UUID(str(value))
     except (ValueError,TypeError,AttributeError): raise ValidationError('Identificador da operação inválido.')
 
-def own_session(user, public_id, closed=False):
+def own_session(user, public_id, closed=False, for_update=False):
     require_capability(user,'pdv')
-    row=m.SessaoCaixa.objects.select_for_update().get(public_id=public_id)
+    qs = m.SessaoCaixa.objects
+    if for_update and connection.in_atomic_block:
+        qs = qs.select_for_update()
+    row = qs.get(public_id=public_id)
     if row.operador_id!=user.pk and not has_capability(user,'caixa_supervisor'):
         raise PermissionDenied('Caixa pertence a outro operador.')
     if row.fechado_em and not closed:

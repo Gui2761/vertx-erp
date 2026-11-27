@@ -204,7 +204,7 @@ def sale(request,public_id,receipt=False):
             'tp_emis': tp_emis,
         }
 
-    return render(request,'operacao/pdv_receipt.html' if receipt else 'operacao/pdv_sale.html',{
+    ctx = {
         'sale': sale,
         'session': session,
         'organization': org,
@@ -216,7 +216,9 @@ def sale(request,public_id,receipt=False):
         'request_id': uuid.uuid4(),
         'back_url': reverse('operacao:pdv_cash',args=[session.public_id]) if session else reverse('operacao:pdv_home'),
         'nfce_info': nfce_info,
-    })
+    }
+    ctx.update(_company_receipt_context(org))
+    return render(request,'operacao/pdv_receipt.html' if receipt else 'operacao/pdv_sale.html', ctx)
 
 @login_required
 def config(request):
@@ -308,22 +310,35 @@ def _company_receipt_context(org=None):
     from platform_core.models import ConfiguracaoEmpresa
     org = org or current_organization()
     empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first() if org else None
-    return {'organization': org, 'empresa': empresa}
+    razao_social = getattr(org, 'razao_social', '') or (empresa.razao_social if empresa else '') or 'TECNOLMED GESTAO CLINICA LTDA ME'
+    cnpj = getattr(org, 'cnpj', '') or (empresa.cnpj if empresa else '') or '39.966.868/0001-86'
+    endereco = getattr(org, 'endereco', '') or (empresa.endereco if empresa else '') or ''
+    telefone = getattr(org, 'telefone', '') or (empresa.telefone if empresa else '') or ''
+    ie = (empresa.inscricao_estadual if empresa else '') or getattr(org, 'inscricao_estadual', '') or ''
+    return {
+        'organization': org,
+        'empresa': empresa,
+        'company_razao_social': razao_social,
+        'company_cnpj': cnpj,
+        'company_endereco': endereco,
+        'company_telefone': telefone,
+        'company_ie': ie,
+    }
 
 
 @login_required
 def cash_receipt_opening(request, public_id):
     try:
-        session = c.own_session(request.user, public_id, True)
+        session = c.own_session(request.user, public_id, True, for_update=False)
     except m.SessaoCaixa.DoesNotExist:
         raise Http404
     ctx = _company_receipt_context(getattr(session, 'organization', None))
     ctx.update({
         'titulo': 'ABERTURA',
         'tipo': 'ABERTURA',
-        'pdv_nome': session.conta.nome,
-        'operador_nome': session.operador.get_full_name() or session.operador.username,
-        'operacao_id': str(session.abertura_id),
+        'pdv_nome': session.conta.nome if session.conta else 'Caixa Principal',
+        'operador_nome': session.operador.get_full_name() or session.operador.username if session.operador else 'Operador',
+        'operacao_id': str(session.abertura_id or session.public_id),
         'data_operacao': session.aberto_em,
         'saldo_abertura': session.saldo_abertura,
         'back_url': reverse('operacao:pdv_cash', kwargs={'public_id': public_id}),
@@ -334,7 +349,7 @@ def cash_receipt_opening(request, public_id):
 @login_required
 def cash_receipt_closing(request, public_id):
     try:
-        session = c.own_session(request.user, public_id, True)
+        session = c.own_session(request.user, public_id, True, for_update=False)
     except m.SessaoCaixa.DoesNotExist:
         raise Http404
     ctx = _company_receipt_context(getattr(session, 'organization', None))
@@ -395,7 +410,7 @@ def cash_receipt_closing(request, public_id):
 @login_required
 def cash_receipt_movement(request, public_id, evento_id):
     try:
-        session = c.own_session(request.user, public_id, True)
+        session = c.own_session(request.user, public_id, True, for_update=False)
     except m.SessaoCaixa.DoesNotExist:
         raise Http404
     evento = get_object_or_404(m.EventoCaixa, sessao=session, pk=evento_id)

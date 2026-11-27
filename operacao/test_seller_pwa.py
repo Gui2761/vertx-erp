@@ -329,6 +329,8 @@ class SellerPWATests(SellerData,TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn('/comprovante-abertura/?autoprint=1', response['Location'])
+        get_resp = self.client.get(response['Location'])
+        self.assertEqual(get_resp.status_code, 200)
 
     def test_goal_can_be_updated_without_duplicate_and_foreign_seller_denied(self):
         self.client.force_login(self.admin)

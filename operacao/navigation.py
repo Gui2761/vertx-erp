@@ -11,7 +11,7 @@ def menu(request):
         result['pdv_experience']=True
     match=getattr(request,'resolver_match',None)
     from platform_core.modules import has_capability, module_enabled
-    result['pdv_experience']=result.get('pdv_experience',False) or bool(match and match.namespace=='operacao' and match.url_name in {'pdv_home','pdv_sale','pdv_cash','pdv_receipt','pdv_products'} and request.user.is_authenticated and has_capability(request.user,'pdv'))
+    result['pdv_experience']=result.get('pdv_experience',False) or bool(match and match.namespace=='operacao' and match.url_name in {'pdv_home','pdv_sale','pdv_cash','pdv_receipt','pdv_products','pdv_cash_opening','pdv_cash_closing','pdv_cash_movement'} and request.user.is_authenticated and has_capability(request.user,'pdv'))
     return result
 
 
