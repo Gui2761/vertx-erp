@@ -380,11 +380,13 @@ def cash_receipt_closing(request, public_id):
     val_total = val_dinheiro + val_pix + val_credito + val_debito + val_outros
     dif_dinheiro = session.diferenca if session.diferenca is not None else Decimal('0.00')
 
+    fechador = session.fechado_por or session.operador
+    operador_nome = (fechador.get_full_name() or fechador.username) if fechador else 'Operador'
     ctx.update({
         'titulo': 'FECHAMENTO DE PDV',
         'tipo': 'FECHAMENTO',
-        'pdv_nome': session.conta.nome,
-        'operador_nome': (session.fechado_por or session.operador).get_full_name() or (session.fechado_por or session.operador).username,
+        'pdv_nome': session.conta.nome if session.conta else 'Caixa Principal',
+        'operador_nome': operador_nome,
         'operacao_id': str(session.public_id),
         'data_operacao': session.fechado_em or timezone.now(),
         'valores': {
@@ -416,15 +418,17 @@ def cash_receipt_movement(request, public_id, evento_id):
     evento = get_object_or_404(m.EventoCaixa, sessao=session, pk=evento_id)
     ctx = _company_receipt_context(getattr(session, 'organization', None))
     tipo_label = 'REFORÇO' if evento.tipo == 'SUPRIMENTO' else evento.tipo
+    mov_user = evento.movimento.usuario if evento.movimento else None
+    operador_mov = (mov_user.get_full_name() or mov_user.username) if mov_user else 'Operador'
     ctx.update({
         'titulo': tipo_label,
         'tipo': evento.tipo,
-        'pdv_nome': session.conta.nome,
-        'operador_nome': evento.movimento.usuario.get_full_name() or evento.movimento.usuario.username,
-        'operacao_id': str(evento.movimento.referencia),
+        'pdv_nome': session.conta.nome if session.conta else 'Caixa Principal',
+        'operador_nome': operador_mov,
+        'operacao_id': str(evento.movimento.referencia) if evento.movimento else str(evento.pk),
         'data_operacao': evento.criado_em,
-        'valor': evento.movimento.valor,
-        'motivo': evento.movimento.descricao,
+        'valor': evento.movimento.valor if evento.movimento else Decimal('0.00'),
+        'motivo': evento.movimento.descricao if evento.movimento else '',
         'back_url': reverse('operacao:pdv_cash', kwargs={'public_id': public_id}),
     })
     return render(request, 'operacao/pdv_cash_receipt.html', ctx)
