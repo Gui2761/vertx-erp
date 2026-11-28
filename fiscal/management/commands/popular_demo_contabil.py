@@ -217,7 +217,7 @@ class Command(BaseCommand):
                 empresa=emp,
                 esfera=CertidaoFiscalCarteira.Esfera.FEDERAL,
                 defaults={
-                    'situacao': CertidaoFiscalCarteira.Situacao.REGULAR if emp.situacao_fiscal != EmpresaCarteiraContabil.SituacaoFiscal.CRITICA else CertidaoFiscalCarteira.Situacao.POSITIVA,
+                    'situacao': CertidaoFiscalCarteira.Situacao.REGULAR if emp.situacao_fiscal != EmpresaCarteiraContabil.SituacaoFiscal.CRITICA else CertidaoFiscalCarteira.Situacao.IRREGULAR,
                     'emitida_em': hoje - timedelta(days=60),
                     'validade': hoje + timedelta(days=120) if emp.situacao_fiscal != EmpresaCarteiraContabil.SituacaoFiscal.CRITICA else hoje - timedelta(days=15),
                     'codigo_controle': f"FED-{emp.cnpj[:6]}-{hoje.year}",
@@ -253,7 +253,7 @@ class Command(BaseCommand):
                 empresa=emp,
                 esfera=CertidaoFiscalCarteira.Esfera.FGTS,
                 defaults={
-                    'situacao': CertidaoFiscalCarteira.Situacao.REGULAR if emp.situacao_fiscal != EmpresaCarteiraContabil.SituacaoFiscal.CRITICA else CertidaoFiscalCarteira.Situacao.POSITIVA,
+                    'situacao': CertidaoFiscalCarteira.Situacao.REGULAR if emp.situacao_fiscal != EmpresaCarteiraContabil.SituacaoFiscal.CRITICA else CertidaoFiscalCarteira.Situacao.IRREGULAR,
                     'emitida_em': hoje - timedelta(days=10),
                     'validade': hoje + timedelta(days=20),
                     'codigo_controle': f"CRF-CEF-{emp.cnpj[:8]}",
