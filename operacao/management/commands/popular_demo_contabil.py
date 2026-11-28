@@ -408,7 +408,7 @@ class Command(BaseCommand):
         # 5. Pré-Análise Comercial (Diagnóstico de Prospecção para Novos Clientes Contábeis)
         PreAnaliseComercialCNPJ.objects.get_or_create(
             organization=org,
-            cnpj="08249102000185",
+            cnpj=make_valid_cnpj("082491020001"),
             defaults={
                 'razao_social_identificada': "Hospital dos Olhos e Oftalmologia do Nordeste Ltda",
                 'regime_estimado': RegimeTributarioCarteira.LUCRO_PRESUMIDO,
