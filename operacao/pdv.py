@@ -105,122 +105,157 @@ def cash(request,public_id):
     return render(request,'operacao/pdv_cash.html',{'session':session,'expected':c.cash_expected(session),'events':session.eventos.select_related('movimento'),'sales':session.venda_set.select_related('cliente','vendedor'),'deposito_padrao':deposito_padrao,'can_configure_cash':has_capability(request.user,'financeiro_escrever'),'clientes':Cliente.objects.filter(ativo=True),'vendedores':Usuario.objects.filter(is_active=True,memberships__organization=current_organization(),memberships__status='ATIVO').distinct(),'filiais':FilialEmpresa.objects.filter(ativo=True),'centros':g.CentroCusto.objects.filter(ativo=True),'quotes':g.Orcamento.objects.filter(status='APROVADO'),'supervisor':has_capability(request.user,'caixa_supervisor'),'request_id':uuid.uuid4(),'back_url':reverse('operacao:pdv_home')})
 
 @login_required
-@transaction.atomic
 def sale(request,public_id,receipt=False):
-    try: sale,session=c.lock_sale(request.user,public_id)
-    except m.Venda.DoesNotExist: raise Http404
-    if request.method=='POST':
-        try:
-            action=request.POST.get('action')
-            if action=='adicionar': c.add_item(request.user,public_id,request.POST['codigo'],request.POST['quantidade'],request.POST.get('unidade','venda'),request.POST.get('desconto') or 0,request.POST.get('motivo',''))
-            elif action=='remover': c.remove_item(request.user,public_id,int(request.POST['item']))
-            elif action=='editar': c.edit_item(request.user,public_id,int(request.POST['item']),request.POST['quantidade'],request.POST.get('desconto') or 0,request.POST.get('motivo',''))
-            elif action=='observacao': c.sale_note(request.user,public_id,request.POST.get('observacoes',''))
-            elif action=='preco': c.pricing(request.user,public_id,request.POST.get('desconto') or 0,request.POST.get('acrescimo') or 0,request.POST.get('motivo',''))
-            elif action=='solicitar_desconto':
-                from .seller_services import request_discount
-                request_discount(request.user,public_id,request.POST.get('desconto') or 0,request.POST.get('motivo',''))
-            elif action=='cliente':
-                c.draft(sale,session)
-                sale.cliente=Cliente.objects.get(pk=request.POST['cliente'],ativo=True) if request.POST.get('cliente') else None
-                gs.write(sale);gs.audit(request.user,'PDV_CLIENTE_SELECIONADO',sale,{'cliente':sale.cliente_id})
-            elif action=='finalizar':
-                doc = request.POST.get('cliente_documento', '').strip()
-                tipo = request.POST.get('tipo_emissao', 'CUPOM').strip().upper()
-                c.finalize(request.user,public_id,json.loads(request.POST['pagamentos']),request.POST['request_id'],cliente_documento=doc,tipo_emissao=tipo)
-                messages.success(request,'Venda finalizada com sucesso.')
-                return redirect('operacao:pdv_receipt',public_id=public_id)
-            elif action=='estado': c.sale_state(request.user,public_id,request.POST['estado'],request.POST.get('motivo',''))
-            elif action=='devolver':
-                from gestao.products import number
-                rows=[{'item':key[5:],'quantidade':value} for key,value in request.POST.items() if key.startswith('item_') and value and number(value)>0]
-                c.return_sale(request.user,public_id,rows,request.POST.get('motivo',''),request.POST['request_id'],account_id=int(request.POST['conta']) if request.POST.get('conta') else None,settle=request.POST.get('liquidar')=='on',session_id=session.public_id if session and not session.fechado_em else None,exchange_id=request.POST.get('troca') or None)
-            else: raise ValidationError('Operação inválida.')
-            messages.success(request,'Operação registrada.');return redirect('operacao:pdv_sale',public_id=public_id)
-        except (ValidationError,ValueError,KeyError,TypeError,ObjectDoesNotExist) as exc: messages.error(request,'; '.join(exc.messages) if isinstance(exc,ValidationError) else 'Revise os dados da operação.')
-    from .seller_access import is_seller
-    if not receipt and (is_seller(request.user) or sale.status=='RASCUNHO'):
-        from .seller import sale_context
-        return render(request,'operacao/seller_pdv.html',sale_context(request,sale,session))
-
     from platform_core.context import current_organization
     from platform_core.models import ConfiguracaoEmpresa
-    org = getattr(sale, 'organization', None) or current_organization()
-    empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first() if org else None
 
-    nfce_info = None
-    if receipt and sale.snapshot and str(sale.snapshot.get('tipo_emissao', '')).upper() == 'NFCE':
-        import re, hashlib, os
-        from fiscal.nfce import xml as nfce_xml
-        cnpj_source = (org.cnpj if org else '') or getattr(empresa, 'cnpj', '') or ''
-        raw_cnpj = re.sub(r'\D', '', cnpj_source).zfill(14)
-        ret = empresa.retencoes_informativas if empresa and isinstance(empresa.retencoes_informativas, dict) else {}
-        nfce_params = ret.get('nfce') or ret.get('nfce_config') or {}
-        serie = str(nfce_params.get('serie') or '1')
-        
-        cert_info = nfce_params.get('certificado', {})
-        cert_path = cert_info.get('path', '')
-        tem_certificado = bool(cert_info.get('valido_ate') or (cert_path and os.path.exists(cert_path)))
-        
-        venda_num_str = sale.snapshot.get('numero', '')
-        num_digits = re.sub(r'\D', '', venda_num_str)
+    if receipt:
         try:
-            numero_nfce = int(num_digits) if num_digits else sale.pk
-        except (ValueError, TypeError):
-            numero_nfce = sale.pk
-            
-        data_emissao = sale.finalizada_em or getattr(sale, 'atualizado_em', None) or getattr(sale, 'criado_em', None) or timezone.now()
-        tp_emis = '1' if tem_certificado else '9'
-        
-        cnf_hash = hashlib.md5(f'{sale.public_id}:nfce'.encode()).hexdigest()
-        cnf = str(int(cnf_hash[:8], 16))[-8:].zfill(8)
-        
-        try:
-            chave_nfce = nfce_xml.chave(raw_cnpj, serie, numero_nfce, data_emissao, cnf)
-        except Exception:
-            base_temp = f'28{data_emissao:%y%m}{raw_cnpj}65{int(serie):03}{int(numero_nfce):09}{tp_emis}{cnf}'
-            chave_nfce = base_temp + nfce_xml.digito(base_temp)
-            
-        chave_formatada = ' '.join(chave_nfce[i:i+4] for i in range(0, 44, 4))
-        
-        proto_hash = str(int(hashlib.md5(chave_nfce.encode()).hexdigest()[:10], 16))[-9:].zfill(9)
-        protocolo = f'128{data_emissao:%y}{proto_hash}' if tem_certificado else 'EMITIDA EM CONTINGÊNCIA (tpEmis=9)'
-        
-        qr_url = f'http://www.sefaz.se.gov.br/nfce/qrcode?p={chave_nfce}|2|{"1" if tem_certificado else "2"}'
-        
-        total_float = float(sale.total or 0)
-        tributos = round(total_float * 0.1345, 2)
-        
-        nfce_info = {
-            'chave': chave_nfce,
-            'chave_formatada': chave_formatada,
-            'numero': numero_nfce,
-            'serie': serie,
-            'protocolo': protocolo,
-            'data_autorizacao': data_emissao.strftime('%d/%m/%Y %H:%M:%S'),
-            'qr_url': qr_url,
-            'consulta_url': 'http://www.sefaz.se.gov.br/nfce/consulta',
-            'tributos_aproximados': f'{tributos:.2f}'.replace('.', ','),
-            'ambiente': 'PRODUÇÃO' if nfce_params.get('ambiente') == 'PRODUCAO' else 'HOMOLOGAÇÃO / PRODUÇÃO',
-            'tem_certificado': tem_certificado,
-            'tp_emis': tp_emis,
+            sale = m.Venda.objects.select_related('cliente','vendedor','sessao_caixa','deposito').get(public_id=public_id)
+        except (m.Venda.DoesNotExist, ValueError):
+            raise Http404
+
+        session = sale.sessao_caixa
+        org = getattr(sale, 'organization', None) or current_organization()
+        empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first() if org else None
+
+        nfce_info = None
+        if sale.snapshot and str(sale.snapshot.get('tipo_emissao', '')).upper() in ('NFCE', 'NFC-E'):
+            try:
+                import re, hashlib, os
+                from fiscal.nfce import xml as nfce_xml
+                cnpj_source = (org.cnpj if org else '') or getattr(empresa, 'cnpj', '') or ''
+                raw_cnpj = re.sub(r'\D', '', cnpj_source).zfill(14)
+                ret = empresa.retencoes_informativas if empresa and isinstance(empresa.retencoes_informativas, dict) else {}
+                nfce_params = ret.get('nfce') or ret.get('nfce_config') or {}
+                serie_val = str(nfce_params.get('serie') or '1')
+                serie_digits = re.sub(r'\D', '', serie_val) or '1'
+                serie_num = int(serie_digits) % 890
+                
+                cert_info = nfce_params.get('certificado', {})
+                cert_path = cert_info.get('path', '')
+                tem_certificado = bool(cert_info.get('valido_ate') or (cert_path and os.path.exists(cert_path)))
+                
+                venda_num_str = sale.snapshot.get('numero', '')
+                num_digits = re.sub(r'\D', '', str(venda_num_str))
+                try:
+                    numero_nfce = int(num_digits) if num_digits else (sale.pk or 1)
+                except (ValueError, TypeError):
+                    numero_nfce = sale.pk or 1
+                    
+                data_emissao = sale.finalizada_em or getattr(sale, 'atualizado_em', None) or getattr(sale, 'criado_em', None) or timezone.now()
+                tp_emis = '1' if tem_certificado else '9'
+                
+                cnf_hash = hashlib.md5(f'{sale.public_id}:nfce'.encode()).hexdigest()
+                cnf = str(int(cnf_hash[:8], 16))[-8:].zfill(8)
+                
+                try:
+                    chave_nfce = nfce_xml.chave(raw_cnpj, serie_num, numero_nfce, data_emissao, cnf)
+                except Exception:
+                    base_temp = f'28{data_emissao:%y%m}{raw_cnpj[:14]}65{serie_num:03}{int(numero_nfce):09}{tp_emis}{cnf}'
+                    try:
+                        chave_nfce = base_temp + nfce_xml.digito(base_temp)
+                    except Exception:
+                        chave_nfce = base_temp + '0'
+                    
+                chave_formatada = ' '.join(chave_nfce[i:i+4] for i in range(0, 44, 4))
+                
+                proto_hash = str(int(hashlib.md5(chave_nfce.encode()).hexdigest()[:10], 16))[-9:].zfill(9)
+                protocolo = f'128{data_emissao:%y}{proto_hash}' if tem_certificado else 'EMITIDA EM CONTINGÊNCIA (tpEmis=9)'
+                
+                qr_url = f'http://www.sefaz.se.gov.br/nfce/qrcode?p={chave_nfce}|2|{"1" if tem_certificado else "2"}'
+                
+                total_float = float(sale.total or 0)
+                tributos = round(total_float * 0.1345, 2)
+                
+                nfce_info = {
+                    'chave': chave_nfce,
+                    'chave_formatada': chave_formatada,
+                    'numero': numero_nfce,
+                    'serie': str(serie_num),
+                    'protocolo': protocolo,
+                    'data_autorizacao': data_emissao.strftime('%d/%m/%Y %H:%M:%S'),
+                    'qr_url': qr_url,
+                    'consulta_url': 'http://www.sefaz.se.gov.br/nfce/consulta',
+                    'tributos_aproximados': f'{tributos:.2f}'.replace('.', ','),
+                    'ambiente': 'PRODUÇÃO' if nfce_params.get('ambiente') == 'PRODUCAO' else 'HOMOLOGAÇÃO / PRODUÇÃO',
+                    'tem_certificado': tem_certificado,
+                    'tp_emis': tp_emis,
+                }
+            except Exception:
+                nfce_info = None
+
+        ctx = {
+            'sale': sale,
+            'session': session,
+            'organization': org,
+            'empresa': empresa,
+            'items': sale.itens.select_related('peca'),
+            'forms': g.FormaPagamento.objects.filter(ativo=True).exclude(tipo_pdv=''),
+            'contas': m.ContaBancaria.objects.none(),
+            'can_return': has_capability(request.user,'devolucao'),
+            'request_id': uuid.uuid4(),
+            'back_url': reverse('operacao:pdv_cash',args=[session.public_id]) if session else reverse('operacao:pdv_home'),
+            'nfce_info': nfce_info,
         }
+        ctx.update(_company_receipt_context(org))
+        return render(request,'operacao/pdv_receipt.html', ctx)
 
-    ctx = {
-        'sale': sale,
-        'session': session,
-        'organization': org,
-        'empresa': empresa,
-        'items': sale.itens.select_related('peca'),
-        'forms': g.FormaPagamento.objects.filter(ativo=True).exclude(tipo_pdv=''),
-        'contas': m.ContaBancaria.objects.filter(ativo=True) if not is_seller(request.user) else m.ContaBancaria.objects.none(),
-        'can_return': has_capability(request.user,'devolucao'),
-        'request_id': uuid.uuid4(),
-        'back_url': reverse('operacao:pdv_cash',args=[session.public_id]) if session else reverse('operacao:pdv_home'),
-        'nfce_info': nfce_info,
-    }
-    ctx.update(_company_receipt_context(org))
-    return render(request,'operacao/pdv_receipt.html' if receipt else 'operacao/pdv_sale.html', ctx)
+    with transaction.atomic():
+        try: sale,session=c.lock_sale(request.user,public_id)
+        except m.Venda.DoesNotExist: raise Http404
+        if request.method=='POST':
+            try:
+                action=request.POST.get('action')
+                if action=='adicionar': c.add_item(request.user,public_id,request.POST['codigo'],request.POST['quantidade'],request.POST.get('unidade','venda'),request.POST.get('desconto') or 0,request.POST.get('motivo',''))
+                elif action=='remover': c.remove_item(request.user,public_id,int(request.POST['item']))
+                elif action=='editar': c.edit_item(request.user,public_id,int(request.POST['item']),request.POST['quantidade'],request.POST.get('desconto') or 0,request.POST.get('motivo',''))
+                elif action=='observacao': c.sale_note(request.user,public_id,request.POST.get('observacoes',''))
+                elif action=='preco': c.pricing(request.user,public_id,request.POST.get('desconto') or 0,request.POST.get('acrescimo') or 0,request.POST.get('motivo',''))
+                elif action=='solicitar_desconto':
+                    from .seller_services import request_discount
+                    request_discount(request.user,public_id,request.POST.get('desconto') or 0,request.POST.get('motivo',''))
+                elif action=='cliente':
+                    c.draft(sale,session)
+                    sale.cliente=Cliente.objects.get(pk=request.POST['cliente'],ativo=True) if request.POST.get('cliente') else None
+                    gs.write(sale);gs.audit(request.user,'PDV_CLIENTE_SELECIONADO',sale,{'cliente':sale.cliente_id})
+                elif action=='finalizar':
+                    doc = request.POST.get('cliente_documento', '').strip()
+                    tipo = request.POST.get('tipo_emissao', 'CUPOM').strip().upper()
+                    c.finalize(request.user,public_id,json.loads(request.POST['pagamentos']),request.POST['request_id'],cliente_documento=doc,tipo_emissao=tipo)
+                    messages.success(request,'Venda finalizada com sucesso.')
+                    return redirect('operacao:pdv_receipt',public_id=public_id)
+                elif action=='estado': c.sale_state(request.user,public_id,request.POST['estado'],request.POST.get('motivo',''))
+                elif action=='devolver':
+                    from gestao.products import number
+                    rows=[{'item':key[5:],'quantidade':value} for key,value in request.POST.items() if key.startswith('item_') and value and number(value)>0]
+                    c.return_sale(request.user,public_id,rows,request.POST.get('motivo',''),request.POST['request_id'],account_id=int(request.POST['conta']) if request.POST.get('conta') else None,settle=request.POST.get('liquidar')=='on',session_id=session.public_id if session and not session.fechado_em else None,exchange_id=request.POST.get('troca') or None)
+                else: raise ValidationError('Operação inválida.')
+                messages.success(request,'Operação registrada.');return redirect('operacao:pdv_sale',public_id=public_id)
+            except (ValidationError,ValueError,KeyError,TypeError,ObjectDoesNotExist) as exc: messages.error(request,'; '.join(exc.messages) if isinstance(exc,ValidationError) else 'Revise os dados da operação.')
+        from .seller_access import is_seller
+        if is_seller(request.user) or sale.status=='RASCUNHO':
+            from .seller import sale_context
+            return render(request,'operacao/seller_pdv.html',sale_context(request,sale,session))
+
+        org = getattr(sale, 'organization', None) or current_organization()
+        empresa = ConfiguracaoEmpresa.objects.filter(organization=org).first() if org else None
+
+        ctx = {
+            'sale': sale,
+            'session': session,
+            'organization': org,
+            'empresa': empresa,
+            'items': sale.itens.select_related('peca'),
+            'forms': g.FormaPagamento.objects.filter(ativo=True).exclude(tipo_pdv=''),
+            'contas': m.ContaBancaria.objects.filter(ativo=True) if not is_seller(request.user) else m.ContaBancaria.objects.none(),
+            'can_return': has_capability(request.user,'devolucao'),
+            'request_id': uuid.uuid4(),
+            'back_url': reverse('operacao:pdv_cash',args=[session.public_id]) if session else reverse('operacao:pdv_home'),
+            'nfce_info': None,
+        }
+        ctx.update(_company_receipt_context(org))
+        return render(request,'operacao/pdv_sale.html', ctx)
 
 @login_required
 def config(request):

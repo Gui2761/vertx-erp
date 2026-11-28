@@ -10,10 +10,11 @@ from __future__ import annotations
 
 from decimal import Decimal
 from unittest.mock import patch, MagicMock
+import urllib.error
+import socket
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.test import TestCase, RequestFactory
 from django.utils import timezone
-import requests
 
 from operacao import licita_services as ls
 from operacao import pricing_services as ps
@@ -100,42 +101,35 @@ class SystemFailureAndResilienceTests(CommerceData, TestCase):
     # =========================================================================
     # 2. RESILIÊNCIA DA API PNCP CONTRA FALHAS DE REDE E PAYLOADS CORROMPIDOS
     # =========================================================================
-    @patch('operacao.licita_services.requests.get')
-    def test_pncp_timeout_degrada_graciosamente(self, mock_get):
+    @patch('urllib.request.urlopen')
+    def test_pncp_timeout_degrada_graciosamente(self, mock_urlopen):
         """Simula Timeout do servidor federal PNCP: não deve lançar 500, deve retornar lista vazia."""
-        mock_get.side_effect = requests.exceptions.Timeout("Connection timed out after 20s")
-        resultado = ls.consultar_api_pncp_publicacoes('20261101', '20261128', 1, 10, uf='AL')
+        mock_urlopen.side_effect = socket.timeout("Connection timed out after 20s")
+        resultado = ls.consultar_api_pncp_publicacoes(uf='AL', pagina=1, tamanho_pagina=10)
         self.assertEqual(resultado, [])
 
-    @patch('operacao.licita_services.requests.get')
-    def test_pncp_erro_400_bad_request(self, mock_get):
+    @patch('urllib.request.urlopen')
+    def test_pncp_erro_400_bad_request(self, mock_urlopen):
         """Simula erro 400 da API (ex: tamanhoPagina inválido): captura sem crash."""
-        resp = MagicMock()
-        resp.status_code = 400
-        resp.text = '{"message": "tamanhoPagina must be greater than or equal to 10"}'
-        mock_get.return_value = resp
-        resultado = ls.consultar_api_pncp_publicacoes('20261101', '20261128', 1, 5, uf='SE')
+        mock_urlopen.side_effect = urllib.error.HTTPError('https://pncp.gov.br', 400, 'Bad Request', {}, None)
+        resultado = ls.consultar_api_pncp_publicacoes(uf='SE', pagina=1, tamanho_pagina=5)
         self.assertEqual(resultado, [])
 
-    @patch('operacao.licita_services.requests.get')
-    def test_pncp_erro_500_ou_502_gateway(self, mock_get):
+    @patch('urllib.request.urlopen')
+    def test_pncp_erro_500_ou_502_gateway(self, mock_urlopen):
         """Simula instabilidade no gateway PNCP (retorno HTML 502 Bad Gateway)."""
-        resp = MagicMock()
-        resp.status_code = 502
-        resp.text = '<html><body>502 Bad Gateway</body></html>'
-        mock_get.return_value = resp
-        resultado = ls.consultar_api_pncp_publicacoes('20261101', '20261128', 1, 10)
+        mock_urlopen.side_effect = urllib.error.HTTPError('https://pncp.gov.br', 502, 'Bad Gateway', {}, None)
+        resultado = ls.consultar_api_pncp_publicacoes(pagina=1, tamanho_pagina=10)
         self.assertEqual(resultado, [])
 
-    @patch('operacao.licita_services.requests.get')
-    def test_pncp_json_invalido_ou_corrompido(self, mock_get):
+    @patch('urllib.request.urlopen')
+    def test_pncp_json_invalido_ou_corrompido(self, mock_urlopen):
         """Resposta com status 200 mas corpo não-JSON ou corrompido."""
         resp = MagicMock()
-        resp.status_code = 200
-        resp.json.side_effect = ValueError("Invalid JSON response")
-        resp.text = 'Corrupted body'
-        mock_get.return_value = resp
-        resultado = ls.consultar_api_pncp_publicacoes('20261101', '20261128', 1, 10)
+        resp.status = 200
+        resp.read.return_value = b'<html>corrupted non-json body</html>'
+        mock_urlopen.return_value.__enter__.return_value = resp
+        resultado = ls.consultar_api_pncp_publicacoes(pagina=1, tamanho_pagina=10)
         self.assertEqual(resultado, [])
 
     # =========================================================================

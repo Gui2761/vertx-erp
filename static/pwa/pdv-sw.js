@@ -1,8 +1,8 @@
 'use strict';
 importScripts('/static/js/pdv-outbox.js');
 
-const CACHE_STATIC = 'vertyx-pdv-shell-v7';
-const CACHE_DYNAMIC = 'vertyx-pdv-dynamic-v7';
+const CACHE_STATIC = 'vertyx-pdv-shell-v8';
+const CACHE_DYNAMIC = 'vertyx-pdv-dynamic-v8';
 
 const STATIC_ASSETS = [
   '/pdv/',

@@ -1,7 +1,7 @@
 'use strict';
 
-const CACHE_STATIC = 'vertyx-static-v7';
-const CACHE_DYNAMIC = 'vertyx-dynamic-v7';
+const CACHE_STATIC = 'vertyx-static-v8';
+const CACHE_DYNAMIC = 'vertyx-dynamic-v8';
 
 const STATIC_ASSETS = [
   '/',

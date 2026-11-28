@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "operacao",
     "rh_municipal",
     "commercial",
+    "fiscal",
 ]
 
 MIDDLEWARE = [

@@ -32,9 +32,11 @@
     <a class="btn btn-outline-primary" href="{% url 'operacao:pdv_home' %}">
       <i class="bi bi-cart-plus me-1"></i> Nova Venda
     </a>
+    {% if sale.public_id %}
     <a class="btn btn-outline-secondary" href="{% url 'operacao:pdv_sale' sale.public_id %}">
       Detalhes no ERP
     </a>
+    {% endif %}
   </div>
 </div>
 
