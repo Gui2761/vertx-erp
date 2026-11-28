@@ -361,13 +361,12 @@ class Command(BaseCommand):
                 confirmado_em=timezone.now() - timedelta(days=2),
             )
             # Registra auditoria
-            EventoHistoricoContabil.objects.create(
-                organization=org,
-                pendencia=pend1,
-                empresa=emp_med,
+            cs.registrar_evento(
                 autor=admin_user,
+                empresa=emp_med,
                 tipo_evento=EventoHistoricoContabil.TipoEvento.PENDENCIA_RESOLVIDA,
                 descricao="DCTFWeb transmitida com recibo nº 2026.11.890412. Situação fiscal regularizada no e-CAC.",
+                pendencia=pend1,
             )
 
         # Pendência 2: Renovação CND Estadual SEFAZ-AL (Em Andamento)
