@@ -269,6 +269,7 @@ class Command(BaseCommand):
                     criado_por=user,
                     snapshot={
                         'numero': 'VENDA-CHAOS-EMPTY',
+                        'organization': 'TECNOLMED GESTAO CLINICA LTDA ME',
                         'total': '50.00',
                         'tipo_emissao': 'CUPOM',
                         'itens': [],

@@ -44,7 +44,7 @@
   <article class="thermal-receipt width-80mm" id="thermalSlip">
     <!-- Cabeçalho do Estabelecimento -->
     <header class="receipt-header">
-      <div class="company-name">{{ company_razao_social|default:sale.snapshot.organization|default:'TECNOLMED GESTAO CLINICA LTDA ME'|upper }}</div>
+      <div class="company-name">{{ company_razao_social|default:'TECNOLMED GESTAO CLINICA LTDA ME'|upper }}</div>
       {% if company_endereco %}<div class="receipt-sub">{{ company_endereco }}</div>{% endif %}
       {% if company_telefone %}<div class="receipt-sub">Tel: {{ company_telefone }}</div>{% endif %}
       <div class="receipt-sub">
