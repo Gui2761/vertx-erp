@@ -266,6 +266,7 @@ class Command(BaseCommand):
                     deposito=depot,
                     vencimento=timezone.localdate(),
                     vendedor=user,
+                    criado_por=user,
                     snapshot={
                         'numero': 'VENDA-CHAOS-EMPTY',
                         'total': '50.00',
