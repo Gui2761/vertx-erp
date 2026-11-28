@@ -19,6 +19,38 @@ class LoginView(auth_views.LoginView):
     template_name = "registration/login.html"
     form_class = EmailOrUsernameAuthenticationForm
 
+    def form_valid(self, form):
+        from platform_core.security_services import get_client_ip, record_login_success, record_security_event
+        ip = get_client_ip(self.request)
+        username = form.cleaned_data.get('username')
+        record_login_success(ip, username)
+        record_security_event(
+            event_type='LOGIN_SUCCESS',
+            request=self.request,
+            ip_address=ip,
+            username=username,
+            details={'method': 'credentials'},
+            severity='INFO',
+        )
+        response = super().form_valid(form)
+        self.request.session.cycle_key()  # Blindagem contra Session Fixation
+        return response
+
+    def form_invalid(self, form):
+        from platform_core.security_services import get_client_ip, record_login_failure, record_security_event
+        ip = get_client_ip(self.request)
+        username = form.data.get('username', '').strip() or None
+        failures = record_login_failure(ip, username)
+        record_security_event(
+            event_type='LOGIN_FAILED',
+            request=self.request,
+            ip_address=ip,
+            username=username,
+            details={'consecutive_failures': failures},
+            severity='WARNING' if failures < 5 else 'CRITICAL',
+        )
+        return super().form_invalid(form)
+
     def get_success_url(self):
         from platform_core.saas_models import AdministradorPlataforma
         if self.request.user.is_authenticated and self.request.user.is_active and AdministradorPlataforma.objects.filter(

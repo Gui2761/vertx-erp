@@ -77,13 +77,16 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "platform_core.security_middleware.HackerProbeBlockerMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "platform_core.security_middleware.SecurityHeadersMiddleware",
     "django.middleware.gzip.GZipMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "platform_core.security_middleware.RateLimitAndBruteForceMiddleware",
     "platform_core.middleware.OrganizationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -173,21 +176,33 @@ LOGOUT_REDIRECT_URL = "contas:login"
 
 # Segurança para rodar atrás do proxy HTTPS do Render (ou qualquer PaaS
 # equivalente). Em desenvolvimento local (DEBUG=True) isso fica desativado.
+# Configuração de Sessão Segura e Ciberdefesa
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = 43200  # 12 horas (limite estrito contra Session Hijacking)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_REDIRECT_EXEMPT = [r'^health/$']
-    SECURE_HSTS_SECONDS = 3600
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=False, cast=bool)
-    SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=False, cast=bool)
+    SECURE_HSTS_SECONDS = 31536000  # 1 ano de HSTS estrito
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SAMESITE = 'Lax'
-if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
     SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'vertyx-cybersecurity-cache',
+    }
+}
 
 from platform_core.logging_utils import logging_config
 LOGGING = logging_config(config('LOG_LEVEL', default='INFO'))
