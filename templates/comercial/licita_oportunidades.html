@@ -69,15 +69,22 @@
         </form>
       </div>
 
-      <div class="col-lg-6 d-flex justify-content-lg-end gap-2 mt-2 mt-lg-0">
+      <div class="col-lg-6 d-flex justify-content-lg-end gap-2 mt-2 mt-lg-0 flex-wrap">
         {% if pode_escrever %}
+        <form method="post" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="sincronizar_todos_radares">
+          <button type="submit" class="btn btn-sm btn-primary" title="Varre todos os radares ativos na API oficial do PNCP agora">
+            <i class="bi bi-broadcast-pin me-1"></i>Varredura Geral PNCP (AL/SE)
+          </button>
+        </form>
         {% for r in radares %}
         <form method="post" class="d-inline">
           {% csrf_token %}
           <input type="hidden" name="acao" value="sincronizar_radar">
           <input type="hidden" name="radar_id" value="{{ r.pk }}">
           <button type="submit" class="btn btn-sm btn-outline-info" title="Varre a API oficial do PNCP agora">
-            <i class="bi bi-arrow-repeat me-1"></i>Sincronizar {{ r.nome|truncatechars:20 }}
+            <i class="bi bi-arrow-repeat me-1"></i>{{ r.nome|truncatechars:18 }}
           </button>
         </form>
         {% endfor %}

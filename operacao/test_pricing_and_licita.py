@@ -189,3 +189,13 @@ class VertyxPricingAndLicitaTests(CommerceData, TestCase):
         resp_funil = self.client.get('/comercial/licita/funil/')
         self.assertEqual(resp_funil.status_code, 200)
         self.assertContains(resp_funil, 'Funil de Gestão Comercial das Licitações')
+
+    def test_inicializacao_padrao_radares_e_especialidades(self):
+        with tenant_context(self.org_a):
+            radares = ls.inicializar_radares_padrao(self.admin_a)
+            self.assertEqual(len(radares), 3)
+            self.assertTrue(any('Alagoas' in r.nome for r in radares))
+
+            especialidades = ps.inicializar_especialidades_padrao(self.admin_a)
+            self.assertEqual(len(especialidades), 3)
+            self.assertTrue(any('Biomédico' in e.especialidade for e in especialidades))

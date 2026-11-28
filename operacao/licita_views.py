@@ -50,6 +50,20 @@ def licita_oportunidades(request):
                     request,
                     f'Radar "{radar.nome}" sincronizado com PNCP: {novas} nova(s) oportunidade(s) importada(s), {atualizadas} atualizada(s).',
                 )
+            elif acao == 'sincronizar_todos_radares':
+                radares_ativos = list(RadarFiltroPNCP.objects.filter(organization=request.organization, ativo=True))
+                if not radares_ativos:
+                    radares_ativos = ls.inicializar_radares_padrao(request.user)
+                total_novas = 0
+                total_atualizadas = 0
+                for rad in radares_ativos:
+                    n, a = ls.sincronizar_radar_pncp(request.user, rad)
+                    total_novas += n
+                    total_atualizadas += a
+                messages.success(
+                    request,
+                    f'Varredura de {len(radares_ativos)} radar(es) no PNCP concluída: {total_novas} nova(s) oportunidade(s) importada(s), {total_atualizadas} atualizada(s).',
+                )
             elif acao == 'salvar_oportunidade':
                 num_pncp = (request.POST.get('numero_controle_pncp') or f"MANUAL-{timezone.now():%Y%m%d%H%M%S}").strip()
                 val_raw = request.POST.get('valor_total_estimado', '').replace('.', '').replace(',', '.')
@@ -118,7 +132,10 @@ def licita_radares(request):
         _require_escrita(request)
         acao = request.POST.get('acao')
         try:
-            if acao == 'salvar_radar':
+            if acao == 'inicializar_radares':
+                ls.inicializar_radares_padrao(request.user)
+                messages.success(request, 'Radares padrão de Alagoas, Sergipe e Nordeste configurados com sucesso.')
+            elif acao == 'salvar_radar':
                 radar_id = request.POST.get('radar_id')
                 radar = RadarFiltroPNCP.objects.filter(organization=request.organization, pk=radar_id).first() if radar_id else None
                 if not radar:
@@ -150,18 +167,7 @@ def licita_radares(request):
     ctx = _base_context(request, 'radares')
     radares = list(RadarFiltroPNCP.objects.filter(organization=request.organization))
     if not radares and ctx['pode_escrever']:
-        # Cria radar padrão inicial para Sergipe e Alagoas (Hospitalar & Eng. Clínica)
-        r_padrao = RadarFiltroPNCP(
-            organization=request.organization,
-            nome='Engenharia Clínica & Equipamentos Hospitalares (SE / AL)',
-            palavras_chave='hospitalar, engenharia clínica, monitor multiparamétrico, desfibrilador, raio-x, autoclave, leito, ultrassom, respirador, ventilação mecânica',
-            ufs='SE, AL',
-            modalidades_pncp='6, 8, 4',
-            valor_minimo=Decimal('10000.00'),
-            ativo=True,
-        )
-        r_padrao.save()
-        radares.append(r_padrao)
+        radares = ls.inicializar_radares_padrao(request.user)
     ctx['radares'] = radares
     return render(request, 'comercial/licita_radares.html', ctx)
 

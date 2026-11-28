@@ -119,7 +119,10 @@ def pricing_hora_tecnica(request):
         _require_escrita(request)
         acao = request.POST.get('acao')
         try:
-            if acao == 'salvar_hora':
+            if acao == 'inicializar_especialidades':
+                ps.inicializar_especialidades_padrao(request.user)
+                messages.success(request, 'Especialidades técnicas da Engenharia Clínica inicializadas com sucesso.')
+            elif acao == 'salvar_hora':
                 hora_id = request.POST.get('hora_id')
                 hora = ps.salvar_calculo_hora_tecnica(request.user, request.POST, instance_id=int(hora_id) if hora_id else None)
                 messages.success(request, f'Hora técnica da especialidade {hora.especialidade} atualizada com sucesso.')
@@ -130,7 +133,10 @@ def pricing_hora_tecnica(request):
         return redirect('operacao:pricing_hora_tecnica')
 
     ctx = _base_context(request, 'hora_tecnica')
-    ctx['especialidades'] = CalculadoraHoraTecnica.objects.filter(organization=request.organization)
+    especialidades = list(CalculadoraHoraTecnica.objects.filter(organization=request.organization))
+    if not especialidades and ctx['pode_escrever']:
+        especialidades = ps.inicializar_especialidades_padrao(request.user)
+    ctx['especialidades'] = especialidades
     return render(request, 'comercial/pricing_hora_tecnica.html', ctx)
 
 

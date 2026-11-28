@@ -83,6 +83,74 @@ def inicializar_centros_custo_padrao(user) -> list[CentroCustoRateio]:
     return list(CentroCustoRateio.objects.filter(organization=org).order_by('codigo'))
 
 
+def inicializar_especialidades_padrao(user) -> list[CalculadoraHoraTecnica]:
+    """Garante a existência das especialidades técnicas padrão da Engenharia Clínica."""
+    org = current_organization()
+    if not org:
+        return []
+
+    padroes = [
+        (
+            'Engenheiro Clínico / Biomédico RT',
+            1,
+            22,
+            Decimal('8.00'),
+            Decimal('60.00'),
+            Decimal('8500.00'),
+            Decimal('12.00'),
+            Decimal('25.00'),
+        ),
+        (
+            'Técnico em Equipamentos Biomédicos / Hospitalares',
+            2,
+            22,
+            Decimal('8.00'),
+            Decimal('65.00'),
+            Decimal('13000.00'),
+            Decimal('12.00'),
+            Decimal('25.00'),
+        ),
+        (
+            'Auxiliar Técnico de Manutenção & Calibração',
+            1,
+            22,
+            Decimal('8.00'),
+            Decimal('70.00'),
+            Decimal('4200.00'),
+            Decimal('12.00'),
+            Decimal('20.00'),
+        ),
+    ]
+
+    criados = []
+    for esp, n_tec, dias, h_dia, ocup, custo, trib, marg in padroes:
+        existente = CalculadoraHoraTecnica.objects.filter(organization=org, especialidade=esp).first()
+        if not existente:
+            h = CalculadoraHoraTecnica(
+                organization=org,
+                especialidade=esp,
+                num_tecnicos=n_tec,
+                dias_uteis_mes=dias,
+                horas_dia=h_dia,
+                percentual_ocupacao_faturavel=ocup,
+                custo_mensal_centro=custo,
+                percentual_tributos=trib,
+                percentual_margem=marg,
+            )
+            h.full_clean()
+            h.save()
+            criados.append(h)
+            registrar_log_pricing(
+                user,
+                'HORA_TECNICA_CALCULADA',
+                f'Especialidade técnica padrão inicializada: {esp} (Sugerido: R$ {h.hora_sugerida:,.2f}/h)',
+                {'hora_id': h.pk, 'sugerido': str(h.hora_sugerida)},
+            )
+        else:
+            criados.append(existente)
+    return list(CalculadoraHoraTecnica.objects.filter(organization=org).order_by('especialidade'))
+
+
 def registrar_log_pricing(user, tipo: str, descricao: str, detalhes: dict | None = None) -> HistoricoCalculoPreco:
     org = current_organization()
     hist = HistoricoCalculoPreco(

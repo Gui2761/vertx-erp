@@ -12,9 +12,18 @@
         <p class="text-secondary small mb-0">Cálculo de absorção por capacidade produtiva: Nº Técnicos × Dias Úteis × Horas × % Ocupação.</p>
       </div>
       {% if pode_escrever %}
-      <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modal-nova-hora">
-        <i class="bi bi-plus-lg me-1"></i>Nova Especialidade Técnica
-      </button>
+      <div class="d-flex gap-2 flex-wrap">
+        <form method="post" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="inicializar_especialidades">
+          <button type="submit" class="btn btn-sm btn-outline-primary" title="Carrega especialidades de Engenheiro Clínico RT, Técnico Biomédico e Auxiliar">
+            <i class="bi bi-magic me-1"></i>Carregar Especialidades Padrão (Eng. Clínica)
+          </button>
+        </form>
+        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modal-nova-hora">
+          <i class="bi bi-plus-lg me-1"></i>Nova Especialidade Técnica
+        </button>
+      </div>
       {% endif %}
     </div>
   </div>

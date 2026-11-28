@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import unicodedata
 import urllib.parse
 import urllib.request
 from datetime import date, timedelta
@@ -51,6 +52,64 @@ def registrar_log_licita(
     return evento
 
 
+def _normalizar_texto(texto: str) -> str:
+    """Normaliza texto removendo acentos e convertendo para minúsculas para busca semântica."""
+    if not texto:
+        return ''
+    nfkd = unicodedata.normalize('NFKD', texto)
+    return ''.join([c for c in nfkd if not unicodedata.combining(c)]).lower()
+
+
+def inicializar_radares_padrao(user) -> list[RadarFiltroPNCP]:
+    """Garante a existência dos radares estratégicos de Alagoas, Sergipe e Nordeste."""
+    org = current_organization()
+    if not org:
+        return []
+
+    radares_config = [
+        (
+            'Alagoas · Engenharia Clínica & Equipamentos Hospitalares (AL)',
+            'hospitalar, engenharia clinica, manutenção, calibração, equipamento, raio-x, monitor, desfibrilador, ultrassom, autoclave, leito, saude',
+            'AL',
+            '6, 8, 14',
+            Decimal('10000.00'),
+            None,
+        ),
+        (
+            'Sergipe & Nordeste · Manutenção Especializada & Suporte Hospitalar',
+            'manutencao preventiva, corretiva, hospitalar, biomedica, ar condicionado hospitalar, gas medicinal',
+            'SE, AL, BA, PE',
+            '6, 8',
+            Decimal('15000.00'),
+            None,
+        ),
+        (
+            'Dispensas Eletrônicas Rápidas de Saúde (Art. 75 Lei 14.133)',
+            'manutencao, pecas, equipamento, hospitalar, clinica, calibração',
+            'AL, SE',
+            '8',
+            Decimal('1000.00'),
+            Decimal('60000.00'),
+        ),
+    ]
+
+    for nome, palavras, ufs, mods, v_min, v_max in radares_config:
+        existente = RadarFiltroPNCP.objects.filter(organization=org, nome=nome).first()
+        if not existente:
+            r = RadarFiltroPNCP(
+                organization=org,
+                nome=nome,
+                palavras_chave=palavras,
+                ufs=ufs,
+                modalidades_pncp=mods,
+                valor_minimo=v_min,
+                valor_maximo=v_max,
+                ativo=True,
+            )
+            r.save()
+    return list(RadarFiltroPNCP.objects.filter(organization=org).order_by('nome'))
+
+
 def consultar_api_pncp_publicacoes(
     data_inicial: date | None = None,
     data_final: date | None = None,
@@ -65,15 +124,18 @@ def consultar_api_pncp_publicacoes(
     """
     hoje = timezone.localdate()
     dt_fim = data_final or hoje
-    dt_ini = data_inicial or (dt_fim - timedelta(days=7))
+    dt_ini = data_inicial or (dt_fim - timedelta(days=14))
+
+    # O PNCP exige tamanhoPagina >= 10 e <= 50
+    tamanho_seguro = max(10, min(50, int(tamanho_pagina)))
 
     params = {
         'dataInicial': dt_ini.strftime('%Y%m%d'),
         'dataFinal': dt_fim.strftime('%Y%m%d'),
         'codigoModalidadeContratacao': int(codigo_modalidade),
         'uf': uf.strip().upper(),
-        'pagina': int(pagina),
-        'tamanhoPagina': int(tamanho_pagina),
+        'pagina': max(1, int(pagina)),
+        'tamanhoPagina': tamanho_seguro,
     }
 
     url = f"{PNCP_API_URL}?{urllib.parse.urlencode(params)}"
@@ -81,12 +143,12 @@ def consultar_api_pncp_publicacoes(
         url,
         headers={
             'Accept': 'application/json',
-            'User-Agent': 'VertyxERP-Licita/1.0 (Hospitalar & EngClinica)',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 VertyxERP-Licita/1.0',
         },
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=20) as resp:
             if resp.status == 204:
                 return []
             content = resp.read().decode('utf-8', errors='replace')
@@ -107,14 +169,14 @@ def sincronizar_radar_pncp(user, radar: RadarFiltroPNCP) -> tuple[int, int]:
     if not org:
         return 0, 0
 
-    palavras = radar.lista_palavras_chave()
+    palavras = [_normalizar_texto(p) for p in radar.lista_palavras_chave() if p.strip()]
     ufs = radar.lista_ufs()
     modalidades = radar.lista_modalidades_int()
 
     novas = 0
     atualizadas = 0
     hoje = timezone.localdate()
-    dt_ini = hoje - timedelta(days=5)
+    dt_ini = hoje - timedelta(days=14)
 
     for uf in ufs:
         for mod in modalidades:
@@ -132,10 +194,10 @@ def sincronizar_radar_pncp(user, radar: RadarFiltroPNCP) -> tuple[int, int]:
                     continue
 
                 objeto = str(item.get('objetoCompra') or '').strip()
-                objeto_lower = objeto.lower()
+                objeto_normalizado = _normalizar_texto(objeto)
 
-                # Verifica aderência às palavras-chave do radar
-                if palavras and not any(p in objeto_lower for p in palavras):
+                # Verifica aderência às palavras-chave do radar com busca normalizada (sem acentos)
+                if palavras and not any(p in objeto_normalizado for p in palavras):
                     continue
 
                 orgao = item.get('orgaoEntidade') or {}
