@@ -224,6 +224,10 @@ class CalculadoraHoraTecnica(Validado):
 
     def clean(self):
         super().clean()
+        if (self.num_tecnicos or 0) <= 0:
+            raise ValidationError('Número de técnicos dedicados deve ser maior que zero.')
+        if (self.dias_uteis_mes or 0) <= 0:
+            raise ValidationError('Dias úteis no mês devem ser maiores que zero.')
         if (self.percentual_tributos + self.percentual_margem) >= CEM:
             raise ValidationError('A soma de tributos e margem da hora técnica deve ser menor que 100%.')
 

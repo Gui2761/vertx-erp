@@ -212,8 +212,10 @@ def salvar_calculo_hora_tecnica(user, data: dict, instance_id: int | None = None
         hora = CalculadoraHoraTecnica(organization=org)
 
     hora.especialidade = (data.get('especialidade') or '').strip()
-    hora.num_tecnicos = int(data.get('num_tecnicos') or 1)
-    hora.dias_uteis_mes = int(data.get('dias_uteis_mes') or 22)
+    val_tec = data.get('num_tecnicos') if data.get('num_tecnicos') is not None else data.get('numero_tecnicos')
+    hora.num_tecnicos = int(val_tec) if val_tec is not None and str(val_tec).strip() != '' else 1
+    val_dias = data.get('dias_uteis_mes') if data.get('dias_uteis_mes') is not None else data.get('dias_trabalhados_mes')
+    hora.dias_uteis_mes = int(val_dias) if val_dias is not None and str(val_dias).strip() != '' else 22
     hora.horas_dia = parse_dec(data.get('horas_dia'), '8.00')
     hora.percentual_ocupacao_faturavel = parse_dec(data.get('percentual_ocupacao_faturavel'), '65.00')
     hora.custo_mensal_centro = parse_dec(data.get('custo_mensal_centro'))
