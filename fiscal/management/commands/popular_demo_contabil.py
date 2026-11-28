@@ -348,7 +348,7 @@ class Command(BaseCommand):
                 pendencia=pend1,
                 empresa=emp_med,
                 canal=ComunicacaoClienteContabil.Canal.WHATSAPP,
-                tipo=ComunicacaoClienteContabil.Tipo.SOLICITACAO_DOCS,
+                tipo=ComunicacaoClienteContabil.Tipo.SOLICITACAO_DOC,
                 destinatario=emp_med.whatsapp_contato,
                 assunto="Solicitação de Fechamento de Folha para DCTFWeb",
                 mensagem_enviada=(
@@ -366,9 +366,8 @@ class Command(BaseCommand):
                 pendencia=pend1,
                 empresa=emp_med,
                 autor=admin_user,
-                tipo='RESOLUCAO',
-                etapa_fluxo=PendenciaFiscalCarteira.EtapaFluxo.RESOLVER,
-                descricao_mudanca="DCTFWeb transmitida com recibo nº 2026.11.890412. Situação fiscal regularizada no e-CAC.",
+                tipo_evento=EventoHistoricoContabil.TipoEvento.PENDENCIA_RESOLVIDA,
+                descricao="DCTFWeb transmitida com recibo nº 2026.11.890412. Situação fiscal regularizada no e-CAC.",
             )
 
         # Pendência 2: Renovação CND Estadual SEFAZ-AL (Em Andamento)
