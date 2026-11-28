@@ -259,7 +259,7 @@ class Command(BaseCommand):
                 if not sessao or not depot:
                     return
 
-                venda = m.Venda.objects.create(
+                venda = m.Venda(
                     organization=org,
                     status='FINALIZADA',
                     sessao_caixa=sessao,
@@ -274,6 +274,8 @@ class Command(BaseCommand):
                         'pagamentos': [],
                     },
                 )
+                venda._service_write = True
+                venda.save()
 
                 rf = RequestFactory()
                 req = rf.get(f'/pdv/vendas/{venda.public_id}/comprovante/')
