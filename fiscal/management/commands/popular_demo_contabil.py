@@ -76,7 +76,14 @@ class Command(BaseCommand):
 
     def _popular_contabil(self, org: Organization):
         hoje = timezone.localdate()
+        from platform_core.models import OrganizationMembership
         admin_user = Usuario.objects.filter(is_superuser=True).first() or Usuario.objects.first()
+        if admin_user:
+            OrganizationMembership.objects.get_or_create(
+                organization=org,
+                user=admin_user,
+                defaults={'role': 'ADMIN', 'status': 'ATIVO'}
+            )
 
         # 1. Cadastro de Empresas da Carteira (Clientes Contábeis)
         empresas_dados = [

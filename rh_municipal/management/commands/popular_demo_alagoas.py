@@ -52,7 +52,14 @@ class Command(BaseCommand):
         hoje = timezone.localdate()
 
         # 1. Usuário e Técnico Responsável
+        from platform_core.models import OrganizationMembership
         admin_user = Usuario.objects.filter(is_superuser=True).first() or Usuario.objects.first()
+        if admin_user:
+            OrganizationMembership.objects.get_or_create(
+                organization=org,
+                user=admin_user,
+                defaults={'role': 'ADMIN', 'status': 'ATIVO'}
+            )
         tecnico, _ = Tecnico.objects.get_or_create(
             organization=org,
             nome="Eng. Rafael Tenório (RT Biomédico)",
