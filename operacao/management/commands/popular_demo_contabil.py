@@ -351,14 +351,14 @@ class Command(BaseCommand):
                 tipo=ComunicacaoClienteContabil.Tipo.SOLICITACAO_DOC,
                 destinatario=emp_med.whatsapp_contato,
                 assunto="Solicitação de Fechamento de Folha para DCTFWeb",
-                mensagem_enviada=(
+                documento_solicitado="Relatório de Pró-Labore e Folha de Pagamento",
+                mensagem=(
                     f"Olá equipe da {emp_med.nome_fantasia}, precisamos do relatório de pró-labore e eventos para fechar a DCTFWeb "
                     f"competência {comp_anterior} e evitar multas da Receita Federal."
                 ),
                 enviado_por=admin_user,
                 confirmado_recebimento=True,
                 confirmado_em=timezone.now() - timedelta(days=2),
-                resposta_cliente="Segue em anexo o relatório assinado pelo sócio.",
             )
             # Registra auditoria
             EventoHistoricoContabil.objects.create(
@@ -413,14 +413,14 @@ class Command(BaseCommand):
             defaults={
                 'razao_social_identificada': "Hospital dos Olhos e Oftalmologia do Nordeste Ltda",
                 'regime_estimado': RegimeTributarioCarteira.LUCRO_PRESUMIDO,
-                'situacao_rfb': "ATIVA",
+                'uf': "AL",
+                'cidade': "Maceió",
+                'pendencias_conhecidas': "2 pendências conhecidas em dívida ativa e ausência de entrega da EFD Contribuições nos últimos 2 meses.",
                 'diagnostico_inicial': (
-                    "Empresa com faturamento estimado > R$ 120k/mês. Identificamos 2 pendências conhecidas em dívida ativa "
-                    "e ausência de entrega da EFD Contribuições nos últimos 2 meses. Forte oportunidade comercial para "
+                    "Empresa com faturamento estimado > R$ 120k/mês. Forte oportunidade comercial para "
                     "oferecer serviço de regularização e migração de contabilidade com honorário de R$ 3.500,00."
                 ),
-                'score_risco_fiscal': "ALTO",
-                'oportunidade_comercial': "MIGRAÇÃO DE CONTABILIDADE + RECUPERAÇÃO TRIBUTÁRIA",
+                'nivel_oportunidade': PreAnaliseComercialCNPJ.Oportunidade.ALTA,
                 'consultado_por': admin_user,
             },
         )
