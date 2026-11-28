@@ -1,6 +1,7 @@
 """Keyboard-friendly PDV over existing transactional services."""
 import json
 import uuid
+from decimal import Decimal
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -9,6 +10,7 @@ from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
 from django.urls import reverse
+from django.utils import timezone
 from platform_core.context import current_organization
 from platform_core.modules import require_capability, has_capability
 from gestao import models as g, services as gs
@@ -167,7 +169,7 @@ def sale(request,public_id,receipt=False):
         except (ValueError, TypeError):
             numero_nfce = sale.pk
             
-        data_emissao = sale.finalizada_em or sale.atualizado_em or timezone.now()
+        data_emissao = sale.finalizada_em or getattr(sale, 'atualizado_em', None) or getattr(sale, 'criado_em', None) or timezone.now()
         tp_emis = '1' if tem_certificado else '9'
         
         cnf_hash = hashlib.md5(f'{sale.public_id}:nfce'.encode()).hexdigest()

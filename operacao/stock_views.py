@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 from django.utils.dateparse import parse_date
+from django.utils import timezone
 from platform_core.access import require_erp
 from platform_core.audit import record_write, previous_values
 from gestao import models as g, services as gs, reporting
